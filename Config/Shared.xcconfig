@@ -1,0 +1,40 @@
+// Build settings shared by every configuration of the UsualBot app target.
+// Your signing team and bundle prefix go in Local.xcconfig (gitignored); see Local.xcconfig.example.
+
+PRODUCT_NAME = UsualBot
+INFOPLIST_KEY_CFBundleDisplayName = Usual Bot
+MARKETING_VERSION = 0.1.0
+CURRENT_PROJECT_VERSION = 1
+
+BUNDLE_ID_PREFIX = dev.usualbot.local
+PRODUCT_BUNDLE_IDENTIFIER = $(BUNDLE_ID_PREFIX).UsualBot
+
+SDKROOT = auto
+SUPPORTED_PLATFORMS = iphoneos iphonesimulator macosx
+SUPPORTS_MACCATALYST = NO
+SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO
+TARGETED_DEVICE_FAMILY = 1,2
+MACOSX_DEPLOYMENT_TARGET = 15.0
+IPHONEOS_DEPLOYMENT_TARGET = 18.0
+SWIFT_VERSION = 6.0
+
+GENERATE_INFOPLIST_FILE = YES
+INFOPLIST_KEY_LSApplicationCategoryType = public.app-category.productivity
+INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphone*] = YES
+INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphone*] = YES
+INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone[sdk=iphone*] = UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad[sdk=iphone*] = UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+
+CODE_SIGN_STYLE = Automatic
+CODE_SIGN_ENTITLEMENTS[sdk=macosx*] = Config/UsualBot-macOS.entitlements
+ENABLE_HARDENED_RUNTIME[sdk=macosx*] = YES
+LD_RUNPATH_SEARCH_PATHS[sdk=macosx*] = $(inherited) @executable_path/../Frameworks
+LD_RUNPATH_SEARCH_PATHS[sdk=iphone*] = $(inherited) @executable_path/Frameworks
+
+ALWAYS_SEARCH_USER_PATHS = NO
+ENABLE_PREVIEWS = YES
+ENABLE_USER_SCRIPT_SANDBOXING = YES
+DEAD_CODE_STRIPPING = YES
+SWIFT_EMIT_LOC_STRINGS = YES
+
+#include? "Local.xcconfig"

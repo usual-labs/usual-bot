@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: xcodebuild -version && swift --version
+
+      - name: Lint
+        run: swift format lint --strict --recursive App Packages
+
+      - name: Test HermesKit
+        run: swift test --package-path Packages/HermesKit
+
+      - name: Test UsualUI
+        run: swift test --package-path Packages/UsualUI
+
+      - name: Build macOS
+        run: >
+          xcodebuild build -project UsualBot.xcodeproj -scheme UsualBot
+          -destination 'generic/platform=macOS' CODE_SIGNING_ALLOWED=NO
+
+      - name: Build iOS Simulator
+        run: >
+          xcodebuild build -project UsualBot.xcodeproj -scheme UsualBot
+          -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
