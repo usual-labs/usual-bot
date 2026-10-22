@@ -22,6 +22,8 @@ public enum Theme {
     public static let userBubbleInk = Color(light: 0xFFFFFF, dark: 0x18181B)
     public static let needsYouFill = Color(light: 0xFFF1D6, dark: 0x3A2A0A)
     public static let needsYouInk = Color(light: 0x8A5300, dark: 0xF5C36B)
+    public static let danger = Color(light: 0xB42318, dark: 0xF97066)
+    public static let online = Color(hex: 0x1FA971)
 
     /// Avatar colours for agents whose profile doesn't set one.
     public static let agentPalette: [Color] = [
@@ -34,7 +36,7 @@ public enum Theme {
     ]
 }
 
-/// A parsed `#RRGGBB` colour, kept separate from `Color` so it can be tested.
+/// A parsed colour, kept separate from `Color` so it can be tested.
 public struct RGB: Equatable, Sendable {
     public let red: Double
     public let green: Double
@@ -46,12 +48,49 @@ public struct RGB: Equatable, Sendable {
         blue = Double(value & 0xFF) / 255
     }
 
+    init(red: Double, green: Double, blue: Double) {
+        self.red = red
+        self.green = green
+        self.blue = blue
+    }
+
     /// Accepts `#RRGGBB` or `RRGGBB`; returns `nil` for anything else.
     public init?(hex: String) {
         var digits = Substring(hex.trimmingCharacters(in: .whitespaces))
         if digits.hasPrefix("#") { digits = digits.dropFirst() }
         guard digits.count == 6, let value = UInt32(digits, radix: 16) else { return nil }
         self.init(value)
+    }
+
+    /// The CSS colours Hermes stores for bots: `#RRGGBB`, or `hsl()` / `hsla()` in either the
+    /// space-separated (`hsl(180 68% 58%)`) or comma-separated (`hsl(180, 68%, 58%)`) form.
+    /// Alpha is ignored. Returns `nil` for anything else.
+    public init?(css: String) {
+        let text = css.trimmingCharacters(in: .whitespaces).lowercased()
+        if let rgb = RGB(hex: text) {
+            self = rgb
+            return
+        }
+        guard text.hasPrefix("hsl"), let open = text.firstIndex(of: "("), text.hasSuffix(")") else { return nil }
+        let inner = text[text.index(after: open)..<text.index(before: text.endIndex)]
+        let parts = inner.split(whereSeparator: { " ,/".contains($0) }).map(String.init)
+        guard parts.count >= 3,
+            let hue = Double(parts[0].replacingOccurrences(of: "deg", with: "")),
+            parts[1].hasSuffix("%"), let saturation = Double(parts[1].dropLast()),
+            parts[2].hasSuffix("%"), let lightness = Double(parts[2].dropLast())
+        else { return nil }
+        self.init(hue: hue, saturation: saturation / 100, lightness: lightness / 100)
+    }
+
+    init(hue: Double, saturation: Double, lightness: Double) {
+        let s = min(max(saturation, 0), 1)
+        let l = min(max(lightness, 0), 1)
+        let h = (hue.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360) / 360
+        func channel(_ offset: Double) -> Double {
+            let k = (offset + h * 12).truncatingRemainder(dividingBy: 12)
+            return l - s * min(l, 1 - l) * max(-1, min(k - 3, 9 - k, 1))
+        }
+        self.init(red: channel(0), green: channel(8), blue: channel(4))
     }
 }
 

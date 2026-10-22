@@ -10,6 +10,23 @@ struct RGBTests {
         #expect(RGB(0xFF8000).blue == 0)
     }
 
+    @Test func parsesCSSHSLAsHermesStoresIt() throws {
+        // hsl(0 100% 50%) is pure red; hsl(120, 100%, 25%) is #008000.
+        #expect(RGB(css: "hsl(0 100% 50%)") == RGB(0xFF0000))
+        let green = try #require(RGB(css: "hsla(120, 100%, 25%, 0.5)"))
+        #expect(abs(green.green - 0.5) < 0.001 && green.red == 0 && green.blue == 0)
+        // The colour Hermes gave a real bot: a light cyan.
+        let cyan = try #require(RGB(css: "hsl(180 68% 58%)"))
+        #expect(abs(cyan.red - 0.2944) < 0.001 && abs(cyan.green - 0.8656) < 0.001 && cyan.green == cyan.blue)
+        #expect(RGB(css: "#6E7BFF") == RGB(0x6E7BFF))
+    }
+
+    @Test func rejectsUnknownCSS() {
+        #expect(RGB(css: "rebeccapurple") == nil)
+        #expect(RGB(css: "hsl(180 68 58)") == nil)
+        #expect(RGB(css: "hsl(180 68%)") == nil)
+    }
+
     @Test func rejectsMalformedHex() {
         #expect(RGB(hex: "") == nil)
         #expect(RGB(hex: "#FFF") == nil)

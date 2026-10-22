@@ -1,12 +1,20 @@
+import HermesKit
 import SwiftUI
 import UsualUI
 
 @main
 struct UsualBotApp: App {
+    @State private var model = AppModel()
+    #if os(macOS)
+        @State private var presenter = BrowserSignInPresenter()
+    #else
+        @State private var presenter = WebAuthSignInPresenter()
+    #endif
+
     var body: some Scene {
         WindowGroup {
-            // Sample contacts until the app can sign in to a gateway (milestone 1).
-            RootView(contacts: SampleData.contacts())
+            RootView(model: model, presenter: presenter)
+                .task { model.restore() }
         }
         #if os(macOS)
             .windowToolbarStyle(.unifiedCompact)

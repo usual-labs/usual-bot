@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Keys Xcode can't generate from INFOPLIST_KEY_* build settings. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- Many gateways are plain http on a tailnet or home network (e.g. http://100.101.102.103:9119).
+		     ATS has no exception for Tailscale's 100.64.0.0/10 range, so the app enforces the rule itself:
+		     GatewayAddress refuses plain http to any public host before a request is made.
+		     Don't add NSAllowsLocalNetworking here: alongside it, ATS ignores this key. -->
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

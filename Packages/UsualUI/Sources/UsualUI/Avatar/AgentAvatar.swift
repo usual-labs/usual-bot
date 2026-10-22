@@ -60,7 +60,7 @@ struct RoomAvatar: View {
 
 extension Contact {
     func tintColor(style: AvatarStyle) -> Color {
-        if let tint, let rgb = RGB(hex: tint) { return Color(rgb) }
+        if let tint, let rgb = RGB(css: tint) { return Color(rgb) }
         return Theme.agentPalette[style.paletteIndex]
     }
 

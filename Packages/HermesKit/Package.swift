@@ -9,6 +9,6 @@ let package = Package(
     ],
     targets: [
         .target(name: "HermesKit"),
-        .testTarget(name: "HermesKitTests", dependencies: ["HermesKit"]),
+        .testTarget(name: "HermesKitTests", dependencies: ["HermesKit"], resources: [.copy("Fixtures")]),
     ]
 )
