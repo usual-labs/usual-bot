@@ -26,6 +26,8 @@ public struct Contact: Identifiable, Hashable, Sendable {
     public var unreadCount: Int
     public var activity: Activity
     public var isPinned: Bool
+    /// The stored ID of the agent's "Bot Chat" session, when the gateway reported one.
+    public var chatID: String?
 
     public init(
         id: String,
@@ -36,7 +38,8 @@ public struct Contact: Identifiable, Hashable, Sendable {
         lastActive: Date? = nil,
         unreadCount: Int = 0,
         activity: Activity = .idle,
-        isPinned: Bool = false
+        isPinned: Bool = false,
+        chatID: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -47,6 +50,7 @@ public struct Contact: Identifiable, Hashable, Sendable {
         self.unreadCount = unreadCount
         self.activity = activity
         self.isPinned = isPinned
+        self.chatID = chatID
     }
 }
 

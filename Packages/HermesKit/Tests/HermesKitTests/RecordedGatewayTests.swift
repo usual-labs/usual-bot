@@ -54,4 +54,34 @@ struct RecordedGatewayTests {
         #expect(contacts.first { $0.id == "scout" }?.tint == "hsl(180 68% 58%)")
         #expect(contacts.allSatisfy { $0.lastActive != nil })
     }
+
+    @Test func legacyChatTurnStreamsIntoOneReply() async throws {
+        let recording = try Recording("legacy-chat-turn")
+        let socket = FakeSocket()
+        let channel = JSONRPCChannel(socket: socket)
+        await channel.start()
+
+        let submitted = try #require(recording.entries.first { $0.direction == "out" }?.frame)
+        #expect(submitted["method"] == "prompt.submit")
+        let question = try #require(submitted["params"]?["text"]?.stringValue)
+        var state = ThreadState()
+        state.sendLocally(question)
+
+        let events = recording.inbound.filter { $0["method"] == "event" }
+        for frame in events {
+            socket.deliver(String(decoding: try JSONEncoder().encode(frame), as: UTF8.self))
+        }
+        var received = 0
+        for await event in channel.events {
+            #expect(event.sessionID == "live-1")
+            state.apply(event)
+            received += 1
+            if received == events.count { break }
+        }
+
+        let answer = try #require(events.last?["params"]?["payload"]?["text"]?.stringValue)
+        #expect(state.items.map(\.content) == [.user(question), .assistant(answer)])
+        #expect(state.draft.isEmpty)
+        #expect(!state.isRunning)
+    }
 }

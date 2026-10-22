@@ -95,7 +95,8 @@ extension Contact {
             tint: profile.bot?.color,
             preview: preview,
             lastActive: chat?.lastActive.flatMap { $0 > 0 ? Date(timeIntervalSince1970: $0) : nil },
-            isPinned: profile.bot?.pinned ?? false)
+            isPinned: profile.bot?.pinned ?? false,
+            chatID: chat.map { $0.resolvedId ?? $0.id })
     }
 
     /// Previews are the start of the last message, usually Markdown, cut at 80 characters by the

@@ -23,6 +23,8 @@ public enum Theme {
     public static let needsYouFill = Color(light: 0xFFF1D6, dark: 0x3A2A0A)
     public static let needsYouInk = Color(light: 0x8A5300, dark: 0xF5C36B)
     public static let danger = Color(light: 0xB42318, dark: 0xF97066)
+    /// Code blocks, inline code chips and the expanded tool-step list.
+    public static let codeFill = Color(light: 0xF4F4F5, dark: 0x26262A)
     public static let online = Color(hex: 0x1FA971)
 
     /// Avatar colours for agents whose profile doesn't set one.

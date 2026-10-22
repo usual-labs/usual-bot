@@ -81,3 +81,7 @@ extension JSONValue: ExpressibleByBooleanLiteral {
 extension JSONValue: ExpressibleByIntegerLiteral {
     public init(integerLiteral value: Int) { self = .number(Double(value)) }
 }
+
+extension JSONValue: ExpressibleByFloatLiteral {
+    public init(floatLiteral value: Double) { self = .number(value) }
+}

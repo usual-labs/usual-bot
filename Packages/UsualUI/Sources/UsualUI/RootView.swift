@@ -16,7 +16,11 @@ public struct RootView: View {
         case .signedOut, .signingIn:
             ConnectView(model: model, presenter: presenter)
         case .signedIn(let gateway):
-            ContactsSplitView(contacts: model.contacts, emptyText: emptyText) {
+            ContactsSplitView(
+                contacts: model.contacts, emptyText: emptyText,
+                thread: { $0.kind == .agent ? model.thread(for: $0) : nil },
+                open: { model.openThread(for: $0) }
+            ) {
                 GatewayStatusButton(gateway: gateway, link: model.link, signOut: model.signOut)
             }
         }
@@ -33,6 +37,8 @@ public struct RootView: View {
 struct ContactsSplitView<Footer: View>: View {
     let contacts: [Contact]
     var emptyText: LocalizedStringKey = "No agents yet."
+    var thread: (Contact) -> ChatThread? = { _ in nil }
+    var open: (Contact) -> Void = { _ in }
     @ViewBuilder let footer: Footer
 
     @State private var selection: Contact.ID?
@@ -56,7 +62,9 @@ struct ContactsSplitView<Footer: View>: View {
             .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 380)
         } detail: {
             if let contact = contacts.first(where: { $0.id == selection }) {
-                ThreadPane(contact: contact, members: members(of: contact))
+                ThreadPane(
+                    contact: contact, members: members(of: contact), thread: thread(contact),
+                    open: { open(contact) })
             } else {
                 ContentUnavailableView(
                     "No chat selected", systemImage: "bubble.left.and.bubble.right",

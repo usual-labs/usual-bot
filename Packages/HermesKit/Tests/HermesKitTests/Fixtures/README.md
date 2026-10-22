@@ -7,6 +7,7 @@ fields are `null` are kept exactly as the gateway sent them.
 | File | Gateway | What it covers |
 | --- | --- | --- |
 | `legacy-connect-roster.jsonl` | Hermes 0.21.5, dashboard socket (legacy protocol) | `gateway.ready`, then one `profiles.list` round trip |
+| `legacy-chat-turn.jsonl` | Hermes 0.21.5, dashboard socket (legacy protocol) | `prompt.submit` and every event of one streamed reply without tools |
 
 Each line is `{"dir": "in" | "out", "frame": <JSON-RPC frame>}`.
 

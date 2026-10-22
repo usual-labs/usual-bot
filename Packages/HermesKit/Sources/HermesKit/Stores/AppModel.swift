@@ -35,6 +35,9 @@ public final class AppModel {
     private var auth: AuthSession?
     private var signInTask: Task<Void, Never>?
     private var linkTask: Task<Void, Never>?
+    /// The socket while the link is online.
+    @ObservationIgnored private var channel: JSONRPCChannel?
+    @ObservationIgnored private var threads: [Contact.ID: ChatThread] = [:]
 
     private static let gatewayKey = "gatewayAddress"
     private static let rosterInterval: Duration = .seconds(5)
@@ -102,6 +105,7 @@ public final class AppModel {
         if let auth { Task { await auth.signOut() } }
         auth = nil
         contacts = []
+        threads = [:]
         link = .connecting
         session = .signedOut
     }
@@ -125,8 +129,17 @@ public final class AppModel {
             do {
                 let (channel, ready) = try await connector.connect()
                 attempt = 0
+                self.channel = channel
                 link = .online(ready.dialect)
-                defer { Task { await channel.close() } }
+                let events = Task { for await event in channel.events { route(event) } }
+                defer {
+                    events.cancel()
+                    self.channel = nil
+                    for thread in threads.values { thread.detach() }
+                    Task { await channel.close() }
+                }
+                // Chats that were open before a reconnect attach again and reload.
+                for contact in contacts where threads[contact.id] != nil { openThread(for: contact) }
                 while !Task.isCancelled {
                     try await refreshRoster(on: channel)
                     try await Task.sleep(for: Self.rosterInterval)
@@ -144,6 +157,30 @@ public final class AppModel {
                 link = .connecting
             }
         }
+    }
+
+    // MARK: - Chats
+
+    /// The chat with `contact`. Call `openThread(for:)` to load it.
+    public func thread(for contact: Contact) -> ChatThread {
+        if let thread = threads[contact.id] { return thread }
+        let thread = ChatThread(contactID: contact.id, channel: { [weak self] in self?.channel })
+        threads[contact.id] = thread
+        return thread
+    }
+
+    /// Finds or creates the agent's Bot Chat and loads it, once the link is online.
+    public func openThread(for contact: Contact) {
+        guard case .online(let dialect) = link else { return }
+        thread(for: contact).open(knownID: contact.chatID, dialect: dialect)
+    }
+
+    /// Hands an event to the chat whose live session it belongs to.
+    private func route(_ event: GatewayEvent) {
+        guard let sessionID = event.sessionID,
+            let thread = threads.values.first(where: { $0.sessionID == sessionID })
+        else { return }
+        thread.apply(event)
     }
 
     private func refreshRoster(on channel: JSONRPCChannel) async throws {
