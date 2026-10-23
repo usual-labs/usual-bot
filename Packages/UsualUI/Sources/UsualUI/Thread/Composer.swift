@@ -40,6 +40,8 @@ struct MessageBox: View {
     let stop: () -> Void
 
     @State private var text = ""
+    /// Where the cursor is, to put a line break there.
+    @State private var selection: TextSelection?
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -71,14 +73,20 @@ struct MessageBox: View {
                 }
             }
             HStack(alignment: .bottom, spacing: 8) {
-                TextField(placeholder, text: $text, axis: .vertical)
+                TextField(placeholder, text: $text, selection: $selection, axis: .vertical)
                     .textFieldStyle(.plain)
                     .font(.system(size: 15))
                     .lineLimit(1...8)
                     .focused($focused)
+                    // Return sends; Shift-Return starts a new line.
+                    .onKeyPress(.return, phases: .down) { press in
+                        guard press.modifiers.contains(.shift) else { return .ignored }
+                        insertLineBreak()
+                        return .handled
+                    }
                     .onSubmit(submit)
-                    .padding(.leading, 14)
-                    .padding(.vertical, 9)
+                    .padding(.leading, 12)
+                    .padding(.vertical, 4)
                 if isRunning, isEmpty {
                     RoundButton(systemImage: "stop.fill", label: stopLabel, action: stop)
                 } else {
@@ -87,13 +95,24 @@ struct MessageBox: View {
                         .opacity(canSubmit ? 1 : 0.35)
                 }
             }
-            .padding(5)
-            .floatingSurface(in: RoundedRectangle(cornerRadius: 24))
+            // 36 pt tall on one line, like the name pill above.
+            .padding(4)
+            .floatingSurface(in: RoundedRectangle(cornerRadius: 18))
         }
         .onAppear { focused = true }
     }
 
     private var isEmpty: Bool { text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    private func insertLineBreak() {
+        guard case .selection(let range) = selection?.indices else {
+            text += "\n"
+            return
+        }
+        let offset = text.distance(from: text.startIndex, to: range.lowerBound)
+        text.replaceSubrange(range, with: "\n")
+        selection = TextSelection(insertionPoint: text.index(text.startIndex, offsetBy: offset + 1))
+    }
 
     private var canSubmit: Bool { canSend && !isEmpty }
 
@@ -134,9 +153,9 @@ private struct RoundButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 14, weight: .bold))
+                .font(.system(size: 12, weight: .bold))
                 .foregroundStyle(Theme.primaryInk)
-                .frame(width: 36, height: 36)
+                .frame(width: 28, height: 28)
                 .background(Theme.primary, in: Circle())
                 .contentShape(Circle())
         }
