@@ -118,7 +118,7 @@ public final class AppModel {
                 begin(AuthSession(gateway: gateway, tokens: tokens, store: tokenStore, http: http))
             } catch {
                 if case .signingIn = session { session = .signedOut }
-                if (error as? GatewayError) != .cancelled { problem = Self.describe(error) }
+                if (error as? GatewayError) != .cancelled { problem = Self.describe(error, for: gateway) }
             }
         }
     }
@@ -201,7 +201,7 @@ public final class AppModel {
                 return
             } catch {
                 guard !Task.isCancelled else { return }
-                link = .offline(Self.describe(error))
+                link = .offline(Self.describe(error, for: auth.gateway))
                 Self.log.error("Gateway link dropped: \(Self.describe(error), privacy: .public)")
                 try? await Task.sleep(for: Backoff.delay(attempt: attempt))
                 attempt += 1
@@ -369,6 +369,18 @@ public final class AppModel {
         contacts.append(contact)
         Task { await room.sync() }
         return contact.id
+    }
+
+    /// Like `describe(_:)`, but says what to check when a tailnet gateway can't be reached: the
+    /// device usually isn't on the tailnet.
+    static func describe(_ error: any Error, for gateway: GatewayAddress) -> String {
+        if case .unreachable = error as? GatewayError, gateway.isTailnet {
+            return String(
+                localized:
+                    "Can't reach \(gateway.displayName). It's a Tailscale address, so check that Tailscale is on and signed in on this device."
+            )
+        }
+        return describe(error)
     }
 
     static func describe(_ error: any Error) -> String {
