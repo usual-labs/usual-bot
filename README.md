@@ -18,6 +18,10 @@ Pick the **UsualBot** scheme and a Mac or iPhone simulator, then Run. Unsigned a
 need no setup. To run on your own device, copy `Config/Local.xcconfig.example` to
 `Config/Local.xcconfig` and set your team ID and bundle prefix (the file is gitignored).
 
+Without a team, Mac builds are signed "to run locally", and every rebuild looks like a new app to
+the Keychain: macOS asks once per build whether Usual Bot may read its saved sign-in. Choose
+**Always Allow**, or set your team to make the prompt go away.
+
 ## Layout
 
 | Path | What lives there |

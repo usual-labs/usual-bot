@@ -9,6 +9,17 @@ public struct GatewayEvent: Sendable, Equatable {
     public let payload: JSONValue
 }
 
+/// A question the gateway asks the app and waits on, e.g. `approval`. Answer it with
+/// `JSONRPCChannel.respond(to:result:)` or refuse it with `JSONRPCChannel.decline(_:code:message:)`.
+public struct ServerRequest: Sendable, Equatable {
+    /// `srq-…`: strings, so they never collide with the app's own numeric request IDs.
+    public let id: String
+    public let method: String
+    public let params: JSONValue
+
+    public var sessionID: String? { params["session_id"]?.stringValue }
+}
+
 /// The first frame on every socket. `session_authority: true` means the gateway runs the
 /// canonical session protocol (`hermes gateway`); without it, the legacy one (`hermes dashboard`).
 public struct GatewayReady: Sendable, Equatable {
@@ -20,13 +31,16 @@ public struct GatewayReady: Sendable, Equatable {
     public let replayEpoch: JSONValue?
 }
 
-/// JSON-RPC 2.0 over one WebSocket: numbered requests with replies, a stream of events,
-/// and a heartbeat (`gateway.ping` every 15 s; the socket is dead after 45 s of silence).
+/// JSON-RPC 2.0 over one WebSocket: numbered requests with replies, a stream of events, the
+/// gateway's own requests to the app, and a heartbeat (`gateway.ping` every 15 s; the socket is
+/// dead after 45 s of silence).
 public actor JSONRPCChannel {
     public nonisolated let events: AsyncStream<GatewayEvent>
+    public nonisolated let requests: AsyncStream<ServerRequest>
 
     private let socket: any WebSocketConnection
     private let eventSink: AsyncStream<GatewayEvent>.Continuation
+    private let requestSink: AsyncStream<ServerRequest>.Continuation
     private let heartbeatInterval: Duration
     private let silenceLimit: Duration
     private var nextID = 1
@@ -47,6 +61,7 @@ public actor JSONRPCChannel {
         self.heartbeatInterval = heartbeatInterval
         self.silenceLimit = silenceLimit
         (events, eventSink) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
+        (requests, requestSink) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
     }
 
     /// Starts reading frames and sending heartbeats.
@@ -75,22 +90,40 @@ public actor JSONRPCChannel {
         let frame: JSONValue = [
             "jsonrpc": "2.0", "id": .number(Double(id)), "method": .string(method), "params": params,
         ]
-        let text = String(decoding: try JSONEncoder().encode(frame), as: UTF8.self)
-        #if DEBUG
-            FrameRecorder.record("out", text)
-        #endif
         Task { [weak self] in
             try? await Task.sleep(for: timeout)
             await self?.resolve(id: id, with: .failure(GatewayError.timedOut))
         }
         return try await withCheckedThrowingContinuation { continuation in
             pending[id] = continuation
-            Task { [weak self] in
-                do {
-                    try await self?.socket.send(text)
-                } catch {
-                    await self?.shutDown(.disconnected)
-                }
+            write(frame)
+        }
+    }
+
+    /// Answers the server request with ID `requestID`.
+    public func respond(to requestID: String, result: JSONValue) {
+        write(["jsonrpc": "2.0", "id": .string(requestID), "result": result])
+    }
+
+    /// Refuses a server request, so the agent doesn't wait out its deadline for an answer.
+    public func decline(_ requestID: String, code: Int, message: String) {
+        write([
+            "jsonrpc": "2.0", "id": .string(requestID),
+            "error": ["code": .number(Double(code)), "message": .string(message)],
+        ])
+    }
+
+    private func write(_ frame: JSONValue) {
+        guard closedError == nil, let data = try? JSONEncoder().encode(frame) else { return }
+        let text = String(decoding: data, as: UTF8.self)
+        #if DEBUG
+            FrameRecorder.record("out", text)
+        #endif
+        Task { [weak self] in
+            do {
+                try await self?.socket.send(text)
+            } catch {
+                await self?.shutDown(.disconnected)
             }
         }
     }
@@ -133,12 +166,13 @@ public actor JSONRPCChannel {
             }
             return
         }
-        guard frame["method"]?.stringValue == "event", let params = frame["params"],
-            let type = params["type"]?.stringValue
-        else {
-            // Server-to-client requests (approvals, questions) arrive in a later milestone.
+        if let method = frame["method"]?.stringValue, method != "event", let id = frame["id"]?.stringValue {
+            requestSink.yield(ServerRequest(id: id, method: method, params: frame["params"] ?? .null))
             return
         }
+        guard frame["method"]?.stringValue == "event", let params = frame["params"],
+            let type = params["type"]?.stringValue
+        else { return }
         let payload = params["payload"] ?? .null
         if type == "gateway.ready" {
             let dialect: GatewayReady.Dialect = payload["session_authority"]?.boolValue == true ? .canonical : .legacy
@@ -186,6 +220,7 @@ public actor JSONRPCChannel {
         pending.removeAll()
         resolveReady(.failure(error))
         eventSink.finish()
+        requestSink.finish()
         for task in tasks { task.cancel() }
     }
 }

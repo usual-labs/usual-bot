@@ -16,6 +16,10 @@ enum BotChat {
         let running: Bool
         /// The history was too long for the gateway to send, so only new messages show.
         let historyOmitted: Bool
+        /// The turn still running when the app attached, if any.
+        var inflight: InflightTurn? = nil
+        /// Questions (approvals) the gateway asked earlier and is still waiting on.
+        var openRequests: [ServerRequest] = []
     }
 
     /// `knownID` is the stored Bot Chat ID from the roster, when the gateway reported one.
@@ -47,9 +51,21 @@ enum BotChat {
         }
         guard let live = result["session_id"]?.stringValue else { throw GatewayError.invalidResponse }
         let history = (try? result["messages"]?.decode([HistoryMessage].self)) ?? []
+        var requests: [ServerRequest] = []
+        if case .array(let open) = result["open_requests"] {
+            requests = open.compactMap { entry in
+                guard let id = entry["id"]?.stringValue, let method = entry["method"]?.stringValue else { return nil }
+                return ServerRequest(id: id, method: method, params: entry["params"] ?? .null)
+            }
+        }
+        let inflight = result["inflight"].flatMap { turn -> InflightTurn? in
+            guard case .object = turn else { return nil }
+            return InflightTurn(user: turn["user"]?.stringValue ?? "", assistant: turn["assistant"]?.stringValue ?? "")
+        }
         return Opened(
             sessionID: live, history: history, running: result["running"]?.boolValue ?? false,
-            historyOmitted: omitted || result["messages_omitted"]?.boolValue == true)
+            historyOmitted: omitted || result["messages_omitted"]?.boolValue == true, inflight: inflight,
+            openRequests: requests)
     }
 
     static func create(profile: String, on channel: JSONRPCChannel) async throws -> Opened {

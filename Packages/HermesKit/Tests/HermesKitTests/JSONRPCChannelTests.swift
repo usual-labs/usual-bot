@@ -100,6 +100,16 @@ struct JSONRPCChannelTests {
     }
 }
 
+/// Polls a main-actor `condition` until it holds, failing after a second.
+@MainActor
+func waitUntilOnMain(_ condition: @escaping @MainActor () -> Bool) async throws {
+    for _ in 0..<200 {
+        if condition() { return }
+        try await Task.sleep(for: .milliseconds(5))
+    }
+    Issue.record("Condition never became true")
+}
+
 /// Polls `condition` until it holds, failing after a second.
 func waitUntil(_ condition: @escaping @Sendable () -> Bool) async throws {
     for _ in 0..<200 {

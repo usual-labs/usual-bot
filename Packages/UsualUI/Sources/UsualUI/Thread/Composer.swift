@@ -1,7 +1,8 @@
 import HermesKit
 import SwiftUI
 
-/// The message box under a chat. Return sends; while the agent works, the button stops it.
+/// The message box under a chat. Return sends. While the agent works, a message steers it and
+/// the empty box's button stops it.
 struct Composer: View {
     let thread: ChatThread
     let agentName: String
@@ -11,7 +12,7 @@ struct Composer: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            TextField("Message \(agentName)", text: $text, axis: .vertical)
+            TextField(placeholder, text: $text, axis: .vertical)
                 .textFieldStyle(.plain)
                 .font(.system(size: 15))
                 .lineLimit(1...8)
@@ -19,7 +20,7 @@ struct Composer: View {
                 .onSubmit(send)
                 .padding(.leading, 14)
                 .padding(.vertical, 9)
-            if thread.state.isRunning {
+            if thread.state.isRunning, isEmpty {
                 RoundButton(systemImage: "stop.fill", label: "Stop \(agentName)", action: thread.stop)
             } else {
                 RoundButton(systemImage: "arrow.up", label: "Send", action: send)
@@ -34,8 +35,14 @@ struct Composer: View {
         .onAppear { focused = true }
     }
 
-    private var canSend: Bool {
-        thread.canSend && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    private var isEmpty: Bool { text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    private var canSend: Bool { thread.canSend && !isEmpty }
+
+    private var placeholder: String {
+        if !thread.isAttached { return String(localized: "Reconnecting…") }
+        if thread.state.isRunning { return String(localized: "Steer \(agentName) while it works") }
+        return String(localized: "Message \(agentName)")
     }
 
     private func send() {

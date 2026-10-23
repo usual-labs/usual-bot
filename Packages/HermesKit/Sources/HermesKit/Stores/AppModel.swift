@@ -22,7 +22,14 @@ public final class AppModel {
 
     public private(set) var session: Session = .signedOut
     public private(set) var link: Link = .connecting
+    /// The agents and rooms the gateway reports, in its own terms. Show `sidebarContacts` instead.
     public private(set) var contacts: [Contact] = []
+    /// The chat on screen, if any. Its replies don't count as unread.
+    public var visibleContactID: Contact.ID? {
+        didSet {
+            for (id, thread) in threads { thread.isVisible = id == visibleContactID }
+        }
+    }
     /// The last sign-in or connection problem, for the connect screen.
     public private(set) var problem: String?
     /// What the user last typed into the gateway field.
@@ -32,6 +39,8 @@ public final class AppModel {
     private let http: any HTTPTransport
     private let makeSocket: GatewayConnector.SocketFactory
     private let defaults: UserDefaults
+    private let cache: OfflineCache
+    @ObservationIgnored private var lastSaved: OfflineCache.Snapshot?
     private var auth: AuthSession?
     private var signInTask: Task<Void, Never>?
     private var linkTask: Task<Void, Never>?
@@ -44,27 +53,39 @@ public final class AppModel {
     private static let log = Logger(subsystem: "UsualBot", category: "app")
 
     public convenience init() {
-        self.init(tokenStore: KeychainTokenStore(), http: URLSession.shared, defaults: .standard)
+        self.init(tokenStore: KeychainTokenStore(), http: URLSession.shared, defaults: .standard, cache: OfflineCache())
     }
 
     init(
-        tokenStore: any TokenStore, http: any HTTPTransport, defaults: UserDefaults,
+        tokenStore: any TokenStore, http: any HTTPTransport, defaults: UserDefaults, cache: OfflineCache,
         makeSocket: @escaping GatewayConnector.SocketFactory = { URLSessionWebSocket(url: $0) }
     ) {
         self.tokenStore = tokenStore
         self.http = http
         self.defaults = defaults
+        self.cache = cache
         self.makeSocket = makeSocket
         gatewayInput = defaults.string(forKey: Self.gatewayKey) ?? ""
     }
 
     /// Resumes the saved session, if this device has one.
-    public func restore() {
+    public func restore() async {
         guard case .signedOut = session,
             let saved = defaults.string(forKey: Self.gatewayKey),
-            let gateway = try? GatewayAddress(parsing: saved),
-            let tokens = try? tokenStore.load(for: gateway)
+            let gateway = try? GatewayAddress(parsing: saved)
         else { return }
+        // Off the main thread: macOS can hold a Keychain read behind an access prompt, and the
+        // window must stay responsive while it waits.
+        let store = tokenStore
+        let tokens = await Task.detached { try? store.load(for: gateway) }.value
+        guard case .signedOut = session, let tokens else { return }
+        if let snapshot = cache.load(for: gateway) {
+            contacts = snapshot.contacts
+            threads = snapshot.threads.reduce(into: [:]) { threads, entry in
+                threads[entry.key] = makeThread(entry.key, cached: entry.value)
+            }
+            lastSaved = snapshot
+        }
         begin(AuthSession(gateway: gateway, tokens: tokens, store: tokenStore, http: http))
     }
 
@@ -102,10 +123,14 @@ public final class AppModel {
     public func signOut() {
         linkTask?.cancel()
         signInTask?.cancel()
-        if let auth { Task { await auth.signOut() } }
+        if let auth {
+            cache.delete(for: auth.gateway)
+            Task { await auth.signOut() }
+        }
         auth = nil
         contacts = []
         threads = [:]
+        lastSaved = nil
         link = .connecting
         session = .signedOut
     }
@@ -132,16 +157,18 @@ public final class AppModel {
                 self.channel = channel
                 link = .online(ready.dialect)
                 let events = Task { for await event in channel.events { route(event) } }
+                let requests = Task { for await request in channel.requests { await handle(request, on: channel) } }
                 defer {
                     events.cancel()
+                    requests.cancel()
                     self.channel = nil
                     for thread in threads.values { thread.detach() }
                     Task { await channel.close() }
                 }
-                // Chats that were open before a reconnect attach again and reload.
-                for contact in contacts where threads[contact.id] != nil { openThread(for: contact) }
                 while !Task.isCancelled {
                     try await refreshRoster(on: channel)
+                    attachChats()
+                    saveCache(for: auth.gateway)
                     try await Task.sleep(for: Self.rosterInterval)
                 }
             } catch GatewayError.signInRequired {
@@ -161,12 +188,37 @@ public final class AppModel {
 
     // MARK: - Chats
 
+    /// Contacts as the sidebar shows them: the roster plus each chat's live activity and unread count.
+    public var sidebarContacts: [Contact] {
+        contacts.map { contact in
+            guard let thread = threads[contact.id] else { return contact }
+            var contact = contact
+            contact.activity = thread.activity
+            contact.unreadCount = thread.unreadCount
+            return contact
+        }
+    }
+
     /// The chat with `contact`. Call `openThread(for:)` to load it.
     public func thread(for contact: Contact) -> ChatThread {
         if let thread = threads[contact.id] { return thread }
-        let thread = ChatThread(contactID: contact.id, channel: { [weak self] in self?.channel })
+        let thread = makeThread(contact.id, cached: nil)
         threads[contact.id] = thread
         return thread
+    }
+
+    private func makeThread(_ id: Contact.ID, cached: CachedThread?) -> ChatThread {
+        let thread = ChatThread(contactID: id, cached: cached, channel: { [weak self] in self?.channel })
+        thread.isVisible = id == visibleContactID
+        return thread
+    }
+
+    /// Keeps every agent's existing Bot Chat attached, so its approvals reach this app and the
+    /// sidebar shows when it's working. Agents without a Bot Chat get one only when you open them.
+    private func attachChats() {
+        for contact in contacts where contact.kind == .agent && (contact.chatID != nil || threads[contact.id] != nil) {
+            openThread(for: contact)
+        }
     }
 
     /// Finds or creates the agent's Bot Chat and loads it, once the link is online.
@@ -181,6 +233,36 @@ public final class AppModel {
             let thread = threads.values.first(where: { $0.sessionID == sessionID })
         else { return }
         thread.apply(event)
+    }
+
+    /// Answers the gateway's questions: approvals and clarify questions go to their chat. Anything else is declined as
+    /// "not shown here" (4404): the gateway then lets another attached app, such as the official
+    /// one, answer, and gives up at once when no app can, so the agent never waits on Usual Bot.
+    private func handle(_ request: ServerRequest, on channel: JSONRPCChannel) async {
+        let thread = threads.values.first { $0.sessionID != nil && $0.sessionID == request.sessionID }
+        if let thread, let approval = ApprovalPrompt(request) {
+            thread.receive(approval)
+            return
+        }
+        if let thread, let prompt = ClarifyPrompt(request) {
+            thread.receive(prompt)
+            return
+        }
+        await channel.decline(
+            request.id, code: 4404, message: "Usual Bot can't answer “\(request.method)” requests.")
+    }
+
+    /// Writes the roster and recent messages for next launch, when they changed.
+    private func saveCache(for gateway: GatewayAddress) {
+        let snapshot = OfflineCache.Snapshot(
+            contacts: contacts, threads: threads.filter { $0.value.phase == .ready }.mapValues(\.cacheEntry))
+        guard snapshot != lastSaved else { return }
+        do {
+            try cache.save(snapshot, for: gateway)
+            lastSaved = snapshot
+        } catch {
+            Self.log.error("Couldn't save the offline cache: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     private func refreshRoster(on channel: JSONRPCChannel) async throws {

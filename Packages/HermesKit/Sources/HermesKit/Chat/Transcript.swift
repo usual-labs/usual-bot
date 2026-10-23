@@ -1,8 +1,8 @@
 import Foundation
 
 /// One thing shown in a chat, in order.
-public struct TranscriptItem: Identifiable, Equatable, Sendable {
-    public enum Content: Equatable, Sendable {
+public struct TranscriptItem: Identifiable, Equatable, Sendable, Codable {
+    public enum Content: Equatable, Sendable, Codable {
         case user(String)
         case assistant(String)
         /// Consecutive tool calls, shown as one collapsible line.
@@ -16,8 +16,8 @@ public struct TranscriptItem: Identifiable, Equatable, Sendable {
 }
 
 /// One tool call the agent made.
-public struct ToolStep: Identifiable, Equatable, Sendable {
-    public enum State: Equatable, Sendable {
+public struct ToolStep: Identifiable, Equatable, Sendable, Codable {
+    public enum State: Equatable, Sendable, Codable {
         case running, done, failed
     }
 
@@ -38,13 +38,19 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
     let name: String?
     let context: String?
     let toolCallId: String?
+    /// Unix seconds, when the gateway knows it.
+    let timestamp: Double?
 
-    init(role: String, text: String? = nil, name: String? = nil, context: String? = nil, toolCallId: String? = nil) {
+    init(
+        role: String, text: String? = nil, name: String? = nil, context: String? = nil, toolCallId: String? = nil,
+        timestamp: Double? = nil
+    ) {
         self.role = role
         self.text = text
         self.name = name
         self.context = context
         self.toolCallId = toolCallId
+        self.timestamp = timestamp
     }
 
     init(from decoder: any Decoder) throws {
@@ -54,13 +60,21 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
         name = try? container.decodeIfPresent(String.self, forKey: .name)
         context = try? container.decodeIfPresent(String.self, forKey: .context)
         toolCallId = try? container.decodeIfPresent(String.self, forKey: .toolCallId)
+        timestamp = try? container.decodeIfPresent(Double.self, forKey: .timestamp)
     }
 
-    private enum CodingKeys: String, CodingKey { case role, text, name, context, toolCallId }
+    private enum CodingKeys: String, CodingKey { case role, text, name, context, toolCallId, timestamp }
+}
+
+/// A turn the gateway was still running when the app attached: what the user asked and the
+/// reply streamed so far.
+struct InflightTurn: Equatable, Sendable {
+    let user: String
+    let assistant: String
 }
 
 /// Everything a chat shows, built from history and then advanced by live gateway events.
-public struct ThreadState: Equatable, Sendable {
+public struct ThreadState: Equatable, Sendable, Codable {
     public private(set) var items: [TranscriptItem] = []
     /// The reply streaming in right now. It becomes an assistant item when the turn moves on or ends.
     public private(set) var draft = ""
@@ -71,7 +85,7 @@ public struct ThreadState: Equatable, Sendable {
 
     public init() {}
 
-    init(history: [HistoryMessage], running: Bool) {
+    init(history: [HistoryMessage], running: Bool, inflight: InflightTurn? = nil) {
         for message in history {
             switch message.role {
             case "user":
@@ -89,6 +103,36 @@ public struct ThreadState: Equatable, Sendable {
         }
         isRunning = running
         turnStart = items.count
+        if running, let inflight {
+            // The running turn's prompt may not be in the stored history yet.
+            if let user = inflight.user.nonBlank, items.last?.content != .user(user) {
+                append(.user(user))
+                turnStart = items.count
+            }
+            draft = inflight.assistant
+        }
+    }
+
+    /// Keeps only the last `limit` items, for the offline cache. A running turn is cut off.
+    func trimmed(to limit: Int) -> ThreadState {
+        var copy = self
+        copy.items = Array(items.suffix(limit))
+        copy.draft = ""
+        copy.isRunning = false
+        copy.turnStart = copy.items.count
+        return copy
+    }
+
+    /// The gateway accepted a new turn without a local echo first (a steer that arrived too late).
+    mutating func beginTurn() {
+        isRunning = true
+        turnStart = items.count
+    }
+
+    /// Shows a message sent while the agent works. The turn keeps running and reads it as guidance.
+    mutating func steerLocally(_ text: String) {
+        sealDraft()
+        append(.user(text))
     }
 
     /// Shows the user's message right away, before the gateway confirms the turn.

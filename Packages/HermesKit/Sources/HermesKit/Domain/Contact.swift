@@ -1,15 +1,15 @@
 import Foundation
 
 /// One entry in the sidebar: a Hermes profile (an agent) or a hosted room (a group chat).
-public struct Contact: Identifiable, Hashable, Sendable {
-    public enum Kind: Hashable, Sendable {
+public struct Contact: Identifiable, Hashable, Sendable, Codable {
+    public enum Kind: Hashable, Sendable, Codable {
         case agent
         /// A room lists the IDs of its member agents, in the order the gateway reports them.
         case room(memberIDs: [Contact.ID])
     }
 
     /// What the contact needs from the user right now; drives the sidebar indicator.
-    public enum Activity: Hashable, Sendable {
+    public enum Activity: Hashable, Sendable, Codable {
         case idle
         case working
         case needsYou

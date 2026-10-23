@@ -70,6 +70,10 @@ extension JSONValue: ExpressibleByDictionaryLiteral {
     }
 }
 
+extension JSONValue: ExpressibleByArrayLiteral {
+    public init(arrayLiteral elements: JSONValue...) { self = .array(elements) }
+}
+
 extension JSONValue: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) { self = .string(value) }
 }

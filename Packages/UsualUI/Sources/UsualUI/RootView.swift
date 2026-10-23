@@ -17,9 +17,10 @@ public struct RootView: View {
             ConnectView(model: model, presenter: presenter)
         case .signedIn(let gateway):
             ContactsSplitView(
-                contacts: model.contacts, emptyText: emptyText,
+                contacts: model.sidebarContacts, emptyText: emptyText,
                 thread: { $0.kind == .agent ? model.thread(for: $0) : nil },
-                open: { model.openThread(for: $0) }
+                open: { model.openThread(for: $0) },
+                select: { model.visibleContactID = $0 }
             ) {
                 GatewayStatusButton(gateway: gateway, link: model.link, signOut: model.signOut)
             }
@@ -39,9 +40,12 @@ struct ContactsSplitView<Footer: View>: View {
     var emptyText: LocalizedStringKey = "No agents yet."
     var thread: (Contact) -> ChatThread? = { _ in nil }
     var open: (Contact) -> Void = { _ in }
+    /// Told which contact is on screen, so its replies don't count as unread.
+    var select: (Contact.ID?) -> Void = { _ in }
     @ViewBuilder let footer: Footer
 
     @State private var selection: Contact.ID?
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationSplitView {
@@ -72,6 +76,9 @@ struct ContactsSplitView<Footer: View>: View {
             }
         }
         .tint(Theme.ink)
+        .onChange(of: selection, initial: true) { _, selected in select(scenePhase == .active ? selected : nil) }
+        // A chat in a window you aren't looking at isn't being read.
+        .onChange(of: scenePhase) { _, phase in select(phase == .active ? selection : nil) }
     }
 
     private func members(of contact: Contact) -> [Contact] {

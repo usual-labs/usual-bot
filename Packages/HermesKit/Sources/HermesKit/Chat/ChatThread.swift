@@ -2,7 +2,8 @@ import Foundation
 import Observation
 import os
 
-/// One agent's chat: its transcript, whether a turn is running, and the actions you can take.
+/// One agent's chat: its transcript, whether a turn is running, what it needs from you,
+/// and the actions you can take.
 @MainActor
 @Observable
 public final class ChatThread {
@@ -17,43 +18,67 @@ public final class ChatThread {
     public private(set) var phase: Phase = .loading
     /// Shown above the transcript, e.g. when older history couldn't be loaded.
     public private(set) var banner: String?
+    /// Commands waiting for your decision, oldest first.
+    public private(set) var approvals: [ApprovalPrompt] = []
+    /// Questions the agent asked through its clarify tool, waiting for your answers.
+    public private(set) var questions: [ClarifyPrompt] = []
+    /// Agent replies since you last had this chat on screen.
+    public private(set) var unreadCount = 0
 
-    /// The live session the gateway routes this chat's events to.
+    /// The live session the gateway routes this chat's events to; `nil` while offline.
     private(set) var sessionID: String?
+    /// When you last had this chat on screen. Replies after it count as unread.
+    private(set) var lastViewed: Date?
+    /// Set by the app while this chat is on screen.
+    var isVisible = false {
+        didSet { if isVisible { markViewed() } }
+    }
+
     private var openTask: Task<Void, Never>?
     private let channel: @MainActor () -> JSONRPCChannel?
 
     private static let log = Logger(subsystem: "UsualBot", category: "chat")
 
-    init(contactID: Contact.ID, channel: @escaping @MainActor () -> JSONRPCChannel?) {
+    init(contactID: Contact.ID, cached: CachedThread? = nil, channel: @escaping @MainActor () -> JSONRPCChannel?) {
         self.contactID = contactID
         self.channel = channel
+        if let cached {
+            // Show the last known transcript straight away; it is replaced once the gateway answers.
+            state = cached.state
+            lastViewed = cached.lastViewed
+            unreadCount = cached.unreadCount
+            phase = .ready
+        }
     }
 
-    /// Finds or creates the agent's Bot Chat and loads its history. Safe to call repeatedly.
+    /// Attached to the gateway, so messages can be sent.
+    public var isAttached: Bool { sessionID != nil }
+
+    /// What the sidebar shows for this agent.
+    public var activity: Contact.Activity {
+        if !approvals.isEmpty || !questions.isEmpty { return .needsYou }
+        return state.isRunning ? .working : .idle
+    }
+
+    // MARK: - Attaching
+
+    /// Finds or creates the agent's Bot Chat, loads its history and attaches to its events.
+    /// Safe to call repeatedly; does nothing while attached or already opening.
     func open(knownID: String?, dialect: GatewayReady.Dialect) {
         guard sessionID == nil, openTask == nil else { return }
         guard dialect == .legacy else {
             phase = .failed(String(localized: "Chat on this gateway's newer protocol isn't supported yet."))
             return
         }
-        guard let channel = channel() else {
-            Self.log.notice("Chat open deferred: gateway offline")
-            return
-        }
+        guard let channel = channel() else { return }
         if case .failed = phase { phase = .loading }
         Self.log.notice("Opening chat \(self.contactID, privacy: .private)")
         openTask = Task {
             defer { openTask = nil }
             do {
                 let opened = try await BotChat.open(profile: contactID, knownID: knownID, on: channel)
-                sessionID = opened.sessionID
-                state = ThreadState(history: opened.history, running: opened.running)
-                banner = opened.historyOmitted ? String(localized: "Earlier messages are too long to load here.") : nil
-                phase = .ready
-                Self.log.notice(
-                    "Chat ready: \(opened.history.count, privacy: .public) messages, \(self.state.items.count, privacy: .public) items"
-                )
+                attach(opened)
+                Self.log.notice("Chat ready: \(opened.history.count, privacy: .public) messages")
             } catch {
                 phase = .failed(AppModel.describe(error))
                 Self.log.error("Chat open failed: \(AppModel.describe(error), privacy: .public)")
@@ -61,44 +86,117 @@ public final class ChatThread {
         }
     }
 
-    /// Forgets the live session; the next `open` attaches again (after a reconnect).
+    private func attach(_ opened: BotChat.Opened) {
+        sessionID = opened.sessionID
+        state = ThreadState(history: opened.history, running: opened.running, inflight: opened.inflight)
+        banner = opened.historyOmitted ? String(localized: "Earlier messages are too long to load here.") : nil
+        // The gateway re-sends any question still waiting, so the list starts from its answer.
+        approvals = opened.openRequests.compactMap(ApprovalPrompt.init)
+        questions = opened.openRequests.compactMap(ClarifyPrompt.init)
+        if isVisible {
+            markViewed()
+        } else if let lastViewed {
+            let since = lastViewed.timeIntervalSince1970
+            unreadCount = opened.history.filter { $0.role == "assistant" && ($0.timestamp ?? 0) > since }.count
+        } else {
+            // First time this device sees the chat: nothing is new yet.
+            markViewed()
+        }
+        phase = .ready
+    }
+
+    /// Forgets the live session after the socket drops; the transcript stays on screen.
+    /// The next `open` attaches again and reloads it, so nothing missed while offline is lost.
     func detach() {
         openTask?.cancel()
         openTask = nil
         sessionID = nil
-        if case .ready = phase { return }
-        phase = .loading
+        approvals = []
+        questions = []
     }
+
+    // MARK: - Gateway traffic
 
     func apply(_ event: GatewayEvent) {
+        if event.type == "request.cancel" {
+            withdraw(event.payload)
+            return
+        }
+        let wasRunning = state.isRunning
+        let itemsBefore = state.items.count
         state.apply(event)
+        if event.type == "message.complete", wasRunning, !isVisible,
+            state.items[min(itemsBefore, state.items.count)...].contains(where: \.isReply)
+        {
+            unreadCount += 1
+        }
+        if isVisible { lastViewed = Date() }
     }
 
-    #if DEBUG
-        /// Tests and previews: a chat already open and showing `state`.
-        static func sample(_ contactID: Contact.ID, state: ThreadState) -> ChatThread {
-            let thread = ChatThread(contactID: contactID, channel: { nil })
-            thread.state = state
-            thread.sessionID = "sample"
-            thread.phase = .ready
-            return thread
+    func receive(_ approval: ApprovalPrompt) {
+        guard !approvals.contains(where: { $0.id == approval.id }) else { return }
+        approvals.append(approval)
+    }
+
+    func receive(_ prompt: ClarifyPrompt) {
+        guard !questions.contains(where: { $0.id == prompt.id }) else { return }
+        questions.append(prompt)
+    }
+
+    /// The gateway withdrew a request: answered elsewhere, timed out, or the turn ended.
+    private func withdraw(_ payload: JSONValue) {
+        guard let id = payload["id"]?.stringValue else { return }
+        let timedOut = payload["reason"]?.stringValue == "timeout"
+        if let index = approvals.firstIndex(where: { $0.id == id }) {
+            let approval = approvals.remove(at: index)
+            if timedOut {
+                state.addNotice(String(localized: "Nobody answered in time, so “\(approval.shortCommand)” didn't run."))
+            }
+        } else if let index = questions.firstIndex(where: { $0.id == id }) {
+            questions.remove(at: index)
+            if timedOut { state.addNotice(String(localized: "The question timed out.")) }
         }
-    #endif
+    }
 
-    public var canSend: Bool { phase == .ready && sessionID != nil && !state.isRunning }
+    // MARK: - Your actions
 
-    /// Sends a message to the agent.
+    public var canSend: Bool { phase == .ready && sessionID != nil }
+
+    /// Sends a message. While the agent works, the message steers the running turn instead.
     public func send(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard canSend, !text.isEmpty, let sessionID, let channel = channel() else { return }
+        if state.isRunning {
+            steer(text, sessionID: sessionID, channel: channel)
+            return
+        }
         state.sendLocally(text)
+        Task { await submit(text, sessionID: sessionID, channel: channel) }
+    }
+
+    private func submit(_ text: String, sessionID: String, channel: JSONRPCChannel) async {
+        do {
+            _ = try await channel.call(
+                "prompt.submit", params: ["session_id": .string(sessionID), "text": .string(text)])
+        } catch {
+            state.addNotice(AppModel.describe(error))
+            state.endTurnLocally()
+        }
+    }
+
+    private func steer(_ text: String, sessionID: String, channel: JSONRPCChannel) {
+        state.steerLocally(text)
         Task {
             do {
-                _ = try await channel.call(
-                    "prompt.submit", params: ["session_id": .string(sessionID), "text": .string(text)])
+                let result = try await channel.call(
+                    "session.steer", params: ["session_id": .string(sessionID), "text": .string(text)])
+                if result["status"]?.stringValue == "rejected" {
+                    // The turn ended before the message arrived: send it as the next turn.
+                    state.beginTurn()
+                    await submit(text, sessionID: sessionID, channel: channel)
+                }
             } catch {
                 state.addNotice(AppModel.describe(error))
-                state.endTurnLocally()
             }
         }
     }
@@ -113,5 +211,93 @@ public final class ChatThread {
                 state.addNotice(AppModel.describe(error))
             }
         }
+    }
+
+    /// Answers an approval request.
+    public func answer(_ approval: ApprovalPrompt, with choice: ApprovalPrompt.Choice) {
+        guard let index = approvals.firstIndex(where: { $0.id == approval.id }), let channel = channel() else { return }
+        approvals.remove(at: index)
+        state.addNotice(Self.notice(for: choice, command: approval.shortCommand))
+        Task { await channel.respond(to: approval.id, result: ["choice": .string(choice.rawValue)]) }
+    }
+
+    /// Answers the agent's questions. `picked` maps each question ID to the chosen or typed answers.
+    public func answer(_ prompt: ClarifyPrompt, with picked: [String: [String]]) {
+        guard let index = questions.firstIndex(where: { $0.id == prompt.id }), let channel = channel() else { return }
+        questions.remove(at: index)
+        var answers: [String: JSONValue] = [:]
+        for question in prompt.questions {
+            let values = picked[question.id] ?? []
+            answers[question.id] = values.isEmpty ? .null : .string(ClarifyPrompt.encode(values, for: question))
+        }
+        // Your answers read like your side of the conversation.
+        let summary = prompt.questions.compactMap { picked[$0.id]?.joined(separator: ", ").nonBlank }
+        state.steerLocally(summary.joined(separator: "\n"))
+        Task {
+            await channel.respond(to: prompt.id, result: ["answers": .object(answers), "outcome": "submitted"])
+        }
+    }
+
+    /// Declines to answer; the agent carries on without the answers.
+    public func skip(_ prompt: ClarifyPrompt) {
+        guard let index = questions.firstIndex(where: { $0.id == prompt.id }), let channel = channel() else { return }
+        questions.remove(at: index)
+        state.addNotice(String(localized: "You skipped the question"))
+        Task { await channel.respond(to: prompt.id, result: ["outcome": "cancelled"]) }
+    }
+
+    static func notice(for choice: ApprovalPrompt.Choice, command: String) -> String {
+        switch choice {
+        case .once: return String(localized: "You allowed “\(command)” once")
+        case .session: return String(localized: "You allowed “\(command)” and commands like it in this chat")
+        case .always: return String(localized: "You allowed “\(command)” and commands like it from now on")
+        case .deny: return String(localized: "You denied “\(command)”")
+        }
+    }
+
+    private func markViewed() {
+        lastViewed = Date()
+        unreadCount = 0
+    }
+
+    // MARK: - Offline cache
+
+    var cacheEntry: CachedThread {
+        CachedThread(state: state.trimmed(to: CachedThread.itemLimit), lastViewed: lastViewed, unreadCount: unreadCount)
+    }
+
+    #if DEBUG
+        /// Tests and previews: a chat already open and showing `state`.
+        static func sample(_ contactID: Contact.ID, state: ThreadState) -> ChatThread {
+            let thread = ChatThread(contactID: contactID, channel: { nil })
+            thread.state = state
+            thread.sessionID = "sample"
+            thread.phase = .ready
+            return thread
+        }
+    #endif
+}
+
+/// What the app keeps of a chat between launches.
+struct CachedThread: Codable, Equatable, Sendable {
+    static let itemLimit = 60
+
+    var state: ThreadState
+    var lastViewed: Date?
+    var unreadCount: Int
+}
+
+extension TranscriptItem {
+    var isReply: Bool {
+        if case .assistant = content { return true }
+        return false
+    }
+}
+
+extension ApprovalPrompt {
+    /// The command shortened for one line of text.
+    public var shortCommand: String {
+        let line = command.split(whereSeparator: \.isNewline).first.map(String.init) ?? command
+        return line.count > 60 ? String(line.prefix(59)) + "…" : line
     }
 }

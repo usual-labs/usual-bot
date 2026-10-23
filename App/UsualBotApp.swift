@@ -14,7 +14,7 @@ struct UsualBotApp: App {
     var body: some Scene {
         WindowGroup {
             RootView(model: model, presenter: presenter)
-                .task { model.restore() }
+                .task { await model.restore() }
         }
         #if os(macOS)
             .windowToolbarStyle(.unifiedCompact)

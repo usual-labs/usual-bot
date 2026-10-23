@@ -18,7 +18,10 @@ struct GatewayConnector: Sendable {
         let channel = JSONRPCChannel(socket: makeSocket(auth.gateway.webSocketURL(ticket: ticket)))
         await channel.start()
         do {
-            return (channel, try await channel.waitUntilReady())
+            let ready = try await channel.waitUntilReady()
+            // Without this the gateway fails approval requests at once instead of asking the app.
+            _ = try await channel.call("client.capabilities", params: ["server_requests": true])
+            return (channel, ready)
         } catch {
             await channel.close()
             throw error
