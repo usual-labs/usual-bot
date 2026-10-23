@@ -38,6 +38,24 @@ struct AttachmentLoaderTests {
         #expect(attachment.kind == .file)
     }
 
+    @Test func replyImagesKeepTheirShape() {
+        let limit = CGSize(width: 420, height: 360)
+        // A square picture is as tall as the limit allows, and no wider.
+        #expect(
+            MediaLoading.displaySize(pixels: CGSize(width: 1024, height: 1024), limit: limit)
+                == CGSize(width: 360, height: 360))
+        #expect(
+            MediaLoading.displaySize(pixels: CGSize(width: 1200, height: 640), limit: limit)
+                == CGSize(width: 420, height: 224))
+        #expect(
+            MediaLoading.displaySize(pixels: CGSize(width: 600, height: 1600), limit: limit)
+                == CGSize(width: 135, height: 360))
+        // Small images show at their own size.
+        #expect(
+            MediaLoading.displaySize(pixels: CGSize(width: 64, height: 48), limit: limit)
+                == CGSize(width: 32, height: 24))
+    }
+
     @Test func thumbnailsDecodeImagesAndIgnoreOtherData() throws {
         #expect(MediaLoading.image(try image(.png), maxPixels: 400) != nil)
         #expect(MediaLoading.image(Data("not an image".utf8), maxPixels: 400) == nil)

@@ -34,6 +34,25 @@ struct MarkdownBlockTests {
             ])
     }
 
+    @Test func plainImagePathsShowAsImages() {
+        let reply = """
+            Cartoon version saved to:
+
+            /home/armin/.hermes/cache/generated/images/openai_gpt-image_20261024_002430.png
+            """
+        #expect(
+            kinds(reply) == [
+                "p:Cartoon version saved to:",
+                "media:/home/armin/.hermes/cache/generated/images/openai_gpt-image_20261024_002430.png",
+            ])
+        #expect(
+            kinds("Saved it as `/tmp/out/chart.PNG`, and the notes in /tmp/out/notes.md.") == [
+                "p:Saved it as /tmp/out/chart.PNG, and the notes in /tmp/out/notes.md.", "media:/tmp/out/chart.PNG",
+            ])
+        #expect(
+            kinds("See https://example.com/a/b.png and ~/x.png") == ["p:See https://example.com/a/b.png and ~/x.png"])
+    }
+
     @Test func mediaInsideCodeStaysCode() {
         let reply = """
             ```

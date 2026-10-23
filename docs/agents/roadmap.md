@@ -41,7 +41,9 @@ official app does for remote gateways, because `/api/media` only serves the defa
 `images`, `screenshots` and `cache` folders. Agents write `MEDIA:/path` lines only when Hermes
 tells them the surface renders them; on a server gateway, sessions not created by the desktop
 app may get the terminal instructions instead and name files in plain text, which the app
-doesn't turn into images.
+now turns into images too when the path is absolute and ends in an image type (confirmed: the
+maintainer's agents write plain paths; a generated image from the gateway's cache showed on the
+Mac, 24 October 2026).
 
 - **You can:** see images an agent made or found (screenshots, generated images, charts) inline in
   its reply, tap to view full size, and save or share them.
