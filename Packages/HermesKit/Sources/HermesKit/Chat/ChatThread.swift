@@ -224,6 +224,46 @@ public final class ChatThread {
         return true
     }
 
+    /// Whether `item` can take a reaction: a message in the store, or the newest of its kind, which
+    /// the gateway finds without a row.
+    public func canReact(to item: TranscriptItem) -> Bool {
+        guard canSend, let role = Self.role(of: item) else { return false }
+        return item.rowID != nil || state.items.last(where: { Self.role(of: $0) == role })?.id == item.id
+    }
+
+    /// Reacts to a message with `emoji`, or clears your reaction with `nil`. The same emoji again
+    /// takes it back. Shows at once; a refusal puts the old reactions back with a notice.
+    public func react(_ emoji: String?, to item: TranscriptItem) {
+        guard canReact(to: item), let sessionID, let channel = channel(), let role = Self.role(of: item) else { return }
+        let before = item.reactions
+        state.setReactions(Reaction.toggling(emoji, in: before), on: item.id)
+        var params: [String: JSONValue] = [
+            "session_id": .string(sessionID), "emoji": emoji.map(JSONValue.string) ?? .null, "author": "user",
+        ]
+        if let rowID = item.rowID {
+            params["row_id"] = .number(Double(rowID))
+        } else {
+            params["newest_role"] = .string(role)
+        }
+        Task {
+            do {
+                let result = try await channel.call("message.react", params: .object(params))
+                state.setReactions(Reaction.list(result["reactions"]), rowID: result["row_id"]?.intValue, on: item.id)
+            } catch {
+                state.setReactions(before, on: item.id)
+                state.addNotice(String(localized: "Couldn't react: \(AppModel.describe(error))"))
+            }
+        }
+    }
+
+    private static func role(of item: TranscriptItem) -> String? {
+        switch item.content {
+        case .user: "user"
+        case .assistant: "assistant"
+        default: nil
+        }
+    }
+
     /// Attachments go out only between turns, one message at a time.
     public var canSendAttachments: Bool { canSend && !state.isRunning && !isUploading }
 

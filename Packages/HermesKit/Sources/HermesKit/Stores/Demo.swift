@@ -154,14 +154,17 @@
                         I'd start with a two-week trial behind the existing search box. Want me to draft the \
                         plan for Forge?
                         """),
-                HistoryMessage(role: "user", text: "Yes, and keep the old search as a fallback."),
+                HistoryMessage(
+                    role: "user", text: "Yes, and keep the old search as a fallback.",
+                    reactions: [Reaction(emoji: "👍", byAgent: true)]),
                 HistoryMessage(
                     role: "assistant",
                     text: """
                         Done. The plan is in `docs/search/turbopuffer-trial.md` and I've sent Forge the first \
                         task: index the docs nightly, query Turbopuffer first, and fall back to the current \
                         search if it errors or takes over 300 ms.
-                        """),
+                        """,
+                    reactions: [Reaction(emoji: "🎉", byAgent: false)]),
             ]
         }
 

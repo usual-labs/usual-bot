@@ -14,17 +14,20 @@ struct ThreadPane: View {
 
     /// Files waiting to go with the next message.
     @State private var attachments: [Attachment] = []
+    /// The message you're replying to.
+    @State private var replyTo: QuotedMessage?
     @State private var isDropTarget = false
 
     var body: some View {
         content
             .environment(\.sentImages, thread?.sentImages ?? [:])
             .environment(\.mediaProfile, contact.details?.profile ?? contact.id)
+            .environment(\.messageActions, actions)
             .chatBars {
                 namePill
             } bottom: {
                 if let thread, thread.phase == .ready {
-                    Composer(thread: thread, agentName: contact.name, attachments: $attachments)
+                    Composer(thread: thread, agentName: contact.name, attachments: $attachments, replyTo: $replyTo)
                         .frame(maxWidth: 780)
                         .padding(.horizontal, 20)
                 }
@@ -44,8 +47,25 @@ struct ThreadPane: View {
                 }
             }
             .task(id: contact.id) { open() }
-            .onChange(of: contact.id) { attachments = [] }
+            .onChange(of: contact.id) {
+                attachments = []
+                replyTo = nil
+            }
             .paneChrome()
+    }
+
+    /// React and reply, for the transcript's messages.
+    private var actions: MessageActions? {
+        guard let thread else { return nil }
+        return MessageActions(
+            canReact: thread.canReact(to:), react: { thread.react($0, to: $1) },
+            reply: { item in
+                switch item.content {
+                case .user(let text): replyTo = QuotedMessage(author: String(localized: "You"), text: text)
+                case .assistant(let text): replyTo = QuotedMessage(author: contact.name, text: text)
+                default: break
+                }
+            })
     }
 
     @ViewBuilder private var namePill: some View {

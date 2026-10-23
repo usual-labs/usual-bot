@@ -95,22 +95,26 @@ struct ItemView: View {
     var body: some View {
         switch item.content {
         case .user(let text):
-            UserBubble(text: text)
+            MessageRow(item: item, text: QuotedMessage.split(AttachmentRef.split(text).text).text, isMine: true) {
+                UserBubbleContent(text: text)
+            }
         case .assistant(let text):
-            MarkdownView(text)
+            MessageRow(item: item, text: text, isMine: false) { MarkdownView(text) }
         case .member(let id, let text):
             let author = author(id)
-            HStack(alignment: .top, spacing: 10) {
-                if let author {
-                    AgentAvatar(contact: author.contact, size: 28)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(author?.name ?? id)
-                        .font(.system(size: 12.5, weight: .semibold))
-                        .foregroundStyle(Theme.secondaryInk)
-                    MarkdownView(text)
-                        // Files a member names live in its own profile.
-                        .environment(\.mediaProfile, author.map { $0.contact.details?.profile ?? $0.contact.id })
+            MessageRow(item: item, text: text, isMine: false) {
+                HStack(alignment: .top, spacing: 10) {
+                    if let author {
+                        AgentAvatar(contact: author.contact, size: 28)
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(author?.name ?? id)
+                            .font(.system(size: 12.5, weight: .semibold))
+                            .foregroundStyle(Theme.secondaryInk)
+                        MarkdownView(text)
+                            // Files a member names live in its own profile.
+                            .environment(\.mediaProfile, author.map { $0.contact.details?.profile ?? $0.contact.id })
+                    }
                 }
             }
         case .activity(let steps):
@@ -122,13 +126,27 @@ struct ItemView: View {
 }
 
 /// Your message: a dark bubble on the right.
+/// Your message on the right of the conversation.
 struct UserBubble: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Spacer(minLength: 64)
+            UserBubbleContent(text: text)
+        }
+    }
+}
+
+/// Your message as wide as its text: attachments above the bubble, a quoted reply inside it.
+struct UserBubbleContent: View {
     let text: String
     @Environment(\.sentImages) private var sentImages
 
     var body: some View {
         // Attachments travel as `@image:`/`@file:` lines after the text; they show above it.
-        let (body, attachments) = AttachmentRef.split(text)
+        let (withQuote, attachments) = AttachmentRef.split(text)
+        let (quote, body) = QuotedMessage.split(withQuote)
         VStack(alignment: .trailing, spacing: 6) {
             if !attachments.isEmpty {
                 HStack(spacing: 6) {
@@ -137,23 +155,34 @@ struct UserBubble: View {
                             kind: ref.kind, name: ref.name, imageData: sentImages[ref.path], gatewayPath: ref.path)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            if !body.isEmpty {
-                HStack {
-                    Spacer(minLength: 64)
-                    Text(body)
-                        .messageFont()
-                        .foregroundStyle(Theme.userBubbleInk)
-                        .textSelection(.enabled)
-                        .padding(.horizontal, 15)
-                        .padding(.vertical, 10)
-                        .background(
-                            Theme.userBubble,
-                            in: UnevenRoundedRectangle(
-                                topLeadingRadius: 20, bottomLeadingRadius: 20, bottomTrailingRadius: 6,
-                                topTrailingRadius: 20))
+            if !body.isEmpty || quote != nil {
+                VStack(alignment: .leading, spacing: 6) {
+                    if let quote {
+                        // The message this one replies to.
+                        Text(quote)
+                            .font(.system(size: 13))
+                            .foregroundStyle(Theme.userBubbleInk.opacity(0.7))
+                            .lineLimit(2)
+                            .padding(.leading, 9)
+                            .overlay(alignment: .leading) {
+                                Capsule().fill(Theme.userBubbleInk.opacity(0.35)).frame(width: 2)
+                            }
+                    }
+                    if !body.isEmpty {
+                        Text(body)
+                            .messageFont()
+                    }
                 }
+                .foregroundStyle(Theme.userBubbleInk)
+                .textSelection(.enabled)
+                .padding(.horizontal, 15)
+                .padding(.vertical, 10)
+                .background(
+                    Theme.userBubble,
+                    in: UnevenRoundedRectangle(
+                        topLeadingRadius: 20, bottomLeadingRadius: 20, bottomTrailingRadius: 6,
+                        topTrailingRadius: 20))
             }
         }
     }

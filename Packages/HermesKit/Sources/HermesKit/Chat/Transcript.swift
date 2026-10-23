@@ -15,6 +15,58 @@ public struct TranscriptItem: Identifiable, Equatable, Sendable, Codable {
 
     public let id: Int
     public var content: Content
+    /// The message's row in the gateway's store, which reactions address. Messages that arrived
+    /// live have none until the chat reloads.
+    public var rowID: Int?
+    /// Emoji reactions, one per author at most.
+    public var reactions: [Reaction] = []
+
+    init(id: Int, content: Content, rowID: Int? = nil, reactions: [Reaction] = []) {
+        self.id = id
+        self.content = content
+        self.rowID = rowID
+        self.reactions = reactions
+    }
+
+    public init(from decoder: any Decoder) throws {
+        // Caches written before reactions existed have neither field.
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        content = try container.decode(Content.self, forKey: .content)
+        rowID = try container.decodeIfPresent(Int.self, forKey: .rowID)
+        reactions = try container.decodeIfPresent([Reaction].self, forKey: .reactions) ?? []
+    }
+
+    private enum CodingKeys: String, CodingKey { case id, content, rowID, reactions }
+}
+
+/// An emoji on a message. Hermes keeps one per author (you, or the agent) and shows them on every
+/// app attached to the chat; the agent's model never sees yours.
+public struct Reaction: Equatable, Sendable, Codable {
+    public let emoji: String
+    public let byAgent: Bool
+
+    public init(emoji: String, byAgent: Bool) {
+        self.emoji = emoji
+        self.byAgent = byAgent
+    }
+
+    /// Reads the gateway's `{"emoji", "author"}` rows.
+    static func list(_ value: JSONValue?) -> [Reaction] {
+        guard case .array(let rows) = value else { return [] }
+        return rows.compactMap { row in
+            row["emoji"]?.stringValue.map { Reaction(emoji: $0, byAgent: row["author"]?.stringValue == "agent") }
+        }
+    }
+
+    /// Your reactions after picking `emoji` (Tapback rules): the same one again removes it, a
+    /// different one replaces it, `nil` clears it.
+    static func toggling(_ emoji: String?, in reactions: [Reaction]) -> [Reaction] {
+        let previous = reactions.first { !$0.byAgent }
+        var next = reactions.filter(\.byAgent)
+        if let emoji, previous?.emoji != emoji { next.append(Reaction(emoji: emoji, byAgent: false)) }
+        return next
+    }
 }
 
 /// One tool call the agent made.
@@ -42,10 +94,13 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
     let toolCallId: String?
     /// Unix seconds, when the gateway knows it.
     let timestamp: Double?
+    /// The message's row in the store; reactions address it.
+    let rowId: Int?
+    let reactions: [Reaction]
 
     init(
         role: String, text: String? = nil, name: String? = nil, context: String? = nil, toolCallId: String? = nil,
-        timestamp: Double? = nil
+        timestamp: Double? = nil, rowId: Int? = nil, reactions: [Reaction] = []
     ) {
         self.role = role
         self.text = text
@@ -53,6 +108,8 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
         self.context = context
         self.toolCallId = toolCallId
         self.timestamp = timestamp
+        self.rowId = rowId
+        self.reactions = reactions
     }
 
     init(from decoder: any Decoder) throws {
@@ -63,9 +120,14 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
         context = try? container.decodeIfPresent(String.self, forKey: .context)
         toolCallId = try? container.decodeIfPresent(String.self, forKey: .toolCallId)
         timestamp = try? container.decodeIfPresent(Double.self, forKey: .timestamp)
+        rowId = try? container.decodeIfPresent(Int.self, forKey: .rowId)
+        let metadata = try? container.decodeIfPresent(JSONValue.self, forKey: .displayMetadata)
+        reactions = Reaction.list(metadata?["reactions"])
     }
 
-    private enum CodingKeys: String, CodingKey { case role, text, name, context, toolCallId, timestamp }
+    private enum CodingKeys: String, CodingKey {
+        case role, text, name, context, toolCallId, timestamp, rowId, displayMetadata
+    }
 }
 
 /// A turn the gateway was still running when the app attached: what the user asked and the
@@ -91,9 +153,13 @@ public struct ThreadState: Equatable, Sendable, Codable {
         for message in history {
             switch message.role {
             case "user":
-                if let text = message.text?.nonBlank { append(.user(text)) }
+                if let text = message.text?.nonBlank {
+                    append(.user(text), rowID: message.rowId, reactions: message.reactions)
+                }
             case "assistant":
-                if let text = message.text?.nonBlank { append(.assistant(text)) }
+                if let text = message.text?.nonBlank {
+                    append(.assistant(text), rowID: message.rowId, reactions: message.reactions)
+                }
             case "tool":
                 let step = ToolStep(
                     id: message.toolCallId ?? "history-\(nextID)", name: message.name ?? "tool",
@@ -229,9 +295,16 @@ public struct ThreadState: Equatable, Sendable, Codable {
         draft = ""
     }
 
-    private mutating func append(_ content: TranscriptItem.Content) {
-        items.append(TranscriptItem(id: nextID, content: content))
+    private mutating func append(_ content: TranscriptItem.Content, rowID: Int? = nil, reactions: [Reaction] = []) {
+        items.append(TranscriptItem(id: nextID, content: content, rowID: rowID, reactions: reactions))
         nextID += 1
+    }
+
+    /// Shows a message's reactions; `rowID` fills in the store row of a message that arrived live.
+    mutating func setReactions(_ reactions: [Reaction], rowID: Int? = nil, on itemID: Int) {
+        guard let index = items.firstIndex(where: { $0.id == itemID }) else { return }
+        items[index].reactions = reactions
+        if let rowID { items[index].rowID = rowID }
     }
 
     // MARK: - Tool steps

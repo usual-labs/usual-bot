@@ -11,8 +11,12 @@ struct RoomPane: View {
     /// Every agent on the gateway by profile, to give room members their sidebar look.
     let agents: [Contact.ID: Contact]
 
+    /// The message you're replying to; a reply to an agent goes to that agent only.
+    @State private var replyTo: QuotedMessage?
+
     var body: some View {
         content
+            .environment(\.messageActions, actions)
             .chatBars {
                 NamePill(contact: contact, members: members)
             } bottom: {
@@ -20,12 +24,13 @@ struct RoomPane: View {
                     MessageBox(
                         placeholder: placeholder, isRunning: !room.working.isEmpty, canSend: room.canSend,
                         stopLabel: String(localized: "Stop everyone in \(contact.name)"), mentions: mentions,
-                        send: room.send, stop: room.stop
+                        replyTo: $replyTo, send: room.send, stop: room.stop
                     )
                     .frame(maxWidth: 780)
                     .padding(.horizontal, 20)
                 }
             }
+            .onChange(of: room.roomID) { replyTo = nil }
             .paneChrome()
             // Rooms push nothing: read new events while the room is on screen.
             .task(id: room.roomID) {
@@ -115,6 +120,21 @@ struct RoomPane: View {
         }
         return MemberAuthor(
             name: room.state.name(memberID), contact: Contact(id: member.profile ?? member.id, name: member.handle))
+    }
+
+    /// Reply and copy; rooms have no reactions.
+    private var actions: MessageActions {
+        MessageActions(reply: { item in
+            switch item.content {
+            case .user(let text):
+                replyTo = QuotedMessage(author: String(localized: "You"), text: text)
+            case .member(let id, let text):
+                let handle = room.state.member(id)?.handle
+                replyTo = QuotedMessage(author: author(id)?.name ?? handle ?? id, text: text, mention: handle)
+            default:
+                break
+            }
+        })
     }
 
     private var mentions: [Mention] {

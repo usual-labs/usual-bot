@@ -7,6 +7,7 @@ struct Composer: View {
     let thread: ChatThread
     let agentName: String
     @Binding var attachments: [Attachment]
+    @Binding var replyTo: QuotedMessage?
 
     var body: some View {
         MessageBox(
@@ -15,7 +16,7 @@ struct Composer: View {
             attaching: AttachmentSending(
                 attachments: $attachments, canSend: thread.canSendAttachments, isUploading: thread.isUploading,
                 send: thread.send(_:attachments:)),
-            send: thread.send, stop: thread.stop)
+            replyTo: $replyTo, send: thread.send, stop: thread.stop)
     }
 
     private var placeholder: String {
@@ -43,6 +44,8 @@ struct MessageBox: View {
     var mentions: [Mention] = []
     /// Chats only: files waiting to go with the message.
     var attaching: AttachmentSending?
+    /// The message you're replying to, quoted in front of yours.
+    var replyTo: Binding<QuotedMessage?>?
     let send: (String) -> Void
     let stop: () -> Void
 
@@ -80,6 +83,9 @@ struct MessageBox: View {
                 }
             }
             VStack(alignment: .leading, spacing: 4) {
+                if let quote = replyTo?.wrappedValue {
+                    ReplyChip(quote: quote) { replyTo?.wrappedValue = nil }
+                }
                 if let attaching, !attaching.attachments.isEmpty {
                     AttachmentChips(attachments: attaching.$attachments)
                     if isRunning {
@@ -105,26 +111,29 @@ struct MessageBox: View {
     }
 
     private var field: some View {
-        TextField(placeholder, text: $text, selection: $selection, axis: .vertical)
-            .textFieldStyle(.plain)
-            .font(.system(size: 15))
-            .lineLimit(1...8)
-            .focused($focused)
-            // Return sends; Shift-Return starts a new line.
-            .onKeyPress(.return, phases: .down) { press in
-                guard press.modifiers.contains(.shift) else { return .ignored }
-                insertLineBreak()
-                return .handled
+        TextField(
+            replyTo?.wrappedValue == nil ? placeholder : String(localized: "Reply…"), text: $text,
+            selection: $selection, axis: .vertical
+        )
+        .textFieldStyle(.plain)
+        .font(.system(size: 15))
+        .lineLimit(1...8)
+        .focused($focused)
+        // Return sends; Shift-Return starts a new line.
+        .onKeyPress(.return, phases: .down) { press in
+            guard press.modifiers.contains(.shift) else { return .ignored }
+            insertLineBreak()
+            return .handled
+        }
+        .onSubmit(submit)
+        #if os(macOS)
+            // Pasted files and images become attachments; text pastes as usual.
+            .onPasteCommand(of: attaching == nil ? [] : [.fileURL, .image]) { providers in
+                Task { attaching?.attachments.append(contentsOf: await AttachmentLoader.load(providers)) }
             }
-            .onSubmit(submit)
-            #if os(macOS)
-                // Pasted files and images become attachments; text pastes as usual.
-                .onPasteCommand(of: attaching == nil ? [] : [.fileURL, .image]) { providers in
-                    Task { attaching?.attachments.append(contentsOf: await AttachmentLoader.load(providers)) }
-                }
-            #endif
-            .padding(.leading, attaching == nil ? 12 : 0)
-            .padding(.vertical, 4)
+        #endif
+        .padding(.leading, attaching == nil ? 12 : 0)
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder private var sendButton: some View {
@@ -163,19 +172,22 @@ struct MessageBox: View {
 
     private func submit() {
         guard canSubmit else { return }
+        let quote = replyTo?.wrappedValue
         if let attaching, !attaching.attachments.isEmpty {
             // Text and files leave together once every file is up; a failure keeps both here.
             let draft = text
             let files = attaching.attachments
             Task {
-                guard await attaching.send(draft, files) else { return }
+                guard await attaching.send(quote?.message(draft) ?? draft, files) else { return }
                 if text == draft { text = "" }
+                if replyTo?.wrappedValue == quote { replyTo?.wrappedValue = nil }
                 attaching.attachments.removeAll { sent in files.contains { $0.id == sent.id } }
             }
             return
         }
-        send(text)
+        send(quote?.message(text) ?? text)
         text = ""
+        replyTo?.wrappedValue = nil
     }
 
     /// The word being typed, when it starts with `@`.

@@ -35,6 +35,11 @@ No confirmed recurring failures were established during source inspection. A mis
 
 - The message box handles ⌘V with `onPasteCommand(of: [.fileURL, .image])` so pasted files and images become attachments. Plain text paste is expected to keep working, but this was not checked by automation (no keyboard control in the test setup). If text paste breaks, drop the modifier and keep drag-and-drop and the paperclip.
 
+## Overlays on transcript rows cover text
+
+- Symptom: a hover bar overlaid at a message's top-right corner covered the end of the reply's first line, since replies run the full column width.
+- Fix (2026-10-23): `MessageRow` lays the bar out beside the message in a fixed slot instead of overlaying it. Verified by a screenshot with the bar forced visible; real hovering wasn't automated.
+
 ## Trailing toolbar items land on the leading side
 
 - Symptom: the profile panel's close button, as a `.primaryAction` or `.automatic` toolbar item, drew on the left next to Search and New Room.
