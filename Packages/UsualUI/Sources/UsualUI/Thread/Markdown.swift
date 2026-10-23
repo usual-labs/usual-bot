@@ -120,7 +120,7 @@ struct MarkdownView: View {
             Text(text).fixedSize(horizontal: false, vertical: true)
         case .heading(let level, let text):
             Text(text)
-                .font(.system(size: level == 1 ? 19 : level == 2 ? 16 : 14, weight: .semibold))
+                .font(.system(size: Theme.messageSize + (level == 1 ? 5 : level == 2 ? 2 : 0), weight: .semibold))
                 .padding(.top, 4)
         case .listItem(let marker, let depth, let text):
             HStack(alignment: .firstTextBaseline, spacing: 8) {

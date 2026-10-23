@@ -17,6 +17,13 @@ No confirmed recurring failures were established during source inspection. A mis
 - Root cause: the title bar / toolbar container covers that strip.
 - Fix (confirmed 2026-10-23): Search and New Room are a toolbar item (`.navigation` placement) after a clear spacer sized from the sidebar's width, with the toolbar's shared glass hidden and each button drawn by `GlassCircleButtonStyle` (`glassEffect(.regular.interactive(), in: Circle())`; `.buttonStyle(.glass)` looked flat). The toolbar also gives the window its taller title area, so the window buttons have room above them. Without a toolbar, the hidden title bar puts them 16 pt from the top.
 
+## A long chat opened blank on iPhone (confirmed 2026-10-23)
+
+- Symptom: opening a long agent chat (Vinioh, 39 items of long Markdown) on iPhone showed an empty pane with the scroll bar at the bottom; scrolling up about 200 pt revealed the newest message. Rooms and the Mac were fine.
+- Root cause: `defaultScrollAnchor(.bottom)` and `ScrollPosition(edge: .bottom)` place the bottom by the `LazyVStack`'s estimate of rows it hasn't measured; at iPhone width the estimate ran past the real end. Swapping in a new scroll view with `.id(transcriptLoad)` didn't matter (removing it alone didn't help).
+- Fix: `ConversationScroll` scrolls to an end marker view (`scrollTo(id:anchor: .bottom)`) on appear and on reload, which places the newest message exactly. Verified in the iPhone 17 Pro simulator on that chat and a room.
+- Prevention: open bottom-anchored lazy lists by scrolling to a view, not to the bottom edge.
+
 ## Trailing toolbar items land on the leading side
 
 - Symptom: the profile panel's close button, as a `.primaryAction` or `.automatic` toolbar item, drew on the left next to Search and New Room.

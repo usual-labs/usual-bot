@@ -16,29 +16,15 @@ struct ThreadPane: View {
         content
             .chatBars {
                 namePill
-                    .padding(.top, Self.barMargin)
-                    .padding(.bottom, 8)
             } bottom: {
                 if let thread, thread.phase == .ready {
                     Composer(thread: thread, agentName: contact.name)
                         .frame(maxWidth: 780)
                         .padding(.horizontal, 20)
-                        .padding(.bottom, Self.barMargin)
-                        .padding(.top, 8)
                 }
             }
             .task(id: contact.id) { open() }
             .paneChrome()
-    }
-
-    /// The name's distance from the top, centring it on the line of the window buttons and the
-    /// sidebar's buttons on the Mac; the message box keeps the same distance from the bottom.
-    static var barMargin: CGFloat {
-        #if os(macOS)
-            9
-        #else
-            12
-        #endif
     }
 
     @ViewBuilder private var namePill: some View {
@@ -97,11 +83,31 @@ extension View {
             #endif
     }
 
-    /// Pins `top` and `bottom` over a conversation that scrolls beneath them.
+    /// Pins `top` (the name) and `bottom` (the message box) over a conversation that scrolls
+    /// beneath them. On iPhone the name rides in the navigation bar, beside the back button.
     func chatBars(@ViewBuilder top: () -> some View, @ViewBuilder bottom: () -> some View) -> some View {
-        safeAreaInset(edge: .top, spacing: 0, content: top)
-            .safeAreaInset(edge: .bottom, spacing: 0, content: bottom)
+        #if os(macOS)
+            // 9 pt centres the name on the line of the window buttons and the sidebar's buttons;
+            // the message box keeps the same distance from the bottom.
+            safeAreaInset(edge: .top, spacing: 0) { top().padding(.top, 9).padding(.bottom, 8) }
+                .safeAreaInset(edge: .bottom, spacing: 0) { bottom().padding(.top, 8).padding(.bottom, 9) }
+        #else
+            safeAreaInset(edge: .bottom, spacing: 0) { bottom().padding(.top, 8).padding(.bottom, 8) }
+                .navigationBarTitleDisplayMode(.inline)
+                .principalToolbarItem(top())
+        #endif
     }
+
+    #if os(iOS)
+        /// The pill keeps its own glass instead of sitting in the bar's shared background.
+        @ViewBuilder fileprivate func principalToolbarItem(_ item: some View) -> some View {
+            if #available(iOS 26, *) {
+                toolbar { ToolbarItem(placement: .principal) { item }.sharedBackgroundVisibility(.hidden) }
+            } else {
+                toolbar { ToolbarItem(placement: .principal) { item } }
+            }
+        }
+    #endif
 }
 
 /// The floating, centred pill at the top of a thread: avatar and name.

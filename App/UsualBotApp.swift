@@ -10,6 +10,7 @@ struct UsualBotApp: App {
         @State private var quickPanel: QuickPanelController
     #else
         @State private var presenter = WebAuthSignInPresenter()
+        @Environment(\.scenePhase) private var scenePhase
     #endif
 
     init() {
@@ -26,6 +27,9 @@ struct UsualBotApp: App {
                 .task { await model.restore() }
                 #if os(macOS)
                     .providesMainWindow(to: quickPanel)
+                #else
+                    // iOS suspends a backgrounded app's sockets; reconnect on return instead.
+                    .onChange(of: scenePhase) { _, phase in model.setForeground(phase != .background) }
                 #endif
         }
         #if os(macOS)
