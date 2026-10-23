@@ -237,25 +237,42 @@ struct AttachmentChips: View {
     }
 }
 
-/// One attachment: an image as a thumbnail, anything else as a named file.
+/// One attachment: an image as a thumbnail that opens full size, anything else as a named file.
 struct AttachmentTile: View {
     let kind: Attachment.Kind
     let name: String
-    /// The image's bytes when this device has them; without them an image shows by name.
+    /// The image's bytes when this device has them.
     var imageData: Data?
+    /// Where the image is on the gateway, to load it when this device doesn't have it.
+    var gatewayPath: String?
 
+    @Environment(\.media) private var store
+    @Environment(\.mediaProfile) private var profile
+    @State private var loaded: Data?
     @State private var thumbnail: Image?
+    @State private var failed = false
+    @State private var viewing = false
+
+    private var data: Data? { imageData ?? loaded }
 
     var body: some View {
         Group {
-            if kind == .image, imageData != nil {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12).fill(Theme.selection)
-                    thumbnail?.resizable().scaledToFill()
+            if kind == .image, !failed, data != nil || gatewayPath != nil {
+                Button {
+                    viewing = data != nil
+                } label: {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12).fill(Theme.selection)
+                        thumbnail?.resizable().scaledToFill()
+                    }
+                    .frame(width: 64, height: 64)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .frame(width: 64, height: 64)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .task(id: imageData) { thumbnail = imageData.flatMap { Self.thumbnail(of: $0) } }
+                .buttonStyle(.plain)
+                .task(id: imageData) { await show() }
+                .sheet(isPresented: $viewing) {
+                    if let data { MediaViewer(data: data, name: name) }
+                }
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: kind == .image ? "photo" : "doc")
@@ -279,17 +296,15 @@ struct AttachmentTile: View {
         .accessibilityLabel(Text(kind == .image ? "Image \(name)" : "File \(name)"))
     }
 
-    /// A small decoded copy, so a 12-megapixel photo doesn't sit in memory at full size.
-    static func thumbnail(of data: Data) -> Image? {
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-            let image = CGImageSourceCreateThumbnailAtIndex(
-                source, 0,
-                [
-                    kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: 400,
-                    kCGImageSourceCreateThumbnailWithTransform: true,
-                ] as CFDictionary)
-        else { return nil }
-        return Image(decorative: image, scale: 1)
+    /// A small decoded copy, so a 12-megapixel photo doesn't sit in memory at full size. Images
+    /// sent from another device, or before a relaunch, load from the gateway; one that can't
+    /// shows by name.
+    private func show() async {
+        if data == nil, let gatewayPath {
+            loaded = try? await MediaLoading.data(.gateway(gatewayPath), store: store, profile: profile)
+        }
+        thumbnail = data.flatMap { MediaLoading.image($0, maxPixels: 400) }
+        failed = thumbnail == nil
     }
 }
 

@@ -10,8 +10,8 @@
 	<!-- Browser sign-in redirects to a listener on 127.0.0.1. -->
 	<key>com.apple.security.network.server</key>
 	<true/>
-	<!-- Reads the files you pick, drop or paste to send to an agent. -->
-	<key>com.apple.security.files.user-selected.read-only</key>
+	<!-- Reads the files you pick, drop or paste to send to an agent, and saves files agents send. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
 	<true/>
 </dict>
 </plist>

@@ -10,11 +10,50 @@ enum MarkdownBlock: Equatable {
     case quote(AttributedString)
     case code(language: String?, String)
     case rule
+    /// A file on the gateway the agent delivered with a `MEDIA:/path` line, or a Markdown image
+    /// with a local path.
+    case media(path: String)
+    /// A Markdown image from the web.
+    case image(URL, alt: String)
+
+    /// Splits a reply into blocks: `MEDIA:` lines (Hermes's line-level file delivery) become media
+    /// blocks, and everything between them is Markdown.
+    static func parse(_ markdown: String) -> [MarkdownBlock] {
+        var blocks: [MarkdownBlock] = []
+        var pending: [Substring] = []
+        var inFence = false
+        func flush() {
+            if !pending.isEmpty { blocks += parseMarkdown(pending.joined(separator: "\n")) }
+            pending = []
+        }
+        for line in markdown.split(separator: "\n", omittingEmptySubsequences: false) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") { inFence.toggle() }
+            if !inFence, trimmed.hasPrefix("MEDIA:"), let path = mediaPath(trimmed.dropFirst("MEDIA:".count)) {
+                flush()
+                blocks.append(.media(path: path))
+            } else {
+                pending.append(line)
+            }
+        }
+        flush()
+        return blocks
+    }
+
+    /// The path in a `MEDIA:` line, unquoted; `nil` when there is none.
+    private static func mediaPath(_ value: Substring) -> String? {
+        var path = value.trimmingCharacters(in: .whitespaces)
+        if let first = path.first, "`\"'".contains(first), path.count > 1, path.last == first {
+            path = String(path.dropFirst().dropLast())
+        }
+        return path.isEmpty ? nil : path
+    }
 
     /// Splits Markdown into blocks using Foundation's parser. Inline styling (bold, italic, links,
     /// inline code) stays in each block's `AttributedString` as presentation intents, which
-    /// `MarkdownView` turns into fonts. Table cells of one row join into a line.
-    static func parse(_ markdown: String) -> [MarkdownBlock] {
+    /// `MarkdownView` turns into fonts. Table cells of one row join into a line; images become
+    /// blocks of their own after their paragraph.
+    private static func parseMarkdown(_ markdown: String) -> [MarkdownBlock] {
         let options = AttributedString.MarkdownParsingOptions(
             interpretedSyntax: .full, failurePolicy: .returnPartiallyParsedIfPossible)
         guard let document = try? AttributedString(markdown: markdown, options: options) else {
@@ -58,10 +97,31 @@ enum MarkdownBlock: Equatable {
             } else if kinds.contains(.blockQuote) {
                 blocks.append(.quote(text))
             } else {
-                blocks.append(.paragraph(text))
+                let (rest, images) = splitImages(text)
+                if !rest.characters.allSatisfy(\.isWhitespace) { blocks.append(.paragraph(rest)) }
+                blocks += images
             }
         }
         return blocks
+    }
+
+    /// Takes the images out of a paragraph: web images load directly, local paths from the gateway.
+    private static func splitImages(_ text: AttributedString) -> (AttributedString, [MarkdownBlock]) {
+        var rest = text
+        var images: [MarkdownBlock] = []
+        for (url, range) in text.runs[\.imageURL].reversed() {
+            guard let url else { continue }
+            let alt = String(text[range].characters)
+            if url.scheme == "http" || url.scheme == "https" {
+                images.insert(.image(url, alt: alt), at: 0)
+            } else if url.isFileURL || url.scheme == nil, url.path.hasPrefix("/") {
+                images.insert(.media(path: url.path), at: 0)
+            } else {
+                continue
+            }
+            rest.removeSubrange(range)
+        }
+        return (rest, images)
     }
 
     /// Components run from the innermost block outwards: a list item's own list follows it.
@@ -133,6 +193,10 @@ struct MarkdownView: View {
             CodeBlock(language: language, code: code)
         case .rule:
             Divider().overlay(Theme.border)
+        case .media(let path):
+            MediaView(path: path)
+        case .image(let url, let alt):
+            ReplyImage(source: .web(url), name: alt.isEmpty ? url.lastPathComponent : alt)
         }
     }
 

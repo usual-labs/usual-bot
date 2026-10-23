@@ -33,6 +33,7 @@ public struct RootView: View {
             ) { compact in
                 GatewayStatusButton(gateway: gateway, link: model.link, compact: compact, signOut: model.signOut)
             }
+            .environment(\.media, model.media)
         }
     }
 

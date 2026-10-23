@@ -54,6 +54,8 @@ public final class AppModel {
     @ObservationIgnored private var threads: [Contact.ID: ChatThread] = [:]
     @ObservationIgnored private var routineLists: [Contact.ID: RoutineList] = [:]
     @ObservationIgnored private var rooms: [Contact.ID: RoomThread] = [:]
+    /// Images and files agents name in chats, read from the gateway.
+    @ObservationIgnored public private(set) lazy var media = MediaStore(auth: { [weak self] in self?.auth })
 
     private static let gatewayKey = "gatewayAddress"
     private static let rosterInterval: Duration = .seconds(5)
@@ -138,6 +140,7 @@ public final class AppModel {
         contacts = []
         threads = [:]
         routineLists = [:]
+        media.clear()
         rooms = [:]
         gatewayDetails = nil
         lastSaved = nil
@@ -399,7 +402,8 @@ public final class AppModel {
         return describe(error)
     }
 
-    static func describe(_ error: any Error) -> String {
+    /// An error in words for the UI.
+    public static func describe(_ error: any Error) -> String {
         switch error {
         case let error as GatewayAddress.ParseError:
             switch error {

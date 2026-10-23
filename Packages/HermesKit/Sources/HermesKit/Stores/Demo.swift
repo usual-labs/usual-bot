@@ -1,5 +1,8 @@
 #if DEBUG
+    import CoreGraphics
     import Foundation
+    import ImageIO
+    import UniformTypeIdentifiers
 
     extension AppModel {
         /// A made-up team of agents, their chats, a room and routines, shown as signed in to an
@@ -18,6 +21,7 @@
             model.showDemo(
                 gateway: Demo.gateway, contacts: demo.agents + [demo.roomContact], threads: demo.threads,
                 rooms: [demo.roomContact.id: demo.room], routines: routines)
+            model.media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }
             return model
         }
     }
@@ -68,15 +72,63 @@
                     id: "demo-approval", sessionID: "sample",
                     command: "psql \"$STAGING_DATABASE_URL\" -f migrations/0042_search_index.sql",
                     description: "Runs a database migration on staging", choices: [.once, .session, .always]))
+            threads["ops"] = ChatThread.sample("ops", state: ThreadState(history: opsChat, running: false))
             for (id, text) in [
                 ("scribe", "Two headline options for the launch post"),
-                ("ops", "All 3 servers healthy, backups verified"),
                 ("ledger", "October invoices are drafted for review"),
             ] {
                 threads[id] = ChatThread.sample(
                     id, state: ThreadState(history: [HistoryMessage(role: "assistant", text: text)], running: false))
             }
             return threads
+        }
+
+        static let chartPath = "/home/hermes/.hermes/profiles/ops/cache/cpu-overnight.png"
+
+        private var opsChat: [HistoryMessage] {
+            [
+                HistoryMessage(role: "user", text: "How did the servers do overnight?"),
+                HistoryMessage(role: "tool", name: "terminal", context: "ssh web-1 uptime && df -h /"),
+                HistoryMessage(role: "tool", name: "image_generate", context: "CPU chart, last 12 hours"),
+                HistoryMessage(
+                    role: "assistant",
+                    text: """
+                        All 3 servers healthy, backups verified. CPU peaked at 61% during the 03:00 \
+                        backup and stayed under 40% the rest of the night.
+                        MEDIA:\(Demo.chartPath)
+                        """),
+            ]
+        }
+
+        /// The demo's CPU chart: hourly bars over twelve hours, drawn here so the demo needs no files.
+        static func chart() -> Data? {
+            let (width, height) = (1200, 640)
+            guard
+                let context = CGContext(
+                    data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                    space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            else { return nil }
+            context.setFillColor(CGColor(red: 0.98, green: 0.98, blue: 0.99, alpha: 1))
+            context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+            context.setFillColor(CGColor(red: 0.88, green: 0.89, blue: 0.91, alpha: 1))
+            for line in 1...4 { context.fill(CGRect(x: 80, y: 60 + line * 120, width: 1060, height: 2)) }
+            let load: [Double] = [22, 18, 16, 61, 34, 19, 17, 21, 28, 35, 38, 31]
+            for (hour, percent) in load.enumerated() {
+                let peak = percent > 50
+                context.setFillColor(
+                    peak
+                        ? CGColor(red: 0.95, green: 0.55, blue: 0.2, alpha: 1)
+                        : CGColor(red: 0.43, green: 0.48, blue: 1, alpha: 1))
+                let barHeight = Int(percent / 70 * 480)
+                context.fill(CGRect(x: 110 + hour * 86, y: 60, width: 54, height: barHeight))
+            }
+            guard let image = context.makeImage() else { return nil }
+            let output = NSMutableData()
+            guard
+                let destination = CGImageDestinationCreateWithData(output, UTType.png.identifier as CFString, 1, nil)
+            else { return nil }
+            CGImageDestinationAddImage(destination, image, nil)
+            return CGImageDestinationFinalize(destination) ? output as Data : nil
         }
 
         private var atlasChat: [HistoryMessage] {

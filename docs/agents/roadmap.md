@@ -34,7 +34,14 @@ load them from the gateway. See the HermesKit and UsualUI KBs for details.
 - **Open:** size limits per method; how history shows past attachments (to draw them after a
   reload); rooms stay text-only (`groups.send` takes text).
 
-## M10: Images in replies
+## M10: Images in replies (built; live gateway test pending)
+
+Implemented with one change: gateway files load through `/api/fs/read-data-url?profile=`, as the
+official app does for remote gateways, because `/api/media` only serves the default profile's
+`images`, `screenshots` and `cache` folders. Agents write `MEDIA:/path` lines only when Hermes
+tells them the surface renders them; on a server gateway, sessions not created by the desktop
+app may get the terminal instructions instead and name files in plain text, which the app
+doesn't turn into images.
 
 - **You can:** see images an agent made or found (screenshots, generated images, charts) inline in
   its reply, tap to view full size, and save or share them.

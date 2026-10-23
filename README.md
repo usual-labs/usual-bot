@@ -15,6 +15,8 @@ group rooms, inline approvals and routines. Everything else stays in the officia
 
 - **One chat per agent.** Each profile's ongoing "Bot Chat", with streaming replies, Markdown,
   and tool calls folded into one line you can open.
+- **Images and files both ways.** Attach photos, PDFs and other files to a message; images an
+  agent makes or finds show inline, open full size, and can be shared or saved.
 - **Approvals and questions inline.** When an agent wants to run a command, allow it once, for the
   chat, always, or deny it, right in the conversation. Questions from its clarify tool show up the
   same way.
