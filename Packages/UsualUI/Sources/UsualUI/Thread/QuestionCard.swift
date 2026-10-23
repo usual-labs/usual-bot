@@ -125,13 +125,15 @@ struct QuestionCard: View {
 /// The pill buttons used on approval and question cards.
 struct CardButtonStyle: ButtonStyle {
     let primary: Bool
+    /// Takes the full width, for buttons stacked in a narrow card.
+    var fill = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 13.5, weight: primary ? .semibold : .regular))
             .foregroundStyle(primary ? Theme.primaryInk : Theme.ink)
             .padding(.horizontal, 14)
-            .frame(minHeight: 34)
+            .frame(maxWidth: fill ? .infinity : nil, minHeight: fill ? 40 : 34)
             .background(primary ? Theme.primary : Color.clear, in: Capsule())
             .overlay { if !primary { Capsule().strokeBorder(Theme.border) } }
             .opacity(configuration.isPressed ? 0.7 : 1)

@@ -1,7 +1,7 @@
 import Foundation
 import HermesKit
 
-/// Placeholder contacts for previews, and for the app until it can connect to a gateway.
+/// Placeholder contacts for SwiftUI previews. The app's demo mode is `AppModel.demo()`.
 public enum SampleData {
     public static func contacts(now: Date = .now) -> [Contact] {
         [

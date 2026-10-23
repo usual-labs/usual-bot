@@ -14,7 +14,13 @@ struct UsualBotApp: App {
     #endif
 
     init() {
-        let model = AppModel()
+        #if DEBUG
+            // USUALBOT_DEMO=1 shows made-up agents instead of signing in, for screenshots and for
+            // trying the app without a Hermes gateway.
+            let model = ProcessInfo.processInfo.environment["USUALBOT_DEMO"] == "1" ? AppModel.demo() : AppModel()
+        #else
+            let model = AppModel()
+        #endif
         _model = State(initialValue: model)
         #if os(macOS)
             _quickPanel = State(initialValue: QuickPanelController(model: model))

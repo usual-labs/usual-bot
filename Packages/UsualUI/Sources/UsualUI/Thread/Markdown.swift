@@ -12,7 +12,8 @@ enum MarkdownBlock: Equatable {
     case rule
 
     /// Splits Markdown into blocks using Foundation's parser. Inline styling (bold, italic, links,
-    /// inline code) stays in each block's `AttributedString`. Table cells of one row join into a line.
+    /// inline code) stays in each block's `AttributedString` as presentation intents, which
+    /// `MarkdownView` turns into fonts. Table cells of one row join into a line.
     static func parse(_ markdown: String) -> [MarkdownBlock] {
         let options = AttributedString.MarkdownParsingOptions(
             interpretedSyntax: .full, failurePolicy: .returnPartiallyParsedIfPossible)
@@ -22,8 +23,7 @@ enum MarkdownBlock: Equatable {
         var blocks: [MarkdownBlock] = []
         var lastTableRow: Int?
         for (intent, range) in document.runs[\.presentationIntent] {
-            var text = AttributedString(document[range])
-            styleInlineCode(&text)
+            let text = AttributedString(document[range])
             guard let intent else {
                 blocks.append(.paragraph(text))
                 continue
@@ -86,17 +86,12 @@ enum MarkdownBlock: Equatable {
         }
         return nil
     }
-
-    private static func styleInlineCode(_ text: inout AttributedString) {
-        for (inline, range) in text.runs[\.inlinePresentationIntent] where inline?.contains(.code) == true {
-            text[range].font = .system(size: 13.5, design: .monospaced)
-        }
-    }
 }
 
 /// Renders a Markdown reply, block by block.
 struct MarkdownView: View {
     let blocks: [MarkdownBlock]
+    @Environment(\.colorScheme) private var colorScheme
 
     init(_ markdown: String) {
         blocks = MarkdownBlock.parse(markdown)
@@ -117,19 +112,20 @@ struct MarkdownView: View {
     @ViewBuilder private func view(for block: MarkdownBlock) -> some View {
         switch block {
         case .paragraph(let text):
-            Text(text).fixedSize(horizontal: false, vertical: true)
+            Text(styled(text)).fixedSize(horizontal: false, vertical: true)
         case .heading(let level, let text):
-            Text(text)
-                .font(.system(size: Theme.messageSize + (level == 1 ? 5 : level == 2 ? 2 : 0), weight: .semibold))
+            let size = Theme.messageSize + (level == 1 ? 5 : level == 2 ? 2 : 0)
+            Text(styled(text, size: size, weight: .semibold))
+                .font(.system(size: size, weight: .semibold))
                 .padding(.top, 4)
         case .listItem(let marker, let depth, let text):
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(marker).foregroundStyle(Theme.secondaryInk).frame(minWidth: 14, alignment: .trailing)
-                Text(text).fixedSize(horizontal: false, vertical: true)
+                Text(styled(text)).fixedSize(horizontal: false, vertical: true)
             }
             .padding(.leading, CGFloat(depth) * 18)
         case .quote(let text):
-            Text(text)
+            Text(styled(text))
                 .foregroundStyle(Theme.secondaryInk)
                 .padding(.leading, 12)
                 .overlay(alignment: .leading) { Capsule().fill(Theme.border).frame(width: 3) }
@@ -138,6 +134,26 @@ struct MarkdownView: View {
         case .rule:
             Divider().overlay(Theme.border)
         }
+    }
+
+    /// Gives bold, italic and inline-code runs their own fonts. Text draws Markdown's bold and
+    /// italic only while no explicit font is set, and the chat always sets one.
+    private func styled(
+        _ text: AttributedString, size: CGFloat = Theme.messageSize, weight: Font.Weight? = nil
+    ) -> AttributedString {
+        let weight = weight ?? Theme.messageWeight(colorScheme)
+        var text = text
+        for (inline, range) in text.runs[\.inlinePresentationIntent] {
+            guard let inline, !inline.isEmpty else { continue }
+            if inline.contains(.code) {
+                text[range].font = .system(size: size - 0.5, design: .monospaced)
+                continue
+            }
+            var font = Font.system(size: size, weight: inline.contains(.stronglyEmphasized) ? .semibold : weight)
+            if inline.contains(.emphasized) { font = font.italic() }
+            text[range].font = font
+        }
+        return text
     }
 }
 

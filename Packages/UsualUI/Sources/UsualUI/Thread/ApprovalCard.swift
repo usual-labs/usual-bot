@@ -34,10 +34,10 @@ struct ApprovalCard: View {
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 8) {
                     Spacer(minLength: 0)
-                    buttons
+                    buttons(order)
                 }
-                VStack(alignment: .trailing, spacing: 8) { buttons }
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                // Too narrow for a row (iPhone): full-width buttons, the safest allow on top.
+                VStack(spacing: 8) { buttons(order.reversed(), fill: true) }
             }
         }
         .padding(14)
@@ -50,14 +50,14 @@ struct ApprovalCard: View {
         .accessibilityLabel(Text("\(agentName) wants to run \(approval.command)"))
     }
 
-    /// Deny first and the safest allow last, so the primary button sits at the trailing edge.
-    @ViewBuilder private var buttons: some View {
-        ForEach(order, id: \.self) { choice in
+    private func buttons(_ choices: [ApprovalPrompt.Choice], fill: Bool = false) -> some View {
+        ForEach(choices, id: \.self) { choice in
             Button(title(choice)) { answer(choice) }
-                .buttonStyle(CardButtonStyle(primary: choice == .once))
+                .buttonStyle(CardButtonStyle(primary: choice == .once, fill: fill))
         }
     }
 
+    /// Deny first and the safest allow last, so the primary button sits at the trailing edge.
     private var order: [ApprovalPrompt.Choice] {
         [.deny, .always, .session, .once].filter(approval.choices.contains)
     }

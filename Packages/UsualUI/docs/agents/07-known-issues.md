@@ -24,6 +24,13 @@ No confirmed recurring failures were established during source inspection. A mis
 - Fix: `ConversationScroll` scrolls to an end marker view (`scrollTo(id:anchor: .bottom)`) on appear and on reload, which places the newest message exactly. Verified in the iPhone 17 Pro simulator on that chat and a room.
 - Prevention: open bottom-anchored lazy lists by scrolling to a view, not to the bottom edge.
 
+## Markdown bold and italic didn't show (confirmed 2026-10-23)
+
+- Symptom: `**bold**` in agent replies rendered in the body weight on Mac and iPhone.
+- Root cause: `Text` draws an `AttributedString`'s strong/emphasized presentation intents only while no explicit font is set, and `messageFont()` sets one.
+- Fix: `MarkdownView.styled` sets a font on each bold, italic and inline-code run, at the block's size (semibold for bold; italic keeps the message weight). Verified by screenshot in the demo's Atlas chat.
+- Prevention: style inline runs explicitly whenever the surrounding view sets a font.
+
 ## Trailing toolbar items land on the leading side
 
 - Symptom: the profile panel's close button, as a `.primaryAction` or `.automatic` toolbar item, drew on the left next to Search and New Room.

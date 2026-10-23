@@ -163,7 +163,12 @@ struct ContactsSplitView<Footer: View>: View {
                     .padding(.vertical, 10)
             #endif
         }
-        .background(Theme.window)
+        #if os(macOS)
+            .background(Theme.window)
+        #else
+            // On iPhone the list is a screen of its own, in the chat's colour.
+            .background(Theme.pane)
+        #endif
     }
 
     #if os(macOS)

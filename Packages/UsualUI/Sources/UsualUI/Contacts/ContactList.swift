@@ -71,12 +71,13 @@ struct ContactList: View {
                         .tag(contact.id)
                         // No line between the bar and the first chat.
                         .listRowSeparator(contact.id == ordered.first?.id ? .hidden : .automatic, edges: .top)
+                        .listRowBackground(Color.clear)
                 }
             }
-            // Full-width rows on the window colour, like a messenger's chat list.
+            // Full-width rows on the chat colour, like a messenger's chat list.
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(Theme.window)
+            .background(Theme.pane)
         #endif
     }
 

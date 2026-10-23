@@ -145,6 +145,22 @@ public final class AppModel {
         session = .signedOut
     }
 
+    #if DEBUG
+        /// The demo's way in (`AppModel.demo()`): shows this state as signed in and online without
+        /// a gateway. Nothing connects, because there is no session to connect with.
+        func showDemo(
+            gateway: GatewayAddress, contacts: [Contact], threads: [Contact.ID: ChatThread],
+            rooms: [Contact.ID: RoomThread], routines: [Contact.ID: RoutineList]
+        ) {
+            session = .signedIn(gateway)
+            link = .online(.legacy)
+            self.contacts = contacts
+            self.threads = threads
+            self.rooms = rooms
+            routineLists = routines
+        }
+    #endif
+
     // MARK: - Connection
 
     private func begin(_ auth: AuthSession) {

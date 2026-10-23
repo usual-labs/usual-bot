@@ -16,9 +16,9 @@ successful real-device operation. Examples must use fictional agents/data.
 
 ## Understand the actual app before writing
 
-1. Read `README.md`, `app-shell.md`, both package KBs and current source. The README's
-   old sample-only warning is stale: `AppModel` now implements authentication and
-   connection. Prefer code and current package KBs when they disagree.
+1. Read `README.md`, `app-shell.md`, both package KBs and current source. Prefer code and
+   current package KBs when they disagree. `docs/screenshots/` holds demo-mode screenshots
+   with fictional agents, safe to reuse.
 2. The user enters their existing gateway address in the connection UI; `AppModel`
    checks support for native sign-in, uses the platform sign-in presenter and keeps
    saved credentials in Keychain. No gateway is supplied by this repository.
