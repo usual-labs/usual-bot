@@ -8,49 +8,75 @@ struct TranscriptView: View {
     let agentName: String
 
     var body: some View {
+        // A reloaded transcript numbers its items afresh, so a position kept by item would now
+        // point at an older message: start over at the newest one.
+        ConversationScroll(reload: thread.transcriptLoad) {
+            if let banner = thread.banner {
+                NoticeLine(text: banner)
+            }
+            if thread.state.items.isEmpty, !thread.state.isRunning {
+                NoticeLine(text: String(localized: "Say hello to \(agentName)."))
+                    .padding(.top, 40)
+            }
+            ForEach(thread.state.items) { item in
+                ItemView(item: item, agentName: agentName)
+            }
+            if !thread.state.draft.isEmpty {
+                MarkdownView(thread.state.draft)
+            } else if thread.state.isRunning, !lastItemIsLiveActivity, thread.approvals.isEmpty,
+                thread.questions.isEmpty
+            {
+                TypingIndicator()
+            }
+            ForEach(thread.approvals) { approval in
+                ApprovalCard(approval: approval, agentName: agentName) { thread.answer(approval, with: $0) }
+            }
+            ForEach(thread.questions) { prompt in
+                QuestionCard(
+                    prompt: prompt, agentName: agentName, answer: { thread.answer(prompt, with: $0) },
+                    skip: { thread.skip(prompt) })
+            }
+        }
+    }
+
+    private var lastItemIsLiveActivity: Bool {
+        guard case .activity(let steps) = thread.state.items.last?.content else { return false }
+        return steps.contains { $0.state == .running }
+    }
+}
+
+/// A conversation's scrolling column, opened at its newest message and kept there as it grows.
+struct ConversationScroll<Content: View>: View {
+    /// Changes when the conversation is reloaded; it then scrolls back to the newest message.
+    var reload = 0
+    @ViewBuilder let content: Content
+    @State private var position = ScrollPosition()
+
+    /// The column's last view. Scrolling to it places the newest message exactly; scrolling to the
+    /// bottom edge trusts the lazy stack's estimate of rows it hasn't measured, which on iPhone
+    /// left a long chat parked in blank space past its end.
+    private static var end: String { "end" }
+
+    var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
-                if let banner = thread.banner {
-                    NoticeLine(text: banner)
-                }
-                if thread.state.items.isEmpty, !thread.state.isRunning {
-                    NoticeLine(text: String(localized: "Say hello to \(agentName)."))
-                        .padding(.top, 40)
-                }
-                ForEach(thread.state.items) { item in
-                    ItemView(item: item, agentName: agentName)
-                }
-                if !thread.state.draft.isEmpty {
-                    MarkdownView(thread.state.draft)
-                } else if thread.state.isRunning, !lastItemIsLiveActivity, thread.approvals.isEmpty,
-                    thread.questions.isEmpty
-                {
-                    TypingIndicator()
-                }
-                ForEach(thread.approvals) { approval in
-                    ApprovalCard(approval: approval, agentName: agentName) { thread.answer(approval, with: $0) }
-                }
-                ForEach(thread.questions) { prompt in
-                    QuestionCard(
-                        prompt: prompt, agentName: agentName, answer: { thread.answer(prompt, with: $0) },
-                        skip: { thread.skip(prompt) })
-                }
+                content
+                Color.clear.frame(height: 0).id(Self.end)
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
             .frame(maxWidth: 780)
             .frame(maxWidth: .infinity)
         }
+        .scrollPosition($position)
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
-        // A reloaded transcript numbers its items afresh. Keeping the old scroll view would hold
-        // on to the old numbers, now older messages, so start over at the newest one.
-        .id(thread.transcriptLoad)
+        .onAppear(perform: scrollToEnd)
+        .onChange(of: reload, scrollToEnd)
     }
 
-    private var lastItemIsLiveActivity: Bool {
-        guard case .activity(let steps) = thread.state.items.last?.content else { return false }
-        return steps.contains { $0.state == .running }
+    private func scrollToEnd() {
+        position.scrollTo(id: Self.end, anchor: .bottom)
     }
 }
 

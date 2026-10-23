@@ -15,8 +15,6 @@ struct RoomPane: View {
         content
             .chatBars {
                 NamePill(contact: contact, members: members)
-                    .padding(.top, ThreadPane.barMargin)
-                    .padding(.bottom, 8)
             } bottom: {
                 if room.phase == .ready {
                     MessageBox(
@@ -26,8 +24,6 @@ struct RoomPane: View {
                     )
                     .frame(maxWidth: 780)
                     .padding(.horizontal, 20)
-                    .padding(.bottom, ThreadPane.barMargin)
-                    .padding(.top, 8)
                 }
             }
             .paneChrome()
@@ -63,48 +59,40 @@ struct RoomPane: View {
     }
 
     private var transcript: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 14) {
-                if !room.driverRunning {
-                    NoticeLine(
-                        text: String(localized: "The gateway's room service isn't running, so agents won't answer."))
-                }
-                if room.state.items.isEmpty, room.pending.isEmpty {
-                    NoticeLine(text: String(localized: "Say hello to everyone, or use @ to talk to one agent."))
-                        .padding(.top, 40)
-                }
-                ForEach(room.state.items) { item in
-                    ItemView(item: item, agentName: contact.name, author: author)
-                }
-                ForEach(room.pending) { message in
-                    UserBubble(text: message.text)
-                        .opacity(0.6)
-                        .accessibilityLabel(Text("Sending: \(message.text)"))
-                }
-                ForEach(room.working.sorted(), id: \.self) { memberID in
-                    if let author = author(memberID) {
-                        replyingRow(String(localized: "\(author.name) is replying…")) {
-                            AgentAvatar(contact: author.contact, size: 28)
-                        }
+        ConversationScroll {
+            if !room.driverRunning {
+                NoticeLine(
+                    text: String(localized: "The gateway's room service isn't running, so agents won't answer."))
+            }
+            if room.state.items.isEmpty, room.pending.isEmpty {
+                NoticeLine(text: String(localized: "Say hello to everyone, or use @ to talk to one agent."))
+                    .padding(.top, 40)
+            }
+            ForEach(room.state.items) { item in
+                ItemView(item: item, agentName: contact.name, author: author)
+            }
+            ForEach(room.pending) { message in
+                UserBubble(text: message.text)
+                    .opacity(0.6)
+                    .accessibilityLabel(Text("Sending: \(message.text)"))
+            }
+            ForEach(room.working.sorted(), id: \.self) { memberID in
+                if let author = author(memberID) {
+                    replyingRow(String(localized: "\(author.name) is replying…")) {
+                        AgentAvatar(contact: author.contact, size: 28)
                     }
                 }
-                if room.isBusy, room.working.isEmpty {
-                    // An older gateway says only that someone is answering, not who.
-                    replyingRow(String(localized: "Agents are replying…")) { RoomAvatar(members: members, size: 28) }
-                }
-                ForEach(room.approvals) { approval in
-                    ApprovalCard(
-                        approval: approval.prompt, agentName: author(approval.memberID)?.name ?? approval.memberID
-                    ) { room.answer(approval, with: $0) }
-                }
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
-            .frame(maxWidth: 780)
-            .frame(maxWidth: .infinity)
+            if room.isBusy, room.working.isEmpty {
+                // An older gateway says only that someone is answering, not who.
+                replyingRow(String(localized: "Agents are replying…")) { RoomAvatar(members: members, size: 28) }
+            }
+            ForEach(room.approvals) { approval in
+                ApprovalCard(
+                    approval: approval.prompt, agentName: author(approval.memberID)?.name ?? approval.memberID
+                ) { room.answer(approval, with: $0) }
+            }
         }
-        .defaultScrollAnchor(.bottom, for: .initialOffset)
-        .defaultScrollAnchor(.bottom, for: .sizeChanges)
     }
 
     private func replyingRow(_ text: String, @ViewBuilder avatar: () -> some View) -> some View {

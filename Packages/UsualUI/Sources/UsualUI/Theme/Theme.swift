@@ -12,6 +12,12 @@ public enum Theme {
     public static let window = Color(light: 0xF6F6F7, dark: 0x161618)
     /// The chat pane and other raised surfaces.
     public static let pane = Color(light: 0xFFFFFF, dark: 0x1E1E20)
+    /// Chat text: 14 pt on the Mac, 16 pt on iPhone, which is held further from the eye.
+    #if os(macOS)
+        static let messageSize: CGFloat = 14
+    #else
+        static let messageSize: CGFloat = 16
+    #endif
     public static let border = Color(light: 0xE4E4E7, dark: 0x2E2E32)
     public static let ink = Color(light: 0x18181B, dark: 0xF2F2F3)
     public static let secondaryInk = Color(light: 0x66666E, dark: 0xA0A0A8)
@@ -142,8 +148,8 @@ extension View {
         }
     }
 
-    /// Message text: 14 pt with airy line spacing, a step lighter in dark mode, where light text on
-    /// a dark ground reads heavier than the same weight in light mode.
+    /// Message text: `Theme.messageSize` with airy line spacing, a step lighter in dark mode, where
+    /// light text on a dark ground reads heavier than the same weight in light mode.
     func messageFont() -> some View {
         modifier(MessageFont())
     }
@@ -154,7 +160,7 @@ private struct MessageFont: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .font(.system(size: 14, weight: colorScheme == .dark ? .light : .regular))
+            .font(.system(size: Theme.messageSize, weight: colorScheme == .dark ? .light : .regular))
             .lineSpacing(6)
     }
 }

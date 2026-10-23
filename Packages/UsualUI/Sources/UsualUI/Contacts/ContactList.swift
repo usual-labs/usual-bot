@@ -69,9 +69,14 @@ struct ContactList: View {
                 ForEach(ordered) { contact in
                     ContactRow(contact: contact, members: Self.members(of: contact, in: byID))
                         .tag(contact.id)
+                        // No line between the bar and the first chat.
+                        .listRowSeparator(contact.id == ordered.first?.id ? .hidden : .automatic, edges: .top)
                 }
             }
-            .listStyle(.sidebar)
+            // Full-width rows on the window colour, like a messenger's chat list.
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Theme.window)
         #endif
     }
 

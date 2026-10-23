@@ -122,7 +122,10 @@ struct ContactsSplitView<Footer: View>: View {
                 sidebar(compact: false)
                     .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 380)
                     .searchable(text: $query)
+                    // No title: the bar holds only the gateway status and New Room.
+                    .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
+                        ToolbarItem(placement: .topBarLeading) { footer(true) }
                         ToolbarItem(placement: .primaryAction) { newRoomButton }
                     }
             } detail: {
@@ -155,10 +158,10 @@ struct ContactsSplitView<Footer: View>: View {
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
+                footer(compact)
+                    .padding(.horizontal, compact ? 0 : 14)
+                    .padding(.vertical, 10)
             #endif
-            footer(compact)
-                .padding(.horizontal, compact ? 0 : 14)
-                .padding(.vertical, 10)
         }
         .background(Theme.window)
     }
@@ -335,7 +338,9 @@ struct GatewayStatusButton: View {
                     Spacer(minLength: 0)
                 }
             }
-            .frame(minWidth: compact ? 44 : nil, minHeight: 28)
+            #if os(macOS)
+                .frame(minWidth: compact ? 44 : nil, minHeight: 28)
+            #endif
             .contentShape(Rectangle())
         }
         .menuStyle(.button)

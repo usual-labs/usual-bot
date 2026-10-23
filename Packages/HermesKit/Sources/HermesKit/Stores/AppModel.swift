@@ -47,6 +47,8 @@ public final class AppModel {
     private var auth: AuthSession?
     private var signInTask: Task<Void, Never>?
     private var linkTask: Task<Void, Never>?
+    /// Whether the app is on screen; the socket stays closed while it isn't.
+    private var isForeground = true
     /// The socket while the link is online.
     @ObservationIgnored private var channel: JSONRPCChannel?
     @ObservationIgnored private var threads: [Contact.ID: ChatThread] = [:]
@@ -148,9 +150,23 @@ public final class AppModel {
     private func begin(_ auth: AuthSession) {
         self.auth = auth
         session = .signedIn(auth.gateway)
+        connect(auth)
+    }
+
+    private func connect(_ auth: AuthSession) {
         link = .connecting
         linkTask?.cancel()
-        linkTask = Task { await stayConnected(auth) }
+        linkTask = isForeground ? Task { await stayConnected(auth) } : nil
+    }
+
+    /// On iPhone the app closes the socket when it goes to the background, where iOS would cut it
+    /// anyway, and reconnects when it comes back; open chats reload from the gateway then.
+    public func setForeground(_ foreground: Bool) {
+        guard foreground != isForeground else { return }
+        isForeground = foreground
+        guard let auth else { return }
+        if !foreground { saveCache(for: auth.gateway) }
+        connect(auth)
     }
 
     /// Connects, refreshes the roster every few seconds, and reconnects with backoff when the
