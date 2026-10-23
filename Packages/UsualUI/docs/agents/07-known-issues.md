@@ -31,6 +31,10 @@ No confirmed recurring failures were established during source inspection. A mis
 - Fix: `MarkdownView.styled` sets a font on each bold, italic and inline-code run, at the block's size (semibold for bold; italic keeps the message weight). Verified by screenshot in the demo's Atlas chat.
 - Prevention: style inline runs explicitly whenever the surrounding view sets a font.
 
+## Unverified: Mac paste in the message box (2026-10-23)
+
+- The message box handles ⌘V with `onPasteCommand(of: [.fileURL, .image])` so pasted files and images become attachments. Plain text paste is expected to keep working, but this was not checked by automation (no keyboard control in the test setup). If text paste breaks, drop the modifier and keep drag-and-drop and the paperclip.
+
 ## Trailing toolbar items land on the leading side
 
 - Symptom: the profile panel's close button, as a `.primaryAction` or `.automatic` toolbar item, drew on the left next to Search and New Room.

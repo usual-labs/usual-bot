@@ -27,6 +27,11 @@ public final class ChatThread {
     /// Goes up each time the gateway's copy of the transcript replaces the one on screen. Item
     /// IDs count from the start of each copy, so a view keyed by them must start over with it.
     public private(set) var transcriptLoad = 0
+    /// Attachments are on their way to the gateway; the message goes out once they're there.
+    public private(set) var isUploading = false
+    /// Images sent from this device in this run, by their path on the gateway, so your messages
+    /// can show them. Not cached: after a relaunch they show by name.
+    public private(set) var sentImages: [String: Data] = [:]
 
     /// The live session the gateway routes this chat's events to; `nil` while offline.
     private(set) var sessionID: String?
@@ -176,6 +181,84 @@ public final class ChatThread {
         }
         state.sendLocally(text)
         Task { await submit(text, sessionID: sessionID, channel: channel) }
+    }
+
+    /// Uploads `attachments` to the chat, then sends them with `text`. Returns whether the message
+    /// went out. On a failed upload nothing is sent, a notice says which file and why, and the
+    /// caller keeps the draft. Attachments wait for the agent to finish: a running turn can't
+    /// take them.
+    public func send(_ text: String, attachments: [Attachment]) async -> Bool {
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !attachments.isEmpty else {
+            guard canSend, !text.isEmpty else { return false }
+            send(text)
+            return true
+        }
+        guard canSendAttachments, let sessionID, let channel = channel() else { return false }
+        isUploading = true
+        defer { isUploading = false }
+        var sent: [AttachmentRef] = []
+        for attachment in attachments {
+            do {
+                sent.append(try await upload(attachment, sessionID: sessionID, channel: channel))
+            } catch {
+                // Images already queued would ride along with the next message: take them back.
+                for ref in sent where ref.kind == .image {
+                    _ = try? await channel.call(
+                        "image.detach", params: ["session_id": .string(sessionID), "path": .string(ref.path)])
+                }
+                state.addNotice(String(localized: "Couldn't attach \(attachment.name): \(AppModel.describe(error))"))
+                return false
+            }
+        }
+        for (ref, attachment) in zip(sent, attachments) where ref.kind == .image {
+            sentImages[ref.path] = attachment.data
+        }
+        // Queued images reach the agent with the turn; files only through their references.
+        let files = sent.filter { $0.kind == .file }.map(\.line)
+        let submitted = ([text] + files).filter { !$0.isEmpty }.joined(separator: "\n\n")
+        state.sendLocally(
+            ([text] + [sent.map(\.line).joined(separator: "\n")]).filter { !$0.isEmpty }
+                .joined(separator: "\n\n"))
+        await submit(submitted, sessionID: sessionID, channel: channel)
+        return true
+    }
+
+    /// Attachments go out only between turns, one message at a time.
+    public var canSendAttachments: Bool { canSend && !state.isRunning && !isUploading }
+
+    /// Sends one file to the gateway: an image into the next turn's queue, anything else into the
+    /// chat's workspace. Larger files get longer, at roughly 100 KB/s at worst.
+    private func upload(_ attachment: Attachment, sessionID: String, channel: JSONRPCChannel) async throws
+        -> AttachmentRef
+    {
+        if attachment.isTooLarge { throw Attachment.TooLarge(limit: attachment.sizeLimit) }
+        let timeout = Duration.seconds(30 + attachment.data.count / 100_000)
+        let base64 = attachment.data.base64EncodedString()
+        switch attachment.kind {
+        case .image:
+            let result = try await channel.call(
+                "image.attach_bytes",
+                params: [
+                    "session_id": .string(sessionID), "content_base64": .string(base64),
+                    "filename": .string(attachment.name),
+                ], timeout: timeout)
+            guard result["attached"]?.boolValue == true, let path = result["path"]?.stringValue else {
+                throw GatewayError.invalidResponse
+            }
+            return AttachmentRef(kind: .image, path: path)
+        case .file:
+            let result = try await channel.call(
+                "file.attach",
+                params: [
+                    "session_id": .string(sessionID), "name": .string(attachment.name),
+                    "data_url": .string("data:application/octet-stream;base64," + base64),
+                ], timeout: timeout)
+            guard let line = result["ref_text"]?.stringValue, let ref = AttachmentRef(line: line) else {
+                throw GatewayError.invalidResponse
+            }
+            return ref
+        }
     }
 
     private func submit(_ text: String, sessionID: String, channel: JSONRPCChannel) async {

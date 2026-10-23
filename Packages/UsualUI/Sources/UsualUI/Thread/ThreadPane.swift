@@ -12,18 +12,38 @@ struct ThreadPane: View {
     /// Shows or hides the agent's profile; `nil` when the contact has none.
     var toggleProfile: (() -> Void)? = nil
 
+    /// Files waiting to go with the next message.
+    @State private var attachments: [Attachment] = []
+    @State private var isDropTarget = false
+
     var body: some View {
         content
+            .environment(\.sentImages, thread?.sentImages ?? [:])
             .chatBars {
                 namePill
             } bottom: {
                 if let thread, thread.phase == .ready {
-                    Composer(thread: thread, agentName: contact.name)
+                    Composer(thread: thread, agentName: contact.name, attachments: $attachments)
                         .frame(maxWidth: 780)
                         .padding(.horizontal, 20)
                 }
             }
+            // Drop files anywhere on the chat to attach them.
+            .onDrop(of: [.fileURL, .image], isTargeted: $isDropTarget) { providers in
+                guard thread?.phase == .ready else { return false }
+                Task { attachments.append(contentsOf: await AttachmentLoader.load(providers)) }
+                return true
+            }
+            .overlay {
+                if isDropTarget, thread?.phase == .ready {
+                    RoundedRectangle(cornerRadius: 18)
+                        .strokeBorder(Theme.ink.opacity(0.35), style: StrokeStyle(lineWidth: 2, dash: [6, 5]))
+                        .padding(10)
+                        .allowsHitTesting(false)
+                }
+            }
             .task(id: contact.id) { open() }
+            .onChange(of: contact.id) { attachments = [] }
             .paneChrome()
     }
 
