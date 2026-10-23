@@ -20,7 +20,8 @@
                 })
             model.showDemo(
                 gateway: Demo.gateway, contacts: demo.agents + [demo.roomContact], threads: demo.threads,
-                rooms: [demo.roomContact.id: demo.room], routines: routines)
+                rooms: [demo.roomContact.id: demo.room], routines: routines,
+                skills: Dictionary(uniqueKeysWithValues: demo.agents.map { ($0.id, SkillList.sample(Demo.skills)) }))
             model.media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }
             return model
         }
@@ -73,6 +74,7 @@
                     command: "psql \"$STAGING_DATABASE_URL\" -f migrations/0042_search_index.sql",
                     description: "Runs a database migration on staging", choices: [.once, .session, .always]))
             threads["ops"] = ChatThread.sample("ops", state: ThreadState(history: opsChat, running: false))
+            for thread in threads.values { thread.commands = Demo.commands }
             for (id, text) in [
                 ("scribe", "Two headline options for the launch post"),
                 ("ledger", "October invoices are drafted for review"),
@@ -82,6 +84,34 @@
             }
             return threads
         }
+
+        static let skills = [
+            Skill(
+                name: "web-research", description: "Search the web and summarise sources with links",
+                category: "research",
+                usage: 41, provenance: "bundled"),
+            Skill(
+                name: "release-notes", description: "Draft release notes from merged pull requests",
+                category: "writing", usage: 12, provenance: "agent"),
+            Skill(
+                name: "postgres-migrations", description: "Write and check safe database migrations",
+                category: "engineering", usage: 7, provenance: "hub"),
+            Skill(
+                name: "linkedin-post", description: "Turn notes into a LinkedIn post in the house style",
+                category: "writing", enabled: false, usage: 0, provenance: "agent"),
+        ]
+
+        static let commands = [
+            SlashCommand(
+                name: "/web-research", description: "Search the web and summarise sources with links", kind: .skill),
+            SlashCommand(
+                name: "/release-notes", description: "Draft release notes from merged pull requests", kind: .skill),
+            SlashCommand(
+                name: "/postgres-migrations", description: "Write and check safe database migrations", kind: .skill),
+            SlashCommand(name: "/retry", description: "Send your last message again", kind: .command),
+            SlashCommand(name: "/undo", description: "Remove the last exchange", kind: .command),
+            SlashCommand(name: "/compress", description: "Summarise the conversation to free context", kind: .command),
+        ]
 
         static let chartPath = "/home/hermes/.hermes/profiles/ops/cache/cpu-overnight.png"
 

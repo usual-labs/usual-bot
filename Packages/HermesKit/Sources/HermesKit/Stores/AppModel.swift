@@ -53,6 +53,7 @@ public final class AppModel {
     @ObservationIgnored private var channel: JSONRPCChannel?
     @ObservationIgnored private var threads: [Contact.ID: ChatThread] = [:]
     @ObservationIgnored private var routineLists: [Contact.ID: RoutineList] = [:]
+    @ObservationIgnored private var skillLists: [Contact.ID: SkillList] = [:]
     @ObservationIgnored private var rooms: [Contact.ID: RoomThread] = [:]
     /// Images and files agents name in chats, read from the gateway.
     @ObservationIgnored public private(set) lazy var media = MediaStore(auth: { [weak self] in self?.auth })
@@ -140,6 +141,7 @@ public final class AppModel {
         contacts = []
         threads = [:]
         routineLists = [:]
+        skillLists = [:]
         media.clear()
         rooms = [:]
         gatewayDetails = nil
@@ -153,7 +155,7 @@ public final class AppModel {
         /// a gateway. Nothing connects, because there is no session to connect with.
         func showDemo(
             gateway: GatewayAddress, contacts: [Contact], threads: [Contact.ID: ChatThread],
-            rooms: [Contact.ID: RoomThread], routines: [Contact.ID: RoutineList]
+            rooms: [Contact.ID: RoomThread], routines: [Contact.ID: RoutineList], skills: [Contact.ID: SkillList]
         ) {
             session = .signedIn(gateway)
             link = .online(.legacy)
@@ -161,6 +163,7 @@ public final class AppModel {
             self.threads = threads
             self.rooms = rooms
             routineLists = routines
+            skillLists = skills
         }
     #endif
 
@@ -287,6 +290,14 @@ public final class AppModel {
         if let list = routineLists[contact.id] { return list }
         let list = RoutineList(profile: contact.details?.profile ?? contact.id, auth: { [weak self] in self?.auth })
         routineLists[contact.id] = list
+        return list
+    }
+
+    /// The skills of `contact`'s profile. Call `SkillList.refresh()` to load them.
+    public func skills(for contact: Contact) -> SkillList {
+        if let list = skillLists[contact.id] { return list }
+        let list = SkillList(profile: contact.details?.profile ?? contact.id, auth: { [weak self] in self?.auth })
+        skillLists[contact.id] = list
         return list
     }
 

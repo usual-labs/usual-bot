@@ -53,7 +53,12 @@ doesn't turn into images.
 - **Done when:** a reply with a generated image shows it inline on both platforms, and a path
   outside the media roots shows a quiet placeholder instead of an error.
 
-## M11: Skills and slash commands
+## M11: Skills and slash commands (built; live gateway test pending)
+
+Built as planned. The menu offers skills, quick and plugin commands, and the built-ins that
+`command.dispatch` runs and that make sense in a chat (/retry, /undo, /compress, /plan, /goal,
+/learn); the rest of Hermes's registry drives its terminal UI and stays in the official app. The
+skills list comes from the dashboard's `GET /api/skills`, which includes switched-off skills.
 
 - **You can:** type `/` in the message box to pick a command or skill, with a description and
   completion, as `@` already works in rooms. The agent's profile gets a Skills tab next to

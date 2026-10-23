@@ -5,15 +5,16 @@ import SwiftUI
     import AppKit
 #endif
 
-/// The agent's card beside the chat: who it is, its routines, and the machine it runs on.
+/// The agent's card beside the chat: who it is, its routines and skills, and the machine it runs on.
 /// A trailing column on the Mac, a sheet on iPhone.
 struct ProfilePanel: View {
     enum Tab: Hashable {
-        case routines, machine
+        case routines, skills, machine
     }
 
     let contact: Contact
     let routines: RoutineList
+    let skills: SkillList
     let gateway: GatewayAddress
     let link: AppModel.Link
     let gatewayDetails: GatewayDetails?
@@ -28,15 +29,18 @@ struct ProfilePanel: View {
                 header
                 Picker("Show", selection: $tab) {
                     Text("Routines").tag(Tab.routines)
+                    Text("Skills").tag(Tab.skills)
                     Text("Machine").tag(Tab.machine)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(maxWidth: 240)
+                .frame(maxWidth: 300)
 
                 switch tab {
                 case .routines:
                     RoutinesView(list: routines, agentName: contact.name)
+                case .skills:
+                    SkillsView(list: skills, agentName: contact.name)
                 case .machine:
                     MachineView(
                         details: contact.details, gateway: gateway, link: link, gatewayDetails: gatewayDetails,

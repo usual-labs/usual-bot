@@ -37,12 +37,15 @@ public actor AuthSession {
     }
 
     /// Sends a JSON request with the bearer token. A 401 triggers one refresh and one retry.
-    func json<T: Decodable & Sendable>(_ type: T.Type, path: String, method: String = "GET") async throws -> T {
-        let request = URLRequest.json(gateway.url(path), method: method, bearer: try await accessToken())
+    func json<T: Decodable & Sendable>(
+        _ type: T.Type, path: String, method: String = "GET", body: (any Encodable & Sendable)? = nil
+    ) async throws -> T {
+        let request = URLRequest.json(gateway.url(path), method: method, body: body, bearer: try await accessToken())
         do {
             return try await http.json(T.self, for: request)
         } catch GatewayError.http(status: 401, _) {
-            let retry = URLRequest.json(gateway.url(path), method: method, bearer: try await refresh().accessToken)
+            let retry = URLRequest.json(
+                gateway.url(path), method: method, body: body, bearer: try await refresh().accessToken)
             return try await http.json(T.self, for: retry)
         }
     }

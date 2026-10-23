@@ -127,21 +127,12 @@ extension View {
     /// Pins `top` (the name) and `bottom` (the message box) over a conversation that scrolls
     /// beneath them. On iPhone the name rides in the navigation bar, beside the back button.
     func chatBars(@ViewBuilder top: () -> some View, @ViewBuilder bottom: () -> some View) -> some View {
-        #if os(macOS)
-            // 9 pt centres the name on the line of the window buttons and the sidebar's buttons;
-            // the message box keeps the same distance from the bottom.
-            safeAreaInset(edge: .top, spacing: 0) { top().padding(.top, 9).padding(.bottom, 8) }
-                .safeAreaInset(edge: .bottom, spacing: 0) { bottom().padding(.top, 8).padding(.bottom, 9) }
-        #else
-            safeAreaInset(edge: .bottom, spacing: 0) { bottom().padding(.top, 8).padding(.bottom, 8) }
-                .navigationBarTitleDisplayMode(.inline)
-                .principalToolbarItem(top())
-        #endif
+        modifier(ChatBars(top: top(), bottom: bottom()))
     }
 
     #if os(iOS)
         /// The pill keeps its own glass instead of sitting in the bar's shared background.
-        @ViewBuilder fileprivate func principalToolbarItem(_ item: some View) -> some View {
+        @ViewBuilder func principalToolbarItem(_ item: some View) -> some View {
             if #available(iOS 26, *) {
                 toolbar { ToolbarItem(placement: .principal) { item }.sharedBackgroundVisibility(.hidden) }
             } else {
@@ -174,4 +165,33 @@ struct NamePill: View {
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
     }
+}
+
+private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
+    let top: Top
+    let bottom: Bottom
+    /// Counts clicks and taps on the conversation, so the message box can close its menu.
+    @State private var outsideTaps = 0
+
+    func body(content: Content) -> some View {
+        let conversation = content.simultaneousGesture(TapGesture().onEnded { outsideTaps += 1 })
+        let bottom = bottom.environment(\.conversationTaps, outsideTaps)
+        #if os(macOS)
+            // 9 pt centres the name on the line of the window buttons and the sidebar's buttons;
+            // the message box keeps the same distance from the bottom.
+            conversation
+                .safeAreaInset(edge: .top, spacing: 0) { top.padding(.top, 9).padding(.bottom, 8) }
+                .safeAreaInset(edge: .bottom, spacing: 0) { bottom.padding(.top, 8).padding(.bottom, 9) }
+        #else
+            conversation
+                .safeAreaInset(edge: .bottom, spacing: 0) { bottom.padding(.top, 8).padding(.bottom, 8) }
+                .navigationBarTitleDisplayMode(.inline)
+                .principalToolbarItem(top)
+        #endif
+    }
+}
+
+extension EnvironmentValues {
+    /// Goes up with each click or tap on the conversation above the message box.
+    @Entry var conversationTaps = 0
 }
