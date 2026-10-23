@@ -18,6 +18,12 @@ public enum Theme {
     #else
         static let messageSize: CGFloat = 16
     #endif
+
+    /// Chat text's weight: a step lighter in dark mode, where light text on a dark ground reads
+    /// heavier than the same weight in light mode.
+    static func messageWeight(_ scheme: ColorScheme) -> Font.Weight {
+        scheme == .dark ? .light : .regular
+    }
     public static let border = Color(light: 0xE4E4E7, dark: 0x2E2E32)
     public static let ink = Color(light: 0x18181B, dark: 0xF2F2F3)
     public static let secondaryInk = Color(light: 0x66666E, dark: 0xA0A0A8)
@@ -148,8 +154,7 @@ extension View {
         }
     }
 
-    /// Message text: `Theme.messageSize` with airy line spacing, a step lighter in dark mode, where
-    /// light text on a dark ground reads heavier than the same weight in light mode.
+    /// Message text: `Theme.messageSize` and `Theme.messageWeight` with airy line spacing.
     func messageFont() -> some View {
         modifier(MessageFont())
     }
@@ -160,7 +165,7 @@ private struct MessageFont: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .font(.system(size: Theme.messageSize, weight: colorScheme == .dark ? .light : .regular))
+            .font(.system(size: Theme.messageSize, weight: Theme.messageWeight(colorScheme)))
             .lineSpacing(6)
     }
 }

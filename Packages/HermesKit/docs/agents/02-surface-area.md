@@ -2,7 +2,7 @@
 
 ## Implemented today
 
-Public model types in Sources/HermesKit include AppModel, Contact, ChatThread, RoomThread, Routine and authentication/address types. AppModel exposes restore/signIn, `setForeground(_:)` (closes the socket while the app is in the background and reconnects on return, reattaching every chat; the iOS app calls it from `scenePhase`) and per-contact thread/room/routine operations. GatewayConnector mints a WebSocket ticket, opens /api/ws, waits for gateway.ready, then advertises server_requests capabilities. JSONRPCChannel owns socket requests and responses. OfflineCache persists a Codable roster/thread snapshot; KeychainTokenStore persists token sets per gateway.
+Public model types in Sources/HermesKit include AppModel, Contact, ChatThread, RoomThread, Routine and authentication/address types. AppModel exposes restore/signIn, `AppModel.demo()` (Debug only: a signed-in model with made-up agents, chats, a pending approval, a room and routines, built from the internal `sample` helpers; it never connects), `setForeground(_:)` (closes the socket while the app is in the background and reconnects on return, reattaching every chat; the iOS app calls it from `scenePhase`) and per-contact thread/room/routine operations. GatewayConnector mints a WebSocket ticket, opens /api/ws, waits for gateway.ready, then advertises server_requests capabilities. JSONRPCChannel owns socket requests and responses. OfflineCache persists a Codable roster/thread snapshot; KeychainTokenStore persists token sets per gateway.
 
 
 
