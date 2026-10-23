@@ -66,6 +66,7 @@ struct MessageBox: View {
     @State private var selection: TextSelection?
     @FocusState private var focused: Bool
     @Environment(\.conversationTaps) private var conversationTaps
+    @State private var dictation = Dictation()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -94,12 +95,21 @@ struct MessageBox: View {
                     field
                     sendButton
                 }
+                switch dictation.state {
+                case .denied(let message):
+                    DictationProblem(message: message, showsSettings: true, dismiss: dictation.dismissProblem)
+                case .failed(let message):
+                    DictationProblem(message: message, showsSettings: false, dismiss: dictation.dismissProblem)
+                default:
+                    EmptyView()
+                }
             }
             // 36 pt tall on one line, like the name pill above.
             .padding(4)
             .floatingSurface(in: RoundedRectangle(cornerRadius: 18))
         }
         .onAppear { focused = true }
+        .onDisappear { dictation.stop() }
         // The menu reads the gateway's list each time it opens.
         .onChange(of: slashQuery != nil) { _, open in if open { commands?.load() } }
         // Clicking or tapping the conversation closes the menu, like Escape.
@@ -215,8 +225,15 @@ struct MessageBox: View {
                 .controlSize(.small)
                 .frame(width: 28, height: 28)
                 .accessibilityLabel(Text("Uploading"))
-        } else if isRunning, isEmpty, !hasAttachments {
+        } else if isRunning, isEmpty, !hasAttachments, !dictation.isListening {
             RoundButton(systemImage: "stop.fill", label: stopLabel, action: stop)
+        } else if dictation.isListening || (isEmpty && !hasAttachments) {
+            // An empty box offers the mic, as Messages and Grok Bot do; Send takes over once
+            // there's something to send.
+            MicButton(dictation: dictation) {
+                dictation.start(after: text) { text = $0 }
+                focused = true
+            }
         } else {
             RoundButton(systemImage: "arrow.up", label: String(localized: "Send"), action: submit)
                 .disabled(!canSubmit)
@@ -252,6 +269,8 @@ struct MessageBox: View {
         }
         if pickHighlighted() == .handled { return }
         guard canSubmit else { return }
+        // Sending ends dictation; words still arriving would land in the next message.
+        dictation.stop()
         let quote = replyTo?.wrappedValue
         if let attaching, !attaching.attachments.isEmpty {
             // Text and files leave together once every file is up; a failure keeps both here.

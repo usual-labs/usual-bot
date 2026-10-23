@@ -27,6 +27,8 @@ group rooms, inline approvals and routines. Everything else stays in the officia
 - **Skills and commands.** Type `/` to run one of the agent's skills or commands; switch skills on
   and off in its profile.
 - **Routines.** Each agent's scheduled jobs, with a switch to pause and resume them.
+- **Dictation.** Tap the mic in an empty message box and speak; words appear as you talk,
+  recognised on the device when it can.
 - **Quick message (Mac).** Press ⌥Space anywhere to message an agent without opening the window.
 - **Works offline.** The last chats are cached, and the app reconnects by itself.
 
