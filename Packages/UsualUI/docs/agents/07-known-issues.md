@@ -46,6 +46,14 @@ No confirmed recurring failures were established during source inspection. A mis
 - Root cause: on iOS a vertical `TextField` still fires `onSubmit` for a Return that `onKeyPress` returned `.handled` for (the Mac doesn't).
 - Fix: `MessageBox` notes when Return picked from the menu (`pickedAt`) and ignores a submit within 0.3 s; the menus also ignore a trailing newline. Verified in the iPhone 17 Pro simulator for `/` and `@`.
 
+## Permission callbacks crash under Swift 6 (confirmed 2026-10-24)
+
+- Symptom: tapping the mic stopped the app at once (no crash report, no message) once speech recognition had been granted.
+- Root cause: `SFSpeechRecognizer.requestAuthorization`'s closure, written inside a `@MainActor` type, was inferred main-actor isolated; the framework calls it on a background queue and the Swift 6 runtime check traps.
+- Fix: mark such framework callbacks `@Sendable` (or form them in a nonisolated context). Verified in the iPhone simulator.
+- Second Mac crash (same day): macOS aborts an app that requests speech recognition without `NSSpeechRecognitionUsageDescription` in its Info.plist. Xcode's `INFOPLIST_KEY_NSSpeechRecognitionUsageDescription` build setting isn't generated for macOS, so both dictation strings live in `Config/Info.plist`. Check the built plist (`plutil -p`) after adding a usage string. It kept crashing after the fix because older builds with the same bundle ID (other DerivedData folders) were still registered with LaunchServices and lacked the key; deleting them, `lsregister -u` on each and `lsregister -f` on the current build, then opening it with `open`, cleared it. Keep one Mac build of a bundle ID around when testing privacy prompts.
+- Also: the iOS Simulator has no speech model, so dictation fails there with "couldn't start"; test recognition on a device or the Mac.
+
 ## Trailing toolbar items land on the leading side
 
 - Symptom: the profile panel's close button, as a `.primaryAction` or `.automatic` toolbar item, drew on the left next to Search and New Room.

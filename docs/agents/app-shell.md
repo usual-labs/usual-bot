@@ -4,7 +4,7 @@
 
 UsualBotApp uses `WindowGroup(id: "main")` and async model.restore(). macOS has a hidden title bar, background dragging, a 1100x720 default window, the ⌥Space quick panel and a MenuBarExtra. iOS uses the same RootView with `WebAuthSignInPresenter` (an in-app `ASWebAuthenticationSession`; the gateway redirects to the app's 127.0.0.1 listener and the app closes the sheet) and calls `model.setForeground` from `scenePhase`, so the socket closes in the background and reconnects on return.
 
-The Mac entitlements include `files.user-selected.read-write`, to read the files you pick, drop or paste and to save files agents send; iPhone declares `NSCameraUsageDescription` (Shared.xcconfig). Photos come through the out-of-process picker, so no photo-library permission is needed.
+The Mac entitlements include `files.user-selected.read-write`, to read the files you pick, drop or paste and to save files agents send; iPhone declares `NSCameraUsageDescription` (Shared.xcconfig). Config/Info.plist declares `NSMicrophoneUsageDescription` and `NSSpeechRecognitionUsageDescription` for dictation on both platforms (Xcode doesn't generate the speech key for macOS from a build setting), and the Mac has the `device.audio-input` entitlement. Photos come through the out-of-process picker, so no photo-library permission is needed.
 
 Config/Info.plist allows plain http (gateways on a tailnet or home network); GatewayAddress refuses http to public hosts. `NSLocalNetworkUsageDescription` (Shared.xcconfig) covers gateways on a home network; tailnet addresses need no prompt.
 

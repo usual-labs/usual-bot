@@ -73,7 +73,11 @@ skills list comes from the dashboard's `GET /api/skills`, which includes switche
 - **Open:** which directives `command.dispatch` returns and which of them a messenger should
   support; commands that only make sense in the official app stay out of the menu.
 
-## M12: Dictation
+## M12: Dictation (built; verified on the Mac 2026-10-24)
+
+Built with `SFSpeechRecognizer` on both platforms (on-device when supported) instead of
+`SpeechAnalyzer`, which would need a second code path for macOS 15 / iOS 18 and asset downloads.
+The mic replaces Send while the box is empty, as in Grok Bot.
 
 - **You can:** tap a mic button in the message box and speak; words appear as you talk, and you
   can edit before sending.
