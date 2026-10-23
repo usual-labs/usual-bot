@@ -104,8 +104,13 @@ struct ContactsSplitView<Footer: View>: View {
                 detail
             }
             .animation(.smooth(duration: 0.25), value: showsRail)
-            // No title bar: the sidebar's top row sits level with the window buttons.
-            .ignoresSafeArea(.container, edges: .top)
+            // Search and New Room ride in the window's toolbar, beside the window buttons; the
+            // toolbar also gives the title area its height. Anything drawn under it is hidden.
+            .sidebarToolbar(
+                leading: max(0, sidebarWidth - 197), search: searchButton, newRoom: newRoomButton,
+                shown: !showsRail
+            )
+            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .frame(minWidth: Self.railWidth + Self.chatMinWidth)
             .onGeometryChange(for: CGFloat.self) {
                 $0.size.width
@@ -130,7 +135,6 @@ struct ContactsSplitView<Footer: View>: View {
     private func sidebar(compact: Bool) -> some View {
         VStack(spacing: 0) {
             #if os(macOS)
-                topRow(compact: compact)
                 if isSearching, !compact { searchField }
             #endif
             if contacts.isEmpty {
@@ -170,24 +174,10 @@ struct ContactsSplitView<Footer: View>: View {
 
         private var showsRail: Bool { sidebarWidth < Self.minListWidth }
 
-        /// Level with the window buttons: Search and New Room as glass circles beside them. The
-        /// rail has no room for them; New Room sits at its foot instead.
-        private func topRow(compact: Bool) -> some View {
-            HStack(spacing: 8) {
-                Spacer(minLength: 0)
-                if !compact {
-                    GlassCircleButton(label: "Search", systemImage: "magnifyingglass", action: toggleSearch)
-                        .keyboardShortcut("f")
-                    if createRoom != nil {
-                        GlassCircleButton(label: "New Room", systemImage: "plus") { showsNewRoom = true }
-                            .disabled(agents.count < NewRoomSheet.seats.lowerBound)
-                    }
-                }
-            }
-            .padding(.horizontal, 12)
-            // Centred on the window buttons, 16 pt from the top.
-            .frame(height: 32)
-            .padding(.bottom, 10)
+        private var searchButton: some View {
+            Button("Search", systemImage: "magnifyingglass", action: toggleSearch)
+                .keyboardShortcut("f")
+                .help("Search")
         }
 
         /// The sidebar's edge: drag it to resize. Let go narrower than a list fits and it settles
@@ -253,6 +243,9 @@ struct ContactsSplitView<Footer: View>: View {
                     panel.inspectorColumnWidth(min: 280, ideal: 320, max: 420)
                 }
             }
+            #if os(macOS)
+                .profileCloseButton(shown: showsProfile && panel != nil) { showsProfile = false }
+            #endif
         } else {
             ContentUnavailableView(
                 "No chat selected", systemImage: "bubble.left.and.bubble.right",
@@ -383,27 +376,86 @@ struct GatewayStatusButton: View {
 }
 
 #if os(macOS)
-    /// A round Liquid Glass button for the sidebar's top row.
-    private struct GlassCircleButton: View {
-        let label: LocalizedStringKey
-        let systemImage: String
-        let action: () -> Void
-
-        @Environment(\.isEnabled) private var isEnabled
-
-        var body: some View {
-            Button(action: action) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Theme.ink)
-                    .frame(width: 32, height: 32)
-                    .floatingSurface(in: Circle())
-                    .contentShape(Circle())
+    extension View {
+        /// Search and New Room at the list's right edge, level with the window buttons: one toolbar
+        /// item that starts with a clear stretch as wide as the list leaves. In the rail only the
+        /// item stays, empty, keeping the title area's height.
+        @ViewBuilder fileprivate func sidebarToolbar(
+            leading: CGFloat, search: some View, newRoom: some View, shown: Bool
+        ) -> some View {
+            let row = HStack(spacing: 8) {
+                Color.clear.frame(width: shown ? leading : 0, height: 1)
+                if shown {
+                    search.sidebarGlassButton()
+                    newRoom.sidebarGlassButton()
+                }
             }
-            .buttonStyle(.plain)
-            .opacity(isEnabled ? 1 : 0.4)
-            .help(Text(label))
-            .accessibilityLabel(Text(label))
+            .labelStyle(.iconOnly)
+            if #available(macOS 26, *) {
+                // The buttons bring their own glass; the toolbar shouldn't wrap them in more.
+                toolbar { ToolbarItem(placement: .navigation) { row }.sharedBackgroundVisibility(.hidden) }
+            } else {
+                toolbar { ToolbarItem(placement: .navigation) { row } }
+            }
+        }
+
+        /// The open profile panel's close button, at the window's top right over the panel and level
+        /// with the window buttons; macOS 26 draws it as a Liquid Glass circle.
+        @ViewBuilder fileprivate func profileCloseButton(shown: Bool, close: @escaping () -> Void) -> some View {
+            let button = Button("Close Profile", systemImage: "xmark", action: close).help("Close Profile")
+            if #available(macOS 26, *) {
+                toolbar {
+                    if shown {
+                        ToolbarSpacer(.flexible)
+                        ToolbarItem { button }
+                    }
+                }
+            } else {
+                toolbar {
+                    if shown { ToolbarItem { button } }
+                }
+            }
+        }
+
+        /// A round Liquid Glass button: glass from macOS 26, a solid circle before.
+        fileprivate func sidebarGlassButton() -> some View {
+            buttonStyle(GlassCircleButtonStyle())
+        }
+    }
+#endif
+
+#if os(macOS)
+    /// The sidebar's Search and New Room: an icon on a glass circle that answers a press.
+    private struct GlassCircleButtonStyle: ButtonStyle {
+        func makeBody(configuration: Configuration) -> some View {
+            GlassCircle(configuration: configuration)
+        }
+
+        private struct GlassCircle: View {
+            let configuration: Configuration
+            @Environment(\.isEnabled) private var isEnabled
+
+            var body: some View {
+                configuration.label
+                    .labelStyle(.iconOnly)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Theme.ink)
+                    .frame(width: 36, height: 36)
+                    .glassCircle()
+                    .contentShape(Circle())
+                    .scaleEffect(configuration.isPressed ? 0.94 : 1)
+                    .opacity(isEnabled ? 1 : 0.45)
+            }
+        }
+    }
+
+    extension View {
+        @ViewBuilder fileprivate func glassCircle() -> some View {
+            if #available(macOS 26, *) {
+                glassEffect(.regular.interactive(), in: Circle())
+            } else {
+                floatingSurface(in: Circle())
+            }
         }
     }
 #endif

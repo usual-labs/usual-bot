@@ -15,7 +15,7 @@ struct RoomPane: View {
         content
             .chatBars {
                 NamePill(contact: contact, members: members)
-                    .padding(.top, 20)
+                    .padding(.top, ThreadPane.barMargin)
                     .padding(.bottom, 8)
             } bottom: {
                 if room.phase == .ready {
@@ -26,7 +26,7 @@ struct RoomPane: View {
                     )
                     .frame(maxWidth: 780)
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, ThreadPane.barMargin)
                     .padding(.top, 8)
                 }
             }

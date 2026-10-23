@@ -11,8 +11,14 @@ No confirmed recurring failures were established during source inspection. A mis
 - Fix: the Mac lays the sidebar out itself in ContactsSplitView (see components.md); iPhone keeps NavigationSplitView. Verified with screenshots at 560 and 1100 pt; dragging the edge is not verified by automation.
 - Prevention: don't drive sidebar widths through NavigationSplitView or its AppKit split view on macOS 26.
 
-## Views in the hidden title bar strip of a NavigationSplitView sidebar don't show
+## Views under the window's toolbar strip don't show
 
-- Symptom: a button placed in the top 28 pt of the sidebar (beside the window buttons) didn't draw.
-- Workaround: in the app's own sidebar layout (no NavigationSplitView) the top row draws there; inside NavigationSplitView, use toolbar items instead.
+- Symptom: buttons drawn in the top strip of the window (beside the window buttons) vanished, both inside a NavigationSplitView sidebar and under a toolbar.
+- Root cause: the title bar / toolbar container covers that strip.
+- Fix (confirmed 2026-10-23): Search and New Room are a toolbar item (`.navigation` placement) after a clear spacer sized from the sidebar's width, with the toolbar's shared glass hidden and each button drawn by `GlassCircleButtonStyle` (`glassEffect(.regular.interactive(), in: Circle())`; `.buttonStyle(.glass)` looked flat). The toolbar also gives the window its taller title area, so the window buttons have room above them. Without a toolbar, the hidden title bar puts them 16 pt from the top.
 
+## Trailing toolbar items land on the leading side
+
+- Symptom: the profile panel's close button, as a `.primaryAction` or `.automatic` toolbar item, drew on the left next to Search and New Room.
+- Root cause: on macOS, `.primaryAction` is the leading edge, and with no other trailing items the toolbar packs everything to the left.
+- Fix (confirmed by screenshot 2026-10-23): on macOS 26, put `ToolbarSpacer(.flexible)` before a plain `ToolbarItem`; the button then sits at the window's top right as a glass circle (`profileCloseButton` in RootView.swift).

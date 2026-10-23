@@ -103,7 +103,7 @@ struct MarkdownView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 14) {
             ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
                 view(for: block)
             }
@@ -117,15 +117,15 @@ struct MarkdownView: View {
     @ViewBuilder private func view(for block: MarkdownBlock) -> some View {
         switch block {
         case .paragraph(let text):
-            Text(text).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
+            Text(text).fixedSize(horizontal: false, vertical: true)
         case .heading(let level, let text):
             Text(text)
-                .font(.system(size: level == 1 ? 20 : level == 2 ? 17 : 15, weight: .semibold))
+                .font(.system(size: level == 1 ? 19 : level == 2 ? 16 : 14, weight: .semibold))
                 .padding(.top, 4)
         case .listItem(let marker, let depth, let text):
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(marker).foregroundStyle(Theme.secondaryInk).frame(minWidth: 14, alignment: .trailing)
-                Text(text).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
+                Text(text).fixedSize(horizontal: false, vertical: true)
             }
             .padding(.leading, CGFloat(depth) * 18)
         case .quote(let text):

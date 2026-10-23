@@ -16,19 +16,29 @@ struct ThreadPane: View {
         content
             .chatBars {
                 namePill
-                    .padding(.top, 20)
+                    .padding(.top, Self.barMargin)
                     .padding(.bottom, 8)
             } bottom: {
                 if let thread, thread.phase == .ready {
                     Composer(thread: thread, agentName: contact.name)
                         .frame(maxWidth: 780)
                         .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
+                        .padding(.bottom, Self.barMargin)
                         .padding(.top, 8)
                 }
             }
             .task(id: contact.id) { open() }
             .paneChrome()
+    }
+
+    /// The name's distance from the top, centring it on the line of the window buttons and the
+    /// sidebar's buttons on the Mac; the message box keeps the same distance from the bottom.
+    static var barMargin: CGFloat {
+        #if os(macOS)
+            9
+        #else
+            12
+        #endif
     }
 
     @ViewBuilder private var namePill: some View {
@@ -100,18 +110,19 @@ struct NamePill: View {
     let members: [Contact]
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             switch contact.kind {
-            case .agent: AgentAvatar(contact: contact, size: 32)
-            case .room: RoomAvatar(members: members, size: 32)
+            case .agent: AgentAvatar(contact: contact, size: 26)
+            case .room: RoomAvatar(members: members, size: 26)
             }
             Text(contact.name)
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(Theme.ink)
         }
-        .padding(.leading, 7)
-        .padding(.trailing, 20)
-        .frame(height: 46)
+        .padding(.leading, 5)
+        .padding(.trailing, 16)
+        // As tall as the sidebar's Search and New Room, on the same line as them.
+        .frame(height: 36)
         .floatingSurface(in: Capsule())
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)

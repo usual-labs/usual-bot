@@ -142,8 +142,8 @@ extension View {
         }
     }
 
-    /// Message text: 15 pt, a step lighter in dark mode, where light text on a dark ground reads
-    /// heavier than the same weight in light mode.
+    /// Message text: 14 pt with airy line spacing, a step lighter in dark mode, where light text on
+    /// a dark ground reads heavier than the same weight in light mode.
     func messageFont() -> some View {
         modifier(MessageFont())
     }
@@ -153,6 +153,8 @@ private struct MessageFont: ViewModifier {
     @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
-        content.font(.system(size: 15, weight: colorScheme == .dark ? .light : .regular))
+        content
+            .font(.system(size: 14, weight: colorScheme == .dark ? .light : .regular))
+            .lineSpacing(6)
     }
 }

@@ -49,20 +49,23 @@ struct ProfilePanel: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.window)
-        .overlay(alignment: .topTrailing) {
-            Button(action: close) {
-                Image(systemName: "xmark")
+        // On the Mac the close button is a toolbar item the chat adds while the panel is open.
+        #if !os(macOS)
+            .overlay(alignment: .topTrailing) {
+                Button(action: close) {
+                    Image(systemName: "xmark")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(Theme.secondaryInk)
                     .frame(width: 32, height: 32)
                     .background(Theme.pane, in: Circle())
                     .overlay(Circle().strokeBorder(Theme.border))
                     .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Close profile"))
+                .padding(12)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("Close profile"))
-            .padding(12)
-        }
+        #endif
     }
 
     private var header: some View {
