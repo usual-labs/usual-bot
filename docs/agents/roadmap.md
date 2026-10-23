@@ -11,7 +11,12 @@ None of it has been exercised from this app yet; each milestone starts by confir
 against a real gateway. All of them are on the dashboard socket (legacy dialect) or its REST
 routes.
 
-## M9: Attachments
+## M9: Attachments (built; live gateway test pending)
+
+Implemented as planned, with one change: PDFs go through `file.attach` like other files, as the
+official app's Bot Chat does (`pdf.attach` needs `pdftoppm` on the gateway and only sends page
+images). Limits are 25 MB per image and 50 MB per file. Past images show by name until M10 can
+load them from the gateway. See the HermesKit and UsualUI KBs for details.
 
 - **You can:** attach images, PDFs and other files to a message. Mac: paperclip, drag and drop,
   paste. iPhone: Photos, camera, Files. Attachments show as removable chips above the message box

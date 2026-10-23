@@ -2,15 +2,20 @@ import HermesKit
 import SwiftUI
 
 /// The message box under a chat with one agent. Return sends. While the agent works, a message
-/// steers it and the empty box's button stops it.
+/// steers it and the empty box's button stops it. Files can go with a message between turns.
 struct Composer: View {
     let thread: ChatThread
     let agentName: String
+    @Binding var attachments: [Attachment]
 
     var body: some View {
         MessageBox(
             placeholder: placeholder, isRunning: thread.state.isRunning, canSend: thread.canSend,
-            stopLabel: String(localized: "Stop \(agentName)"), send: thread.send, stop: thread.stop)
+            stopLabel: String(localized: "Stop \(agentName)"),
+            attaching: AttachmentSending(
+                attachments: $attachments, canSend: thread.canSendAttachments, isUploading: thread.isUploading,
+                send: thread.send(_:attachments:)),
+            send: thread.send, stop: thread.stop)
     }
 
     private var placeholder: String {
@@ -36,6 +41,8 @@ struct MessageBox: View {
     let canSend: Bool
     let stopLabel: String
     var mentions: [Mention] = []
+    /// Chats only: files waiting to go with the message.
+    var attaching: AttachmentSending?
     let send: (String) -> Void
     let stop: () -> Void
 
@@ -72,27 +79,22 @@ struct MessageBox: View {
                     .padding(.horizontal, 4)
                 }
             }
-            HStack(alignment: .bottom, spacing: 8) {
-                TextField(placeholder, text: $text, selection: $selection, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 15))
-                    .lineLimit(1...8)
-                    .focused($focused)
-                    // Return sends; Shift-Return starts a new line.
-                    .onKeyPress(.return, phases: .down) { press in
-                        guard press.modifiers.contains(.shift) else { return .ignored }
-                        insertLineBreak()
-                        return .handled
+            VStack(alignment: .leading, spacing: 4) {
+                if let attaching, !attaching.attachments.isEmpty {
+                    AttachmentChips(attachments: attaching.$attachments)
+                    if isRunning {
+                        Text("You can send these when the reply ends.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Theme.secondaryInk)
+                            .padding(.horizontal, 8)
                     }
-                    .onSubmit(submit)
-                    .padding(.leading, 12)
-                    .padding(.vertical, 4)
-                if isRunning, isEmpty {
-                    RoundButton(systemImage: "stop.fill", label: stopLabel, action: stop)
-                } else {
-                    RoundButton(systemImage: "arrow.up", label: String(localized: "Send"), action: submit)
-                        .disabled(!canSubmit)
-                        .opacity(canSubmit ? 1 : 0.35)
+                }
+                HStack(alignment: .bottom, spacing: 8) {
+                    if let attaching {
+                        AttachButton { attaching.attachments.append(contentsOf: $0) }
+                    }
+                    field
+                    sendButton
                 }
             }
             // 36 pt tall on one line, like the name pill above.
@@ -101,6 +103,46 @@ struct MessageBox: View {
         }
         .onAppear { focused = true }
     }
+
+    private var field: some View {
+        TextField(placeholder, text: $text, selection: $selection, axis: .vertical)
+            .textFieldStyle(.plain)
+            .font(.system(size: 15))
+            .lineLimit(1...8)
+            .focused($focused)
+            // Return sends; Shift-Return starts a new line.
+            .onKeyPress(.return, phases: .down) { press in
+                guard press.modifiers.contains(.shift) else { return .ignored }
+                insertLineBreak()
+                return .handled
+            }
+            .onSubmit(submit)
+            #if os(macOS)
+                // Pasted files and images become attachments; text pastes as usual.
+                .onPasteCommand(of: attaching == nil ? [] : [.fileURL, .image]) { providers in
+                    Task { attaching?.attachments.append(contentsOf: await AttachmentLoader.load(providers)) }
+                }
+            #endif
+            .padding(.leading, attaching == nil ? 12 : 0)
+            .padding(.vertical, 4)
+    }
+
+    @ViewBuilder private var sendButton: some View {
+        if attaching?.isUploading == true {
+            ProgressView()
+                .controlSize(.small)
+                .frame(width: 28, height: 28)
+                .accessibilityLabel(Text("Uploading"))
+        } else if isRunning, isEmpty, !hasAttachments {
+            RoundButton(systemImage: "stop.fill", label: stopLabel, action: stop)
+        } else {
+            RoundButton(systemImage: "arrow.up", label: String(localized: "Send"), action: submit)
+                .disabled(!canSubmit)
+                .opacity(canSubmit ? 1 : 0.35)
+        }
+    }
+
+    private var hasAttachments: Bool { attaching?.attachments.isEmpty == false }
 
     private var isEmpty: Bool { text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
@@ -114,10 +156,24 @@ struct MessageBox: View {
         selection = TextSelection(insertionPoint: text.index(text.startIndex, offsetBy: offset + 1))
     }
 
-    private var canSubmit: Bool { canSend && !isEmpty }
+    private var canSubmit: Bool {
+        if let attaching, !attaching.attachments.isEmpty { return attaching.canSend }
+        return canSend && !isEmpty
+    }
 
     private func submit() {
         guard canSubmit else { return }
+        if let attaching, !attaching.attachments.isEmpty {
+            // Text and files leave together once every file is up; a failure keeps both here.
+            let draft = text
+            let files = attaching.attachments
+            Task {
+                guard await attaching.send(draft, files) else { return }
+                if text == draft { text = "" }
+                attaching.attachments.removeAll { sent in files.contains { $0.id == sent.id } }
+            }
+            return
+        }
         send(text)
         text = ""
     }

@@ -115,7 +115,9 @@
 
         private var forgeChat: [HistoryMessage] {
             [
-                HistoryMessage(role: "user", text: "Add the search index migration and run it on staging."),
+                HistoryMessage(
+                    role: "user",
+                    text: "Add the search index migration and run it on staging.\n\n@file:attachments/search-spec.md"),
                 HistoryMessage(role: "tool", name: "write_file", context: "migrations/0042_search_index.sql"),
                 HistoryMessage(role: "tool", name: "terminal", context: "npm test -- search"),
                 HistoryMessage(

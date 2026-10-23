@@ -122,20 +122,36 @@ struct ItemView: View {
 /// Your message: a dark bubble on the right.
 struct UserBubble: View {
     let text: String
+    @Environment(\.sentImages) private var sentImages
 
     var body: some View {
-        HStack {
-            Spacer(minLength: 64)
-            Text(text)
-                .messageFont()
-                .foregroundStyle(Theme.userBubbleInk)
-                .textSelection(.enabled)
-                .padding(.horizontal, 15)
-                .padding(.vertical, 10)
-                .background(
-                    Theme.userBubble,
-                    in: UnevenRoundedRectangle(
-                        topLeadingRadius: 20, bottomLeadingRadius: 20, bottomTrailingRadius: 6, topTrailingRadius: 20))
+        // Attachments travel as `@image:`/`@file:` lines after the text; they show above it.
+        let (body, attachments) = AttachmentRef.split(text)
+        VStack(alignment: .trailing, spacing: 6) {
+            if !attachments.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(attachments, id: \.path) { ref in
+                        AttachmentTile(kind: ref.kind, name: ref.name, imageData: sentImages[ref.path])
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            if !body.isEmpty {
+                HStack {
+                    Spacer(minLength: 64)
+                    Text(body)
+                        .messageFont()
+                        .foregroundStyle(Theme.userBubbleInk)
+                        .textSelection(.enabled)
+                        .padding(.horizontal, 15)
+                        .padding(.vertical, 10)
+                        .background(
+                            Theme.userBubble,
+                            in: UnevenRoundedRectangle(
+                                topLeadingRadius: 20, bottomLeadingRadius: 20, bottomTrailingRadius: 6,
+                                topTrailingRadius: 20))
+                }
+            }
         }
     }
 }
