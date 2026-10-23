@@ -14,7 +14,7 @@ public final class ChatThread {
     }
 
     public let contactID: Contact.ID
-    public private(set) var state = ThreadState()
+    public internal(set) var state = ThreadState()
     public private(set) var phase: Phase = .loading
     /// Shown above the transcript, e.g. when older history couldn't be loaded.
     public private(set) var banner: String?
@@ -32,6 +32,10 @@ public final class ChatThread {
     /// Images sent from this device in this run, by their path on the gateway, so your messages
     /// can show them. Not cached: after a relaunch they show by name.
     public private(set) var sentImages: [String: Data] = [:]
+    /// Skills and commands this chat's `/` menu offers; loaded by `loadCommands()`.
+    public internal(set) var commands: [SlashCommand] = []
+    /// Text a command put back for you to edit and send (`/retry`); the message box takes it.
+    public var prefill: String?
 
     /// The live session the gateway routes this chat's events to; `nil` while offline.
     private(set) var sessionID: String?
@@ -43,7 +47,7 @@ public final class ChatThread {
     }
 
     private var openTask: Task<Void, Never>?
-    private let channel: @MainActor () -> JSONRPCChannel?
+    let channel: @MainActor () -> JSONRPCChannel?
 
     private static let log = Logger(subsystem: "UsualBot", category: "chat")
 
@@ -175,6 +179,10 @@ public final class ChatThread {
     public func send(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard canSend, !text.isEmpty, let sessionID, let channel = channel() else { return }
+        if !state.isRunning, let command = command(in: text) {
+            Task { await run(command, text: text, sessionID: sessionID, channel: channel) }
+            return
+        }
         if state.isRunning {
             steer(text, sessionID: sessionID, channel: channel)
             return
@@ -301,7 +309,7 @@ public final class ChatThread {
         }
     }
 
-    private func submit(_ text: String, sessionID: String, channel: JSONRPCChannel) async {
+    func submit(_ text: String, sessionID: String, channel: JSONRPCChannel) async {
         do {
             _ = try await channel.call(
                 "prompt.submit", params: ["session_id": .string(sessionID), "text": .string(text)])

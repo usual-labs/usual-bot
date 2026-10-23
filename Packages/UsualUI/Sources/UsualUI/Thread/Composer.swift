@@ -16,7 +16,11 @@ struct Composer: View {
             attaching: AttachmentSending(
                 attachments: $attachments, canSend: thread.canSendAttachments, isUploading: thread.isUploading,
                 send: thread.send(_:attachments:)),
-            replyTo: $replyTo, send: thread.send, stop: thread.stop)
+            replyTo: $replyTo,
+            commands: SlashCommands(
+                list: thread.commands, load: { Task { await thread.loadCommands() } },
+                prefill: Binding(get: { thread.prefill }, set: { thread.prefill = $0 })),
+            send: thread.send, stop: thread.stop)
     }
 
     private var placeholder: String {
@@ -46,41 +50,29 @@ struct MessageBox: View {
     var attaching: AttachmentSending?
     /// The message you're replying to, quoted in front of yours.
     var replyTo: Binding<QuotedMessage?>?
+    /// Chats only: skills and commands to offer after `/`.
+    var commands: SlashCommands?
     let send: (String) -> Void
     let stop: () -> Void
 
     @State private var text = ""
+    /// The menu row Return picks.
+    @State private var highlighted = 0
+    /// When Return last picked from the menu: the field may still submit for that same press.
+    @State private var pickedAt: Date?
+    /// Escape closes the menu until you type again.
+    @State private var dismissedText: String?
     /// Where the cursor is, to put a line break there.
     @State private var selection: TextSelection?
     @FocusState private var focused: Bool
+    @Environment(\.conversationTaps) private var conversationTaps
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if !suggestions.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        ForEach(suggestions) { mention in
-                            Button {
-                                complete(with: mention)
-                            } label: {
-                                HStack(spacing: 6) {
-                                    AgentAvatar(contact: mention.contact, size: 22)
-                                    Text(mention.name).font(.system(size: 13.5)).foregroundStyle(Theme.ink)
-                                    Text("@\(mention.id)").font(.system(size: 12.5)).foregroundStyle(Theme.secondaryInk)
-                                }
-                                .padding(.leading, 4)
-                                .padding(.trailing, 10)
-                                .frame(minHeight: 32)
-                                .background(Theme.pane, in: Capsule())
-                                .overlay(Capsule().strokeBorder(Theme.border))
-                                .contentShape(Capsule())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(Text("Mention \(mention.name)"))
-                        }
-                    }
-                    .padding(.horizontal, 4)
-                }
+            if !menu.isEmpty {
+                SuggestionMenu(
+                    items: menu, highlighted: min(highlighted, menu.count - 1), highlight: { highlighted = $0 },
+                    pick: pick)
             }
             VStack(alignment: .leading, spacing: 4) {
                 if let quote = replyTo?.wrappedValue {
@@ -108,6 +100,79 @@ struct MessageBox: View {
             .floatingSurface(in: RoundedRectangle(cornerRadius: 18))
         }
         .onAppear { focused = true }
+        // The menu reads the gateway's list each time it opens.
+        .onChange(of: slashQuery != nil) { _, open in if open { commands?.load() } }
+        // Clicking or tapping the conversation closes the menu, like Escape.
+        .onChange(of: conversationTaps) { closeMenu() }
+        .onChange(of: menuText) { _, text in
+            highlighted = 0
+            if text != dismissedText { dismissedText = nil }
+        }
+        .onChange(of: commands?.prefill) { _, prefill in
+            guard let prefill else { return }
+            text = prefill
+            commands?.prefill = nil
+            focused = true
+        }
+    }
+
+    /// The text the menus read. On iPhone a hardware Return can add its newline before the field
+    /// submits; the menu ignores it so that Return still picks the highlighted row.
+    private var menuText: String {
+        var text = text
+        while text.hasSuffix("\n") { text.removeLast() }
+        return text
+    }
+
+    /// What's typed after a leading `/`, while it's still one word.
+    private var slashQuery: String? {
+        guard commands != nil, menuText.hasPrefix("/"), !menuText.contains(where: \.isWhitespace) else { return nil }
+        return String(menuText.dropFirst())
+    }
+
+    private var commandSuggestions: [SlashCommand] {
+        guard let commands, let query = slashQuery else { return [] }
+        let matches = commands.matching(query)
+        // Typed in full: nothing left to pick.
+        return matches.count == 1 && matches[0].name == menuText ? [] : matches
+    }
+
+    private func complete(with command: SlashCommand) {
+        text = command.name + " "
+        focused = true
+    }
+
+    /// The `/` menu's matches, else the `@` menu's.
+    private var menu: [Suggestion] {
+        guard menuText != dismissedText else { return [] }
+        if !commandSuggestions.isEmpty { return commandSuggestions.map(Suggestion.command) }
+        return suggestions.map(Suggestion.mention)
+    }
+
+    /// Hides the menu until you type again.
+    private func closeMenu() {
+        if !menu.isEmpty { dismissedText = menuText }
+    }
+
+    private func pick(_ item: Suggestion) {
+        switch item {
+        case .command(let command): complete(with: command)
+        case .mention(let mention): complete(with: mention)
+        }
+    }
+
+    /// Up and Down move through the menu, wrapping at the ends; without a menu the keys move the cursor.
+    private func moveHighlight(by step: Int) -> KeyPress.Result {
+        guard !menu.isEmpty else { return .ignored }
+        highlighted = (min(highlighted, menu.count - 1) + step + menu.count) % menu.count
+        return .handled
+    }
+
+    private func pickHighlighted() -> KeyPress.Result {
+        guard !menu.isEmpty else { return .ignored }
+        pick(menu[min(highlighted, menu.count - 1)])
+        pickedAt = .now
+        return .handled
     }
 
     private var field: some View {
@@ -119,10 +184,18 @@ struct MessageBox: View {
         .font(.system(size: 15))
         .lineLimit(1...8)
         .focused($focused)
-        // Return sends; Shift-Return starts a new line.
+        // Return sends, or picks from an open menu; Shift-Return starts a new line.
         .onKeyPress(.return, phases: .down) { press in
-            guard press.modifiers.contains(.shift) else { return .ignored }
+            guard press.modifiers.contains(.shift) else { return pickHighlighted() }
             insertLineBreak()
+            return .handled
+        }
+        .onKeyPress(.downArrow) { moveHighlight(by: 1) }
+        .onKeyPress(.upArrow) { moveHighlight(by: -1) }
+        .onKeyPress(.tab) { pickHighlighted() }
+        .onKeyPress(.escape) {
+            guard !menu.isEmpty else { return .ignored }
+            closeMenu()
             return .handled
         }
         .onSubmit(submit)
@@ -171,6 +244,13 @@ struct MessageBox: View {
     }
 
     private func submit() {
+        // Return with a menu open picks its row. On iPhone the field submits for the same press
+        // after the key handler picked, which must not send the command you just picked.
+        if let pickedAt, Date.now.timeIntervalSince(pickedAt) < 0.3 {
+            self.pickedAt = nil
+            return
+        }
+        if pickHighlighted() == .handled { return }
         guard canSubmit else { return }
         let quote = replyTo?.wrappedValue
         if let attaching, !attaching.attachments.isEmpty {
@@ -192,7 +272,7 @@ struct MessageBox: View {
 
     /// The word being typed, when it starts with `@`.
     private var mentionQuery: String? {
-        guard !mentions.isEmpty, let last = text.split(separator: " ", omittingEmptySubsequences: false).last,
+        guard !mentions.isEmpty, let last = menuText.split(separator: " ", omittingEmptySubsequences: false).last,
             last.hasPrefix("@")
         else { return nil }
         return String(last.dropFirst()).lowercased()
@@ -205,7 +285,7 @@ struct MessageBox: View {
     }
 
     private func complete(with mention: Mention) {
-        var words = text.split(separator: " ", omittingEmptySubsequences: false).map(String.init)
+        var words = menuText.split(separator: " ", omittingEmptySubsequences: false).map(String.init)
         if words.isEmpty { words = [""] }
         words[words.count - 1] = "@\(mention.id)"
         text = words.joined(separator: " ") + " "

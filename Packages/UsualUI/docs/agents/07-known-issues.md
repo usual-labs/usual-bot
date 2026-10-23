@@ -40,6 +40,12 @@ No confirmed recurring failures were established during source inspection. A mis
 - Symptom: a hover bar overlaid at a message's top-right corner covered the end of the reply's first line, since replies run the full column width.
 - Fix (2026-10-23): `MessageRow` lays the bar out beside the message in a fixed slot instead of overlaying it. Verified by a screenshot with the bar forced visible; real hovering wasn't automated.
 
+## iPhone submits after a Return the key handler took (confirmed 2026-10-24)
+
+- Symptom: with the `/` menu open, Return on the iPhone's hardware keyboard picked the row and then sent it at once.
+- Root cause: on iOS a vertical `TextField` still fires `onSubmit` for a Return that `onKeyPress` returned `.handled` for (the Mac doesn't).
+- Fix: `MessageBox` notes when Return picked from the menu (`pickedAt`) and ignores a submit within 0.3 s; the menus also ignore a trailing newline. Verified in the iPhone 17 Pro simulator for `/` and `@`.
+
 ## Trailing toolbar items land on the leading side
 
 - Symptom: the profile panel's close button, as a `.primaryAction` or `.automatic` toolbar item, drew on the left next to Search and New Room.

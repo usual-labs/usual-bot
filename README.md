@@ -24,6 +24,8 @@ group rooms, inline approvals and routines. Everything else stays in the officia
   reply to it with a quote, or copy it.
 - **Stop and steer.** Stop a running turn, or send a message while it runs to steer it.
 - **Rooms.** Group chats with several agents. Messages go to everyone; `@name` talks to one.
+- **Skills and commands.** Type `/` to run one of the agent's skills or commands; switch skills on
+  and off in its profile.
 - **Routines.** Each agent's scheduled jobs, with a switch to pause and resume them.
 - **Quick message (Mac).** Press ⌥Space anywhere to message an agent without opening the window.
 - **Works offline.** The last chats are cached, and the app reconnects by itself.

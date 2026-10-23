@@ -211,6 +211,12 @@ public struct ThreadState: Equatable, Sendable, Codable {
         turnStart = items.count
     }
 
+    /// Shows a command you ran that answers with output instead of a turn.
+    mutating func showCommand(_ text: String) {
+        sealDraft()
+        append(.user(text))
+    }
+
     mutating func addNotice(_ text: String) {
         sealDraft()
         append(.notice(text))
