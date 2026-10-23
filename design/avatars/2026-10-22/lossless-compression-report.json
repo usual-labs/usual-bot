@@ -1,0 +1,1924 @@
+{
+  "method": "Lossless PNG re-encoding with Pillow optimize=True, compression level 9; original color and other ancillary chunks retained except source-encoding content credentials in full-size derivatives.",
+  "verification": "All decoded RGBA bytes, dimensions, and rendering metadata compared exactly before writing. Full-size source files and original archive unchanged.",
+  "groups": {
+    "full_resolution": {
+      "count": 50,
+      "before_bytes": 20251946,
+      "after_bytes": 16203100,
+      "saved_bytes": 4048846,
+      "reduction_percent": 19.99,
+      "files": [
+        {
+          "source": "design/avatars/2026-10-22/png/01-pip.png",
+          "output": "design/avatars/2026-10-22/png/lossless/01-pip.png",
+          "before_bytes": 310782,
+          "after_bytes": 251757,
+          "saved_bytes": 59025,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "de3a57f7b659aeb94677c6276c9d3b5af5a978e7c60456a557ad4d96902fb23f",
+          "output_sha256": "f85fb9499c31991219af2d480e5cd8e94ea90c054752b66bd95eb3572ec8b56d",
+          "rgba_sha256": "c6846b53ae0e5a0b9ea46e3f97b00070fd43073e7e32129b33605f170bd7e997",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/02-mallow.png",
+          "output": "design/avatars/2026-10-22/png/lossless/02-mallow.png",
+          "before_bytes": 467783,
+          "after_bytes": 361456,
+          "saved_bytes": 106327,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "7c81983c808f783fab1a0fdf368386c5083e7588058a74d321d369c255d4e331",
+          "output_sha256": "b803559cafa114f38614bf168ee7e47342ede21fc9cd0cad333413ec3b6370c4",
+          "rgba_sha256": "95c59edf1dc6e41ff2aaa32a5f5303678e8c74cfee2e53f2e761fa3c0ce765cf",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/03-rook.png",
+          "output": "design/avatars/2026-10-22/png/lossless/03-rook.png",
+          "before_bytes": 419881,
+          "after_bytes": 334260,
+          "saved_bytes": 85621,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "2de2d0bbfad2ac42eaa0b143df5fe3b2f0e8bf297f9b9825e7e1d3b932edfe9a",
+          "output_sha256": "b02c312dcd77a49837f8935d6b166fa580601e7b628c2404c4670ec70990fb44",
+          "rgba_sha256": "ceec84506617931565f4a3e269ee48e2c3602ae546bbe51967926f9399674f77",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/04-tinker.png",
+          "output": "design/avatars/2026-10-22/png/lossless/04-tinker.png",
+          "before_bytes": 347477,
+          "after_bytes": 278508,
+          "saved_bytes": 68969,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "070e2c7e17e211c6d325fbc50f4fe68494cc7ee79a69154ae85d89a2d72ec2ff",
+          "output_sha256": "0ed01c9231b373bcd91242a83122ac1f0c063ceb5bb0c7d888534b5cd2735298",
+          "rgba_sha256": "baab6a055879ddaacff247b21699a598aaefb7a901bee8b55340dc086abc6100",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/05-orbit.png",
+          "output": "design/avatars/2026-10-22/png/lossless/05-orbit.png",
+          "before_bytes": 439440,
+          "after_bytes": 342035,
+          "saved_bytes": 97405,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "29cb4944fbe045f4f5150a9cafea6e66df7329569272f07c140214ab60b9f2a5",
+          "output_sha256": "6752bd1d8c91a1c6888da318b007fcf3d76c34f0c9fbcd2d64177943c24387e5",
+          "rgba_sha256": "48b7f1f61f6848eaf33bb85fdfa0ad022d9a1fb6bbafc043e9fb2304ac4ef29a",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/06-moss.png",
+          "output": "design/avatars/2026-10-22/png/lossless/06-moss.png",
+          "before_bytes": 377742,
+          "after_bytes": 303706,
+          "saved_bytes": 74036,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "7226b4c2308e74e23f80e9908f6231b14fd9eba9520461e662288f14e705666a",
+          "output_sha256": "6e4eeab03858baf4871535a9338bcdcd81a1ef38ad5eb1ffbd7c9a273fcafd6c",
+          "rgba_sha256": "80edd1b2a7745ffb4e42003d11f637611f1d8d43d671e8e2df483c5b7cd4a6d6",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/07-quill.png",
+          "output": "design/avatars/2026-10-22/png/lossless/07-quill.png",
+          "before_bytes": 421559,
+          "after_bytes": 343885,
+          "saved_bytes": 77674,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "e5f3f7e483a6965c9ea5ad0c29f58f9264dcf488ef4bc39f0222e25e091fe79e",
+          "output_sha256": "d87f0a9fa038e9f12b7c142ef0137afd94efe5dec558fcc6e37f8fb5322475f3",
+          "rgba_sha256": "194b5d18099a2b28fad5ed66170fcd030242d88b94ea5e91bb9baaac3b3b4522",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/08-nori.png",
+          "output": "design/avatars/2026-10-22/png/lossless/08-nori.png",
+          "before_bytes": 306898,
+          "after_bytes": 243158,
+          "saved_bytes": 63740,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "24925738c6fbec5a3ae8ab11d666e35d7ea5af976533ddaa0dd5b0ccf9b15e8e",
+          "output_sha256": "bbd96d868559d2658d7603651cb603d3f5bb950989a63ba063f72dcdc35ab774",
+          "rgba_sha256": "623d5c050681b9ef832d3157e76369bd69c841ebe0121d30959410c5b8b42780",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/09-pebble.png",
+          "output": "design/avatars/2026-10-22/png/lossless/09-pebble.png",
+          "before_bytes": 300540,
+          "after_bytes": 226805,
+          "saved_bytes": 73735,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "32f1bc289b1531af8d0346793f17e0efc4ca0072cd6ad11b9ef9fa1d7a473bc8",
+          "output_sha256": "9336112ca140382a66f1f13b57548bc21114b0b63b893cd190287b98711772fc",
+          "rgba_sha256": "b2c7477a6f647623d95353d62c21e75cbcf3d11ae7dd7e33e67ac32cfce7e350",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/10-zippy.png",
+          "output": "design/avatars/2026-10-22/png/lossless/10-zippy.png",
+          "before_bytes": 448427,
+          "after_bytes": 352288,
+          "saved_bytes": 96139,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "c12f7a8f33507fe81cd61f50028b2405760dd7765335206f4d3e50ce42fce6e9",
+          "output_sha256": "5b315cb3540011977feafac9b03222d9c16d68f2cb06071b4fc879efe1229bb3",
+          "rgba_sha256": "39085c990ba3e6ff7d52a35cac5726c7a298582c5a9e2d0c6be6c57b064f8519",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/11-tempo.png",
+          "output": "design/avatars/2026-10-22/png/lossless/11-tempo.png",
+          "before_bytes": 417302,
+          "after_bytes": 342169,
+          "saved_bytes": 75133,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "abaeab90de318ffa04a6b301625d809509c3313c9add600f963d591f2919630e",
+          "output_sha256": "aded7b8d27e19edb7770fa42a4a5cb4c0cd8d0e97dbd5599d557eaa3aa676119",
+          "rgba_sha256": "ca78ea6ee363940566677224a4aad33238b4ca838f4873527725995248907127",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/12-lumen.png",
+          "output": "design/avatars/2026-10-22/png/lossless/12-lumen.png",
+          "before_bytes": 409386,
+          "after_bytes": 335212,
+          "saved_bytes": 74174,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "bd4b54fd175a12f7ad563ce3742b0234b2cbe8da6df85461497ce99389a3cd9f",
+          "output_sha256": "be43b2bbdd8f84f6970ae9f76bbe72a74ca51d6829de9cdde70d88840ab491a2",
+          "rgba_sha256": "69ade677993415a02db971c593d79e4265933aedd9820710b526f3514651cdb6",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/13-bento.png",
+          "output": "design/avatars/2026-10-22/png/lossless/13-bento.png",
+          "before_bytes": 558357,
+          "after_bytes": 438154,
+          "saved_bytes": 120203,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "be9a29b676afcb1fa0428c1d64094f3344d639ff674a59b344466e4d2d3b2a4a",
+          "output_sha256": "32d67e584fe7b5ff2355d931b1924d9bcb7d8289ccf06c00244f1b3e46d542c2",
+          "rgba_sha256": "2cc8af458937b052ae672564cea8f23a5a0efd1c29476c916a3354318f191a16",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/14-fable.png",
+          "output": "design/avatars/2026-10-22/png/lossless/14-fable.png",
+          "before_bytes": 512667,
+          "after_bytes": 401554,
+          "saved_bytes": 111113,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "a6a0edd3c7dd4dd7ee2e03b4591ff47da413653ca487147bc177faf1935f5f99",
+          "output_sha256": "cb251c0558ab4937e1d7fdc205b25ee4e4429516227efabc9838dad2e15aaea3",
+          "rgba_sha256": "146d90d2e09777539a4588d7e01d26cadfc10fa66e107290e68dbf8adfb82593",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/15-tally.png",
+          "output": "design/avatars/2026-10-22/png/lossless/15-tally.png",
+          "before_bytes": 369451,
+          "after_bytes": 292392,
+          "saved_bytes": 77059,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "5289429efe6e6e0b3b18a9c781a6433c42ae5fab992ed90bdde6913f0bdab7d8",
+          "output_sha256": "583d82dfdcbdbed65a03c33e002aa4153202c9d1fe930a3d42bfa0f2926f6817",
+          "rgba_sha256": "06cf7ce7e8de3cfc53da984120f0469ab375ab53b83e6adb24d6a4bb88b217ad",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/16-echo.png",
+          "output": "design/avatars/2026-10-22/png/lossless/16-echo.png",
+          "before_bytes": 406923,
+          "after_bytes": 326208,
+          "saved_bytes": 80715,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "12a312ce830286bfee334670d895324aacc2ca70acd0144811dcc03fec1a31d3",
+          "output_sha256": "b3e87069889da2091bf300ec2442dd8313f9f697ca5832e394317b13a7303e9d",
+          "rgba_sha256": "519a94b18585b237efb450e93d208c4e003b14ea7924c4bda6345ad1f53e2714",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/17-patch.png",
+          "output": "design/avatars/2026-10-22/png/lossless/17-patch.png",
+          "before_bytes": 477960,
+          "after_bytes": 385105,
+          "saved_bytes": 92855,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "e0d4f345c92914b8618229fb99d74da26adf97da706b84570553b3089392489d",
+          "output_sha256": "d6e6a3047d8722979065f051b4c0e98ecf8325793fea83305bbec6ec545bd1bb",
+          "rgba_sha256": "bed52193ff9ded3a606f9cc10d9240d65f38b801607443b790ae80195cafb3c3",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/18-sprocket.png",
+          "output": "design/avatars/2026-10-22/png/lossless/18-sprocket.png",
+          "before_bytes": 339790,
+          "after_bytes": 277311,
+          "saved_bytes": 62479,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "3f9f0979b5872cd7ac7db292ad119239105b76d8e5c73b6b7c12a3cd9ba8900a",
+          "output_sha256": "974448d66dac4a1eb7225559f16ce409dead9c794dcafded05ee0bb452c201fc",
+          "rgba_sha256": "580f36bca0fc2f068d70fb3fa24e1483f0e430e23b0c60766af168deb5ad0fa7",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/19-puddle.png",
+          "output": "design/avatars/2026-10-22/png/lossless/19-puddle.png",
+          "before_bytes": 415958,
+          "after_bytes": 331097,
+          "saved_bytes": 84861,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "870b584b4846a6e27fce4d5c94293dbacb95d0e6d634b7be49c565fb51103b59",
+          "output_sha256": "b19189953651ad5fc8a388802bb43743de8005b4d72d50e0723bff392405084d",
+          "rgba_sha256": "06501ca43764991ebee929ea3152ad59d74fe093d57739d4514762f0b775b58b",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/20-seal.png",
+          "output": "design/avatars/2026-10-22/png/lossless/20-seal.png",
+          "before_bytes": 464089,
+          "after_bytes": 374333,
+          "saved_bytes": 89756,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "bf46711af8f21382fcc747850b86a9d761dcde6d627db711ae8f46a0cf1ca3fb",
+          "output_sha256": "70cc71a054449062d19bc114be1feced4b88390421162ed90e75040ad335abd6",
+          "rgba_sha256": "38e9e4657b6ddc12f5aa19b02c1db49397c36dfe68e2c7e6e4eb27fba682e496",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/21-bramble.png",
+          "output": "design/avatars/2026-10-22/png/lossless/21-bramble.png",
+          "before_bytes": 384258,
+          "after_bytes": 302720,
+          "saved_bytes": 81538,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "c7b8bb0196d8a24b94af438c7b4ec471d66877e8d2b8fbe91d51ce780ed1b035",
+          "output_sha256": "09778148277c8af0019e54f540efa93cc60770a177ee0f6e1e08d2d0eaa0248b",
+          "rgba_sha256": "56964ea7b68ffe5801e13528ed3a9f2aadffc670dea39f9d3c02913b59d7defd",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/22-dot.png",
+          "output": "design/avatars/2026-10-22/png/lossless/22-dot.png",
+          "before_bytes": 364312,
+          "after_bytes": 290723,
+          "saved_bytes": 73589,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "908c8a276c19f3e2712d389f60296cdde0cb67b8b6ce2ec1a2aebe75d4102fe1",
+          "output_sha256": "26e60c8edfbe6360f6aaed92fbae64976de1984cfdf139bf44586dc41de313bd",
+          "rgba_sha256": "061a842daa2d3df21661a78fe8c028bf4272ccf0528b470232f0b31db2655c9f",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/23-kite.png",
+          "output": "design/avatars/2026-10-22/png/lossless/23-kite.png",
+          "before_bytes": 383189,
+          "after_bytes": 316969,
+          "saved_bytes": 66220,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "2de456cc0d806aa8875e51ca7078a3304f5cdd90028d03fe5665aa4ce358bd66",
+          "output_sha256": "d1a8cdda1f678a6a91c279bdc622f32403aabd3927efe8f92cec3aa556a9c388",
+          "rgba_sha256": "bb127afff0cb343720b708d6a5de45ccb7afb6d4e0e7435e4502004696138772",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/24-tuck.png",
+          "output": "design/avatars/2026-10-22/png/lossless/24-tuck.png",
+          "before_bytes": 488126,
+          "after_bytes": 388352,
+          "saved_bytes": 99774,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "7c6635fbb64d6aa036b47eadd021c22e2d110ad0b5e74ad5271383ad4be5691b",
+          "output_sha256": "5c5c5347b65e1778ae0fbd106a35e211d1cf37ad92ba6b61c432238dbcccc836",
+          "rgba_sha256": "368ff88ea8e1e37ac4da72bbf5f9183b0a382530aae4f3ef3a48b0347cd9b2b8",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/25-finch.png",
+          "output": "design/avatars/2026-10-22/png/lossless/25-finch.png",
+          "before_bytes": 387216,
+          "after_bytes": 303770,
+          "saved_bytes": 83446,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "adb6f03031945b9c4f99096f30e4626d42c4f7465539b6690a3d628f98cbf789",
+          "output_sha256": "38b5c841c62763f839bc6b52a6068b6f2797b9e3e8ddef53ce9e6b16a17027b5",
+          "rgba_sha256": "2a02d91b60c054eb74e98a173a2ebb31fd3aa0e8bb7626dc0118d253983baa07",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/26-miso.png",
+          "output": "design/avatars/2026-10-22/png/lossless/26-miso.png",
+          "before_bytes": 516538,
+          "after_bytes": 408840,
+          "saved_bytes": 107698,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "0431785f734163d3900f1b56100c2f855f2d4ed1b1afb072e471cd0fb2b75c86",
+          "output_sha256": "eae2a820e26adb0c7f83033f94e7869f5a5eb7a6fad01c91db3b84b97222fd7a",
+          "rgba_sha256": "bd4926a7b7f454380fe51def1c0eba2e3b95d50e49aaf75900195346f16c73f3",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/27-crumb.png",
+          "output": "design/avatars/2026-10-22/png/lossless/27-crumb.png",
+          "before_bytes": 433062,
+          "after_bytes": 341986,
+          "saved_bytes": 91076,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "39e5ad75d65015e66938ef9092ad80e3f6ea3e8a5b80a6434f4a8402a918a927",
+          "output_sha256": "7f7d9ec3b739c84e30f9b82e76cb92448b39331fb2504e1ba6a1366ffa3eb83c",
+          "rgba_sha256": "fc3f4ee7138bb2ead6c70d59296e1b64bc39a6780f2f73f51daa15a1fe365e24",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/28-wisp.png",
+          "output": "design/avatars/2026-10-22/png/lossless/28-wisp.png",
+          "before_bytes": 291041,
+          "after_bytes": 231513,
+          "saved_bytes": 59528,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "f2781695925ebf27d2b1396056c06f65e759bd7a1271ffc142a97ff7e56c6b71",
+          "output_sha256": "e0404ddf938d51cf114521d7f7aa07049bb77c0332ade69484db098e1e0195ab",
+          "rgba_sha256": "e49ee4fb8a238b9a6d4872a72127b5c08303dd7d521548044a0f58a24a46453f",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/29-atlas.png",
+          "output": "design/avatars/2026-10-22/png/lossless/29-atlas.png",
+          "before_bytes": 386163,
+          "after_bytes": 310334,
+          "saved_bytes": 75829,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "40f66896ddc7ad89eecb4aafb3bc6b82f20359433a5f72c184c66fb71cdc17b9",
+          "output_sha256": "80127f4271f80bd20c072e159e4aa520e9a39719172f45c87c0b95b93044650b",
+          "rgba_sha256": "b19eba029275e920f39b8750bcc18694c231ad33fd237beba6769555b26b7f73",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/30-doodle.png",
+          "output": "design/avatars/2026-10-22/png/lossless/30-doodle.png",
+          "before_bytes": 383699,
+          "after_bytes": 302716,
+          "saved_bytes": 80983,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "a29b802c8cb0a7fdde14b87780569f8f1c65bedd1efcbe80a1deb79a01930136",
+          "output_sha256": "2229ccca2626a4c909ec04d43eead1946aad80d913e700f1d309dd88756acbb9",
+          "rgba_sha256": "0fc5f91079dbb844550219299a2a152aa5b80c4931b05f64a457938846c5e2ab",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/31-glint.png",
+          "output": "design/avatars/2026-10-22/png/lossless/31-glint.png",
+          "before_bytes": 366886,
+          "after_bytes": 285099,
+          "saved_bytes": 81787,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "4f5ba562e51cecdd3f781462db357115babbe643dbf060b61aa1f2e01048c82c",
+          "output_sha256": "ee189b3f07187c6d79b10c0b5388ae1035b993e1176f7868ad420fc2428d718d",
+          "rgba_sha256": "63f99170fb44fd550c6460aa944e7a451f77907396565d2c5859e9ee41f0ba6c",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/32-pogo.png",
+          "output": "design/avatars/2026-10-22/png/lossless/32-pogo.png",
+          "before_bytes": 369997,
+          "after_bytes": 295147,
+          "saved_bytes": 74850,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "5633919075f054199bb6dd366a6fbf2fb34592e90bf3c5b1f3cba1a9e34c88cd",
+          "output_sha256": "49046d2d791931a4c5edab31d34613d84d1649df5d91034fa66aff2c4fee4fba",
+          "rgba_sha256": "1dfc4055c9ca2b6a1334551db6061933e6ceb970f3885eaf4eed41de515fde56",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/33-sift.png",
+          "output": "design/avatars/2026-10-22/png/lossless/33-sift.png",
+          "before_bytes": 425935,
+          "after_bytes": 350919,
+          "saved_bytes": 75016,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "0d9777eeeb28d5b2e1754b6a6393f890f1e9db9280b468f2a13a0b711bf4984a",
+          "output_sha256": "e6842a1d99086930cbedd7bef07585c737e542db69f47e759ab92d3bce85adb8",
+          "rgba_sha256": "af92997ad86ed62f55a3b0218ca924cc6ab935cedb9e01faf2411bc4d88b9b00",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/34-knoll.png",
+          "output": "design/avatars/2026-10-22/png/lossless/34-knoll.png",
+          "before_bytes": 310991,
+          "after_bytes": 240639,
+          "saved_bytes": 70352,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "db02361ec6b37749ff709b3eac8ca25d6487c5d5bc596c497464ab1367d94664",
+          "output_sha256": "5ab77fad759e06eda68444e84d60119868bf1e230c3e3528fd67cbf591b532ca",
+          "rgba_sha256": "0149849c889adbc0b45d9d472ca53121f0e858e22ff614847bceb999ad354f1c",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/35-loop.png",
+          "output": "design/avatars/2026-10-22/png/lossless/35-loop.png",
+          "before_bytes": 457795,
+          "after_bytes": 375602,
+          "saved_bytes": 82193,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "bd55535e1c60edef6fa9bbc45577de3b0865dd42c45355460d24c97de6004dc6",
+          "output_sha256": "e4cf464f90c3aa57a216d4f58809a02b324ff30decdb46008ea413918424cb28",
+          "rgba_sha256": "badea92806fdada60b7d63a648b077786593338db51c914522c9d9cb8bc74a10",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/36-peris.png",
+          "output": "design/avatars/2026-10-22/png/lossless/36-peris.png",
+          "before_bytes": 543488,
+          "after_bytes": 450415,
+          "saved_bytes": 93073,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "ffecb6d22241fd9577488cf58b66399b010a5195add60e04368774bfa548994a",
+          "output_sha256": "adcc686bf27bfdba9bfe9c4d44f19e24abcf94bc10d8301eeb53b094b2751af5",
+          "rgba_sha256": "29acac05c5e7b698857c29953f8141f95e481ebc6c99a14b82675f3da3ed06b4",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/37-hush.png",
+          "output": "design/avatars/2026-10-22/png/lossless/37-hush.png",
+          "before_bytes": 386933,
+          "after_bytes": 315754,
+          "saved_bytes": 71179,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "5795c100c402aa5523a606d3888a8041064ca69694518b9888a7e2983094b81d",
+          "output_sha256": "91187a0bd363351f4b361c4fb94c46572fbbe6425bf4be70e3e9fb7fc0db8198",
+          "rgba_sha256": "8e95aa96ec4637e337e8718d0d15010dc38b6a92992dc0f8dc44c445ce630343",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/38-sprig.png",
+          "output": "design/avatars/2026-10-22/png/lossless/38-sprig.png",
+          "before_bytes": 437057,
+          "after_bytes": 357003,
+          "saved_bytes": 80054,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "b89f9a32632b5248cca4474ebb2cf220640c16ed1b1fbfc4472922f9bc9b64d3",
+          "output_sha256": "31a935397e7a85b14161aa4503dfe992c81940fccc7383e0ee322cc04d277d9f",
+          "rgba_sha256": "3ce73226325f8452eed0d67ca1ff578ded906ecbaba4dafc87bc54cc9b00cc74",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/39-toggle.png",
+          "output": "design/avatars/2026-10-22/png/lossless/39-toggle.png",
+          "before_bytes": 449032,
+          "after_bytes": 358421,
+          "saved_bytes": 90611,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "57a3b5e81fe4575717d581e3f8c8ba42a1d8e87b50270fe8507e45f42ad18108",
+          "output_sha256": "add88ca749dcbd7c4c6d4b8b8725fa3d0285285e909b7624f746b9c80c70f3d1",
+          "rgba_sha256": "824aa76cc6e7a56bf0c9a4d92df487ca88aff5c0695c1dd33296f763354c5a0d",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/40-loom.png",
+          "output": "design/avatars/2026-10-22/png/lossless/40-loom.png",
+          "before_bytes": 454635,
+          "after_bytes": 373017,
+          "saved_bytes": 81618,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "d0ccd29e3177cc5c89ff27726a99b4b0ca2dc999595fcc5fdf06a87be2f1f377",
+          "output_sha256": "eb2d01ed65f3c27b5459ad8cbbaf4a7e4f0ca94b8bcaf8922b27773ee19aae59",
+          "rgba_sha256": "67f3dda95c7322e21dfc80ea3b53613cbc93c5149b8ae94f3c9608f3b629ab9a",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/41-nova.png",
+          "output": "design/avatars/2026-10-22/png/lossless/41-nova.png",
+          "before_bytes": 351950,
+          "after_bytes": 290701,
+          "saved_bytes": 61249,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "7489bbeeb294f7c616a50d826dd1e3e1488ade16c62d72210db881d039d3f5de",
+          "output_sha256": "a5f75eddab76cf95066fa1bd101d008c55465653bc7db01fa8c4a077b119d9e9",
+          "rgba_sha256": "ab6ba89abc6ef64201244ce1489eb3455e8551f009b2370095acf03dfd809c1a",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/42-drift.png",
+          "output": "design/avatars/2026-10-22/png/lossless/42-drift.png",
+          "before_bytes": 365419,
+          "after_bytes": 286758,
+          "saved_bytes": 78661,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "14c057be0817813aedb3497009d912b6b9921c78299df626aa3c9ceeaad7d998",
+          "output_sha256": "a60b9fa69978527c04c166725ef15c50899d1cd4ad6e4df2ea9e039141967c77",
+          "rgba_sha256": "9ef394c104861a33eec274ac01c6dc7aeb3c0a799630dff2aac951b9107e76cb",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/43-fizz.png",
+          "output": "design/avatars/2026-10-22/png/lossless/43-fizz.png",
+          "before_bytes": 380338,
+          "after_bytes": 318832,
+          "saved_bytes": 61506,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "dfb380ef49dd96303bad193acf5242d6dc92c63499efed96d1d1f10946c0cbf3",
+          "output_sha256": "87ade2f8f4ff0226345d1ce6299fead5739e9eff290b18ec6bfaf6e8a621d7c0",
+          "rgba_sha256": "fe809dea294b881661d5f36c6fb94a5012c10e1042f557aac77dab3a068cd79d",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/44-puck.png",
+          "output": "design/avatars/2026-10-22/png/lossless/44-puck.png",
+          "before_bytes": 372182,
+          "after_bytes": 293907,
+          "saved_bytes": 78275,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "1b196ef225fc0503b628fd908398ee8b2bfe34a019fd034445e2c6fe1a455ce5",
+          "output_sha256": "3d37bab4559a02f5314ae4f8d361f2ea184f0a9c651720247c8cee6e9577c073",
+          "rgba_sha256": "09498b3d78ed91680179cda509a943bf852ed7fce46fbc31307ab1d704b416cf",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/45-stitch.png",
+          "output": "design/avatars/2026-10-22/png/lossless/45-stitch.png",
+          "before_bytes": 300714,
+          "after_bytes": 245286,
+          "saved_bytes": 55428,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "5a98b89b44f995d6d291934e44e0e4614688a4aed736a612da456ecaa44d20fc",
+          "output_sha256": "d273a28074508779bdafebcc9ccc3d5fd27452d2f8eab544f3c4cd3b4ff1980f",
+          "rgba_sha256": "27cf0d090a93987770cb8d6ee2c75224b72069ce7d23ae19cbb77d7023be615c",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/46-huddle.png",
+          "output": "design/avatars/2026-10-22/png/lossless/46-huddle.png",
+          "before_bytes": 400419,
+          "after_bytes": 315671,
+          "saved_bytes": 84748,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "dd726e82b0ddf7e95edabf08491bba6fd8c9e8ca63e5f9c776f1fe3a7e8e2506",
+          "output_sha256": "08cea7a7cf693c767278990dc375c83fa95456253048e416718338bbdd707cb3",
+          "rgba_sha256": "01700616650c0aecfb055cb548caab0b28a8c1db98545ecfa2b62b53a66d3b06",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/47-nudge.png",
+          "output": "design/avatars/2026-10-22/png/lossless/47-nudge.png",
+          "before_bytes": 379523,
+          "after_bytes": 302139,
+          "saved_bytes": 77384,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "fbf2519a2e80a1e4476c93d7ceb61e99b46b8e61070b6b575cc62d75204dd284",
+          "output_sha256": "6360201363bc8920dd57f2bff9ac7bd161b3a80fd0a0fea834cbabd2d62dc079",
+          "rgba_sha256": "117cceafca1324e3f9d93ce0fb9d203ba9a489bfb44d0cc5978b0c3c896ea3ca",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/48-vellum.png",
+          "output": "design/avatars/2026-10-22/png/lossless/48-vellum.png",
+          "before_bytes": 489318,
+          "after_bytes": 399433,
+          "saved_bytes": 89885,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "4458fcce27110e44ba00c906c344aec95470f3fb5dfd6df7eb11e17b5c496ed9",
+          "output_sha256": "7d56f732230b1cd0f34ff0941d7f54dd2e0f3ca5b6fe45640001c88dae4fe3b6",
+          "rgba_sha256": "3f356f553d908961c638daa407645c384040d12b910397da2f83bcfd205757f3",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/49-riff.png",
+          "output": "design/avatars/2026-10-22/png/lossless/49-riff.png",
+          "before_bytes": 369258,
+          "after_bytes": 290089,
+          "saved_bytes": 79169,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "f4cfe3de09f90a38d305889ab07bfd29f69ed41d73c7383535dae7cc37509b90",
+          "output_sha256": "e4a1e581edf4247aa82af3453cd6ce28c2adffb35863c679b812b28c608fd449",
+          "rgba_sha256": "58761bd748e735789f80182296a31f98ff9e603d08cefb0c8a2260a2143e553c",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        },
+        {
+          "source": "design/avatars/2026-10-22/png/50-mote.png",
+          "output": "design/avatars/2026-10-22/png/lossless/50-mote.png",
+          "before_bytes": 410060,
+          "after_bytes": 318952,
+          "saved_bytes": 91108,
+          "dimensions": [
+            1254,
+            1254
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "f9f1caeea39d856b94d36e4198aea38bf392fa84f9e59d0703211d9ee47a7d19",
+          "output_sha256": "c247db273070e5637aa30989e0c60464d8b790b62609e1899c33d9a145514634",
+          "rgba_sha256": "6f14c3597623de7d9eaf658b6b88f3b73d4e7f06edb03dcf62bac391605f47c9",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": [
+            "caBX (non-rendering content credentials; retained in original)"
+          ]
+        }
+      ]
+    },
+    "app_resources": {
+      "count": 50,
+      "before_bytes": 1377948,
+      "after_bytes": 1176884,
+      "saved_bytes": 201064,
+      "reduction_percent": 14.59,
+      "files": [
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-atlas.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-atlas.png",
+          "before_bytes": 26140,
+          "after_bytes": 23199,
+          "saved_bytes": 2941,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "067a20530d5b718b1c870d192282eb845c2094234db84e8cd195514959f726be",
+          "output_sha256": "899f945f53e79948f9d91845333fd4994aaa2818e25a473e81fe8935d258e1ff",
+          "rgba_sha256": "8ac0fc22d2f85575097eb7affbd58c8f890639cbdb25e2acb1eed21e13c681e7",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-bento.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-bento.png",
+          "before_bytes": 36318,
+          "after_bytes": 30520,
+          "saved_bytes": 5798,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "97584187e02c7fb28b9d66d7109a4cceb03097f111ba56918a0446fc92c3d2ce",
+          "output_sha256": "17adb667140ef3ab031af5f320c6b71fe06131b2e366705c93c5bbfb1f6a878d",
+          "rgba_sha256": "130ca652d0b1670432cb188cb3e835dde8776176c77c87f3f60be2c982c483b9",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-bramble.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-bramble.png",
+          "before_bytes": 26006,
+          "after_bytes": 21836,
+          "saved_bytes": 4170,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "3b42801d2fe665ab541bfedb81772b66d1553e1e50b6dc77c743e84fe2482299",
+          "output_sha256": "ad322dbe671492868ee20f7a855ba898c66b4f49146bfba79d857283994b31ce",
+          "rgba_sha256": "f5e62b4f6e6fa8913ce32efa8e22ab3d5f0ff7f1cf49fd2f9198e9d48197d483",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-crumb.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-crumb.png",
+          "before_bytes": 28518,
+          "after_bytes": 24109,
+          "saved_bytes": 4409,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "e6bf0981bbdd8e2aac31657bb4754c7e1f8b10807f65f1853d22afc736156280",
+          "output_sha256": "180b52f8fdbfbc98475218b3a0a58c847092185ccabd28fa2e1dd7269f4c16c9",
+          "rgba_sha256": "e693573fbe434455835d274198f996ba22ba593d43b3926977ebf29266803d3d",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-doodle.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-doodle.png",
+          "before_bytes": 26277,
+          "after_bytes": 21482,
+          "saved_bytes": 4795,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "ffef259d0234fdecb89433a93abfddcc450885efe92b914089fbcc34da197384",
+          "output_sha256": "b4c73e21fe95061c0a54a35e84ae1863e1de3724007a033518fc996b153d63fe",
+          "rgba_sha256": "0b63fea9392a805560c12d7c992a4642b83ada0f3d4c1c7c369d95eff4e912a3",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-dot.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-dot.png",
+          "before_bytes": 25315,
+          "after_bytes": 20910,
+          "saved_bytes": 4405,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "d6713823235147326917c3e7a3b93655b720c65d63f687b6bfdf486008a7678f",
+          "output_sha256": "fa6b897d2bd7d203856726fb3854373fc26f5b34cad54f2bf4872ebbe94a4825",
+          "rgba_sha256": "20d2c6799a19ccd2de078cd63cda72df7cafd6f10cc0d864f9540d422f991031",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-drift.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-drift.png",
+          "before_bytes": 24603,
+          "after_bytes": 21012,
+          "saved_bytes": 3591,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "c6b7deab3b00dc39e0082efa4b21bc8915ef408588a1631197b43ad1a8bbbb72",
+          "output_sha256": "9560ad9be607acff3b27241323a74a0473245a4602a61eec6a91741c18a91faf",
+          "rgba_sha256": "c5ac0b5f39bcd722b79750cb35fc34c10e8fd3b9486a50a3dab72c791fab7df8",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-echo.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-echo.png",
+          "before_bytes": 27471,
+          "after_bytes": 24146,
+          "saved_bytes": 3325,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "d1a7ce9e6a4b9ba56e410af54ddc06f64405ca668bdd4ed66e22e9a67bbff3d4",
+          "output_sha256": "5e1fecf847b1154cba78eccdd4a7b7d7c942ff67bed213f030e542503e6224c7",
+          "rgba_sha256": "5e472200153f50c88bf17850f497cabb9705c796bbb4108df375e601872e29df",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-fable.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-fable.png",
+          "before_bytes": 33830,
+          "after_bytes": 28751,
+          "saved_bytes": 5079,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "340310d09fcd7323868dc2713ab52fea869f5febbabf0f6e6294deb65816c91c",
+          "output_sha256": "23cb40f6d72ad565b1e6c8784e99ea454c036ec444c74bb2d2bf5c79cf26870c",
+          "rgba_sha256": "12c1e98857020881737762acab5b9f3a193d09b5b34ff20d4edb2242984fd32a",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-finch.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-finch.png",
+          "before_bytes": 26085,
+          "after_bytes": 21811,
+          "saved_bytes": 4274,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "8f5b0660ba157f2f8e5ca7280c0b847b712c2feed76e59302aebf0ddc4eac997",
+          "output_sha256": "162a94cfe5be5f8b050eff251c83558d5335996ab0d61a9945d120a06973adab",
+          "rgba_sha256": "7658d6346fd2e5023d7bbd41cadda35f95c1f351006f3f8bbf7a19246a9bd880",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-fizz.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-fizz.png",
+          "before_bytes": 27786,
+          "after_bytes": 23637,
+          "saved_bytes": 4149,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "968bb31f110e82ec0fcc21fcc6382d44289502cbdcb427873d3f5e61a75dc66d",
+          "output_sha256": "ccf86a2d8c7643dbfc03426ff8cb5ac104b7e4d96557500cc7dbcfa4926fdd86",
+          "rgba_sha256": "887810a8e7a791b14a11d974bb7de2c9432012de13294f4805d708cc9398bb0f",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-glint.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-glint.png",
+          "before_bytes": 24813,
+          "after_bytes": 20162,
+          "saved_bytes": 4651,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "a81d50543d8224f7f0843584bfd9555588afbe72569ac15e27864c22dbf504a8",
+          "output_sha256": "3a53d2574ae2c29b463e3f80403c9654d5a712b9b8888dbfc24169652a8aac30",
+          "rgba_sha256": "5e08d4c429887476d8f4874d6826c3c0b861fca48141590e11ab8c401df5abac",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-huddle.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-huddle.png",
+          "before_bytes": 26921,
+          "after_bytes": 22696,
+          "saved_bytes": 4225,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "7ea2ec7cbd637c4b39dbaa6ec6dbf13fa5ca3a5da41825f134ef244ca54120ae",
+          "output_sha256": "08ca8c7e8bf5edcca469ec4053aabae82adbb1a44dbe4464bcaf939f1b29538e",
+          "rgba_sha256": "207d2ddcccae34a3b39960712ebdd3b7916b83d38af2075c101b3eee63ac0362",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-hush.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-hush.png",
+          "before_bytes": 27068,
+          "after_bytes": 23656,
+          "saved_bytes": 3412,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "58b89f793f77fd026046dc12c15093c3dae504069a02fac6b9e87153a117eb59",
+          "output_sha256": "6ee599a007f9229eaddc86a52f698217cd8d0b6a791f9b6f8d6e2c0aece9b8ac",
+          "rgba_sha256": "071c8415c51024c5cf7e2d69c46ff0067f43b457704fc985507986c3c1ce272b",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-kite.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-kite.png",
+          "before_bytes": 27446,
+          "after_bytes": 22911,
+          "saved_bytes": 4535,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "f7157944627196a42369f0377491e618a97ed5064ddca8691255971bf0391cd0",
+          "output_sha256": "39dfca6f1f63bf04d6c7e2fe19fd7967b18e350a585bb548bf745515f7a2c889",
+          "rgba_sha256": "56ebc0317938b07b93d76ccbd383bc7d2cbcadeb6a4537164f5479273da6e533",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-knoll.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-knoll.png",
+          "before_bytes": 21397,
+          "after_bytes": 18124,
+          "saved_bytes": 3273,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "ecdf1800f7a7ba0544fea458b29dc64c511215afe56c357993c365381caa4f73",
+          "output_sha256": "5c613fcb2ec7008184e2cde1fa2357ded52e0eb6335d460b31b80dfb70b1a313",
+          "rgba_sha256": "d1437824f6eb812dc7e4dc9cbe64a60e2ec4a0e37b43d9cf99091c8958efe1c2",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-loom.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-loom.png",
+          "before_bytes": 31510,
+          "after_bytes": 29156,
+          "saved_bytes": 2354,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "aa56260d3f40c5da0dfc9c00077a4d2655af257caf341ec122b6c0ffd2421aa3",
+          "output_sha256": "19b8c0763e0ba3c7c80f9192a6b24ef8401c23bdf510bb6f3969abce9993f109",
+          "rgba_sha256": "dbfa4e22b22673d5c86720b22512bb271cd8179115230b15ae788e09a8a9ec64",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-loop.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-loop.png",
+          "before_bytes": 30988,
+          "after_bytes": 26658,
+          "saved_bytes": 4330,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "96c3eb258366d2703a3c490b120bcfcfa52597c5362db1e014a3fdfa99745547",
+          "output_sha256": "926655f1dfe8ba5b5920645ebb5a11ddab911a00d00fb46589dbb12eacb55d75",
+          "rgba_sha256": "e12a7f6af6fd159ec0dd5b1a2a8ae040b64258a6914abd2d3f1ec8aab78e1955",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-lumen.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-lumen.png",
+          "before_bytes": 29190,
+          "after_bytes": 25738,
+          "saved_bytes": 3452,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "816d445fdb7923f6fbd7a2e8b3fcd448e6df039392abbd9d7870e8b656b41be8",
+          "output_sha256": "04c8ed1faa9766d34027146ac2f4809d6ef969b564f7089007e049d1dc8fbc44",
+          "rgba_sha256": "35ad2822eb918ea3cef2928c2122f76eb251199295d64d05f63fce72dccb3ebe",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-mallow.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-mallow.png",
+          "before_bytes": 29708,
+          "after_bytes": 23996,
+          "saved_bytes": 5712,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "ee0bd85105af621c298982b9dc73e34d2e371a6699a2aae26dc79b5912d12cee",
+          "output_sha256": "9ba939d4d0a449e63caadc45872152fa46f520c0a943a7fbc7d58693eeadd7da",
+          "rgba_sha256": "fd8109b657f523a1940b8267ccaebf771b1823a3c913f9929472e078ab0b598b",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-miso.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-miso.png",
+          "before_bytes": 33052,
+          "after_bytes": 28070,
+          "saved_bytes": 4982,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "fb77af3da339445c81de13715ffe3ff9e418cb04a940f386c646dfb6177ccb0b",
+          "output_sha256": "5d5a9d0aa82a3c9807c0ba6ca63e266e1da2ae1408fdf81c89bab6c89f9cb9d5",
+          "rgba_sha256": "5f5b69488ce1ece79bd55649ede36594232fa4ad3ea3980e0514875d9838951c",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-moss.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-moss.png",
+          "before_bytes": 25884,
+          "after_bytes": 21996,
+          "saved_bytes": 3888,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "ddc14d7bb7d715e686ed54009c38af9d0f19df864efa5b4753b45046ba634b9c",
+          "output_sha256": "f6c8651cb4ea116ad38bec43829874503c9ae352937ac12cf546835aa80c9b95",
+          "rgba_sha256": "6ea10c1b84f346ca65d8e36298d21e820a225a638785a535ac6d726c4f12e4d1",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-mote.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-mote.png",
+          "before_bytes": 26675,
+          "after_bytes": 22117,
+          "saved_bytes": 4558,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "6de77fba03c99209a504ab51a3b80ac33089e162e8a43475d12f0a28ae79da4d",
+          "output_sha256": "96644bb0135ae45935a8ceddf079bfd0f79078321f77ec7afe6a39db8769b96c",
+          "rgba_sha256": "8a1b5352b15daf9fee153df0cfdee0ba544b3ca6de0aeb3e9d2bae6da368206c",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-nori.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-nori.png",
+          "before_bytes": 20958,
+          "after_bytes": 16629,
+          "saved_bytes": 4329,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "e96cfbe03afa1efc10539096770ec43fbf8ed4879b5cc6cd34e0691d45e21c78",
+          "output_sha256": "3481560558f697cf328715cdc0c51185ceffa9d88487a5108c711b0e0926f5ab",
+          "rgba_sha256": "52ca786a69e984215c6ee55f257526eb57e060e341163047f6eb8a07d4b5de25",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-nova.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-nova.png",
+          "before_bytes": 24769,
+          "after_bytes": 21598,
+          "saved_bytes": 3171,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "d178f610eba7cdb5c12903ad379150b081a3e839460afb22b466ca45a31fa6e7",
+          "output_sha256": "70b0a04242ea93657d3d8c75b7a48bb38f8c9c978ef8cb5c6f94b5eed540f5cc",
+          "rgba_sha256": "a596751672375d82b3f8b835f17de663bcaf1e9295bf15729bb884971c317cf1",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-nudge.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-nudge.png",
+          "before_bytes": 25988,
+          "after_bytes": 21390,
+          "saved_bytes": 4598,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "cb01534ee41212a8e400a2d702c08b7c717bc5d9ede385d450184af495401cbd",
+          "output_sha256": "2988de0c2f6a2ac9038f0528dea418eee63e251a8f65ab20f059bbd1587a00c4",
+          "rgba_sha256": "2c7e45e891d8490874ddde6325fb27c1c5797250179c88527cc31a2290177e18",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-orbit.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-orbit.png",
+          "before_bytes": 28362,
+          "after_bytes": 24116,
+          "saved_bytes": 4246,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "f3ffe4335d555c7237af9efda84644982d850a95b1fb4e0b9163bd33d3d22f89",
+          "output_sha256": "3f57ec6f088490a4b7f829b4271a1283b4d71b79758a3d59ed43b6b6dca1c969",
+          "rgba_sha256": "2eeb1e3392e1f2ffa750946ee86196591a30737ce8e346ae7064f07ff9f37a6c",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-patch.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-patch.png",
+          "before_bytes": 32289,
+          "after_bytes": 26869,
+          "saved_bytes": 5420,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "e43b550cccd66f7aa3473ea668219973394655c20a69e0f3267c77f7a8a04ed5",
+          "output_sha256": "548779f6e1fda54ad2b3ae5dc141e1b2b5789ce0534e5f10b087e2020a8239ea",
+          "rgba_sha256": "22193bb9f78bfc344f8b247c6f082c29b3800785a77105ae989705b69b19279e",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-pebble.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-pebble.png",
+          "before_bytes": 19612,
+          "after_bytes": 15785,
+          "saved_bytes": 3827,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "98e044a8c0625f5e1bf1f034c3ce4fceaf64e11dca091476016ac4fd6a1b12e3",
+          "output_sha256": "561198f0a89f521eeb49e00d9b86b7682ad157a8a04e44681ca595db3a0b2b21",
+          "rgba_sha256": "5414a6fe374703433e1ef5de956f3b4193ab24e1a565fa9826da0f9f947073af",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-peris.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-peris.png",
+          "before_bytes": 36681,
+          "after_bytes": 33951,
+          "saved_bytes": 2730,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "9291593a2a34f75a712680ae17ee1e3a6b1cf9a8b5691dc45bb5b4a82554da67",
+          "output_sha256": "45dd388474cd3d45af54146ed5e78c9f7fdf96fdd6b92e32858f4f4b6b6cfa73",
+          "rgba_sha256": "fa32e59325eef93d4e72cc10bc63eeee76b0e1ea7e246690bc64805a42fecc33",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-pip.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-pip.png",
+          "before_bytes": 21983,
+          "after_bytes": 18507,
+          "saved_bytes": 3476,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "936482cea10affa9530ca334de95998bea3a1b322ede7b676230fe029828f451",
+          "output_sha256": "e4f3992859039cbde9a139fd1a3f370fe35bd172c70db792a4118f724f60871e",
+          "rgba_sha256": "8519af5de2d57148f376c4ce080666c98b392df609f2ed1170a06573564a9594",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-pogo.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-pogo.png",
+          "before_bytes": 25576,
+          "after_bytes": 20435,
+          "saved_bytes": 5141,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "cd1d18a1850ed53fa6ee553bb45aa2750f335a89741b7891a92e982b5d8918a8",
+          "output_sha256": "9defa148e3cb197508bf43404865bb9c45fa1ee874bbc9eb260e4f97c5e3275d",
+          "rgba_sha256": "d286c0432a792a44c19f5f6939242900035da17f3de48652b8ea9b12df97cb02",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-puck.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-puck.png",
+          "before_bytes": 25226,
+          "after_bytes": 20531,
+          "saved_bytes": 4695,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "f1822a88b8b41056c8e938f19bc4dc179b2a15f8850d3aa3a3b51990d44f2534",
+          "output_sha256": "1f38038a1876fb5e9efecd060ab6f8cd8e1f511926822d98383528ef94b729cc",
+          "rgba_sha256": "ba9b2a00259565ce0fe3098966dda4612fca47c9469b83bab30fafabbd873913",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-puddle.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-puddle.png",
+          "before_bytes": 28809,
+          "after_bytes": 24811,
+          "saved_bytes": 3998,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "eb9eef2153c64b57a49dc5bfb5c292f4bfd3eea8b11dd03bd01fb1508ce7f4f0",
+          "output_sha256": "9f8a6995438047decdec7a91f3ea8adda3097bdcf745fe8db2a3d81de5ce7bd9",
+          "rgba_sha256": "3ef33f2965ddfa6f97494a5a1e9a304633f0942d5d53562dcfbb4294e862af9f",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-quill.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-quill.png",
+          "before_bytes": 29280,
+          "after_bytes": 26107,
+          "saved_bytes": 3173,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "64b1b62a731b94720b809fb392fec6ff41877294b2b4732e121df21c02cafc20",
+          "output_sha256": "26e6f027e068c939d9db388b66fd207336bea0d9ffed052016d1b4af2094e27d",
+          "rgba_sha256": "d92919a28844b71cc6dffba3baa8e4589923c073c04655720c10528505bd72de",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-riff.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-riff.png",
+          "before_bytes": 25053,
+          "after_bytes": 20865,
+          "saved_bytes": 4188,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "2a9b8be209852fcf5510d07424d8bc286ce7f56a41831e83711f204d9a0a05df",
+          "output_sha256": "fddf2a37123abe112f3ca0968ab05f1ad66ba2cb7d339ac1f9db9f38e8d9c1b6",
+          "rgba_sha256": "9344a06e4c52b60b95676bb8cad94845b31933a0e53e1ada3b77f7ccc51cbe9c",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-rook.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-rook.png",
+          "before_bytes": 28338,
+          "after_bytes": 23770,
+          "saved_bytes": 4568,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "629772a3519594fc5ff81cd4b3972254b8e56e023f6714e433adb3c689894b98",
+          "output_sha256": "31fac4824549cd4188bb8525a4d943f182304e1331a97ccaf5effe61cc7a05e9",
+          "rgba_sha256": "71f31d19932bf6e0b967e1543d30153a185e6d03819216782a0037340e1cc5f0",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-seal.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-seal.png",
+          "before_bytes": 31641,
+          "after_bytes": 26483,
+          "saved_bytes": 5158,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "41efa7f4de7de55615c1728cf78a19f0c6e660476b546fbbe183800adae496e9",
+          "output_sha256": "4c4a1e30ddd02e137863868cbe62b9e04e96120cd9bc5ce9df1989a3fe026f46",
+          "rgba_sha256": "4cbfe06d4638a142d5b926136521d56daabd19df81f16b1af58130a5b0ffe04f",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-sift.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-sift.png",
+          "before_bytes": 30323,
+          "after_bytes": 27099,
+          "saved_bytes": 3224,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "ff8499754df7498a0e31df875cb9b1cb84f3f02acddb115dd5160ebb206994cb",
+          "output_sha256": "78c71d10ce8afaa2ef5c2f62bc1f0e8680db5df8274a5c604422ba2fe5b32d72",
+          "rgba_sha256": "f5d962a2bf146e8a46c6f6a843ebc6eea5d5551858f1319336793fea8458d55d",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-sprig.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-sprig.png",
+          "before_bytes": 30415,
+          "after_bytes": 25939,
+          "saved_bytes": 4476,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "6e5a631972c62f19603f7fda98337cdfa4a834f777a79e42706e44d6afed975e",
+          "output_sha256": "25c169bed44cec302fca13877f515f4ca9f95b785cef96d5abe931f974dcbda1",
+          "rgba_sha256": "85944b540cc4ffdd4c8863fbc697ec7ef13085a4f93e8f31b465c9f13e2af7bd",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-sprocket.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-sprocket.png",
+          "before_bytes": 24542,
+          "after_bytes": 21104,
+          "saved_bytes": 3438,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "7d516b58141afd8e74f783cac3c6a243d77c742e645e5e1e0ec91f437a92d70b",
+          "output_sha256": "ff86f37adb87b83084b17ca75a3432dda49c62adcec19484eb95684b9c954b0c",
+          "rgba_sha256": "bac7235d6432409cec67abc594acbfa0298aaad823b20862f5ce588df914bf2a",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-stitch.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-stitch.png",
+          "before_bytes": 21580,
+          "after_bytes": 18237,
+          "saved_bytes": 3343,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "870673b676fb22a47e944f1ce6aa8fad938733db184fafa05cb7c70743bb5311",
+          "output_sha256": "e78c8ef0700473ffab388eb08495b9db6dcbfdebf0bfd5beaee06542f7ae4a02",
+          "rgba_sha256": "7d73aa33a80013fcec0b52ecc7f8eda4f0324e3837e888d8117619955b56d376",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-tally.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-tally.png",
+          "before_bytes": 25116,
+          "after_bytes": 21988,
+          "saved_bytes": 3128,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "e25596ad1061363aed202cee14e66cb28f45b95993abaa0870e855ce9036c35b",
+          "output_sha256": "6c527ba2c0d3b4fe8575476d3d6877aee7fee63d4acb80f427adc7705a1ced96",
+          "rgba_sha256": "4448a34d8ee55163f336cea63af64a3a7e70d48428f7a2ae83e7c1925c525b7a",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-tempo.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-tempo.png",
+          "before_bytes": 29137,
+          "after_bytes": 25435,
+          "saved_bytes": 3702,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "7581b898f177a7b745badf513b1dee68e2be6ef604cc91456b7e53f1e164c387",
+          "output_sha256": "62692ad66a8e44d8c38127996104f4289d68c5288a9e3b2a623fbf29a78a2dcc",
+          "rgba_sha256": "3fd4c79d3d2c27a8ad7c2b2393b3674a08b36ea04ab66ff1d60afbd65448c37d",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-tinker.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-tinker.png",
+          "before_bytes": 23907,
+          "after_bytes": 21229,
+          "saved_bytes": 2678,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "b2a17a3d8896bbb77f288d4558da742caa2cfa3e0e42a1a06252453d27edd406",
+          "output_sha256": "d3b2a5c7b5789c1251bc7a132333e2a1baab5dbe3706eaa8c8fc25c32d263be7",
+          "rgba_sha256": "a9dabbe638605c489f2016ffa6eee9522fb09373296b1da07f60456928a462ff",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-toggle.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-toggle.png",
+          "before_bytes": 30981,
+          "after_bytes": 26756,
+          "saved_bytes": 4225,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "7628500345021d9f7d138df356b929d406d42894eca4120564b25c08eaade4d9",
+          "output_sha256": "cbcc67be70499cc12b0d47425be5be4b384fbc937eb995e51767ede9d9ab8bc6",
+          "rgba_sha256": "ab943d2eeccfd2ba1691d10f38311ee46c7a8ae6f7536aba9c0f9b94d818e04f",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-tuck.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-tuck.png",
+          "before_bytes": 31658,
+          "after_bytes": 28043,
+          "saved_bytes": 3615,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "5ae52ba3abeb90f1e794973f9a44c81865e1108fbb2d4f37e391a8e6e9238203",
+          "output_sha256": "78f2c622455e2008edbbcad176c5718efa4f1ce0d68c636ad46c5e9c653900c8",
+          "rgba_sha256": "342d3a90189e5895c9df53a5ca1ed2e42dfb48870132b6e5df140bb8baeb9836",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-vellum.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-vellum.png",
+          "before_bytes": 32883,
+          "after_bytes": 29866,
+          "saved_bytes": 3017,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "e452c562631eca299ebc9387749fad422fa71cd99d10f1ce0334278ac20e73a3",
+          "output_sha256": "0c92fff5c57f87b5b9b08e3751b7364ec9f245423cdd534d62f5b2619a66992e",
+          "rgba_sha256": "cb49a29d6368fe93cd7250db8b35a4b8b53e02b650d29d81906caa365b62570b",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-wisp.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-wisp.png",
+          "before_bytes": 20474,
+          "after_bytes": 16860,
+          "saved_bytes": 3614,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "707db9d9c45f653a9394f09ea0bb342f6b543316db659a843a08a9a3f1386a24",
+          "output_sha256": "9af5842b348ea2b1f5c6be094c59cf58d19fc42586fd9541c114d37ded253c5b",
+          "rgba_sha256": "8200c393c68c1da5cfb4e8845544c3914066e4e57fb94782936c96a98a7eb74e",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        },
+        {
+          "source": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-zippy.png",
+          "output": "Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-zippy.png",
+          "before_bytes": 29366,
+          "after_bytes": 25788,
+          "saved_bytes": 3578,
+          "dimensions": [
+            256,
+            256
+          ],
+          "mode": "RGBA",
+          "decoded_pixels_identical": true,
+          "source_sha256": "162c22c1144ad78631d08d2064f55cc3e8f44cb4dd623601278b383ddb0d66ca",
+          "output_sha256": "45747c517682ca84c4afe8a6a3ad39a69a8e351d710e834e6407442172a675c8",
+          "rgba_sha256": "c353a0028871620abed0aa674dc6d0927bf2e57c2849141dcf7184b5ed50638e",
+          "rendering_metadata_preserved": true,
+          "metadata_removed": []
+        }
+      ]
+    }
+  }
+}

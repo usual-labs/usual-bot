@@ -17,8 +17,11 @@ struct UsualBotApp: App {
                 .task { await model.restore() }
         }
         #if os(macOS)
-            .windowToolbarStyle(.unifiedCompact)
+            // No title bar: the panes reach the top of the window, which drags by its background.
+            .windowStyle(.hiddenTitleBar)
+            .windowBackgroundDragBehavior(.enabled)
             .defaultSize(width: 1100, height: 720)
+            .commands { SidebarCommands() }
         #endif
     }
 }

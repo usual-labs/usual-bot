@@ -4,11 +4,33 @@ import SwiftUI
 /// The sidebar: every agent and room, in roster order.
 struct ContactList: View {
     let contacts: [Contact]
+    /// Shows only contacts whose name or last message contains it.
+    var query = ""
     @Binding var selection: Contact.ID?
 
     var body: some View {
         let byID = Dictionary(contacts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let ordered = contacts.sorted(by: Contact.rosterOrder)
+        let ordered = contacts.filter { Self.matches($0, query) }.sorted(by: Contact.rosterOrder)
+        if ordered.isEmpty, !contacts.isEmpty {
+            Text("No chats match “\(query.trimmingCharacters(in: .whitespaces))”")
+                .font(.system(size: 13))
+                .foregroundStyle(Theme.secondaryInk)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            list(ordered, byID: byID)
+        }
+    }
+
+    static func matches(_ contact: Contact, _ query: String) -> Bool {
+        let query = query.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return true }
+        return contact.name.localizedCaseInsensitiveContains(query)
+            || contact.preview?.localizedCaseInsensitiveContains(query) == true
+    }
+
+    @ViewBuilder private func list(_ ordered: [Contact], byID: [Contact.ID: Contact]) -> some View {
         #if os(macOS)
             // A plain stack instead of `List`, so the selected row gets the light grey pill from the
             // mockups rather than the system accent highlight. Arrow keys move the selection.

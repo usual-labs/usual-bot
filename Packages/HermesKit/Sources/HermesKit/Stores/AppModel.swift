@@ -28,6 +28,7 @@ public final class AppModel {
     public var visibleContactID: Contact.ID? {
         didSet {
             for (id, thread) in threads { thread.isVisible = id == visibleContactID }
+            for (id, room) in rooms { room.isVisible = id == visibleContactID }
         }
     }
     /// Version, health and account, once the Machine tab asked for them.
@@ -50,6 +51,7 @@ public final class AppModel {
     @ObservationIgnored private var channel: JSONRPCChannel?
     @ObservationIgnored private var threads: [Contact.ID: ChatThread] = [:]
     @ObservationIgnored private var routineLists: [Contact.ID: RoutineList] = [:]
+    @ObservationIgnored private var rooms: [Contact.ID: RoomThread] = [:]
 
     private static let gatewayKey = "gatewayAddress"
     private static let rosterInterval: Duration = .seconds(5)
@@ -134,6 +136,7 @@ public final class AppModel {
         contacts = []
         threads = [:]
         routineLists = [:]
+        rooms = [:]
         gatewayDetails = nil
         lastSaved = nil
         link = .connecting
@@ -196,12 +199,22 @@ public final class AppModel {
     /// Contacts as the sidebar shows them: the roster plus each chat's live activity and unread count.
     public var sidebarContacts: [Contact] {
         contacts.map { contact in
-            guard let thread = threads[contact.id] else { return contact }
             var contact = contact
-            contact.activity = thread.activity
-            contact.unreadCount = thread.unreadCount
+            if let thread = threads[contact.id] {
+                contact.activity = thread.activity
+                contact.unreadCount = thread.unreadCount
+            } else if let room = rooms[contact.id] {
+                contact.activity = room.activity
+                contact.unreadCount = room.unreadCount
+                contact.preview = room.preview ?? contact.preview
+            }
             return contact
         }
+    }
+
+    /// The room behind a room contact.
+    public func room(for contact: Contact) -> RoomThread? {
+        rooms[contact.id]
     }
 
     /// The chat with `contact`. Call `openThread(for:)` to load it.
@@ -297,7 +310,49 @@ public final class AppModel {
     private func refreshRoster(on channel: JSONRPCChannel) async throws {
         let result = try await channel.call("profiles.list", params: ["include_sessions": true])
         let list = try result.decode(ProfileList.self)
-        contacts = list.profiles.compactMap(Contact.init(profile:))
+        let agents = list.profiles.compactMap(Contact.init(profile:))
+        contacts = agents + (await refreshRooms(on: channel) ?? contacts.filter { $0.kind != .agent })
+    }
+
+    /// Lists the gateway's rooms and catches up any that have new events. Returns `nil` when the
+    /// gateway couldn't list them, so the sidebar keeps the rooms it had.
+    private func refreshRooms(on channel: JSONRPCChannel) async -> [Contact]? {
+        guard let result = try? await channel.call("groups.list", params: ["limit": 200]),
+            case .array(let rows) = result["rooms"]
+        else { return nil }
+        let summaries = rows.compactMap(RoomSummary.init)
+        var listed: [Contact.ID: RoomThread] = [:]
+        for summary in summaries {
+            let room = roomThread(for: summary)
+            listed[RoomSummary.contactID(summary.id)] = room
+            if summary.latestSeq > room.cursor || room.phase != .ready { Task { await room.sync() } }
+        }
+        rooms = listed
+        return summaries.map(Contact.init(room:))
+    }
+
+    /// The room behind `summary`, kept across refreshes so its transcript stays loaded.
+    private func roomThread(for summary: RoomSummary) -> RoomThread {
+        let id = RoomSummary.contactID(summary.id)
+        let room = rooms[id] ?? RoomThread(summary: summary, channel: { [weak self] in self?.channel })
+        room.update(summary)
+        room.isVisible = id == visibleContactID
+        return room
+    }
+
+    /// Creates a room with `agents`, two to six of this gateway's agents, and lists it at once.
+    /// Returns the room's contact ID, to open it.
+    public func createRoom(named name: String, agents: [Contact]) async throws -> Contact.ID {
+        guard let channel else { throw GatewayError.disconnected }
+        let summary = try await RoomThread.create(
+            named: name, profiles: agents.map { $0.details?.profile ?? $0.id }, on: channel)
+        let contact = Contact(room: summary)
+        let room = roomThread(for: summary)
+        rooms[contact.id] = room
+        contacts.removeAll { $0.id == contact.id }
+        contacts.append(contact)
+        Task { await room.sync() }
+        return contact.id
     }
 
     static func describe(_ error: any Error) -> String {

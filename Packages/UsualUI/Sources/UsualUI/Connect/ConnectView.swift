@@ -55,8 +55,8 @@ struct ConnectView: View {
                 Text("Sign in with browser")
                     .font(.system(size: 15, weight: .semibold))
                     .frame(maxWidth: .infinity, minHeight: 44)
-                    .foregroundStyle(Theme.userBubbleInk)
-                    .background(Theme.userBubble, in: Capsule())
+                    .foregroundStyle(Theme.primaryInk)
+                    .background(Theme.primary, in: Capsule())
                     .contentShape(Capsule())
             }
             .buttonStyle(.plain)

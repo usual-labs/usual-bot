@@ -60,10 +60,10 @@ struct ContactRow: View {
         } else if contact.unreadCount > 0 {
             Text(contact.unreadCount, format: .number)
                 .font(.system(size: 11.5, weight: .semibold))
-                .foregroundStyle(Theme.userBubbleInk)
+                .foregroundStyle(Theme.primaryInk)
                 .padding(.horizontal, 6)
                 .frame(minWidth: 20, minHeight: 20)
-                .background(Capsule().fill(Theme.userBubble))
+                .background(Capsule().fill(Theme.primary))
                 .accessibilityLabel(Text("\(contact.unreadCount) unread"))
         }
     }

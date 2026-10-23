@@ -17,9 +17,12 @@ public enum Theme {
     public static let secondaryInk = Color(light: 0x66666E, dark: 0xA0A0A8)
     /// The selected contact row in the sidebar.
     public static let selection = Color(light: 0xEBEBEE, dark: 0x2A2A2E)
-    /// Your own message bubbles, and primary buttons.
-    public static let userBubble = Color(light: 0x18181B, dark: 0xF2F2F3)
-    public static let userBubbleInk = Color(light: 0xFFFFFF, dark: 0x18181B)
+    /// Primary buttons and unread badges.
+    public static let primary = Color(light: 0x18181B, dark: 0xF2F2F3)
+    public static let primaryInk = Color(light: 0xFFFFFF, dark: 0x18181B)
+    /// Your own message bubbles: black in light mode, a quiet grey in dark mode.
+    public static let userBubble = Color(light: 0x18181B, dark: 0x3A3A3F)
+    public static let userBubbleInk = Color(light: 0xFFFFFF, dark: 0xF2F2F3)
     public static let needsYouFill = Color(light: 0xFFF1D6, dark: 0x3A2A0A)
     public static let needsYouInk = Color(light: 0x8A5300, dark: 0xF5C36B)
     public static let danger = Color(light: 0xB42318, dark: 0xF97066)
@@ -122,5 +125,34 @@ extension Color {
                     return UIColor(red: rgb.red, green: rgb.green, blue: rgb.blue, alpha: 1)
                 })
         #endif
+    }
+}
+
+extension View {
+    /// The surface of what floats over a conversation, the name pill and the message box: Liquid
+    /// Glass where the system has it (macOS 26, iOS 26), else the pane colour with a hairline
+    /// border and a soft shadow.
+    @ViewBuilder func floatingSurface(in shape: some InsettableShape) -> some View {
+        if #available(macOS 26, iOS 26, *) {
+            glassEffect(.regular, in: shape)
+        } else {
+            background(Theme.pane, in: shape)
+                .overlay(shape.strokeBorder(Theme.border))
+                .shadow(color: .black.opacity(0.06), radius: 5, y: 2)
+        }
+    }
+
+    /// Message text: 15 pt, a step lighter in dark mode, where light text on a dark ground reads
+    /// heavier than the same weight in light mode.
+    func messageFont() -> some View {
+        modifier(MessageFont())
+    }
+}
+
+private struct MessageFont: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content.font(.system(size: 15, weight: colorScheme == .dark ? .light : .regular))
     }
 }

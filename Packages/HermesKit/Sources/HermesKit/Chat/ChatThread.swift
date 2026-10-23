@@ -24,6 +24,9 @@ public final class ChatThread {
     public private(set) var questions: [ClarifyPrompt] = []
     /// Agent replies since you last had this chat on screen.
     public private(set) var unreadCount = 0
+    /// Goes up each time the gateway's copy of the transcript replaces the one on screen. Item
+    /// IDs count from the start of each copy, so a view keyed by them must start over with it.
+    public private(set) var transcriptLoad = 0
 
     /// The live session the gateway routes this chat's events to; `nil` while offline.
     private(set) var sessionID: String?
@@ -89,6 +92,7 @@ public final class ChatThread {
     private func attach(_ opened: BotChat.Opened) {
         sessionID = opened.sessionID
         state = ThreadState(history: opened.history, running: opened.running, inflight: opened.inflight)
+        transcriptLoad += 1
         banner = opened.historyOmitted ? String(localized: "Earlier messages are too long to load here.") : nil
         // The gateway re-sends any question still waiting, so the list starts from its answer.
         approvals = opened.openRequests.compactMap(ApprovalPrompt.init)
