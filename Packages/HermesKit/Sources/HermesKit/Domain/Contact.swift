@@ -28,6 +28,8 @@ public struct Contact: Identifiable, Hashable, Sendable, Codable {
     public var isPinned: Bool
     /// The stored ID of the agent's "Bot Chat" session, when the gateway reported one.
     public var chatID: String?
+    /// What the profile panel shows about an agent; `nil` for rooms.
+    public var details: AgentDetails?
 
     public init(
         id: String,
@@ -39,7 +41,8 @@ public struct Contact: Identifiable, Hashable, Sendable, Codable {
         unreadCount: Int = 0,
         activity: Activity = .idle,
         isPinned: Bool = false,
-        chatID: String? = nil
+        chatID: String? = nil,
+        details: AgentDetails? = nil
     ) {
         self.id = id
         self.name = name
@@ -51,6 +54,28 @@ public struct Contact: Identifiable, Hashable, Sendable, Codable {
         self.activity = activity
         self.isPinned = isPinned
         self.chatID = chatID
+        self.details = details
+    }
+}
+
+/// An agent's profile as the gateway describes it.
+public struct AgentDetails: Hashable, Sendable, Codable {
+    /// The Hermes profile name, e.g. `default` or `job-scout`.
+    public var profile: String
+    public var description: String?
+    public var model: String?
+    public var provider: String?
+    public var skillCount: Int?
+
+    public init(
+        profile: String, description: String? = nil, model: String? = nil, provider: String? = nil,
+        skillCount: Int? = nil
+    ) {
+        self.profile = profile
+        self.description = description
+        self.model = model
+        self.provider = provider
+        self.skillCount = skillCount
     }
 }
 

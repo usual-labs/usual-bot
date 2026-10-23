@@ -87,3 +87,19 @@ struct ActivitySummaryTests {
                 == "Hermes ran 1 command · 1m 15s · 1 failed")
     }
 }
+
+struct RoutineStatusTests {
+    private let now = Date(timeIntervalSince1970: 1_792_735_200)  // 2026-10-23 06:00 UTC
+
+    @Test func describesScheduleAndState() {
+        let next = Routine(
+            id: "1", name: "Brief", schedule: "weekdays at 8am", isOn: true, nextRun: now.addingTimeInterval(86_400))
+        #expect(RoutineStatus.line(for: next, now: now).hasPrefix("weekdays at 8am · next "))
+        let paused = Routine(id: "2", name: "Recap", schedule: "every friday", isOn: false)
+        #expect(RoutineStatus.line(for: paused, now: now) == "every friday · Paused")
+        let done = Routine(id: "3", name: "Once", schedule: "", isOn: true, isFinished: true)
+        #expect(RoutineStatus.line(for: done, now: now) == "Finished")
+        let failed = Routine(id: "4", name: "Check", schedule: "hourly", isOn: true, lastRunFailed: true)
+        #expect(RoutineStatus.line(for: failed, now: now) == "hourly · Last run failed")
+    }
+}

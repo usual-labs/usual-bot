@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import UsualUI
@@ -43,11 +44,21 @@ struct AvatarStyleTests {
         #expect(AvatarStyle.fnv1a("a") == 0xE40C_292C)
     }
 
-    @Test func staysInsidePalette() {
+    @Test func staysInsidePaletteAndCharacters() {
         for seed in ["hermes", "scout", "ops", "writer", "", "a-much-longer-profile-name"] {
             let style = AvatarStyle(seed: seed, paletteCount: 6)
             #expect((0..<6).contains(style.paletteIndex))
-            #expect(AvatarStyle.dotPositions.contains(style.dot))
+            #expect(AvatarStyle.characters.contains(style.character))
+        }
+    }
+
+    @Test func everyCharacterHasAnImage() {
+        #expect(AvatarStyle.characters.count == 50)
+        #expect(Set(AvatarStyle.characters).count == 50)
+        for character in AvatarStyle.characters {
+            #expect(
+                Bundle.module.url(forResource: "avatar-\(character)", withExtension: "png") != nil,
+                "missing avatar-\(character).png")
         }
     }
 }

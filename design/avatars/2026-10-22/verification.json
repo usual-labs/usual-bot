@@ -1,0 +1,1462 @@
+{
+  "expected": 50,
+  "present": 50,
+  "unique_image_hashes": 50,
+  "generation_method": "built-in image_gen, one individual generation per character",
+  "image_processing": "Generated PNGs copied unchanged; pixel data and alpha not modified",
+  "verification": "File decoding, alpha statistics, transparent corners, visible artwork margins, distinct hashes, catalogue/prompt/gallery mapping; visual review during generation. No browser test.",
+  "issues": [],
+  "assets": [
+    {
+      "id": "01",
+      "name": "Pip",
+      "file": "png/01-pip.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 86.611,
+      "near_opaque_percent": 12.794,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        469,
+        273,
+        871,
+        1000
+      ],
+      "sha256": "de3a57f7b659aeb94677c6276c9d3b5af5a978e7c60456a557ad4d96902fb23f",
+      "receipt_present": true
+    },
+    {
+      "id": "02",
+      "name": "Mallow",
+      "file": "png/02-mallow.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 74.069,
+      "near_opaque_percent": 25.278,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        249,
+        290,
+        1059,
+        994
+      ],
+      "sha256": "7c81983c808f783fab1a0fdf368386c5083e7588058a74d321d369c255d4e331",
+      "receipt_present": true
+    },
+    {
+      "id": "03",
+      "name": "Rook",
+      "file": "png/03-rook.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 78.688,
+      "near_opaque_percent": 20.531,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        344,
+        290,
+        997,
+        1003
+      ],
+      "sha256": "2de2d0bbfad2ac42eaa0b143df5fe3b2f0e8bf297f9b9825e7e1d3b932edfe9a",
+      "receipt_present": true
+    },
+    {
+      "id": "04",
+      "name": "Tinker",
+      "file": "png/04-tinker.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 85.994,
+      "near_opaque_percent": 13.237,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        284,
+        375,
+        993,
+        908
+      ],
+      "sha256": "070e2c7e17e211c6d325fbc50f4fe68494cc7ee79a69154ae85d89a2d72ec2ff",
+      "receipt_present": true
+    },
+    {
+      "id": "05",
+      "name": "Orbit",
+      "file": "png/05-orbit.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 78.161,
+      "near_opaque_percent": 21.253,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        215,
+        317,
+        1046,
+        936
+      ],
+      "sha256": "29cb4944fbe045f4f5150a9cafea6e66df7329569272f07c140214ab60b9f2a5",
+      "receipt_present": true
+    },
+    {
+      "id": "06",
+      "name": "Moss",
+      "file": "png/06-moss.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 82.587,
+      "near_opaque_percent": 16.561,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        333,
+        290,
+        925,
+        1034
+      ],
+      "sha256": "7226b4c2308e74e23f80e9908f6231b14fd9eba9520461e662288f14e705666a",
+      "receipt_present": true
+    },
+    {
+      "id": "07",
+      "name": "Quill",
+      "file": "png/07-quill.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 81.826,
+      "near_opaque_percent": 17.392,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        186,
+        343,
+        1069,
+        1012
+      ],
+      "sha256": "e5f3f7e483a6965c9ea5ad0c29f58f9264dcf488ef4bc39f0222e25e091fe79e",
+      "receipt_present": true
+    },
+    {
+      "id": "08",
+      "name": "Nori",
+      "file": "png/08-nori.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 84.963,
+      "near_opaque_percent": 14.493,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        461,
+        274,
+        888,
+        1052
+      ],
+      "sha256": "24925738c6fbec5a3ae8ab11d666e35d7ea5af976533ddaa0dd5b0ccf9b15e8e",
+      "receipt_present": true
+    },
+    {
+      "id": "09",
+      "name": "Pebble",
+      "file": "png/09-pebble.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 85.869,
+      "near_opaque_percent": 13.545,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        381,
+        319,
+        863,
+        965
+      ],
+      "sha256": "32f1bc289b1531af8d0346793f17e0efc4ca0072cd6ad11b9ef9fa1d7a473bc8",
+      "receipt_present": true
+    },
+    {
+      "id": "10",
+      "name": "Zippy",
+      "file": "png/10-zippy.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 78.971,
+      "near_opaque_percent": 20.256,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        252,
+        331,
+        1063,
+        958
+      ],
+      "sha256": "c12f7a8f33507fe81cd61f50028b2405760dd7765335206f4d3e50ce42fce6e9",
+      "receipt_present": true
+    },
+    {
+      "id": "11",
+      "name": "Tempo",
+      "file": "png/11-tempo.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 80.429,
+      "near_opaque_percent": 18.914,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        338,
+        265,
+        927,
+        1018
+      ],
+      "sha256": "abaeab90de318ffa04a6b301625d809509c3313c9add600f963d591f2919630e",
+      "receipt_present": true
+    },
+    {
+      "id": "12",
+      "name": "Lumen",
+      "file": "png/12-lumen.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 82.016,
+      "near_opaque_percent": 17.044,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        258,
+        308,
+        1029,
+        976
+      ],
+      "sha256": "bd4b54fd175a12f7ad563ce3742b0234b2cbe8da6df85461497ce99389a3cd9f",
+      "receipt_present": true
+    },
+    {
+      "id": "13",
+      "name": "Bento",
+      "file": "png/13-bento.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 70.079,
+      "near_opaque_percent": 29.089,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        234,
+        256,
+        1048,
+        993
+      ],
+      "sha256": "be9a29b676afcb1fa0428c1d64094f3344d639ff674a59b344466e4d2d3b2a4a",
+      "receipt_present": true
+    },
+    {
+      "id": "14",
+      "name": "Fable",
+      "file": "png/14-fable.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 73.572,
+      "near_opaque_percent": 25.623,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        194,
+        286,
+        1185,
+        990
+      ],
+      "sha256": "a6a0edd3c7dd4dd7ee2e03b4591ff47da413653ca487147bc177faf1935f5f99",
+      "receipt_present": true
+    },
+    {
+      "id": "15",
+      "name": "Tally",
+      "file": "png/15-tally.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 83.095,
+      "near_opaque_percent": 16.316,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        296,
+        391,
+        974,
+        916
+      ],
+      "sha256": "5289429efe6e6e0b3b18a9c781a6433c42ae5fab992ed90bdde6913f0bdab7d8",
+      "receipt_present": true
+    },
+    {
+      "id": "16",
+      "name": "Echo",
+      "file": "png/16-echo.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 80.878,
+      "near_opaque_percent": 18.616,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        303,
+        332,
+        952,
+        939
+      ],
+      "sha256": "12a312ce830286bfee334670d895324aacc2ca70acd0144811dcc03fec1a31d3",
+      "receipt_present": true
+    },
+    {
+      "id": "17",
+      "name": "Patch",
+      "file": "png/17-patch.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 74.651,
+      "near_opaque_percent": 24.642,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        269,
+        239,
+        1003,
+        1053
+      ],
+      "sha256": "e0d4f345c92914b8618229fb99d74da26adf97da706b84570553b3089392489d",
+      "receipt_present": true
+    },
+    {
+      "id": "18",
+      "name": "Sprocket",
+      "file": "png/18-sprocket.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 85.558,
+      "near_opaque_percent": 13.544,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        368,
+        286,
+        914,
+        1020
+      ],
+      "sha256": "3f9f0979b5872cd7ac7db292ad119239105b76d8e5c73b6b7c12a3cd9ba8900a",
+      "receipt_present": true
+    },
+    {
+      "id": "19",
+      "name": "Puddle",
+      "file": "png/19-puddle.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 79.833,
+      "near_opaque_percent": 19.358,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        183,
+        377,
+        1074,
+        954
+      ],
+      "sha256": "870b584b4846a6e27fce4d5c94293dbacb95d0e6d634b7be49c565fb51103b59",
+      "receipt_present": true
+    },
+    {
+      "id": "20",
+      "name": "Seal",
+      "file": "png/20-seal.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 77.111,
+      "near_opaque_percent": 21.934,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        302,
+        237,
+        970,
+        1045
+      ],
+      "sha256": "bf46711af8f21382fcc747850b86a9d761dcde6d627db711ae8f46a0cf1ca3fb",
+      "receipt_present": true
+    },
+    {
+      "id": "21",
+      "name": "Bramble",
+      "file": "png/21-bramble.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 81.637,
+      "near_opaque_percent": 17.698,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        241,
+        324,
+        1025,
+        952
+      ],
+      "sha256": "c7b8bb0196d8a24b94af438c7b4ec471d66877e8d2b8fbe91d51ce780ed1b035",
+      "receipt_present": true
+    },
+    {
+      "id": "22",
+      "name": "Dot",
+      "file": "png/22-dot.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 82.321,
+      "near_opaque_percent": 17.066,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        340,
+        229,
+        936,
+        1029
+      ],
+      "sha256": "908c8a276c19f3e2712d389f60296cdde0cb67b8b6ce2ec1a2aebe75d4102fe1",
+      "receipt_present": true
+    },
+    {
+      "id": "23",
+      "name": "Kite",
+      "file": "png/23-kite.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 82.801,
+      "near_opaque_percent": 16.305,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        415,
+        169,
+        1008,
+        1152
+      ],
+      "sha256": "2de456cc0d806aa8875e51ca7078a3304f5cdd90028d03fe5665aa4ce358bd66",
+      "receipt_present": true
+    },
+    {
+      "id": "24",
+      "name": "Tuck",
+      "file": "png/24-tuck.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 76.739,
+      "near_opaque_percent": 22.672,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        252,
+        402,
+        1059,
+        959
+      ],
+      "sha256": "7c6635fbb64d6aa036b47eadd021c22e2d110ad0b5e74ad5271383ad4be5691b",
+      "receipt_present": true
+    },
+    {
+      "id": "25",
+      "name": "Finch",
+      "file": "png/25-finch.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 81.523,
+      "near_opaque_percent": 17.767,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        253,
+        364,
+        1000,
+        1016
+      ],
+      "sha256": "adb6f03031945b9c4f99096f30e4626d42c4f7465539b6690a3d628f98cbf789",
+      "receipt_present": true
+    },
+    {
+      "id": "26",
+      "name": "Miso",
+      "file": "png/26-miso.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 73.741,
+      "near_opaque_percent": 25.636,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        263,
+        253,
+        1001,
+        1024
+      ],
+      "sha256": "0431785f734163d3900f1b56100c2f855f2d4ed1b1afb072e471cd0fb2b75c86",
+      "receipt_present": true
+    },
+    {
+      "id": "27",
+      "name": "Crumb",
+      "file": "png/27-crumb.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 77.567,
+      "near_opaque_percent": 21.777,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        295,
+        299,
+        965,
+        972
+      ],
+      "sha256": "39e5ad75d65015e66938ef9092ad80e3f6ea3e8a5b80a6434f4a8402a918a927",
+      "receipt_present": true
+    },
+    {
+      "id": "28",
+      "name": "Wisp",
+      "file": "png/28-wisp.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 86.896,
+      "near_opaque_percent": 12.523,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        434,
+        243,
+        833,
+        1035
+      ],
+      "sha256": "f2781695925ebf27d2b1396056c06f65e759bd7a1271ffc142a97ff7e56c6b71",
+      "receipt_present": true
+    },
+    {
+      "id": "29",
+      "name": "Atlas",
+      "file": "png/29-atlas.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 83.157,
+      "near_opaque_percent": 16.217,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        295,
+        466,
+        1020,
+        952
+      ],
+      "sha256": "40f66896ddc7ad89eecb4aafb3bc6b82f20359433a5f72c184c66fb71cdc17b9",
+      "receipt_present": true
+    },
+    {
+      "id": "30",
+      "name": "Doodle",
+      "file": "png/30-doodle.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 81.25,
+      "near_opaque_percent": 17.903,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        267,
+        318,
+        1003,
+        994
+      ],
+      "sha256": "a29b802c8cb0a7fdde14b87780569f8f1c65bedd1efcbe80a1deb79a01930136",
+      "receipt_present": true
+    },
+    {
+      "id": "31",
+      "name": "Glint",
+      "file": "png/31-glint.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 81.382,
+      "near_opaque_percent": 18.093,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        338,
+        327,
+        1003,
+        1032
+      ],
+      "sha256": "4f5ba562e51cecdd3f781462db357115babbe643dbf060b61aa1f2e01048c82c",
+      "receipt_present": true
+    },
+    {
+      "id": "32",
+      "name": "Pogo",
+      "file": "png/32-pogo.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 82.141,
+      "near_opaque_percent": 16.842,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        343,
+        213,
+        938,
+        1069
+      ],
+      "sha256": "5633919075f054199bb6dd366a6fbf2fb34592e90bf3c5b1f3cba1a9e34c88cd",
+      "receipt_present": true
+    },
+    {
+      "id": "33",
+      "name": "Sift",
+      "file": "png/33-sift.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 80.741,
+      "near_opaque_percent": 18.542,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        292,
+        315,
+        980,
+        973
+      ],
+      "sha256": "0d9777eeeb28d5b2e1754b6a6393f890f1e9db9280b468f2a13a0b711bf4984a",
+      "receipt_present": true
+    },
+    {
+      "id": "34",
+      "name": "Knoll",
+      "file": "png/34-knoll.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 86.092,
+      "near_opaque_percent": 13.262,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        331,
+        370,
+        923,
+        915
+      ],
+      "sha256": "db02361ec6b37749ff709b3eac8ca25d6487c5d5bc596c497464ab1367d94664",
+      "receipt_present": true
+    },
+    {
+      "id": "35",
+      "name": "Loop",
+      "file": "png/35-loop.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 78.748,
+      "near_opaque_percent": 20.428,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        228,
+        267,
+        1061,
+        1034
+      ],
+      "sha256": "bd55535e1c60edef6fa9bbc45577de3b0865dd42c45355460d24c97de6004dc6",
+      "receipt_present": true
+    },
+    {
+      "id": "36",
+      "name": "Peris",
+      "file": "png/36-peris.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 75.964,
+      "near_opaque_percent": 23.256,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        225,
+        315,
+        1078,
+        978
+      ],
+      "sha256": "ffecb6d22241fd9577488cf58b66399b010a5195add60e04368774bfa548994a",
+      "receipt_present": true
+    },
+    {
+      "id": "37",
+      "name": "Hush",
+      "file": "png/37-hush.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 82.787,
+      "near_opaque_percent": 16.622,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        379,
+        275,
+        927,
+        998
+      ],
+      "sha256": "5795c100c402aa5523a606d3888a8041064ca69694518b9888a7e2983094b81d",
+      "receipt_present": true
+    },
+    {
+      "id": "38",
+      "name": "Sprig",
+      "file": "png/38-sprig.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 79.509,
+      "near_opaque_percent": 19.626,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        312,
+        241,
+        1068,
+        1026
+      ],
+      "sha256": "b89f9a32632b5248cca4474ebb2cf220640c16ed1b1fbfc4472922f9bc9b64d3",
+      "receipt_present": true
+    },
+    {
+      "id": "39",
+      "name": "Toggle",
+      "file": "png/39-toggle.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 78.938,
+      "near_opaque_percent": 20.064,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        102,
+        372,
+        1173,
+        909
+      ],
+      "sha256": "57a3b5e81fe4575717d581e3f8c8ba42a1d8e87b50270fe8507e45f42ad18108",
+      "receipt_present": true
+    },
+    {
+      "id": "40",
+      "name": "Loom",
+      "file": "png/40-loom.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 80.727,
+      "near_opaque_percent": 18.285,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        229,
+        372,
+        1176,
+        939
+      ],
+      "sha256": "d0ccd29e3177cc5c89ff27726a99b4b0ca2dc999595fcc5fdf06a87be2f1f377",
+      "receipt_present": true
+    },
+    {
+      "id": "41",
+      "name": "Nova",
+      "file": "png/41-nova.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 84.278,
+      "near_opaque_percent": 15.204,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        357,
+        293,
+        896,
+        1024
+      ],
+      "sha256": "7489bbeeb294f7c616a50d826dd1e3e1488ade16c62d72210db881d039d3f5de",
+      "receipt_present": true
+    },
+    {
+      "id": "42",
+      "name": "Drift",
+      "file": "png/42-drift.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 83.214,
+      "near_opaque_percent": 16.125,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        222,
+        343,
+        1054,
+        963
+      ],
+      "sha256": "14c057be0817813aedb3497009d912b6b9921c78299df626aa3c9ceeaad7d998",
+      "receipt_present": true
+    },
+    {
+      "id": "43",
+      "name": "Fizz",
+      "file": "png/43-fizz.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 83.545,
+      "near_opaque_percent": 15.471,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        393,
+        155,
+        902,
+        1093
+      ],
+      "sha256": "dfb380ef49dd96303bad193acf5242d6dc92c63499efed96d1d1f10946c0cbf3",
+      "receipt_present": true
+    },
+    {
+      "id": "44",
+      "name": "Puck",
+      "file": "png/44-puck.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 81.849,
+      "near_opaque_percent": 17.393,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        332,
+        313,
+        1006,
+        1016
+      ],
+      "sha256": "1b196ef225fc0503b628fd908398ee8b2bfe34a019fd034445e2c6fe1a455ce5",
+      "receipt_present": true
+    },
+    {
+      "id": "45",
+      "name": "Stitch",
+      "file": "png/45-stitch.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 87.225,
+      "near_opaque_percent": 12.142,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        428,
+        231,
+        927,
+        1045
+      ],
+      "sha256": "5a98b89b44f995d6d291934e44e0e4614688a4aed736a612da456ecaa44d20fc",
+      "receipt_present": true
+    },
+    {
+      "id": "46",
+      "name": "Huddle",
+      "file": "png/46-huddle.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 81.248,
+      "near_opaque_percent": 18.058,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        241,
+        282,
+        1014,
+        987
+      ],
+      "sha256": "dd726e82b0ddf7e95edabf08491bba6fd8c9e8ca63e5f9c776f1fe3a7e8e2506",
+      "receipt_present": true
+    },
+    {
+      "id": "47",
+      "name": "Nudge",
+      "file": "png/47-nudge.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 81.458,
+      "near_opaque_percent": 17.839,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        353,
+        296,
+        1051,
+        993
+      ],
+      "sha256": "fbf2519a2e80a1e4476c93d7ceb61e99b46b8e61070b6b575cc62d75204dd284",
+      "receipt_present": true
+    },
+    {
+      "id": "48",
+      "name": "Vellum",
+      "file": "png/48-vellum.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 78.157,
+      "near_opaque_percent": 21.173,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        273,
+        343,
+        1089,
+        1005
+      ],
+      "sha256": "4458fcce27110e44ba00c906c344aec95470f3fb5dfd6df7eb11e17b5c496ed9",
+      "receipt_present": true
+    },
+    {
+      "id": "49",
+      "name": "Riff",
+      "file": "png/49-riff.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 82.527,
+      "near_opaque_percent": 16.666,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        290,
+        345,
+        1092,
+        969
+      ],
+      "sha256": "f4cfe3de09f90a38d305889ab07bfd29f69ed41d73c7383535dae7cc37509b90",
+      "receipt_present": true
+    },
+    {
+      "id": "50",
+      "name": "Mote",
+      "file": "png/50-mote.png",
+      "format": "PNG",
+      "mode": "RGBA",
+      "width": 1254,
+      "height": 1254,
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "fully_transparent_percent": 79.797,
+      "near_opaque_percent": 19.571,
+      "corner_alpha": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "visible_art_bounds": [
+        281,
+        317,
+        998,
+        940
+      ],
+      "sha256": "f9f1caeea39d856b94d36e4198aea38bf392fa84f9e59d0703211d9ee47a7d19",
+      "receipt_present": true
+    }
+  ],
+  "all_50_byte_identical_to_generated_sources": true
+}

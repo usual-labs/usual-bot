@@ -11,7 +11,7 @@ let package = Package(
         .package(path: "../HermesKit")
     ],
     targets: [
-        .target(name: "UsualUI", dependencies: ["HermesKit"]),
+        .target(name: "UsualUI", dependencies: ["HermesKit"], resources: [.process("Resources")]),
         .testTarget(name: "UsualUITests", dependencies: ["UsualUI"]),
     ]
 )

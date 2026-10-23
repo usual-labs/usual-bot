@@ -14,3 +14,11 @@ Package.resolved
 
 # Per-developer signing (copy Config/Local.xcconfig.example)
 Config/Local.xcconfig
+
+# Avatar design sources that stay on the designer's machine: the full-size originals and
+# their zip (the app ships 256 px copies), third-party reference sheets, and generation
+# receipts that record local file paths.
+design/avatars/*.zip
+design/avatars/*/png/
+design/avatars/*/references/
+design/avatars/*/receipts/

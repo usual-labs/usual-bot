@@ -6,6 +6,9 @@ struct ProfileRow: Decodable, Sendable {
     let name: String
     let displayName: String?
     let description: String?
+    let model: String?
+    let provider: String?
+    let skillCount: Int?
     let bot: BotMeta?
     let canonicalSession: SessionSummary?
 
@@ -54,6 +57,9 @@ struct ProfileRow: Decodable, Sendable {
         name = try container.decode(String.self, forKey: .name)
         displayName = try? container.decodeIfPresent(String.self, forKey: .displayName)
         description = try? container.decodeIfPresent(String.self, forKey: .description)
+        model = try? container.decodeIfPresent(String.self, forKey: .model)
+        provider = try? container.decodeIfPresent(String.self, forKey: .provider)
+        skillCount = try? container.decodeIfPresent(Int.self, forKey: .skillCount)
         bot = (try? container.decodeIfPresent(UIMeta.self, forKey: .uiMeta))?.bot
         canonicalSession = try? container.decodeIfPresent(SessionSummary.self, forKey: .canonicalSession)
     }
@@ -70,7 +76,7 @@ struct ProfileRow: Decodable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case name, displayName, description, uiMeta, canonicalSession
+        case name, displayName, description, model, provider, skillCount, uiMeta, canonicalSession
     }
 }
 
@@ -96,7 +102,10 @@ extension Contact {
             preview: preview,
             lastActive: chat?.lastActive.flatMap { $0 > 0 ? Date(timeIntervalSince1970: $0) : nil },
             isPinned: profile.bot?.pinned ?? false,
-            chatID: chat.map { $0.resolvedId ?? $0.id })
+            chatID: chat.map { $0.resolvedId ?? $0.id },
+            details: AgentDetails(
+                profile: profile.name, description: profile.description?.nonBlank, model: profile.model?.nonBlank,
+                provider: profile.provider?.nonBlank, skillCount: profile.skillCount))
     }
 
     /// Previews are the start of the last message, usually Markdown, cut at 80 characters by the

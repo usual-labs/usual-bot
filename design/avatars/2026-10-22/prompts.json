@@ -1,0 +1,554 @@
+[
+  {
+    "id": "01",
+    "slug": "pip",
+    "file": "png/01-pip.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create one new original character in the EXACT simple flat doodle visual language of the two reference sheets. The sheets are STYLE REFERENCES ONLY, do not reproduce their subjects or layout or yellow background. Final output is ONE standalone square transparent PNG avatar.\n\nPIP: a little upright rounded paperclip creature with two tiny vertical dot eyes in its bottom white section and a small folded gray collar around the base. Slight friendly forward tilt. Just the anthropomorphic paperclip and collar, no hands, no feet necessary, no paperwork, no other props.\n\nMatch the references: bold slightly wobbly charcoal hand-inked outlines, PURE solid white body fill, one flat medium-gray inset, tiny simple eyes, extraordinarily simple compact drawing. Flat graphic 2D, absolutely zero gradients, zero shading, zero lighting, zero 3D, zero texture. Simple sticker-like drawing; a maximum of a handful of interior marks. Everything must still read at 48px. Complete subject centered at roughly 70% of canvas width/height with clear equal padding. Square canvas. NO words, name, label, frame, scenery, shadow plate, or extra objects. Preserve the white fill as opaque, canvas fully transparent with real alpha."
+  },
+  {
+    "id": "02",
+    "slug": "mallow",
+    "file": "png/02-mallow.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A squat puffy white pillow creature with rounded corners, two softly sleepy dot eyes, one corner folded over like a tiny gray nightcap; asymmetrical cuddly silhouette.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Gentle, emotionally perceptive, unhurried.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "03",
+    "slug": "rook",
+    "file": "png/03-rook.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A short chunky white chess rook creature, three oversized crenellations, two dot eyes on its tower, a single short gray scarf with a tail, broad rounded base.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Patient, principled, three moves ahead.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "04",
+    "slug": "tinker",
+    "file": "png/04-tinker.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A squat white thread-spool creature with a gray band of thread around its middle, eyes on the front, one broad charcoal winding key sticking out the side, one short loose thread curl.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Persistent, practical, cheerfully stubborn.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "05",
+    "slug": "orbit",
+    "file": "png/05-orbit.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A round white little moon creature with a broad gray orbit ring slanting around its lower body like a float, two eyes, one large crescent-shaped charcoal crater patch on its upper edge.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Curious, philosophical, easily delighted.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "06",
+    "slug": "moss",
+    "file": "png/06-moss.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A squat smooth white pebble creature with a scalloped gray moss cap, two tiny eyes, one oversized two-leaf sprout from the cap, slightly uneven pebble base.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Grounded, patient, quietly optimistic.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "07",
+    "slug": "quill",
+    "file": "png/07-quill.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A compact white origami crane character with broad folded wings, a short pointed beak, tiny charcoal eyes on its rounded folded head, gray triangular wing inset; keep folds extremely simple.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Elegant, thoughtful, exact with words.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "08",
+    "slug": "nori",
+    "file": "png/08-nori.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A wide white ribbon bookmark creature standing in a gentle S curve, forked two-point bottom, a folded gray top edge like a fringe, two dot eyes high on the ribbon.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Bookish, selective, dryly witty.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "09",
+    "slug": "pebble",
+    "file": "png/09-pebble.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A friendly three-stone cairn creature: large rounded white base with two eyes, a smaller gray stone and tiny white top pebble stacked slightly off-center; strong simple stacked silhouette.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Calm, impartial, comfortable with uncertainty.\nKeep the visual simple and spare like the reference icons.",
+    "prompt_addendum": "Critical correction: this cairn is ONE single character with exactly ONE pair of eyes on the largest BOTTOM stone ONLY. The medium gray middle stone and the small white TOP stone are COMPLETELY FACELESS plain smooth stones. NO eyes or face of any kind on either upper stone.",
+    "note": "The selected image used the base prompt plus this targeted correction."
+  },
+  {
+    "id": "10",
+    "slug": "zippy",
+    "file": "png/10-zippy.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A chubby white zippered pouch creature, bold gray zipper band across its crown, two eyes on the front, two small wing-shaped zipper tabs projecting to the sides, one large simple pull.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Brisk, resourceful, slightly impatient.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "11",
+    "slug": "tempo",
+    "file": "png/11-tempo.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A soft triangular white metronome creature with rounded base, a broad gray pendulum tilted off-center, two eyes below the pendulum, a tiny charcoal bow tie at the bottom.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Steady, encouraging, realistic.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "12",
+    "slug": "lumen",
+    "file": "png/12-lumen.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A little lantern-moth hybrid: white rounded lantern body with two dot eyes, large simple gray moth wings, two short bent antennae, one thick loop handle on top; flat illustration with no glow effect.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Inquisitive, reassuring, drawn to overlooked details.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "13",
+    "slug": "bento",
+    "file": "png/13-bento.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A squat white bento lunchbox creature with a lid opened slightly like a cap, two eyes on its front, one broad gray clasp, a single chunky carrying handle; no tiny food details.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Orderly, generous, prepared.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "14",
+    "slug": "fable",
+    "file": "png/14-fable.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A chunky white whale creature shaped subtly like a closed book, two tiny front-facing eyes, one small side fin, gray page-edge stripe along its belly, broad upward-curled tail; no writing.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Warm, imaginative, good at analogies.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "15",
+    "slug": "tally",
+    "file": "png/15-tally.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A rounded white beetle character whose back has only three large gray abacus beads on one thick bar, two eyes on its rounded front, four short chunky charcoal feet.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Frugal, meticulous, quietly playful.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "16",
+    "slug": "echo",
+    "file": "png/16-echo.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A broad curled white seashell creature with one bold gray spiral, two tiny eyes peeking from its large lower opening, shell leaning toward the viewer as if listening.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Attentive, empathetic, tactful.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "17",
+    "slug": "patch",
+    "file": "png/17-patch.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A plump upright white mitten creature with one rounded thumb sticking out, two dot eyes, one oversized gray square patch with just four stitch marks, slightly bent gray cuff.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Forgiving, hands-on, loyal.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "18",
+    "slug": "sprocket",
+    "file": "png/18-sprocket.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A gear-shaped flower creature with a round white face and two dot eyes, six broad gray rounded gear petals, a short thick charcoal stem and two simple leaves, one curved root foot.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Industrious, cheerful, loves repetition.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "19",
+    "slug": "puddle",
+    "file": "png/19-puddle.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A squat white watering-can duck hybrid: round can body with two eyes, a short broad spout shaped like a duck beak, a gray loop handle curving behind, two tiny broad feet.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Nurturing, adaptable, never judgmental.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "20",
+    "slug": "seal",
+    "file": "png/20-seal.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A squat white rubber-stamp creature with a rounded knob head and two eyes, a broad gray stamp base, two short curling tentacle arms on its sides; no words or symbols.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Methodical, skeptical, quietly proud.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "21",
+    "slug": "bramble",
+    "file": "png/21-bramble.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A compact white hedgehog creature with a blunt nose and tiny eyes, five large gray pencil-shaped spines along its back, two stubby feet; each spine is just one simple point.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Sharp-minded, protective, honest.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "22",
+    "slug": "dot",
+    "file": "png/22-dot.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A rounded white thimble creature with two tiny eyes near its base, three oversized gray dimples on its crown, a single short ball-tipped antenna leaning forward, a thick rim.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Considerate, observant, thorough.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "23",
+    "slug": "kite",
+    "file": "png/23-kite.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A plump white diamond kite character with two dot eyes, one broad gray triangular panel, a short curved tail with exactly two large charcoal bows, gently tilted.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Sociable, buoyant, a little theatrical.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "24",
+    "slug": "tuck",
+    "file": "png/24-tuck.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A round white rolled blanket creature with a visible broad spiral fold, two eyes on its front flap, one wide gray belt around the middle, a tucked pointed fabric corner.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Discreet, comforting, quietly decisive.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "25",
+    "slug": "finch",
+    "file": "png/25-finch.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A little white bird with a large gray folded-paper fan tail of three broad sections, short charcoal beak, two tiny eyes, rounded white body and two stubby legs.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Diplomatic, musical, attentive to nuance.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "26",
+    "slug": "miso",
+    "file": "png/26-miso.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A plump white soup-dumpling creature with three large pinched folds on top, two dot eyes, one short folded gray neckerchief and two tiny flat charcoal feet.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Welcoming, warm, remembers preferences.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "27",
+    "slug": "crumb",
+    "file": "png/27-crumb.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A squat white toast-slice creature with a thick gray crust, two eyes, one rounded bite missing from an upper corner, a tiny simple gray backpack protruding from one side.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Inventive, thrifty, optimistic.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "28",
+    "slug": "wisp",
+    "file": "png/28-wisp.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A short white candle creature with a single rounded wax drip, two tiny eyes, a large simple leaf-shaped gray flame with a white center, a compact charcoal foot; no glow.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Reflective, perceptive, comfortable with silence.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "29",
+    "slug": "atlas",
+    "file": "png/29-atlas.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A compact white turtle with a large gray backpack shell, one broad flap and clasp, a rounded front head with two eyes, four short flipper-like feet; no map or lettering.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Dependable, patient, strong under pressure.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "30",
+    "slug": "doodle",
+    "file": "png/30-doodle.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A white rounded inkblot-octopus character with five broad unequal stubby arms, two dot eyes near its top, one gray oval patch, one arm raised in an enthusiastic curl.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Playful, associative, pleasantly odd.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "31",
+    "slug": "glint",
+    "file": "png/31-glint.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A short faceted triangular penguin creature, white central face with two tiny eyes, two broad gray prism facets at its sides, tiny charcoal feet and one flipper sticking out.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Analytical, curious, quietly surprising.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "32",
+    "slug": "pogo",
+    "file": "png/32-pogo.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A white bean-shaped head with two tiny eyes sitting on two broad charcoal spring coils, one gray oval foot at the bottom, head tilted in a playful bounce; compact full character.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Energetic, resilient, fearless about drafts.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "33",
+    "slug": "sift",
+    "file": "png/33-sift.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A broad white dome-shaped sieve-jellyfish creature with two eyes on its thick rim, just three large gray mesh marks on its crown, three short thick wavy tentacles.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Discerning, patient, resistant to hype.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "34",
+    "slug": "knoll",
+    "file": "png/34-knoll.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A squat white desk bell creature with a small round gray button on top, two dot eyes on the bell dome, broad charcoal base, one tiny tilted gray bow tie.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Courteous, punctual, gently persistent.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "35",
+    "slug": "loop",
+    "file": "png/35-loop.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A thick white ribbon-eel creature curled into one open round loop, a rounded head with two eyes leaning across the opening, gray underside visible at one twist, broad simple tail.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Consistent, adaptable, fond of rituals.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "36",
+    "slug": "peris",
+    "file": "png/36-peris.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A squat binocular-beetle creature with two large white rounded lens barrels, one tiny charcoal eye centered in each gray lens, a shared white bridge, four short chunky feet.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Adventurous, observant, cheerfully nosy.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "37",
+    "slug": "hush",
+    "file": "png/37-hush.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A small white bat creature with two broad folded gray wings wrapped like a cloak, round charcoal earmuffs connected across its head, two tiny eyes and two small pointed ears.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Discreet, loyal, a little nocturnal.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "38",
+    "slug": "sprig",
+    "file": "png/38-sprig.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A round white acorn creature with an oversized gray cap, two dot eyes, one short stem with a single broad leaf, tiny charcoal feet; cap slightly crooked.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Eager, humble, delighted by progress.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "39",
+    "slug": "toggle",
+    "file": "png/39-toggle.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A wide rounded white toggle-switch creature with a large gray slider on its back, two eyes on its front, two broad simple crab claws to the sides, two tiny feet.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Decisive, watchful, practical.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "40",
+    "slug": "loom",
+    "file": "png/40-loom.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A round white yarn-ball spider creature with only three broad gray winding curves, two tiny eyes, four short thick curved charcoal legs and one loose thread curl.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Patient, connective, good at delegation.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "41",
+    "slug": "nova",
+    "file": "png/41-nova.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A small upright white matchbox-shaped shuttle creature with a rounded rectangular body, two dot eyes, one broad gray striker panel on a side, two tiny fins and a chunky flame-shaped foot.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Bold, focused, optimistic under pressure.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "42",
+    "slug": "drift",
+    "file": "png/42-drift.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A compact white folded paper boat creature with two tiny eyes on its broad hull, one large gray folded interior triangle, a short white mast with a small triangular pennant; no water.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Relaxed, resourceful, open to detours.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "43",
+    "slug": "fizz",
+    "file": "png/43-fizz.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A short round white corked bottle creature with two dot eyes, a chunky gray cork lifted just above the neck, exactly three large round white bubbles with charcoal outlines floating closely above.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Exuberant, quick-thinking, lightly chaotic.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "44",
+    "slug": "puck",
+    "file": "png/44-puck.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A rounded horseshoe magnet creature with a white U-shaped body, broad gray pole caps, two tiny eyes on the rounded bottom bridge, leaning forward on two little charcoal feet.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Tenacious, focused, fond of lost things.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "45",
+    "slug": "stitch",
+    "file": "png/45-stitch.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A chunky closed white safety-pin creature curled subtly into a seahorse silhouette, rounded clasp head with two tiny eyes, broad gray interior opening and one short curled lower tail.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Exacting, gentle, good at joining ideas.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "46",
+    "slug": "huddle",
+    "file": "png/46-huddle.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A rounded white umbrella creature with three broad canopy lobes, two dot eyes on the middle lobe, a short thick hooked charcoal handle, a single gray scarf tied around the neck.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Protective, composed, reassuring.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "47",
+    "slug": "nudge",
+    "file": "png/47-nudge.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A chunky rounded white domino creature tilted forward, two tiny charcoal eyes in its upper half, one broad gray circular pip in its lower half, a simple middle divider, two stubby feet.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Direct, encouraging, good at momentum.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "48",
+    "slug": "vellum",
+    "file": "png/48-vellum.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A white hermit-crab creature with a large curled parchment-scroll shell, one broad gray rolled edge, rounded head with two tiny eyes peeking below, two blunt little claws; no writing.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Nostalgic, meticulous, generous with context.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "49",
+    "slug": "riff",
+    "file": "png/49-riff.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A short white accordion-caterpillar creature with a rounded face and two tiny eyes, exactly three broad gray accordion folds, two tiny antennae and four small charcoal feet; no keyboard.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Expressive, improvisational, good at listening.\nKeep the visual simple and spare like the reference icons."
+  },
+  {
+    "id": "50",
+    "slug": "mote",
+    "file": "png/50-mote.png",
+    "transparent_background": true,
+    "referenced_image_paths": [
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-5094fd69-2161-4229-82b4-333dd6e75297.png",
+      "/var/folders/bg/frk90twn17n7q_n32fbpy42r0000gn/T/codex-clipboard-ed88b07d-870e-4d8e-9bb0-64a0725540f7.png"
+    ],
+    "prompt": "Create ONE new original assistant character in the simple flat doodle visual language of the two supplied reference sheets. Input images are STYLE REFERENCES ONLY: do not reproduce their existing subjects, layout, lettering, or yellow background. This output is ONE standalone square transparent PNG avatar, not a sheet.\n\nSTYLE: charming minimal hand-inked editorial doodle. Bold slightly wobbly near-black charcoal outlines with rounded ends; PURE opaque white main body fills; a few solid medium-gray accent shapes. Two tiny vertical black dot eyes, mostly no mouth. Expressive silhouette and tilt. Extremely simple compact drawing, like the small object mascots in the references. Flat graphic 2D: zero gradients, zero rendered shading, zero lighting effects, zero 3D, zero texture. Do not elaborate with extra objects, hands, costumes, or scenery beyond the described design. Each major shape must read at 48px.\n\nCOMPOSITION: square 1024x1024 canvas, complete character centered at about 70 percent of canvas, generous equal transparent padding, no part clipped. The white character body stays OPAQUE; only its surroundings and intentional openings are truly transparent alpha. No text, name, labels, border, watermark, background color, yellow, checkerboard pattern, or big shadow plate. At most a tiny flat charcoal grounding mark. ONE character only.\n\nSUBJECT: A round fluffy white dust-bunny creature with five broad scalloped fur tufts, two tiny eyes, one floppy ear, a short gray dustpan-shaped cape tucked behind one side, tiny charcoal feet.\nPERSONALITY (express only through the tilt and silhouette, do not add props): Unassuming, industrious, quietly funny.\nKeep the visual simple and spare like the reference icons."
+  }
+]

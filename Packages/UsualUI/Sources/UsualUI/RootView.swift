@@ -20,7 +20,14 @@ public struct RootView: View {
                 contacts: model.sidebarContacts, emptyText: emptyText,
                 thread: { $0.kind == .agent ? model.thread(for: $0) : nil },
                 open: { model.openThread(for: $0) },
-                select: { model.visibleContactID = $0 }
+                select: { model.visibleContactID = $0 },
+                profile: { contact, close in
+                    guard contact.kind == .agent else { return nil }
+                    return ProfilePanel(
+                        contact: contact, routines: model.routines(for: contact), gateway: gateway, link: model.link,
+                        gatewayDetails: model.gatewayDetails, loadGatewayDetails: { await model.loadGatewayDetails() },
+                        close: close)
+                }
             ) {
                 GatewayStatusButton(gateway: gateway, link: model.link, signOut: model.signOut)
             }
@@ -42,9 +49,16 @@ struct ContactsSplitView<Footer: View>: View {
     var open: (Contact) -> Void = { _ in }
     /// Told which contact is on screen, so its replies don't count as unread.
     var select: (Contact.ID?) -> Void = { _ in }
+    /// The profile panel for a contact, given a way to close it; `nil` when it has none.
+    var profile: (Contact, @escaping () -> Void) -> ProfilePanel? = { _, _ in nil }
     @ViewBuilder let footer: Footer
 
     @State private var selection: Contact.ID?
+    #if os(macOS)
+        @AppStorage("showsProfile") private var showsProfile = false
+    #else
+        @State private var showsProfile = false
+    #endif
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -66,9 +80,16 @@ struct ContactsSplitView<Footer: View>: View {
             .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 380)
         } detail: {
             if let contact = contacts.first(where: { $0.id == selection }) {
+                let panel = profile(contact) { showsProfile = false }
                 ThreadPane(
                     contact: contact, members: members(of: contact), thread: thread(contact),
-                    open: { open(contact) })
+                    open: { open(contact) }, toggleProfile: panel.map { _ in { showsProfile.toggle() } }
+                )
+                .inspector(isPresented: Binding(get: { showsProfile && panel != nil }, set: { showsProfile = $0 })) {
+                    if let panel {
+                        panel.inspectorColumnWidth(min: 280, ideal: 320, max: 420)
+                    }
+                }
             } else {
                 ContentUnavailableView(
                     "No chat selected", systemImage: "bubble.left.and.bubble.right",

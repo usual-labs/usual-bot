@@ -1,7 +1,7 @@
 import HermesKit
 import SwiftUI
 
-/// An agent's avatar: a solid circle in the agent's colour with one white dot.
+/// An agent's avatar: its character on a soft circle in the agent's colour.
 struct AgentAvatar: View {
     let contact: Contact
     var size: CGFloat = 44
@@ -11,14 +11,20 @@ struct AgentAvatar: View {
 
     var body: some View {
         let style = AvatarStyle(seed: contact.id, paletteCount: Theme.agentPalette.count)
-        let dotSize = size * 0.23
-        ZStack(alignment: .topLeading) {
-            Circle().fill(contact.tintColor(style: style))
-            Circle()
-                .fill(.white)
-                .frame(width: dotSize, height: dotSize)
-                .offset(x: style.dot.x * size - dotSize / 2, y: style.dot.y * size - dotSize / 2)
+        let tint = contact.tintColor(style: style)
+        ZStack {
+            Circle().fill(Theme.pane)
+            Circle().fill(tint.opacity(0.28))
+            if let art = AvatarArt.image(style.character) {
+                art
+                    .resizable()
+                    .interpolation(.high)
+                    .scaledToFit()
+                    // The art keeps a transparent margin; fill more of the circle with the character.
+                    .scaleEffect(1.15)
+            }
         }
+        .clipShape(Circle())
         .frame(width: size, height: size)
         .overlay {
             if contact.activity == .working {

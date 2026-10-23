@@ -30,6 +30,8 @@ public final class AppModel {
             for (id, thread) in threads { thread.isVisible = id == visibleContactID }
         }
     }
+    /// Version, health and account, once the Machine tab asked for them.
+    public private(set) var gatewayDetails: GatewayDetails?
     /// The last sign-in or connection problem, for the connect screen.
     public private(set) var problem: String?
     /// What the user last typed into the gateway field.
@@ -47,6 +49,7 @@ public final class AppModel {
     /// The socket while the link is online.
     @ObservationIgnored private var channel: JSONRPCChannel?
     @ObservationIgnored private var threads: [Contact.ID: ChatThread] = [:]
+    @ObservationIgnored private var routineLists: [Contact.ID: RoutineList] = [:]
 
     private static let gatewayKey = "gatewayAddress"
     private static let rosterInterval: Duration = .seconds(5)
@@ -130,6 +133,8 @@ public final class AppModel {
         auth = nil
         contacts = []
         threads = [:]
+        routineLists = [:]
+        gatewayDetails = nil
         lastSaved = nil
         link = .connecting
         session = .signedOut
@@ -227,8 +232,32 @@ public final class AppModel {
         thread(for: contact).open(knownID: contact.chatID, dialect: dialect)
     }
 
+    // MARK: - Profile panel
+
+    /// The routines of `contact`'s profile. Call `RoutineList.refresh()` to load them.
+    public func routines(for contact: Contact) -> RoutineList {
+        if let list = routineLists[contact.id] { return list }
+        let list = RoutineList(profile: contact.details?.profile ?? contact.id, auth: { [weak self] in self?.auth })
+        routineLists[contact.id] = list
+        return list
+    }
+
+    /// Loads what the Machine tab shows. Parts the gateway doesn't answer stay empty.
+    public func loadGatewayDetails() async {
+        guard let auth else { return }
+        let status = try? await GatewayStatus.fetch(auth.gateway, http: http)
+        let user = try? await auth.json(SignedInUser.self, path: "/api/auth/me")
+        gatewayDetails = GatewayDetails(
+            version: status?.version, isHealthy: status?.overall.map { $0 == "ok" }, account: user?.label)
+    }
+
     /// Hands an event to the chat whose live session it belongs to.
     private func route(_ event: GatewayEvent) {
+        if event.type == "cron.changed" {
+            // Jobs changed somewhere on the gateway: reload the lists that are loaded.
+            for list in routineLists.values where list.phase == .ready { Task { await list.refresh() } }
+            return
+        }
         guard let sessionID = event.sessionID,
             let thread = threads.values.first(where: { $0.sessionID == sessionID })
         else { return }

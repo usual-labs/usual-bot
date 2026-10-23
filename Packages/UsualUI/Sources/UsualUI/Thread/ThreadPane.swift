@@ -8,10 +8,12 @@ struct ThreadPane: View {
     /// `nil` for contacts without a chat yet (rooms arrive in a later milestone).
     let thread: ChatThread?
     var open: () -> Void = {}
+    /// Shows or hides the agent's profile; `nil` when the contact has none.
+    var toggleProfile: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 0) {
-            NamePill(contact: contact, members: members)
+            namePill
                 .padding(.top, 12)
                 .padding(.bottom, 4)
             content
@@ -33,6 +35,17 @@ struct ThreadPane: View {
             .padding(8)
             .background(Theme.window)
         #endif
+    }
+
+    @ViewBuilder private var namePill: some View {
+        if let toggleProfile {
+            Button(action: toggleProfile) { NamePill(contact: contact, members: members) }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Shows routines and details"))
+                .keyboardShortcut("i", modifiers: .command)
+        } else {
+            NamePill(contact: contact, members: members)
+        }
     }
 
     @ViewBuilder private var content: some View {
