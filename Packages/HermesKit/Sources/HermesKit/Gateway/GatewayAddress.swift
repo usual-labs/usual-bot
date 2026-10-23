@@ -60,6 +60,15 @@ public struct GatewayAddress: Hashable, Sendable, Codable {
         return baseURL.port.map { "\(host):\($0)" } ?? host
     }
 
+    /// A Tailscale address (100.64.0.0/10, fd7a:115c:a1e0::/48) or MagicDNS name (`*.ts.net`),
+    /// which a device reaches only while Tailscale is on and signed in to the same tailnet.
+    var isTailnet: Bool {
+        guard let host = baseURL.host(percentEncoded: false)?.lowercased() else { return false }
+        if host.hasSuffix(".ts.net") || host.hasPrefix("fd7a:115c:a1e0:") { return true }
+        guard let octets = Self.ipv4Octets(host) else { return false }
+        return octets[0] == 100 && (64...127).contains(octets[1])
+    }
+
     /// Loopback, private-network, link-local and Tailscale (100.64.0.0/10, fd7a::/16) addresses,
     /// plus `.local` and single-label names. Traffic to these never crosses the open internet
     /// unencrypted on its own, so plain `http` is allowed. App Transport Security agrees.

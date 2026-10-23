@@ -36,6 +36,23 @@ struct GatewayAddressTests {
         #expect(!GatewayAddress.isPrivate(host: host))
     }
 
+    @Test(arguments: [
+        ("100.101.102.103:9119", true), ("https://hermes.example-tailnet.ts.net", true),
+        ("http://[fd7a:115c:a1e0::1]:9119", true),
+        ("192.168.1.10:9119", false), ("hermes.example.com", false),
+    ])
+    func tailnetAddresses(input: String, isTailnet: Bool) throws {
+        #expect(try GatewayAddress(parsing: input).isTailnet == isTailnet)
+    }
+
+    @MainActor @Test func unreachableTailnetGatewaySaysToCheckTailscale() throws {
+        let error = GatewayError.unreachable("Could not connect to the server.")
+        let tailnet = AppModel.describe(error, for: try GatewayAddress(parsing: "100.101.102.103:9119"))
+        #expect(tailnet.contains("Tailscale is on"))
+        let lan = AppModel.describe(error, for: try GatewayAddress(parsing: "192.168.1.10:9119"))
+        #expect(lan == "Can't reach the gateway. Could not connect to the server.")
+    }
+
     @Test func rejectsJunk() {
         #expect(throws: GatewayAddress.ParseError.empty) { try GatewayAddress(parsing: "  ") }
         #expect(throws: GatewayAddress.ParseError.invalid) { try GatewayAddress(parsing: "ftp://10.0.0.1") }
