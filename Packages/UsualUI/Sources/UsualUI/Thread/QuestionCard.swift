@@ -129,10 +129,10 @@ struct CardButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 13.5, weight: primary ? .semibold : .regular))
-            .foregroundStyle(primary ? Theme.userBubbleInk : Theme.ink)
+            .foregroundStyle(primary ? Theme.primaryInk : Theme.ink)
             .padding(.horizontal, 14)
             .frame(minHeight: 34)
-            .background(primary ? Theme.userBubble : Color.clear, in: Capsule())
+            .background(primary ? Theme.primary : Color.clear, in: Capsule())
             .overlay { if !primary { Capsule().strokeBorder(Theme.border) } }
             .opacity(configuration.isPressed ? 0.7 : 1)
             .contentShape(Capsule())

@@ -1,7 +1,8 @@
 import HermesKit
 import SwiftUI
 
-/// The chat column for one contact. On the Mac it is a rounded pane sitting on the grey window.
+/// The chat column for one contact: the conversation runs the pane's full height, under the
+/// name at the top and the message box at the bottom.
 struct ThreadPane: View {
     let contact: Contact
     let members: [Contact]
@@ -12,29 +13,22 @@ struct ThreadPane: View {
     var toggleProfile: (() -> Void)? = nil
 
     var body: some View {
-        VStack(spacing: 0) {
-            namePill
-                .padding(.top, 12)
-                .padding(.bottom, 4)
-            content
-            if let thread, thread.phase == .ready {
-                Composer(thread: thread, agentName: contact.name)
-                    .frame(maxWidth: 780)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-                    .padding(.top, 8)
+        content
+            .chatBars {
+                namePill
+                    .padding(.top, 20)
+                    .padding(.bottom, 8)
+            } bottom: {
+                if let thread, thread.phase == .ready {
+                    Composer(thread: thread, agentName: contact.name)
+                        .frame(maxWidth: 780)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
+                        .padding(.top, 8)
+                }
             }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .task(id: contact.id) { open() }
-        .background(Theme.pane)
-        #if os(macOS)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border))
-            .shadow(color: .black.opacity(0.04), radius: 1.5, y: 1)
-            .padding(8)
-            .background(Theme.window)
-        #endif
+            .task(id: contact.id) { open() }
+            .paneChrome()
     }
 
     @ViewBuilder private var namePill: some View {
@@ -81,6 +75,36 @@ struct ThreadPane: View {
     }
 }
 
+extension View {
+    /// The chat column's look: on the Mac, a rounded pane sitting on the grey window, its corners
+    /// concentric with the window's (16 pt on macOS 26) across the gap between them.
+    func paneChrome() -> some View {
+        #if os(macOS)
+            let gap: CGFloat = 8
+            let corners = RoundedRectangle(cornerRadius: 16 - gap)
+            return frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.pane)
+                .clipShape(corners)
+                .overlay(corners.strokeBorder(Theme.border))
+                .shadow(color: .black.opacity(0.04), radius: 1.5, y: 1)
+                .padding(gap)
+                .background(Theme.window)
+                // The window has no title bar, so the pane sits as far from the window's top
+                // edge as from its other edges.
+                .ignoresSafeArea(.container, edges: .top)
+        #else
+            return frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.pane)
+        #endif
+    }
+
+    /// Pins `top` and `bottom` over a conversation that scrolls beneath them.
+    func chatBars(@ViewBuilder top: () -> some View, @ViewBuilder bottom: () -> some View) -> some View {
+        safeAreaInset(edge: .top, spacing: 0, content: top)
+            .safeAreaInset(edge: .bottom, spacing: 0, content: bottom)
+    }
+}
+
 /// The floating, centred pill at the top of a thread: avatar and name.
 struct NamePill: View {
     let contact: Contact
@@ -99,9 +123,7 @@ struct NamePill: View {
         .padding(.leading, 7)
         .padding(.trailing, 20)
         .frame(height: 46)
-        .background(Capsule().fill(Theme.pane))
-        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
-        .overlay(Capsule().strokeBorder(.black.opacity(0.04)))
+        .floatingSurface(in: Capsule())
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
     }

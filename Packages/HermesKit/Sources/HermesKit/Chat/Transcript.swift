@@ -5,6 +5,8 @@ public struct TranscriptItem: Identifiable, Equatable, Sendable, Codable {
     public enum Content: Equatable, Sendable, Codable {
         case user(String)
         case assistant(String)
+        /// A reply in a room from the member with this room member ID.
+        case member(id: String, text: String)
         /// Consecutive tool calls, shown as one collapsible line.
         case activity([ToolStep])
         /// A centred system line, e.g. "Stopped" or an error.

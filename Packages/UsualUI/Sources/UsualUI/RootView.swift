@@ -19,8 +19,10 @@ public struct RootView: View {
             ContactsSplitView(
                 contacts: model.sidebarContacts, emptyText: emptyText,
                 thread: { $0.kind == .agent ? model.thread(for: $0) : nil },
+                room: { model.room(for: $0) },
                 open: { model.openThread(for: $0) },
                 select: { model.visibleContactID = $0 },
+                createRoom: { try await model.createRoom(named: $0, agents: $1) },
                 profile: { contact, close in
                     guard contact.kind == .agent else { return nil }
                     return ProfilePanel(
@@ -46,17 +48,27 @@ struct ContactsSplitView<Footer: View>: View {
     let contacts: [Contact]
     var emptyText: LocalizedStringKey = "No agents yet."
     var thread: (Contact) -> ChatThread? = { _ in nil }
+    var room: (Contact) -> RoomThread? = { _ in nil }
     var open: (Contact) -> Void = { _ in }
     /// Told which contact is on screen, so its replies don't count as unread.
     var select: (Contact.ID?) -> Void = { _ in }
+    /// Creates a room from a name and its agents and returns the room's ID; `nil` hides New Room.
+    var createRoom: ((String, [Contact]) async throws -> Contact.ID)?
     /// The profile panel for a contact, given a way to close it; `nil` when it has none.
     var profile: (Contact, @escaping () -> Void) -> ProfilePanel? = { _, _ in nil }
     @ViewBuilder let footer: Footer
 
-    @State private var selection: Contact.ID?
+    @State private var showsNewRoom = false
+    /// Filters the list by name or last message.
+    @State private var query = ""
     #if os(macOS)
+        @State private var isSearching = false
+        @FocusState private var searchFocused: Bool
+        /// The open chat, reopened at the next launch.
+        @AppStorage("selectedContact") private var selection: Contact.ID?
         @AppStorage("showsProfile") private var showsProfile = false
     #else
+        @State private var selection: Contact.ID?
         @State private var showsProfile = false
     #endif
     @Environment(\.scenePhase) private var scenePhase
@@ -64,13 +76,16 @@ struct ContactsSplitView<Footer: View>: View {
     var body: some View {
         NavigationSplitView {
             VStack(spacing: 0) {
+                #if os(macOS)
+                    if isSearching { searchField }
+                #endif
                 if contacts.isEmpty {
                     Text(emptyText)
                         .font(.system(size: 13))
                         .foregroundStyle(Theme.secondaryInk)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    ContactList(contacts: contacts, selection: $selection)
+                    ContactList(contacts: contacts, query: query, selection: $selection)
                 }
                 footer
                     .padding(.horizontal, 14)
@@ -78,8 +93,23 @@ struct ContactsSplitView<Footer: View>: View {
             }
             .background(Theme.window)
             .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 380)
+            #if os(macOS)
+                .toolbar(removing: .sidebarToggle)
+                .sidebarButtons(search: searchButton, newRoom: newRoomButton)
+            #else
+                .searchable(text: $query)
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) { newRoomButton }
+                }
+            #endif
         } detail: {
-            if let contact = contacts.first(where: { $0.id == selection }) {
+            if let contact = contacts.first(where: { $0.id == selection }), let room = room(contact) {
+                RoomPane(
+                    contact: contact, members: members(of: contact), room: room,
+                    agents: Dictionary(
+                        contacts.filter { $0.kind == .agent }.map { ($0.id, $0) },
+                        uniquingKeysWith: { first, _ in first }))
+            } else if let contact = contacts.first(where: { $0.id == selection }) {
                 let panel = profile(contact) { showsProfile = false }
                 ThreadPane(
                     contact: contact, members: members(of: contact), thread: thread(contact),
@@ -97,10 +127,72 @@ struct ContactsSplitView<Footer: View>: View {
             }
         }
         .tint(Theme.ink)
+        .sheet(isPresented: $showsNewRoom) {
+            if let createRoom {
+                NewRoomSheet(agents: agents, create: createRoom) { selection = $0 }
+            }
+        }
         .onChange(of: selection, initial: true) { _, selected in select(scenePhase == .active ? selected : nil) }
         // A chat in a window you aren't looking at isn't being read.
         .onChange(of: scenePhase) { _, phase in select(phase == .active ? selection : nil) }
     }
+
+    private var agents: [Contact] {
+        contacts.filter { $0.kind == .agent }.sorted(by: Contact.rosterOrder)
+    }
+
+    @ViewBuilder private var newRoomButton: some View {
+        if createRoom != nil {
+            Button {
+                showsNewRoom = true
+            } label: {
+                Label("New Room", systemImage: "plus")
+            }
+            .disabled(agents.count < NewRoomSheet.seats.lowerBound)
+            .help("New Room")
+        }
+    }
+
+    #if os(macOS)
+        private var searchButton: some View {
+            Button("Search", systemImage: "magnifyingglass", action: toggleSearch)
+                .keyboardShortcut("f")
+                .help("Search")
+        }
+
+        private var searchField: some View {
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(Theme.secondaryInk)
+                    .accessibilityHidden(true)
+                TextField("Search", text: $query)
+                    .textFieldStyle(.plain)
+                    .focused($searchFocused)
+                    .onExitCommand(perform: closeSearch)
+            }
+            .font(.system(size: 13.5))
+            .padding(.horizontal, 12)
+            .frame(height: 34)
+            .floatingSurface(in: Capsule())
+            .padding(.horizontal, 12)
+            .padding(.top, 4)
+            .padding(.bottom, 6)
+            .onAppear { searchFocused = true }
+        }
+
+        private func toggleSearch() {
+            if isSearching {
+                closeSearch()
+            } else {
+                isSearching = true
+            }
+        }
+
+        private func closeSearch() {
+            isSearching = false
+            query = ""
+        }
+    #endif
 
     private func members(of contact: Contact) -> [Contact] {
         let byID = Dictionary(contacts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -168,3 +260,27 @@ struct GatewayStatusButton: View {
     ContactsSplitView(contacts: SampleData.contacts()) { EmptyView() }
         .frame(width: 1000, height: 640)
 }
+
+#if os(macOS)
+    extension View {
+        /// Search and New Room beside the window buttons. From macOS 26 they sit at the sidebar's
+        /// right edge as two Liquid Glass circles; before that, as a plain toolbar group.
+        @ViewBuilder fileprivate func sidebarButtons(search: some View, newRoom: some View) -> some View {
+            if #available(macOS 26, *) {
+                toolbar {
+                    ToolbarSpacer(.flexible)
+                    ToolbarItem { search }
+                    ToolbarSpacer(.fixed)
+                    ToolbarItem { newRoom }
+                }
+            } else {
+                toolbar {
+                    ToolbarItemGroup {
+                        search
+                        newRoom
+                    }
+                }
+            }
+        }
+    }
+#endif

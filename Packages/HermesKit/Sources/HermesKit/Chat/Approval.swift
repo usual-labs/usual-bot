@@ -21,6 +21,14 @@ public struct ApprovalPrompt: Identifiable, Equatable, Sendable {
     /// What the gateway offers, in its order. `deny` is always possible.
     public let choices: [Choice]
 
+    init(id: String, sessionID: String, command: String, description: String, choices: [Choice]) {
+        self.id = id
+        self.sessionID = sessionID
+        self.command = command
+        self.description = description
+        self.choices = choices.contains(.deny) ? choices : choices + [.deny]
+    }
+
     init?(_ request: ServerRequest) {
         guard request.method == "approval", let sessionID = request.sessionID else { return nil }
         id = request.id

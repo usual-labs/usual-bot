@@ -43,6 +43,9 @@ struct TranscriptView: View {
         }
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
+        // A reloaded transcript numbers its items afresh. Keeping the old scroll view would hold
+        // on to the old numbers, now older messages, so start over at the newest one.
+        .id(thread.transcriptLoad)
     }
 
     private var lastItemIsLiveActivity: Bool {
@@ -51,33 +54,62 @@ struct TranscriptView: View {
     }
 }
 
-private struct ItemView: View {
+/// Who wrote a room reply: the name and the agent contact behind the avatar.
+struct MemberAuthor {
+    let name: String
+    let contact: Contact
+}
+
+struct ItemView: View {
     let item: TranscriptItem
     let agentName: String
+    /// Rooms only: resolves a member ID to its author.
+    var author: (String) -> MemberAuthor? = { _ in nil }
 
     var body: some View {
         switch item.content {
         case .user(let text):
-            HStack {
-                Spacer(minLength: 64)
-                Text(text)
-                    .font(.system(size: 15))
-                    .foregroundStyle(Theme.userBubbleInk)
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 15)
-                    .padding(.vertical, 10)
-                    .background(
-                        Theme.userBubble,
-                        in: UnevenRoundedRectangle(
-                            topLeadingRadius: 20, bottomLeadingRadius: 20, bottomTrailingRadius: 6,
-                            topTrailingRadius: 20))
-            }
+            UserBubble(text: text)
         case .assistant(let text):
             MarkdownView(text)
+        case .member(let id, let text):
+            let author = author(id)
+            HStack(alignment: .top, spacing: 10) {
+                if let author {
+                    AgentAvatar(contact: author.contact, size: 28)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(author?.name ?? id)
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(Theme.secondaryInk)
+                    MarkdownView(text)
+                }
+            }
         case .activity(let steps):
             ActivityLine(steps: steps, agentName: agentName)
         case .notice(let text):
             NoticeLine(text: text)
+        }
+    }
+}
+
+/// Your message: a dark bubble on the right.
+struct UserBubble: View {
+    let text: String
+
+    var body: some View {
+        HStack {
+            Spacer(minLength: 64)
+            Text(text)
+                .messageFont()
+                .foregroundStyle(Theme.userBubbleInk)
+                .textSelection(.enabled)
+                .padding(.horizontal, 15)
+                .padding(.vertical, 10)
+                .background(
+                    Theme.userBubble,
+                    in: UnevenRoundedRectangle(
+                        topLeadingRadius: 20, bottomLeadingRadius: 20, bottomTrailingRadius: 6, topTrailingRadius: 20))
         }
     }
 }
@@ -166,7 +198,7 @@ private struct StepRow: View {
 }
 
 /// Three dots that pulse while the agent is thinking.
-private struct TypingIndicator: View {
+struct TypingIndicator: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {

@@ -185,6 +185,20 @@ struct ChatThreadTests {
         #expect(ClarifyPrompt(ServerRequest(id: "x", method: "clarify", params: ["session_id": "s"])) == nil)
     }
 
+    @Test func gatewayCopyReplacesTheCachedTranscript() async throws {
+        let cached = CachedThread(
+            state: ThreadState(history: [HistoryMessage(role: "user", text: "Cached")], running: false),
+            lastViewed: nil, unreadCount: 0)
+        let (thread, _) = try await openThread(
+            resume: [
+                "session_id": "live-1", "running": false,
+                "messages": .array([["role": "user", "text": "Earlier"], ["role": "assistant", "text": "Latest"]]),
+            ], cached: cached)
+        #expect(thread.state.items.map(\.content) == [.user("Earlier"), .assistant("Latest")])
+        // Item 0 now means a different message, so the view must start over.
+        #expect(thread.transcriptLoad == 1)
+    }
+
     @Test func cachedChatShowsWhileOfflineButCannotSend() {
         var state = ThreadState()
         state.sendLocally("Cached question")

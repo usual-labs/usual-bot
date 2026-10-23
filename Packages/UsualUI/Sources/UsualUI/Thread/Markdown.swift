@@ -108,7 +108,7 @@ struct MarkdownView: View {
                 view(for: block)
             }
         }
-        .font(.system(size: 15))
+        .messageFont()
         .foregroundStyle(Theme.ink)
         .textSelection(.enabled)
         .frame(maxWidth: .infinity, alignment: .leading)

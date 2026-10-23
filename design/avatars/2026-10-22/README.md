@@ -22,3 +22,11 @@ These are art assets only; no application behavior or avatar-selection UI is cha
 ## In this repository
 
 The app uses 256×256 copies of these characters, in `Packages/UsualUI/Sources/UsualUI/Resources/Avatars/avatar-<slug>.png`. The full-size originals (`png/`), their zip, the reference sheets (`references/`) and the generation receipts (`receipts/`, which record local paths) are not committed, so `index.html` and the `png/` links above only work in the designer's own copy.
+
+## Lossless compressed versions
+
+`png/lossless/` contains smaller 1254×1254 derivatives of all 50 originals: 20,251,946 bytes reduced to 16,203,100 bytes (19.99%). The original files and archive remain unchanged. The app's existing 256×256 resources were compressed in place, reducing their total from 1,377,948 to 1,176,884 bytes (14.59%).
+
+Every decoded RGBA byte, dimension, and rendering metadata chunk was compared before accepting the compressed versions. There is no resizing, color quantization, or alpha change. Non-rendering content credentials tied to the original encoding are omitted from full-size derivatives; they remain in the original images. All other metadata is preserved. See `lossless-compression-report.json` for individual sizes and hashes.
+
+The separate `../usual-bot-50-avatars-lossless.zip` contains the compressed full-size PNGs, profiles, prompts, and a gallery that downloads those compressed files.
