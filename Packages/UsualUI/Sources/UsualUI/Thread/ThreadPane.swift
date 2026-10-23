@@ -76,26 +76,15 @@ struct ThreadPane: View {
 }
 
 extension View {
-    /// The chat column's look: on the Mac, a rounded pane sitting on the grey window, its corners
-    /// concentric with the window's (16 pt on macOS 26) across the gap between them.
+    /// The chat column's look: the pane colour, filling its column.
     func paneChrome() -> some View {
-        #if os(macOS)
-            let gap: CGFloat = 8
-            let corners = RoundedRectangle(cornerRadius: 16 - gap)
-            return frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Theme.pane)
-                .clipShape(corners)
-                .overlay(corners.strokeBorder(Theme.border))
-                .shadow(color: .black.opacity(0.04), radius: 1.5, y: 1)
-                .padding(gap)
-                .background(Theme.window)
-                // The window has no title bar, so the pane sits as far from the window's top
-                // edge as from its other edges.
+        frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Theme.pane)
+            #if os(macOS)
+                // The window has no title bar, so the name sits as far from the window's top edge
+                // as the message box does from its bottom edge.
                 .ignoresSafeArea(.container, edges: .top)
-        #else
-            return frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Theme.pane)
-        #endif
+            #endif
     }
 
     /// Pins `top` and `bottom` over a conversation that scrolls beneath them.

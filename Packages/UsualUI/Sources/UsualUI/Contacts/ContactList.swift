@@ -6,6 +6,8 @@ struct ContactList: View {
     let contacts: [Contact]
     /// Shows only contacts whose name or last message contains it.
     var query = ""
+    /// The narrow window's rail: avatars only.
+    var compact = false
     @Binding var selection: Contact.ID?
 
     var body: some View {
@@ -41,8 +43,8 @@ struct ContactList: View {
                         Button {
                             selection = contact.id
                         } label: {
-                            ContactRow(contact: contact, members: Self.members(of: contact, in: byID))
-                                .padding(.horizontal, 12)
+                            ContactRow(contact: contact, members: Self.members(of: contact, in: byID), compact: compact)
+                                .padding(.horizontal, compact ? 6 : 12)
                                 .padding(.vertical, 4)
                                 .background(
                                     isSelected ? Theme.selection : .clear, in: RoundedRectangle(cornerRadius: 14)
@@ -53,9 +55,10 @@ struct ContactList: View {
                         .accessibilityAddTraits(isSelected ? .isSelected : [])
                     }
                 }
-                .padding(.horizontal, 10)
+                .padding(.horizontal, compact ? 6 : 10)
                 .padding(.vertical, 6)
             }
+            .scrollIndicators(compact ? .hidden : .automatic)
             .focusable()
             .focusEffectDisabled()
             .onKeyPress(.downArrow) { moveSelection(by: 1, in: ordered) }

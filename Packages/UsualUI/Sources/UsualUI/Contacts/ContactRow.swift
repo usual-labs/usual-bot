@@ -1,13 +1,28 @@
 import HermesKit
 import SwiftUI
 
-/// One sidebar row: avatar, name, time of last activity, preview and an indicator.
+/// One sidebar row: avatar, name, time of last activity, preview and an indicator. Compact, in the
+/// narrow window's rail, it is the avatar alone with the indicator as a badge.
 struct ContactRow: View {
     let contact: Contact
     /// Resolved members when `contact` is a room; empty for agents.
     let members: [Contact]
+    var compact = false
 
     var body: some View {
+        if compact {
+            avatar
+                .overlay(alignment: .topTrailing) { badge.offset(x: 6, y: -4) }
+                .padding(.vertical, 4)
+                .help(contact.name)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(accessibilityName))
+        } else {
+            row
+        }
+    }
+
+    private var row: some View {
         HStack(spacing: 12) {
             avatar
             VStack(alignment: .leading, spacing: 2) {
@@ -42,6 +57,30 @@ struct ContactRow: View {
         case .agent: AgentAvatar(contact: contact)
         case .room: RoomAvatar(members: members)
         }
+    }
+
+    /// The rail's corner badge: the unread count, or a dot when the agent needs you.
+    @ViewBuilder private var badge: some View {
+        if contact.activity == .needsYou {
+            Circle()
+                .fill(Theme.needsYouInk)
+                .frame(width: 12, height: 12)
+                .overlay(Circle().strokeBorder(Theme.window, lineWidth: 2))
+        } else if contact.unreadCount > 0 {
+            Text(contact.unreadCount, format: .number)
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(Theme.primaryInk)
+                .padding(.horizontal, 4)
+                .frame(minWidth: 18, minHeight: 18)
+                .background(Capsule().fill(Theme.primary))
+                .overlay(Capsule().strokeBorder(Theme.window, lineWidth: 2))
+        }
+    }
+
+    private var accessibilityName: String {
+        if contact.activity == .needsYou { return String(localized: "\(contact.name), needs you") }
+        if contact.unreadCount > 0 { return String(localized: "\(contact.name), \(contact.unreadCount) unread") }
+        return contact.name
     }
 
     private var previewText: String {
