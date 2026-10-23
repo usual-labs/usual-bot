@@ -19,6 +19,7 @@ struct ThreadPane: View {
     var body: some View {
         content
             .environment(\.sentImages, thread?.sentImages ?? [:])
+            .environment(\.mediaProfile, contact.details?.profile ?? contact.id)
             .chatBars {
                 namePill
             } bottom: {

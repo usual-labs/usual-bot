@@ -39,7 +39,7 @@ struct AttachmentLoaderTests {
     }
 
     @Test func thumbnailsDecodeImagesAndIgnoreOtherData() throws {
-        #expect(AttachmentTile.thumbnail(of: try image(.png)) != nil)
-        #expect(AttachmentTile.thumbnail(of: Data("not an image".utf8)) == nil)
+        #expect(MediaLoading.image(try image(.png), maxPixels: 400) != nil)
+        #expect(MediaLoading.image(Data("not an image".utf8), maxPixels: 400) == nil)
     }
 }

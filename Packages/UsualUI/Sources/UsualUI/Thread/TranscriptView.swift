@@ -109,6 +109,8 @@ struct ItemView: View {
                         .font(.system(size: 12.5, weight: .semibold))
                         .foregroundStyle(Theme.secondaryInk)
                     MarkdownView(text)
+                        // Files a member names live in its own profile.
+                        .environment(\.mediaProfile, author.map { $0.contact.details?.profile ?? $0.contact.id })
                 }
             }
         case .activity(let steps):
@@ -131,7 +133,8 @@ struct UserBubble: View {
             if !attachments.isEmpty {
                 HStack(spacing: 6) {
                     ForEach(attachments, id: \.path) { ref in
-                        AttachmentTile(kind: ref.kind, name: ref.name, imageData: sentImages[ref.path])
+                        AttachmentTile(
+                            kind: ref.kind, name: ref.name, imageData: sentImages[ref.path], gatewayPath: ref.path)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)

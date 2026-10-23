@@ -14,8 +14,41 @@ struct MarkdownBlockTests {
             case .quote(let text): return "q:" + String(text.characters)
             case .code(let language, let code): return "code(\(language ?? "-")):" + code
             case .rule: return "hr"
+            case .media(let path): return "media:" + path
+            case .image(let url, let alt): return "img(\(alt)):" + url.absoluteString
             }
         }
+    }
+
+    @Test func mediaLinesBecomeFilesBetweenTheText() {
+        let reply = """
+            Here's the chart.
+            MEDIA:/home/h/.hermes/profiles/ops/cache/cpu.png
+              MEDIA:`/home/h/reports/Q3 summary.pdf`
+            Anything else?
+            """
+        #expect(
+            kinds(reply) == [
+                "p:Here's the chart.", "media:/home/h/.hermes/profiles/ops/cache/cpu.png",
+                "media:/home/h/reports/Q3 summary.pdf", "p:Anything else?",
+            ])
+    }
+
+    @Test func mediaInsideCodeStaysCode() {
+        let reply = """
+            ```
+            MEDIA:/tmp/example.png
+            ```
+            """
+        #expect(kinds(reply) == ["code(-):MEDIA:/tmp/example.png"])
+    }
+
+    @Test func markdownImagesComeOutOfTheirParagraph() {
+        #expect(
+            kinds("Generated: ![a red fox](https://fal.media/files/fox.png) done") == [
+                "p:Generated:  done", "img(a red fox):https://fal.media/files/fox.png",
+            ])
+        #expect(kinds("![](/home/h/.hermes/images/cat.png)") == ["media:/home/h/.hermes/images/cat.png"])
     }
 
     @Test func splitsCommonBlocks() {
