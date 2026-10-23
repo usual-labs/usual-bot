@@ -54,6 +54,12 @@ No confirmed recurring failures were established during source inspection. A mis
 - Second Mac crash (same day): macOS aborts an app that requests speech recognition without `NSSpeechRecognitionUsageDescription` in its Info.plist. Xcode's `INFOPLIST_KEY_NSSpeechRecognitionUsageDescription` build setting isn't generated for macOS, so both dictation strings live in `Config/Info.plist`. Check the built plist (`plutil -p`) after adding a usage string. It kept crashing after the fix because older builds with the same bundle ID (other DerivedData folders) were still registered with LaunchServices and lacked the key; deleting them, `lsregister -u` on each and `lsregister -f` on the current build, then opening it with `open`, cleared it. Keep one Mac build of a bundle ID around when testing privacy prompts.
 - Also: the iOS Simulator has no speech model, so dictation fails there with "couldn't start"; test recognition on a device or the Mac.
 
+## Reply images showed a border wider than the picture (fixed 2026-10-24)
+
+- Symptom: a square image in a reply sat in a rounded border that ran on to its right, as if the aspect ratio were off.
+- Root cause: `.frame(maxWidth: 420, maxHeight: 360)` around a `scaledToFit` image takes the whole 420 pt even when the image is narrower, and the clip and border follow the frame.
+- Fix: `MediaLoading.displaySize` sizes the image from its own pixels (at most 420 × 360 pt, no bigger than half its pixels) and the frame is that exact size. Unit-tested and checked with a wide image on the Mac; the user's square image not yet rechecked.
+
 ## Trailing toolbar items land on the leading side
 
 - Symptom: the profile panel's close button, as a `.primaryAction` or `.automatic` toolbar item, drew on the left next to Search and New Room.

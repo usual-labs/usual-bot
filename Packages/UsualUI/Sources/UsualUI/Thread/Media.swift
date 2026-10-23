@@ -43,6 +43,11 @@ enum MediaLoading {
 
     /// A decoded copy no larger than `maxPixels` on its long side, the right way up.
     static func image(_ data: Data, maxPixels: Int) -> Image? {
+        decoded(data, maxPixels: maxPixels)?.image
+    }
+
+    /// The decoded copy and its size in pixels.
+    static func decoded(_ data: Data, maxPixels: Int) -> (image: Image, pixels: CGSize)? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
             let image = CGImageSourceCreateThumbnailAtIndex(
                 source, 0,
@@ -52,7 +57,15 @@ enum MediaLoading {
                     kCGImageSourceCreateThumbnailWithTransform: true,
                 ] as CFDictionary)
         else { return nil }
-        return Image(decorative: image, scale: 1)
+        return (Image(decorative: image, scale: 1), CGSize(width: image.width, height: image.height))
+    }
+
+    /// How big an image shows in a reply: its own shape, at most `limit`, and no bigger than its
+    /// pixels at 2× (so a small icon stays small).
+    static func displaySize(pixels: CGSize, limit: CGSize) -> CGSize {
+        guard pixels.width > 0, pixels.height > 0 else { return limit }
+        let scale = min(limit.width / pixels.width, limit.height / pixels.height, 0.5)
+        return CGSize(width: (pixels.width * scale).rounded(), height: (pixels.height * scale).rounded())
     }
 
     /// Writes the bytes to a temporary file named `name`, for Share and Save.
@@ -90,7 +103,7 @@ struct ReplyImage: View {
 
     enum Phase {
         case loading
-        case loaded(Data, Image)
+        case loaded(Data, Image, CGSize)
         case failed(String)
     }
 
@@ -102,12 +115,14 @@ struct ReplyImage: View {
                     .fill(Theme.selection)
                     .frame(width: 280, height: 180)
                     .overlay { ProgressView().controlSize(.small) }
-            case .loaded(_, let image):
+            case .loaded(_, let image, let pixels):
+                // Sized to the image's own shape, so the rounded border hugs it.
+                let size = MediaLoading.displaySize(pixels: pixels, limit: CGSize(width: 420, height: 360))
                 Button {
                     viewing = true
                 } label: {
-                    image.resizable().scaledToFit()
-                        .frame(maxWidth: 420, maxHeight: 360, alignment: .leading)
+                    image.resizable()
+                        .frame(width: size.width, height: size.height)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.border))
                 }
@@ -122,18 +137,18 @@ struct ReplyImage: View {
         .accessibilityLabel(Text("Image \(name)"))
         .task(id: source) { await load() }
         .sheet(isPresented: $viewing) {
-            if case .loaded(let data, _) = phase { MediaViewer(data: data, name: name) }
+            if case .loaded(let data, _, _) = phase { MediaViewer(data: data, name: name) }
         }
     }
 
     private func load() async {
         do {
             let data = try await MediaLoading.data(source, store: store, profile: profile)
-            guard let image = MediaLoading.image(data, maxPixels: 1400) else {
+            guard let decoded = MediaLoading.decoded(data, maxPixels: 1400) else {
                 phase = .failed(String(localized: "This isn't an image Usual Bot can show."))
                 return
             }
-            phase = .loaded(data, image)
+            phase = .loaded(data, decoded.image, decoded.pixels)
         } catch {
             phase = .failed(AppModel.describe(error))
         }

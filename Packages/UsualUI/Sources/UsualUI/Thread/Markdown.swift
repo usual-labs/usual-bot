@@ -32,6 +32,11 @@ enum MarkdownBlock: Equatable {
             if !inFence, trimmed.hasPrefix("MEDIA:"), let path = mediaPath(trimmed.dropFirst("MEDIA:".count)) {
                 flush()
                 blocks.append(.media(path: path))
+            } else if !inFence, let path = mediaPath(Substring(trimmed)), imagePaths(in: path) == [path] {
+                // A line that's only the path to an image: agents outside the desktop app name
+                // the files they make that way.
+                flush()
+                blocks.append(.media(path: path))
             } else {
                 pending.append(line)
             }
@@ -94,15 +99,30 @@ enum MarkdownBlock: Equatable {
                 blocks.append(.heading(level: level, text))
             } else if let item = listItem(in: intent) {
                 blocks.append(.listItem(marker: item.marker, depth: item.depth, text))
+                blocks += imagePaths(in: String(text.characters)).map { .media(path: $0) }
             } else if kinds.contains(.blockQuote) {
                 blocks.append(.quote(text))
             } else {
                 let (rest, images) = splitImages(text)
                 if !rest.characters.allSatisfy(\.isWhitespace) { blocks.append(.paragraph(rest)) }
                 blocks += images
+                // Image paths named in the text show under it.
+                blocks += imagePaths(in: String(rest.characters)).map { .media(path: $0) }
             }
         }
         return blocks
+    }
+
+    /// Absolute paths to image files in `text`, in order, each once: `/home/…/chart.png`.
+    static func imagePaths(in text: String) -> [String] {
+        let pattern = #"(?<![\w.~/:])/(?!/)[^\s`'"<>()\[\]]+\.(?:png|jpe?g|gif|webp|bmp|heic)\b"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { return [] }
+        var seen: Set<String> = []
+        return regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { match in
+            guard let range = Range(match.range, in: text) else { return nil }
+            let path = String(text[range])
+            return seen.insert(path).inserted ? path : nil
+        }
     }
 
     /// Takes the images out of a paragraph: web images load directly, local paths from the gateway.
