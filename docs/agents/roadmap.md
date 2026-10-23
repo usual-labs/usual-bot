@@ -107,7 +107,12 @@ doesn't turn into images.
 - **App:** a context menu on your last bubble; the transcript reloads from the gateway afterwards.
 - **Done when:** undo removes the turn on every attached app, and edit gives a fresh reply.
 
-## M15: Reactions
+## M15: Reactions (built with reply and copy; live gateway test pending)
+
+Built early, at the user's request (23 October 2026), with Grok Bot's hover actions: React,
+Reply and Copy on every message (React in one-to-one chats only, since rooms have no reaction
+call). Reply quotes the message in front of yours; in rooms it also @mentions the author, as the
+official app's room reply does.
 
 - **You can:** react to a message with an emoji (one per author, tapping the same one removes it)
   and see the agent's reactions.

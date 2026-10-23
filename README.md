@@ -20,6 +20,8 @@ group rooms, inline approvals and routines. Everything else stays in the officia
 - **Approvals and questions inline.** When an agent wants to run a command, allow it once, for the
   chat, always, or deny it, right in the conversation. Questions from its clarify tool show up the
   same way.
+- **React, reply and copy.** Hover a message (long-press on iPhone) to react with an emoji,
+  reply to it with a quote, or copy it.
 - **Stop and steer.** Stop a running turn, or send a message while it runs to steer it.
 - **Rooms.** Group chats with several agents. Messages go to everyone; `@name` talks to one.
 - **Routines.** Each agent's scheduled jobs, with a switch to pause and resume them.
