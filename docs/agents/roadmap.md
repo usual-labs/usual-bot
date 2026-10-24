@@ -1,7 +1,14 @@
 # Usual Bot: roadmap after 0.1
 
-Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M22 are built (each says
-how far it has been checked); the real-gateway shakedown is next. See `app-shell.md` and the
+Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M22 are built (each says how far it has been checked).
+
+Shakedown, 24 October 2026: the maintainer went through every feature on the Mac against their
+(legacy-protocol) gateway: attachments (photo and file), reactions, a skill, `/status`,
+`/reasoning`, model and thinking switches, the context meter, edit and undo, `/btw` mid-reply,
+`/bg` (also with the app quit mid-task, recovered on reopen), compress, a room's `/` menu and
+panel, and both call engines. All worked; one bug was found and fixed (the cursor after a menu
+pick, UsualUI known issues). Agent defaults (M20) were left out on purpose (they change an
+agent's default model everywhere). Not covered: iPhone on a real device beyond sign-in. See `app-shell.md` and the
 package KBs for what exists. Each milestone below runs and can be demoed on its own, ships with
 tests, the demo mode (`AppModel.demo()`) and the KBs updated, and is checked on Mac and iPhone.
 
@@ -12,7 +19,7 @@ None of it has been exercised from this app yet; each milestone starts by confir
 against a real gateway. All of them are on the dashboard socket (legacy dialect) or its REST
 routes.
 
-## M9: Attachments (built; live gateway test pending)
+## M9: Attachments (built; verified on the Mac against the maintainer's gateway 2026-10-24)
 
 Implemented as planned, with one change: PDFs go through `file.attach` like other files, as the
 official app's Bot Chat does (`pdf.attach` needs `pdftoppm` on the gateway and only sends page
@@ -56,7 +63,7 @@ Mac, 24 October 2026).
 - **Done when:** a reply with a generated image shows it inline on both platforms, and a path
   outside the media roots shows a quiet placeholder instead of an error.
 
-## M11: Skills and slash commands (built; live gateway test pending)
+## M11: Skills and slash commands (built; verified on the Mac against the maintainer's gateway 2026-10-24)
 
 Built as planned, then widened on 24 October 2026: the menu offers skills (✦) and commands (⌘)
 together: quick and plugin commands, and Hermes's built-ins that the official app offers
@@ -97,7 +104,7 @@ The mic replaces Send while the box is empty, as in Grok Bot.
 - **Done when:** dictation works on Mac and iPhone, stops cleanly when you send or tap again, and
   explains a denied permission with a way to the system setting.
 
-## M13: Voice call (built; a GPT-Live call verified on the Mac 2026-10-24)
+## M13: Voice call (built; both engines verified on the Mac against the maintainer's gateway 2026-10-24)
 
 The call is a glass bar over the chat (Grok Bot's design) with settings and a live transcript.
 It has two engines, picked in the bar's settings (**Engine**: Automatic, On-device, GPT-Live;
@@ -132,7 +139,7 @@ where the gateway can't run it shows the gateway's reason instead of falling bac
 - **Later:** the gateway's own text-to-speech (`/api/audio/speak-stream`) for the on-device
   engine.
 
-## M14: Model and reasoning level (built; live switch untested)
+## M14: Model and reasoning level (built; verified on the Mac against the maintainer's gateway 2026-10-24)
 
 Added 24 October 2026 at the user's request, ahead of the rest; built the same day.
 
@@ -159,7 +166,7 @@ Added 24 October 2026 at the user's request, ahead of the rest; built the same d
 - **Checked:** HermesKit tests (switch params, confirm, deferred, refused level, catalog, info);
   the menu in the demo on the iPhone Simulator and the Mac. Not yet tried against a real gateway.
 
-## M15: Edit and undo the last message (built; live gateway untested)
+## M15: Edit and undo the last message (built; verified on the Mac against the maintainer's gateway 2026-10-24)
 
 - **You can:** on your last message, between replies: **Edit** puts its text back in the
   message box under an "Editing your last message" chip (✕ cancels); Send replaces the message
@@ -176,7 +183,7 @@ Added 24 October 2026 at the user's request, ahead of the rest; built the same d
 - **Checked:** HermesKit tests (undo + reload, local fallback, refusal, edit, failed edit); the
   menu and editing chip in the iPhone Simulator demo. Not yet tried against a real gateway.
 
-## M16: Reactions (built with reply and copy; live gateway test pending)
+## M16: Reactions (built with reply and copy; verified on the Mac against the maintainer's gateway 2026-10-24)
 
 Built early, at the user's request (23 October 2026), with Grok Bot's hover actions: React,
 Reply and Copy on every message (React in one-to-one chats only, since rooms have no reaction
@@ -191,7 +198,7 @@ official app's room reply does.
   reaction badges under bubbles.
 - **Open:** how reactions appear in history, and whether agents see or add them.
 
-## M17: Side questions (built; live gateway untested)
+## M17: Side questions (built; verified on the Mac against the maintainer's gateway 2026-10-24)
 
 - **You can:** type `/btw <question>` (it's in the `/` menu) to ask about the conversation, also
   while the agent works: the turn isn't interrupted or steered and the question never enters the
@@ -207,7 +214,7 @@ official app's room reply does.
 - **Checked:** HermesKit tests (asking while running, early answer, failures, parsing); the card
   and dismiss in the demo on the Mac and the iPhone Simulator.
 
-## M18: Background tasks (built; live gateway untested)
+## M18: Background tasks (built; verified on the Mac against the maintainer's gateway 2026-10-24)
 
 - **You can:** type `/bg <task>` (or `/background`; it's in the `/` menu) to hand a task to a
   fresh agent that works in the background, also while the chat's agent replies. One bar above the
@@ -231,7 +238,7 @@ official app's room reply does.
   the row and result item in the demo on the Mac and the iPhone Simulator. The notification was
   built but not seen firing.
 
-## M19: Usage and context (built; live gateway untested)
+## M19: Usage and context (built; verified on the Mac against the maintainer's gateway 2026-10-24)
 
 - **You can:** see how full a chat's context is as a small ring and percentage at the start of
   the model and thinking row under the message box (amber from 80%). Its menu gives the context
@@ -273,7 +280,7 @@ Added 24 October 2026 at the user's pick, after M9–M19 were done.
   --global` carries `profile`); both menus in the iPhone Simulator demo (Forge's demo chat runs
   on another model than its default).
 
-## M21: Keep background results and side answers (built; live gateway untested)
+## M21: Keep background results and side answers (built; verified on the Mac against the maintainer's gateway 2026-10-24)
 
 Picked 24 October 2026, before the real-gateway shakedown.
 
@@ -298,7 +305,7 @@ Picked 24 October 2026, before the real-gateway shakedown.
 - **Checked:** HermesKit tests (replay after a short drop, new session: lost side answer and a
   result from the store, no duplicate, time-ordered reload, cache round trip and old caches).
 
-## M22: Rooms catch up (built where the gateway allows; live gateway untested)
+## M22: Rooms catch up (built where the gateway allows; verified on the Mac against the maintainer's gateway 2026-10-24)
 
 - **You can:** type `/` in a room (at the start or after a space) to pick from every member's
   switched-on skills, each labelled with the members that have it ("Atlas, Forge · Search the

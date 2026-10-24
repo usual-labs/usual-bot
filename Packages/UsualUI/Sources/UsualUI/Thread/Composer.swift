@@ -167,7 +167,7 @@ struct MessageBox: View {
         }
         .onChange(of: commands?.prefill) { _, prefill in
             guard let prefill else { return }
-            text = prefill
+            replaceText(with: prefill)
             commands?.prefill = nil
             focused = true
         }
@@ -209,7 +209,7 @@ struct MessageBox: View {
     /// Puts the picked name in place of the `/word` being typed.
     private func complete(with command: SlashCommand) {
         let typed = (slashQuery?.count ?? 0) + 1
-        text = String(menuText.dropLast(typed)) + command.name + " "
+        replaceText(with: String(menuText.dropLast(typed)) + command.name + " ")
         focused = true
     }
 
@@ -311,6 +311,13 @@ struct MessageBox: View {
 
     private var isEmpty: Bool { text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
+    /// New text for the box with the cursor after it, so you type on where the pick or prefill
+    /// ended (the field would otherwise keep the old cursor, mid-word).
+    private func replaceText(with new: String) {
+        text = new
+        selection = TextSelection(insertionPoint: text.endIndex)
+    }
+
     private func insertLineBreak() {
         guard case .selection(let range) = selection?.indices else {
             text += "\n"
@@ -373,7 +380,7 @@ struct MessageBox: View {
         var words = menuText.split(separator: " ", omittingEmptySubsequences: false).map(String.init)
         if words.isEmpty { words = [""] }
         words[words.count - 1] = "@\(mention.id)"
-        text = words.joined(separator: " ") + " "
+        replaceText(with: words.joined(separator: " ") + " ")
         focused = true
     }
 }
