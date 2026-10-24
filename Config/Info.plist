@@ -9,6 +9,17 @@
 	<string>Dictate messages to your agents.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Turn what you say into message text, on this device when it can.</string>
+	<!-- iPhone launch screen: the Hermes mark centred on the window colour (App/Assets.xcassets), which
+	     the app's splash view continues while it reads the saved sign-in. Ignored on the Mac. -->
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIImageName</key>
+		<string>LaunchMark</string>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+		<key>UIImageRespectsSafeAreaInsets</key>
+		<false/>
+	</dict>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<!-- Many gateways are plain http on a tailnet or home network (e.g. http://100.101.102.103:9119).

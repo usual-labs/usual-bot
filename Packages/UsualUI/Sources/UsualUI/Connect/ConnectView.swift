@@ -91,12 +91,7 @@ struct ConnectView: View {
     }
 
     private var mark: some View {
-        ZStack(alignment: .topLeading) {
-            Circle().fill(Theme.ink)
-            Circle().fill(Theme.window).frame(width: 13, height: 13).offset(x: 31, y: 12)
-        }
-        .frame(width: 56, height: 56)
-        .accessibilityHidden(true)
+        HermesMark().frame(width: 96, height: 96)
     }
 
     private func signIn() {
@@ -104,3 +99,27 @@ struct ConnectView: View {
         model.signIn(presenter: presenter)
     }
 }
+
+/// The Hermes doodle, the app's icon character, drawn without a background.
+struct HermesMark: View {
+    var body: some View {
+        (AvatarArt.resource("hermes-mark") ?? Image(systemName: "person.crop.circle"))
+            .resizable()
+            .interpolation(.high)
+            .scaledToFit()
+            .accessibilityHidden(true)
+    }
+}
+
+/// What shows while the app reads the saved sign-in at launch: the mark on the window colour,
+/// where the iPhone launch screen put it, so launching looks like one still picture.
+struct SplashView: View {
+    var body: some View {
+        HermesMark()
+            .frame(width: 120, height: 120)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Theme.window)
+            .ignoresSafeArea()
+    }
+}
+
