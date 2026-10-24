@@ -26,6 +26,9 @@ group rooms, inline approvals and routines. Everything else stays in the officia
 - **Rooms.** Group chats with several agents. Messages go to everyone; `@name` talks to one.
 - **Skills and commands.** Type `/` to run one of the agent's skills or commands; switch skills on
   and off in its profile.
+- **Edit and undo.** Rewrite your last message for a fresh reply, or take it back.
+- **Model and thinking.** Pick the model and how hard it thinks for each chat from the message
+  box; the agent's default stays as it is.
 - **Routines.** Each agent's scheduled jobs, with a switch to pause and resume them.
 - **Dictation.** Tap the mic in an empty message box and speak; words appear as you talk,
   recognised on the device when it can.

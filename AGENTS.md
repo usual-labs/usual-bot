@@ -10,7 +10,7 @@
 - [app-shell.md](docs/agents/app-shell.md) — Usual Bot: app shell.
 - [blog-publishing.md](docs/agents/blog-publishing.md) — Product context, missing website prerequisite and truthful publication evidence.
 - [improvement-ideas.md](docs/agents/improvement-ideas.md) — Usual Bot: cross-project improvement ideas.
-- [roadmap.md](docs/agents/roadmap.md) — Usual Bot: planned milestones M9–M18 (attachments, skills, voice and more).
+- [roadmap.md](docs/agents/roadmap.md) — Usual Bot: milestones M9–M19 (attachments, skills, voice, model and reasoning, and more).
 - [known-issues.md](docs/agents/known-issues.md) — Usual Bot: cross-project known issues.
 
 ## Operating protocol

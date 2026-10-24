@@ -1,7 +1,8 @@
 # Usual Bot: roadmap after 0.1
 
-Planned, not built. Milestones M0–M8 (through the 0.1.0 tag) are done; see `app-shell.md` and the
-package KBs for what exists. Each milestone below runs and can be demoed on its own, ships with
+Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M12 and M14–M16 are built
+(each says how far it has been checked); M13 (voice call) is in progress, then M17–M19. See
+`app-shell.md` and the package KBs for what exists. Each milestone below runs and can be demoed on its own, ships with
 tests, the demo mode (`AppModel.demo()`) and the KBs updated, and is checked on Mac and iPhone.
 
 Gateway facts come from a Hermes source checkout (`81a55437f3f`, 26 September 2026) and its
@@ -34,7 +35,7 @@ load them from the gateway. See the HermesKit and UsualUI KBs for details.
 - **Open:** size limits per method; how history shows past attachments (to draw them after a
   reload); rooms stay text-only (`groups.send` takes text).
 
-## M10: Images in replies (built; live gateway test pending)
+## M10: Images in replies (built; a gateway image verified on the Mac 2026-10-24)
 
 Implemented with one change: gateway files load through `/api/fs/read-data-url?profile=`, as the
 official app does for remote gateways, because `/api/media` only serves the default profile's
@@ -110,15 +111,51 @@ The mic replaces Send while the box is empty, as in Grok Bot.
 - **Done when:** a five-turn spoken conversation works on iPhone and Mac, interrupting stops the
   agent's speech at once, and leaving the app ends the call cleanly.
 
-## M14: Edit and undo the last message
+## M14: Model and reasoning level (built; live switch untested)
 
-- **You can:** edit your last message and send it again, or undo it, while the agent is idle.
-- **Gateway:** `session.undo {session_id}` drops the last user turn and everything after it;
-  editing is undo, then submitting the new text.
-- **App:** a context menu on your last bubble; the transcript reloads from the gateway afterwards.
-- **Done when:** undo removes the turn on every attached app, and edit gives a fresh reply.
+Added 24 October 2026 at the user's request, ahead of the rest; built the same day.
 
-## M15: Reactions (built with reply and copy; live gateway test pending)
+- **You can:** see which model a chat uses and how hard it thinks, and change both from two
+  menus under the message box, on the right: the model (current provider's models ticked,
+  other providers in submenus) and the thinking level (Off, Minimal, Low, Medium, High, Extra
+  high, Max, Ultra; hidden for models the catalog marks as non-reasoning). A pick changes this
+  chat only; the agent's default model stays. Same layout on Mac and iPhone.
+- **Gateway (as built):**
+  - `model.options {session_id}`: providers with `slug`, `name`, `models`, `featured_models`
+    (an aggregator's shortlist, offered instead of hundreds of models) and per-model
+    `capabilities.reasoning` (Hermes assumes true when silent).
+  - `config.set {session_id, key: "model", value: "<model> --provider <slug> --session"}`.
+    `--session` keeps config.yaml untouched; on a Bot Chat the gateway still records the pick
+    (`composer_override_profile`), so it survives resume while the profile's model is unchanged.
+    `confirm_required` + `confirm_message` asks first (resend with `confirm_expensive_model`);
+    `deferred` means a reply is running and the switch lands at the next turn (a notice says so).
+  - `config.set {session_id, key: "reasoning", value}`: per chat; there is no way back to the
+    provider default ("" in `session.info`), so the menu shows "Default" with nothing ticked.
+  - `session.info` events (and the `info` in resume/create results) carry `model`, `provider`
+    and `reasoning_effort` ("" default, "none" off).
+- **Not built:** "Make default" (the profile's default model) and the Machine tab entry; fast
+  mode. Adding provider keys and the full Models settings stay in the official app.
+- **Checked:** HermesKit tests (switch params, confirm, deferred, refused level, catalog, info);
+  the menu in the demo on the iPhone Simulator and the Mac. Not yet tried against a real gateway.
+
+## M15: Edit and undo the last message (built; live gateway untested)
+
+- **You can:** on your last message, between replies: **Edit** puts its text back in the
+  message box under an "Editing your last message" chip (✕ cancels); Send replaces the message
+  and its reply with the new text and a fresh reply. **Undo** removes the message and its reply.
+  Both sit in the message's More menu (Mac hover bar) and long-press menu (iPhone).
+- **Gateway:** `session.undo {session_id}` → `{removed}` drops the last real user turn and
+  everything after it (refused with 4009 while a reply runs); then `session.history` reloads the
+  transcript (this device's copy is cut locally if that fails). Edit is undo, then an ordinary
+  `prompt.submit` (the Ink TUI's /retry does the same). Not used: `prompt.submit`'s
+  `truncate_before_row_id` + `confirm_truncate`, which can rewind to any earlier message.
+- **Details:** an edit keeps the text and `@file:` references; images went with the old message
+  and must be attached again. If the undo fails, the new text goes back into the box. Undo asks
+  no confirmation.
+- **Checked:** HermesKit tests (undo + reload, local fallback, refusal, edit, failed edit); the
+  menu and editing chip in the iPhone Simulator demo. Not yet tried against a real gateway.
+
+## M16: Reactions (built with reply and copy; live gateway test pending)
 
 Built early, at the user's request (23 October 2026), with Grok Bot's hover actions: React,
 Reply and Copy on every message (React in one-to-one chats only, since rooms have no reaction
@@ -133,7 +170,7 @@ official app's room reply does.
   reaction badges under bubbles.
 - **Open:** how reactions appear in history, and whether agents see or add them.
 
-## M16: Side questions
+## M17: Side questions
 
 - **You can:** ask a quick question about the conversation while the agent works, without
   interrupting it or adding to its history (Hermes's `/btw`).
@@ -141,7 +178,7 @@ official app's room reply does.
 - **App:** a "Side question" action in the message box; the answer appears as a dismissible card
   above the box, not in the transcript.
 
-## M17: Background tasks
+## M18: Background tasks
 
 - **You can:** hand an agent a task that runs on a fresh agent in the background while you keep
   chatting, and get its result back in the chat.
@@ -150,7 +187,7 @@ official app's room reply does.
   chat keeps, and a notification on iPhone when the app is in the background (local only; push
   stays out of scope).
 
-## M18: Usage and context
+## M19: Usage and context
 
 - **You can:** see how full the chat's context is and what it has cost, and compress it when it
   gets full.

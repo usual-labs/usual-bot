@@ -20,6 +20,8 @@ enum BotChat {
         var inflight: InflightTurn? = nil
         /// Questions (approvals) the gateway asked earlier and is still waiting on.
         var openRequests: [ServerRequest] = []
+        /// The session's model and reasoning level, as `session.info` reports them.
+        var info: JSONValue? = nil
     }
 
     /// `knownID` is the stored Bot Chat ID from the roster, when the gateway reported one.
@@ -65,7 +67,7 @@ enum BotChat {
         return Opened(
             sessionID: live, history: history, running: result["running"]?.boolValue ?? false,
             historyOmitted: omitted || result["messages_omitted"]?.boolValue == true, inflight: inflight,
-            openRequests: requests)
+            openRequests: requests, info: result["info"])
     }
 
     static func create(profile: String, on channel: JSONRPCChannel) async throws -> Opened {
@@ -85,6 +87,6 @@ enum BotChat {
             }
             throw GatewayError.invalidResponse
         }
-        return Opened(sessionID: live, history: [], running: false, historyOmitted: false)
+        return Opened(sessionID: live, history: [], running: false, historyOmitted: false, info: created["info"])
     }
 }

@@ -58,7 +58,7 @@ No confirmed recurring failures were established during source inspection. A mis
 
 - Symptom: a square image in a reply sat in a rounded border that ran on to its right, as if the aspect ratio were off.
 - Root cause: `.frame(maxWidth: 420, maxHeight: 360)` around a `scaledToFit` image takes the whole 420 pt even when the image is narrower, and the clip and border follow the frame.
-- Fix: `MediaLoading.displaySize` sizes the image from its own pixels (at most 420 × 360 pt, no bigger than half its pixels) and the frame is that exact size. Unit-tested and checked with a wide image on the Mac; the user's square image not yet rechecked.
+- Fix: `MediaLoading.displaySize` sizes the image from its own pixels (at most 420 × 360 pt, no bigger than half its pixels) and the frame is that exact size. Unit-tested; the user confirmed the square image and the new bottom spacing look right on the Mac (24 October 2026).
 
 ## Trailing toolbar items land on the leading side
 

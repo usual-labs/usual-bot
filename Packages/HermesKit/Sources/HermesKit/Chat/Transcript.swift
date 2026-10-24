@@ -217,6 +217,16 @@ public struct ThreadState: Equatable, Sendable, Codable {
         append(.user(text))
     }
 
+    /// Drops `itemID` and everything after it: what an undo removed, when the gateway's copy
+    /// can't be fetched.
+    mutating func rewind(from itemID: Int) {
+        guard let index = items.firstIndex(where: { $0.id == itemID }) else { return }
+        items.removeSubrange(index...)
+        draft = ""
+        isRunning = false
+        turnStart = items.count
+    }
+
     mutating func addNotice(_ text: String) {
         sealDraft()
         append(.notice(text))
