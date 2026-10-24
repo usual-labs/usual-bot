@@ -2,10 +2,19 @@ import Foundation
 
 /// A task handed to a fresh agent that works in the background (Hermes's `/bg`) while the chat
 /// goes on. Its answer joins the chat when it's done.
-public struct BackgroundTask: Identifiable, Equatable, Sendable {
+public struct BackgroundTask: Identifiable, Equatable, Sendable, Codable {
     /// The gateway's task ID once it took the task; a local one before.
     public internal(set) var id: String
     public let task: String
+}
+
+/// A background task's answer as it joined the chat, kept so it survives reloads of the chat
+/// (the gateway's history doesn't have it) and relaunches.
+struct BackgroundResult: Equatable, Sendable, Codable {
+    let taskID: String
+    let task: String
+    let result: String
+    let date: Date
 }
 
 extension ChatThread {
@@ -38,6 +47,8 @@ extension ChatThread {
     /// `background.complete`: the result joins the chat, or `error: …` becomes a notice.
     func receiveBackgroundResult(_ payload: JSONValue) {
         let taskID = payload["task_id"]?.stringValue ?? ""
+        // Delivered twice (live, then from its stored session or a replay): once is enough.
+        if !taskID.isEmpty, backgroundResults.contains(where: { $0.taskID == taskID }) { return }
         let text = payload["text"]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         // The result can beat the reply that carried its task ID; it then belongs to the oldest
         // task still waiting for one.
@@ -52,6 +63,8 @@ extension ChatThread {
         }
         let result = text.nonBlank ?? String(localized: "It finished without an answer.")
         state.addBackgroundResult(task: task, result: result)
+        backgroundResults.append(BackgroundResult(taskID: taskID, task: task, result: result, date: .now))
+        if backgroundResults.count > 50 { backgroundResults.removeFirst(backgroundResults.count - 50) }
         if !isVisible { unreadCount += 1 }
         backgroundTaskFinished?(task, result)
     }

@@ -2,8 +2,8 @@ import Foundation
 
 /// A quick question about the chat, answered on the side: the agent keeps working and the
 /// question never enters its history (Hermes's `/btw`). Shown until you dismiss it, never cached.
-public struct SideQuestion: Identifiable, Equatable, Sendable {
-    public enum Answer: Equatable, Sendable {
+public struct SideQuestion: Identifiable, Equatable, Sendable, Codable {
+    public enum Answer: Equatable, Sendable, Codable {
         case waiting
         case answered(String)
         case failed(String)

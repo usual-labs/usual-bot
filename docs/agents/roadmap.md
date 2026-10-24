@@ -1,7 +1,7 @@
 # Usual Bot: roadmap after 0.1
 
-Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M20 are built (each says
-how far it has been checked); none is planned after them yet. See `app-shell.md` and the
+Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M22 are built (each says
+how far it has been checked); the real-gateway shakedown is next. See `app-shell.md` and the
 package KBs for what exists. Each milestone below runs and can be demoed on its own, ships with
 tests, the demo mode (`AppModel.demo()`) and the KBs updated, and is checked on Mac and iPhone.
 
@@ -33,7 +33,7 @@ load them from the gateway. See the HermesKit and UsualUI KBs for details.
 - **Done when:** an agent describes an attached photo, summarises a PDF and reads an attached file,
   on Mac and iPhone; failed uploads say why and keep the draft.
 - **Open:** size limits per method; how history shows past attachments (to draw them after a
-  reload); rooms stay text-only (`groups.send` takes text).
+  reload); rooms stay text-only on legacy (dashboard) gateways; only the canonical gateway serves `groups.attachment.upload` (see M22).
 
 ## M10: Images in replies (built; a gateway image verified on the Mac 2026-10-24)
 
@@ -272,4 +272,46 @@ Added 24 October 2026 at the user's pick, after M9–M19 were done.
 - **Checked:** HermesKit tests (confirm then save, the reasoning call's params, `/reasoning
   --global` carries `profile`); both menus in the iPhone Simulator demo (Forge's demo chat runs
   on another model than its default).
+
+## M21: Keep background results and side answers (built; live gateway untested)
+
+Picked 24 October 2026, before the real-gateway shakedown.
+
+- **You get:** background results that arrive while the app is offline or in the background
+  (iPhone) still join the chat; results stay in the chat when it reloads from the gateway
+  (reconnect, undo) and across relaunches; side questions, running tasks and results are saved
+  with the chat's offline copy. A side answer that can't arrive any more says so ("lost while
+  Usual Bot was offline; ask again") instead of spinning.
+- **Why it's needed:** the gateway tears a session down 20 s after its last client disconnects
+  (`ws_orphan_reap_grace_s`), with its event buffer; side agents' answers sent to it then are
+  lost. Background tasks keep running on their own thread and store their conversation as a
+  session whose ID is the task ID. Side answers aren't stored anywhere.
+- **How:** each chat remembers the newest event `seq` and the gateway's `replay_epoch`. Back on the
+  same live session in the same gateway process, `session.events.since {session_id, last_seen}`
+  replays the missed `btw.complete` / `background.complete` (if not `truncated`). Otherwise
+  waiting side questions are marked lost, and unconfirmed (local) tasks get a notice. Every task
+  still waiting is then looked up every 20 s in `GET /api/sessions/{task}/messages?profile=
+  &order=latest&limit=5&inline_images=false`: the last stored message, if it's the agent's text
+  without tool calls, is the answer. A result delivered twice (live and from the store) joins once.
+  Results are kept apart from the transcript (`backgroundResults`, last 50) and put back by time
+  whenever the transcript is rebuilt.
+- **Checked:** HermesKit tests (replay after a short drop, new session: lost side answer and a
+  result from the store, no duplicate, time-ordered reload, cache round trip and old caches).
+
+## M22: Rooms catch up (built where the gateway allows; live gateway untested)
+
+- **You can:** type `/` in a room (at the start or after a space) to pick from every member's
+  switched-on skills, each labelled with the members that have it ("Atlas, Forge · Search the
+  web"); the pick goes into your message as `/name` for the members to use. Click the room's name
+  (⌘I) for a panel listing its members with the model each answers with, and how to change one.
+- **Why only skills:** a room message is text to its members (`groups.send` takes text and
+  attachments); commands run on one agent's own chat and can't be sent into a room.
+- **Model per member:** room members follow their agent's default model (room sessions are
+  `follow_profile_config`), shown from the roster; it changes with M20's Make Default in the
+  agent's chat.
+- **Not possible on legacy (dashboard) gateways, which the app speaks:** room attachments
+  (`groups.attachment.upload`/`download` exist only in the canonical gateway's controls) and
+  per-member usage (`groups.state` reports only who's working).
+- **Checked:** a UI test for the merged skill menu; the menu (mid-message) and the panel in the
+  iPhone Simulator demo.
 

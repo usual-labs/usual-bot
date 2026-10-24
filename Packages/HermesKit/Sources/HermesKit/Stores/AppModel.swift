@@ -57,6 +57,8 @@ public final class AppModel {
     private var isForeground = true
     /// The socket while the link is online.
     @ObservationIgnored private var channel: JSONRPCChannel?
+    /// The gateway process's event numbering, for replaying what a short drop missed.
+    @ObservationIgnored private var replayEpoch: String?
     @ObservationIgnored private var threads: [Contact.ID: ChatThread] = [:]
     @ObservationIgnored private var routineLists: [Contact.ID: RoutineList] = [:]
     @ObservationIgnored private var skillLists: [Contact.ID: SkillList] = [:]
@@ -210,6 +212,8 @@ public final class AppModel {
                 let (channel, ready) = try await connector.connect()
                 attempt = 0
                 self.channel = channel
+                replayEpoch = ready.replayEpoch?.stringValue
+                for thread in threads.values { thread.replayEpoch = replayEpoch }
                 link = .online(ready.dialect)
                 let events = Task { for await event in channel.events { route(event) } }
                 let requests = Task { for await request in channel.requests { await handle(request, on: channel) } }
@@ -279,6 +283,8 @@ public final class AppModel {
             guard let self, let contact = contacts.first(where: { $0.id == id }) else { return }
             backgroundTaskFinished?(contact, task, result)
         }
+        thread.storedAnswer = { [weak self] taskID in await self?.storedAnswer(taskID: taskID, profile: id) }
+        thread.replayEpoch = replayEpoch
         return thread
     }
 
@@ -288,6 +294,29 @@ public final class AppModel {
         for contact in contacts where contact.kind == .agent && (contact.chatID != nil || threads[contact.id] != nil) {
             openThread(for: contact)
         }
+    }
+
+    /// A background task's answer from its stored session (the task ID is its session ID), or
+    /// `nil` while it runs or can't be read: the last stored message, when it's the agent's text.
+    private func storedAnswer(taskID: String, profile: String) async -> String? {
+        struct Row: Decodable {
+            let role: String?
+            let content: String?
+            let toolCalls: JSONValue?
+            let timestamp: Double?
+        }
+        struct Page: Decodable { let messages: [Row] }
+        guard let auth else { return nil }
+        let escape = { (text: String) in text.addingPercentEncoding(withAllowedCharacters: .urlUnreservedCharacters) ?? text }
+        guard
+            let page = try? await auth.json(
+                Page.self,
+                path: "/api/sessions/\(escape(taskID))/messages?profile=\(escape(profile))&order=latest&limit=5&inline_images=false"),
+            let last = page.messages.max(by: { ($0.timestamp ?? 0) < ($1.timestamp ?? 0) }),
+            last.role == "assistant", last.toolCalls == nil || last.toolCalls == .array([]) || last.toolCalls == .null,
+            let text = last.content?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty
+        else { return nil }
+        return text
     }
 
     /// Finds or creates the agent's Bot Chat and loads it, once the link is online.

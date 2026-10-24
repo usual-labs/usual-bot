@@ -22,6 +22,7 @@ public struct RootView: View {
                 contacts: model.sidebarContacts, emptyText: emptyText,
                 thread: { $0.kind == .agent ? model.thread(for: $0) : nil },
                 room: { model.room(for: $0) },
+                skills: { $0.kind == .agent ? model.skills(for: $0) : nil },
                 open: { model.openThread(for: $0) },
                 select: { model.visibleContactID = $0 },
                 createRoom: { try await model.createRoom(named: $0, agents: $1) },
@@ -54,6 +55,8 @@ struct ContactsSplitView<Footer: View>: View {
     var emptyText: LocalizedStringKey = "No agents yet."
     var thread: (Contact) -> ChatThread? = { _ in nil }
     var room: (Contact) -> RoomThread? = { _ in nil }
+    /// An agent's skills, for a room's `/` menu.
+    var skills: (Contact) -> SkillList? = { _ in nil }
     var open: (Contact) -> Void = { _ in }
     /// Told which contact is on screen, so its replies don't count as unread.
     var select: (Contact.ID?) -> Void = { _ in }
@@ -244,7 +247,8 @@ struct ContactsSplitView<Footer: View>: View {
                 contact: contact, members: members(of: contact), room: room,
                 agents: Dictionary(
                     contacts.filter { $0.kind == .agent }.map { ($0.id, $0) },
-                    uniquingKeysWith: { first, _ in first }))
+                    uniquingKeysWith: { first, _ in first }),
+                skills: skills)
         } else if let contact = contacts.first(where: { $0.id == selection }) {
             let panel = profile(contact) { showsProfile = false }
             ThreadPane(

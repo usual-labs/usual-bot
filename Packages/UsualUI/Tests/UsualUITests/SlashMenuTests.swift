@@ -37,3 +37,27 @@ struct SlashWordTests {
         #expect(MessageBox.slashWord(in: "") == nil)
     }
 }
+
+@MainActor
+struct RoomSkillsTests {
+    @Test func membersSkillsShareTheMenuNamedWithTheirAgents() {
+        let atlas = Contact(id: "atlas", name: "Atlas", tint: "#6E7BFF", chatID: nil)
+        let forge = Contact(id: "forge", name: "Forge", tint: "#6E7BFF", chatID: nil)
+        let commands = RoomSkills.commands([
+            (atlas, SkillList.sample([Skill(name: "web-research", description: "Search the web")])),
+            (
+                forge,
+                SkillList.sample([
+                    Skill(name: "web-research", description: "Search"),
+                    Skill(name: "linkedin-post", description: "Posts", enabled: false),
+                    Skill(name: "postgres-migrations", description: ""),
+                ])
+            ),
+        ])
+        #expect(
+            commands == [
+                SlashCommand(name: "/web-research", description: "Atlas, Forge · Search the web", kind: .skill),
+                SlashCommand(name: "/postgres-migrations", description: "Forge", kind: .skill),
+            ])
+    }
+}
