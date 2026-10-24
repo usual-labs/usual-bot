@@ -16,6 +16,8 @@ struct ThreadPane: View {
     @State private var attachments: [Attachment] = []
     /// The message you're replying to.
     @State private var replyTo: QuotedMessage?
+    /// You're rewriting your last message.
+    @State private var editing = false
     @State private var isDropTarget = false
 
     var body: some View {
@@ -23,13 +25,17 @@ struct ThreadPane: View {
             .environment(\.sentImages, thread?.sentImages ?? [:])
             .environment(\.mediaProfile, contact.details?.profile ?? contact.id)
             .environment(\.messageActions, actions)
-            .chatBars {
+            // The model menus under the box bring their own space, so the bar's margin shrinks.
+            .chatBars(bottomPadding: thread?.model == nil ? nil : ModelControls.gap) {
                 namePill
             } bottom: {
                 if let thread, thread.phase == .ready {
-                    Composer(thread: thread, agentName: contact.name, attachments: $attachments, replyTo: $replyTo)
-                        .frame(maxWidth: 780)
-                        .padding(.horizontal, 20)
+                    Composer(
+                        thread: thread, agentName: contact.name, attachments: $attachments, replyTo: $replyTo,
+                        editing: $editing
+                    )
+                    .frame(maxWidth: 780)
+                    .padding(.horizontal, 20)
                 }
             }
             // Drop files anywhere on the chat to attach them.
@@ -50,21 +56,33 @@ struct ThreadPane: View {
             .onChange(of: contact.id) {
                 attachments = []
                 replyTo = nil
+                editing = false
             }
             .paneChrome()
     }
 
-    /// React and reply, for the transcript's messages.
+    /// React, reply, edit and undo, for the transcript's messages.
     private var actions: MessageActions? {
         guard let thread else { return nil }
         return MessageActions(
             canReact: thread.canReact(to:), react: { thread.react($0, to: $1) },
             reply: { item in
+                editing = false
                 switch item.content {
                 case .user(let text): replyTo = QuotedMessage(author: String(localized: "You"), text: text)
                 case .assistant(let text): replyTo = QuotedMessage(author: contact.name, text: text)
                 default: break
                 }
+            },
+            canRewind: { item in thread.canRewind && item.id == thread.lastSent?.id },
+            edit: { item in
+                replyTo = nil
+                editing = true
+                thread.prefill = ChatThread.editableText(of: item)
+            },
+            undo: { _ in
+                editing = false
+                Task { await thread.undo() }
             })
     }
 
@@ -126,8 +144,11 @@ extension View {
 
     /// Pins `top` (the name) and `bottom` (the message box) over a conversation that scrolls
     /// beneath them. On iPhone the name rides in the navigation bar, beside the back button.
-    func chatBars(@ViewBuilder top: () -> some View, @ViewBuilder bottom: () -> some View) -> some View {
-        modifier(ChatBars(top: top(), bottom: bottom()))
+    /// `bottomPadding` replaces the usual margin under `bottom`.
+    func chatBars(
+        bottomPadding: CGFloat? = nil, @ViewBuilder top: () -> some View, @ViewBuilder bottom: () -> some View
+    ) -> some View {
+        modifier(ChatBars(top: top(), bottom: bottom(), bottomPadding: bottomPadding))
     }
 
     #if os(iOS)
@@ -170,6 +191,7 @@ struct NamePill: View {
 private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
     let top: Top
     let bottom: Bottom
+    let bottomPadding: CGFloat?
     /// Counts clicks and taps on the conversation, so the message box can close its menu.
     @State private var outsideTaps = 0
 
@@ -178,13 +200,17 @@ private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
         let bottom = bottom.environment(\.conversationTaps, outsideTaps)
         #if os(macOS)
             // 9 pt centres the name on the line of the window buttons and the sidebar's buttons;
-            // the message box keeps the same distance from the bottom.
+            // the message box sits a little further from the bottom edge.
             conversation
                 .safeAreaInset(edge: .top, spacing: 0) { top.padding(.top, 9).padding(.bottom, 8) }
-                .safeAreaInset(edge: .bottom, spacing: 0) { bottom.padding(.top, 8).padding(.bottom, 9) }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    bottom.padding(.top, 8).padding(.bottom, bottomPadding ?? 14)
+                }
         #else
             conversation
-                .safeAreaInset(edge: .bottom, spacing: 0) { bottom.padding(.top, 8).padding(.bottom, 8) }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    bottom.padding(.top, 8).padding(.bottom, bottomPadding ?? 12)
+                }
                 .navigationBarTitleDisplayMode(.inline)
                 .principalToolbarItem(top)
         #endif

@@ -56,6 +56,10 @@ struct MessageActions {
     var canReact: (TranscriptItem) -> Bool = { _ in false }
     var react: (String?, TranscriptItem) -> Void = { _, _ in }
     var reply: (TranscriptItem) -> Void = { _ in }
+    /// Chats only: your last message, between replies, can be edited or taken back.
+    var canRewind: (TranscriptItem) -> Bool = { _ in false }
+    var edit: (TranscriptItem) -> Void = { _ in }
+    var undo: (TranscriptItem) -> Void = { _ in }
 }
 
 extension EnvironmentValues {
@@ -161,6 +165,7 @@ struct MessageRow<Content: View>: View {
                 barButton("arrowshape.turn.up.left", String(localized: "Reply")) { actions.reply(item) }
                 Menu {
                     Button("Copy", systemImage: "doc.on.doc", action: copy)
+                    rewindButtons(actions)
                 } label: {
                     Image(systemName: "ellipsis").frame(width: 28, height: 28).contentShape(Rectangle())
                 }
@@ -206,8 +211,17 @@ struct MessageRow<Content: View>: View {
             }
             Button("Reply", systemImage: "arrowshape.turn.up.left") { actions.reply(item) }
             Button("Copy", systemImage: "doc.on.doc", action: copy)
+            rewindButtons(actions)
         }
     #endif
+
+    /// Edit and Undo, for your last message.
+    @ViewBuilder private func rewindButtons(_ actions: MessageActions) -> some View {
+        if actions.canRewind(item) {
+            Button("Edit", systemImage: "pencil") { actions.edit(item) }
+            Button("Undo", systemImage: "arrow.uturn.backward", role: .destructive) { actions.undo(item) }
+        }
+    }
 
     private func copy() {
         #if canImport(AppKit)
@@ -260,14 +274,28 @@ private struct ReactionPicker: View {
     }
 }
 
-/// The message you're replying to, above the message box, with a button to drop it.
+/// What your message will be, above the message box: the one you're replying to, or that
+/// you're editing. The button drops it.
 struct ReplyChip: View {
-    let quote: QuotedMessage
+    let text: String
+    let cancelLabel: String
     let cancel: () -> Void
+
+    init(quote: QuotedMessage, cancel: @escaping () -> Void) {
+        text = "\(quote.author): \(quote.excerpt)"
+        cancelLabel = String(localized: "Don't reply to \(quote.author)")
+        self.cancel = cancel
+    }
+
+    init(text: String, cancelLabel: String, cancel: @escaping () -> Void) {
+        self.text = text
+        self.cancelLabel = cancelLabel
+        self.cancel = cancel
+    }
 
     var body: some View {
         HStack(spacing: 8) {
-            Text("\(quote.author): \(quote.excerpt)")
+            Text(text)
                 .font(.system(size: 13))
                 .foregroundStyle(Theme.secondaryInk)
                 .lineLimit(1)
@@ -281,7 +309,7 @@ struct ReplyChip: View {
             }
             .buttonStyle(.plain)
             .keyboardShortcut(.cancelAction)
-            .accessibilityLabel(Text("Don't reply to \(quote.author)"))
+            .accessibilityLabel(Text(cancelLabel))
         }
         .padding(.leading, 12)
         .padding(.trailing, 4)

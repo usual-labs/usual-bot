@@ -1,26 +1,44 @@
 import HermesKit
 import SwiftUI
 
-/// The message box under a chat with one agent. Return sends. While the agent works, a message
-/// steers it and the empty box's button stops it. Files can go with a message between turns.
+/// The message box under a chat with one agent, with its model and thinking menus. Return sends.
+/// While the agent works, a message steers it and the empty box's button stops it. Files can go
+/// with a message between turns.
 struct Composer: View {
     let thread: ChatThread
     let agentName: String
     @Binding var attachments: [Attachment]
     @Binding var replyTo: QuotedMessage?
+    /// You're rewriting your last message: Send replaces it.
+    @Binding var editing: Bool
 
     var body: some View {
+        // The model and thinking menus sit under the box, on the right.
+        VStack(alignment: .trailing, spacing: ModelControls.gap) {
+            box
+            ModelControls(thread: thread)
+        }
+    }
+
+    private var box: some View {
         MessageBox(
             placeholder: placeholder, isRunning: thread.state.isRunning, canSend: thread.canSend,
             stopLabel: String(localized: "Stop \(agentName)"),
             attaching: AttachmentSending(
                 attachments: $attachments, canSend: thread.canSendAttachments, isUploading: thread.isUploading,
                 send: thread.send(_:attachments:)),
-            replyTo: $replyTo,
+            replyTo: $replyTo, editing: $editing,
             commands: SlashCommands(
                 list: thread.commands, load: { Task { await thread.loadCommands() } },
                 prefill: Binding(get: { thread.prefill }, set: { thread.prefill = $0 })),
-            send: thread.send, stop: thread.stop)
+            send: send, stop: thread.stop)
+    }
+
+    private func send(_ text: String) {
+        guard editing else { return thread.send(text) }
+        editing = false
+        // A reply that started meanwhile can't be undone under it; the text goes as a new message.
+        if thread.canRewind { Task { await thread.edit(text) } } else { thread.send(text) }
     }
 
     private var placeholder: String {
@@ -50,6 +68,8 @@ struct MessageBox: View {
     var attaching: AttachmentSending?
     /// The message you're replying to, quoted in front of yours.
     var replyTo: Binding<QuotedMessage?>?
+    /// Chats only: you're editing your last message; Send replaces it.
+    var editing: Binding<Bool>?
     /// Chats only: skills and commands to offer after `/`.
     var commands: SlashCommands?
     let send: (String) -> Void
@@ -78,6 +98,15 @@ struct MessageBox: View {
             VStack(alignment: .leading, spacing: 4) {
                 if let quote = replyTo?.wrappedValue {
                     ReplyChip(quote: quote) { replyTo?.wrappedValue = nil }
+                }
+                if editing?.wrappedValue == true {
+                    ReplyChip(
+                        text: String(localized: "Editing your last message"),
+                        cancelLabel: String(localized: "Stop editing")
+                    ) {
+                        editing?.wrappedValue = false
+                        text = ""
+                    }
                 }
                 if let attaching, !attaching.attachments.isEmpty {
                     AttachmentChips(attachments: attaching.$attachments)
@@ -272,7 +301,7 @@ struct MessageBox: View {
         // Sending ends dictation; words still arriving would land in the next message.
         dictation.stop()
         let quote = replyTo?.wrappedValue
-        if let attaching, !attaching.attachments.isEmpty {
+        if let attaching, !attaching.attachments.isEmpty, editing?.wrappedValue != true {
             // Text and files leave together once every file is up; a failure keeps both here.
             let draft = text
             let files = attaching.attachments

@@ -74,7 +74,11 @@
                     command: "psql \"$STAGING_DATABASE_URL\" -f migrations/0042_search_index.sql",
                     description: "Runs a database migration on staging", choices: [.once, .session, .always]))
             threads["ops"] = ChatThread.sample("ops", state: ThreadState(history: opsChat, running: false))
-            for thread in threads.values { thread.commands = Demo.commands }
+            for thread in threads.values {
+                thread.commands = Demo.commands
+                thread.model = ChatModel(name: "claude-sonnet-5-5", provider: "anthropic", reasoning: .medium)
+                thread.modelProviders = Demo.models
+            }
             for (id, text) in [
                 ("scribe", "Two headline options for the launch post"),
                 ("ledger", "October invoices are drafted for review"),
@@ -111,6 +115,15 @@
             SlashCommand(name: "/retry", description: "Send your last message again", kind: .command),
             SlashCommand(name: "/undo", description: "Remove the last exchange", kind: .command),
             SlashCommand(name: "/compress", description: "Summarise the conversation to free context", kind: .command),
+        ]
+
+        static let models = [
+            ModelProvider(
+                slug: "anthropic", name: "Anthropic",
+                models: ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"]),
+            ModelProvider(
+                slug: "openrouter", name: "OpenRouter", models: ["x-ai/grok-5", "deepseek/deepseek-v4"],
+                withoutReasoning: ["deepseek/deepseek-v4"]),
         ]
 
         static let chartPath = "/home/hermes/.hermes/profiles/ops/cache/cpu-overnight.png"

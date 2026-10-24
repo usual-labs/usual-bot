@@ -36,6 +36,12 @@ public final class ChatThread {
     public internal(set) var commands: [SlashCommand] = []
     /// Text a command put back for you to edit and send (`/retry`); the message box takes it.
     public var prefill: String?
+    /// The model this chat runs on; `nil` until the gateway says.
+    public internal(set) var model: ChatModel?
+    /// The models this chat can switch to; loaded by `loadModels()`.
+    public internal(set) var modelProviders: [ModelProvider] = []
+    /// Your last message is being taken back (`undo()`, `edit(_:)`).
+    public internal(set) var isRewinding = false
 
     /// The live session the gateway routes this chat's events to; `nil` while offline.
     private(set) var sessionID: String?
@@ -100,6 +106,7 @@ public final class ChatThread {
 
     private func attach(_ opened: BotChat.Opened) {
         sessionID = opened.sessionID
+        model = ChatModel(info: opened.info) ?? model
         state = ThreadState(history: opened.history, running: opened.running, inflight: opened.inflight)
         transcriptLoad += 1
         banner = opened.historyOmitted ? String(localized: "Earlier messages are too long to load here.") : nil
@@ -118,6 +125,12 @@ public final class ChatThread {
         phase = .ready
     }
 
+    /// Shows the gateway's copy of the transcript in place of the one on screen.
+    func replaceTranscript(with history: [HistoryMessage]) {
+        state = ThreadState(history: history, running: false)
+        transcriptLoad += 1
+    }
+
     /// Forgets the live session after the socket drops; the transcript stays on screen.
     /// The next `open` attaches again and reloads it, so nothing missed while offline is lost.
     func detach() {
@@ -133,6 +146,10 @@ public final class ChatThread {
     func apply(_ event: GatewayEvent) {
         if event.type == "request.cancel" {
             withdraw(event.payload)
+            return
+        }
+        if event.type == "session.info" {
+            model = ChatModel(info: event.payload) ?? model
             return
         }
         let wasRunning = state.isRunning
