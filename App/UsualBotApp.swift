@@ -22,6 +22,7 @@ struct UsualBotApp: App {
             let model = AppModel()
         #endif
         _model = State(initialValue: model)
+        TaskNotifications.watch(model)
         #if os(macOS)
             _quickPanel = State(initialValue: QuickPanelController(model: model))
         #endif

@@ -5,18 +5,23 @@ import Testing
 @testable import HermesKit
 
 struct CommandCatalogTests {
-    @Test func menuOffersSkillsUserCommandsAndChatBuiltins() {
+    @Test func menuOffersSkillsUserCommandsAndHermesBuiltins() {
         let catalog: JSONValue = [
             "pairs": [
-                ["/help", "Show help"], ["/model", "Switch model"], ["/retry", "Retry the last message"],
-                ["/deploy", "Quick: deploy staging"], ["/web-research", "Search the web"],
+                ["/help", "Show help"], ["/model", "Switch model"], ["/reasoning", "Set reasoning effort"],
+                ["/new", "Start a new session"], ["/deploy", "Quick: deploy staging"],
+                ["/web-research", "Search the web"],
             ],
-            "commands": ["/help": [:], "/model": [:], "/retry": [:]],
+            "commands": [
+                "/help": ["desktop": .null], "/model": ["desktop": "hidden"], "/reasoning": ["desktop": .null],
+                "/new": ["desktop": .null],
+            ],
             "skills": ["/web-research": ["usage": 4, "origin": "bundled"]],
         ]
         #expect(
             ChatThread.commands(in: catalog) == [
-                SlashCommand(name: "/retry", description: "Retry the last message", kind: .command),
+                SlashCommand(name: "/help", description: "Show help", kind: .command),
+                SlashCommand(name: "/reasoning", description: "Set reasoning effort", kind: .command),
                 SlashCommand(name: "/deploy", description: "Quick: deploy staging", kind: .command),
                 SlashCommand(name: "/web-research", description: "Search the web", kind: .skill),
             ])
@@ -64,7 +69,7 @@ struct CommandRunTests {
         _ = try await gateway.answer(
             1, method: "command.dispatch", result: ["type": "exec", "output": "Deployed 4f2a1c"])
         try await waitUntilOnMain { thread.state.items.count == 2 }
-        #expect(thread.state.items.map(\.content) == [.user("/deploy"), .notice("Deployed 4f2a1c")])
+        #expect(thread.state.items.map(\.content) == [.user("/deploy"), .output("Deployed 4f2a1c")])
         #expect(!thread.state.isRunning)
     }
 
@@ -80,6 +85,32 @@ struct CommandRunTests {
         thread.send("/shrug that's all")
         let submit = try await gateway.answer(1, method: "prompt.submit", result: ["status": "streaming"])
         #expect(submit["text"] == "/shrug that's all")
+    }
+
+    @Test func hermesBuiltinsRunAsSlashCommands() async throws {
+        let (thread, gateway) = try await openThread()
+        thread.commands.append(SlashCommand(name: "/status", description: "", kind: .command))
+        thread.send("/status")
+        _ = try await gateway.answer(
+            1, method: "command.dispatch", error: (4018, "not a quick/plugin/bundle/skill command: status"))
+        let exec = try await gateway.answer(2, method: "slash.exec", result: ["output": "Model  claude\nTokens 12k"])
+        #expect(exec == ["session_id": "live-1", "command": "/status"])
+        try await waitUntilOnMain { thread.state.items.count == 2 }
+        #expect(thread.state.items.map(\.content) == [.user("/status"), .output("Model  claude\nTokens 12k")])
+    }
+
+    @Test func reasoningSetsThisChatsLevel() async throws {
+        let (thread, gateway) = try await openThread()
+        thread.send("/reasoning high")
+        let params = try await gateway.answer(1, method: "config.set", result: ["key": "reasoning", "value": "high"])
+        #expect(params == ["session_id": "live-1", "key": "reasoning", "value": "high"])
+        try await waitUntilOnMain { thread.state.items.count == 2 }
+        #expect(thread.state.items.last?.content == .notice("Thinking set to high in this chat"))
+
+        thread.send("/reasoning low --global")
+        let global = try await gateway.answer(2, method: "config.set", result: ["value": "low"])
+        #expect(global["scope"] == "global")
+        #expect(global["value"] == "low")
     }
 
     @Test func refusedCommandSaysWhy() async throws {

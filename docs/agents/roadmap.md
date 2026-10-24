@@ -1,8 +1,8 @@
 # Usual Bot: roadmap after 0.1
 
-Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M12 and M14–M16 are built
-(each says how far it has been checked); M13 (voice call) is in progress, then M17–M19. See
-`app-shell.md` and the package KBs for what exists. Each milestone below runs and can be demoed on its own, ships with
+Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M12 and M14–M19 are built
+(each says how far it has been checked); M13 (voice call) is in progress. See `app-shell.md`
+and the package KBs for what exists. Each milestone below runs and can be demoed on its own, ships with
 tests, the demo mode (`AppModel.demo()`) and the KBs updated, and is checked on Mac and iPhone.
 
 Gateway facts come from a Hermes source checkout (`81a55437f3f`, 26 September 2026) and its
@@ -58,10 +58,13 @@ Mac, 24 October 2026).
 
 ## M11: Skills and slash commands (built; live gateway test pending)
 
-Built as planned. The menu offers skills, quick and plugin commands, and the built-ins that
-`command.dispatch` runs and that make sense in a chat (/retry, /undo, /compress, /plan, /goal,
-/learn); the rest of Hermes's registry drives its terminal UI and stays in the official app. The
-skills list comes from the dashboard's `GET /api/skills`, which includes switched-off skills.
+Built as planned, then widened on 24 October 2026: the menu offers skills (✦) and commands (⌘)
+together: quick and plugin commands, and Hermes's built-ins that the official app offers
+(`commands.catalog` → `commands[name].desktop` null), minus the few that would switch, rename or
+split the agent's one chat or only style a terminal. Built-ins that `command.dispatch` doesn't
+run go through `slash.exec`, and their terminal output shows in a monospaced block;
+`/reasoning` sets this chat's level through `config.set`. The skills list comes from the
+dashboard's `GET /api/skills`, which includes switched-off skills.
 
 - **You can:** type `/` in the message box to pick a command or skill, with a description and
   completion, as `@` already works in rooms. The agent's profile gets a Skills tab next to
@@ -170,28 +173,60 @@ official app's room reply does.
   reaction badges under bubbles.
 - **Open:** how reactions appear in history, and whether agents see or add them.
 
-## M17: Side questions
+## M17: Side questions (built; live gateway untested)
 
-- **You can:** ask a quick question about the conversation while the agent works, without
-  interrupting it or adding to its history (Hermes's `/btw`).
-- **Gateway:** `prompt.btw {session_id, text}`; the answer arrives as a `btw.complete` event.
-- **App:** a "Side question" action in the message box; the answer appears as a dismissible card
-  above the box, not in the transcript.
+- **You can:** type `/btw <question>` (it's in the `/` menu) to ask about the conversation, also
+  while the agent works: the turn isn't interrupted or steered and the question never enters the
+  agent's history. The answer shows in a card above the message box (Markdown, scrolls past
+  220 pt) with a ✕; several can stack. Cards live for the session: not cached, gone after a
+  relaunch or reconnect.
+- **Gateway:** `prompt.btw {session_id, text}` → `{task_id}`; a side agent answers from a
+  snapshot of the chat and the gateway emits `btw.complete {task_id, question, text}` on the
+  session (`text` starts with `error: ` when it failed). An answer arriving before the reply that
+  carries its task ID is matched by question; answers to questions asked from another app show
+  too.
+- **Not as planned:** no separate button; `/btw` in the menu is the action (Hermes's own name).
+- **Checked:** HermesKit tests (asking while running, early answer, failures, parsing); the card
+  and dismiss in the demo on the Mac and the iPhone Simulator.
 
-## M18: Background tasks
+## M18: Background tasks (built; live gateway untested)
 
-- **You can:** hand an agent a task that runs on a fresh agent in the background while you keep
-  chatting, and get its result back in the chat.
-- **Gateway:** `prompt.background {session_id, text}`; the result arrives as `background.complete`.
-- **App:** a "Run in background" action; a status row while it runs; the result as a notice the
-  chat keeps, and a notification on iPhone when the app is in the background (local only; push
-  stays out of scope).
+- **You can:** type `/bg <task>` (or `/background`; it's in the `/` menu) to hand a task to a
+  fresh agent that works in the background, also while the chat's agent replies. One bar above the
+  message box (spinner; "Working in the background: …", or "2 tasks working in the
+  background: … · …") shows what's running; the result
+  then joins the chat as its own item ("Background task: …" over the Markdown answer) and counts
+  as unread in a chat you're not looking at. A failure becomes a notice.
+- **Notification:** when a result arrives and the app isn't in front, a local notification says
+  "<Agent> finished a background task" with the task and the start of the answer (permission is
+  asked the first time). On iPhone the app disconnects in the background, so a result that lands
+  then is missed by this device; it's only noticed while the app is open but inactive.
+- **Gateway:** `prompt.background {session_id, text}` → `{task_id}`; the side agent runs as its
+  own stored session (session ID = task ID) with this chat's model and tools, and the gateway
+  emits `background.complete {task_id, text}` on the chat (`error: …` on failure). A result
+  arriving before its task ID is matched to the oldest task still waiting for one.
+- **Limits:** results live in this device's transcript (and its offline cache) only: the
+  gateway doesn't add them to the chat's history, so a reload (reconnect, undo) drops them, and
+  results that arrive while the app is offline are missed. No cancel: the gateway has no call
+  for it.
+- **Checked:** HermesKit tests (start while running, early result, failures, unread, parsing);
+  the row and result item in the demo on the Mac and the iPhone Simulator. The notification was
+  built but not seen firing.
 
-## M19: Usage and context
+## M19: Usage and context (built; live gateway untested)
 
-- **You can:** see how full the chat's context is and what it has cost, and compress it when it
-  gets full.
-- **Gateway:** `session.usage {session_id}` (tokens, context, cost), `session.context_breakdown`,
-  `session.compress`.
-- **App:** a small context meter in the profile panel's Machine tab or the chat header menu, with
-  a Compress action.
+- **You can:** see how full a chat's context is as a small ring and percentage at the start of
+  the model and thinking row under the message box (amber from 80%). Its menu gives the context
+  in tokens, this chat's tokens in and out and API calls, how often it was compressed, and
+  **Compress Conversation** (between replies). The transcript on screen stays; a notice says
+  how far it shrank ("from about 152k to 18.4k tokens").
+- **Gateway:** `session.usage {session_id}` (input, output, calls, compressions, and
+  `context_used` / `context_max` / `context_percent` / `context_estimated` once a reply has
+  run); `message.complete` carries the same `usage`, so the meter follows every reply without
+  polling. `session.compress {session_id}` → `{status, removed, before_tokens, after_tokens,
+  usage, messages}` (4009 while busy).
+- **Not as planned:** no cost. Hermes keeps none for a chat (`session.usage`, `/usage` and the
+  official app show tokens only); working it out from price lists would guess at cache reads and
+  model switches. `session.context_breakdown` (per-category breakdown) isn't used.
+- **Checked:** HermesKit tests (load, follow replies, no context yet, compress, refusal, short
+  token counts); the meter and its menu in the demo on the Mac and the iPhone Simulator.

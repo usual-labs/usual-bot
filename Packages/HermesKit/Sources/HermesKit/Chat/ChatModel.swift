@@ -141,4 +141,38 @@ extension ChatThread {
             }
         }
     }
+
+    /// `/reasoning [level] [--global]`: shows this chat's thinking level, or sets it the way the
+    /// model menu does (or, with `--global`, as the agent's default). Hermes's own `/reasoning`
+    /// would change its command worker, not this chat.
+    func runReasoningCommand(_ text: String) {
+        guard let sessionID, let channel = channel() else { return }
+        state.showCommand(text)
+        let words = (Self.words(after: ["/reasoning"], in: text) ?? "").split(separator: " ").map(String.init)
+        let global = words.contains { ["--global", "-g", "global"].contains($0.lowercased()) }
+        let value = words.filter { !["--global", "-g", "global", "--session", "-s", "session"].contains($0.lowercased()) }
+            .joined(separator: " ")
+        guard !value.isEmpty else {
+            let level = model?.reasoning.map(\.rawValue) ?? String(localized: "the model's default")
+            state.addNotice(String(localized: "Thinking in this chat: \(level)"))
+            return
+        }
+        Task {
+            var params: [String: JSONValue] = [
+                "session_id": .string(sessionID), "key": "reasoning", "value": .string(value),
+            ]
+            if global { params["scope"] = "global" }
+            do {
+                let result = try await channel.call("config.set", params: .object(params))
+                let applied = result["value"]?.stringValue ?? value
+                if let level = ReasoningLevel(rawValue: applied.lowercased()) { model?.reasoning = level }
+                state.addNotice(
+                    global
+                        ? String(localized: "Thinking set to \(applied) for this agent")
+                        : String(localized: "Thinking set to \(applied) in this chat"))
+            } catch {
+                state.addNotice(String(localized: "/reasoning didn't run: \(AppModel.describe(error))"))
+            }
+        }
+    }
 }

@@ -116,15 +116,17 @@ struct ReplyImage: View {
                     .frame(width: 280, height: 180)
                     .overlay { ProgressView().controlSize(.small) }
             case .loaded(_, let image, let pixels):
-                // Sized to the image's own shape, so the rounded border hugs it.
+                // Sized to the image's own shape, so the rounded border hugs it, and narrower on a
+                // screen too narrow for that size.
                 let size = MediaLoading.displaySize(pixels: pixels, limit: CGSize(width: 420, height: 360))
                 Button {
                     viewing = true
                 } label: {
                     image.resizable()
-                        .frame(width: size.width, height: size.height)
+                        .aspectRatio(size, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.border))
+                        .frame(maxWidth: size.width)
                 }
                 .buttonStyle(.plain)
                 .help("Open \(name)")

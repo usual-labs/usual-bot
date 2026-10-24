@@ -13,11 +13,20 @@ struct Composer: View {
     @Binding var editing: Bool
 
     var body: some View {
-        // The model and thinking menus sit under the box, on the right.
+        // Background tasks and side answers float above the box; the model and thinking menus sit under it, on the right.
         VStack(alignment: .trailing, spacing: ModelControls.gap) {
+            if !thread.backgroundTasks.isEmpty {
+                BackgroundTasksBar(tasks: thread.backgroundTasks).padding(.bottom, 6)
+            }
+            ForEach(thread.sideQuestions) { question in
+                SideQuestionCard(question: question) { thread.dismiss(question) }
+                    .padding(.bottom, 6)
+            }
             box
             ModelControls(thread: thread)
         }
+        .animation(.smooth(duration: 0.2), value: thread.sideQuestions)
+        .animation(.smooth(duration: 0.2), value: thread.backgroundTasks)
     }
 
     private var box: some View {
@@ -165,19 +174,33 @@ struct MessageBox: View {
 
     /// What's typed after a leading `/`, while it's still one word.
     private var slashQuery: String? {
-        guard commands != nil, menuText.hasPrefix("/"), !menuText.contains(where: \.isWhitespace) else { return nil }
-        return String(menuText.dropFirst())
+        guard commands != nil else { return nil }
+        return Self.slashWord(in: menuText)
+    }
+
+    /// The name typed after a `/` that starts the last word: at the start of the message it's a
+    /// command or skill to run; later on, one named in your text, which goes as you wrote it (as
+    /// in the official app). `nil` once a space ends the word, or for paths (`/usr/bin`).
+    nonisolated static func slashWord(in text: String) -> String? {
+        guard let word = text.split(omittingEmptySubsequences: false, whereSeparator: \.isWhitespace).last,
+            word.hasPrefix("/")
+        else { return nil }
+        let name = word.dropFirst()
+        guard name.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" }) else { return nil }
+        return String(name)
     }
 
     private var commandSuggestions: [SlashCommand] {
         guard let commands, let query = slashQuery else { return [] }
         let matches = commands.matching(query)
         // Typed in full: nothing left to pick.
-        return matches.count == 1 && matches[0].name == menuText ? [] : matches
+        return matches.count == 1 && matches[0].name == "/" + query ? [] : matches
     }
 
+    /// Puts the picked name in place of the `/word` being typed.
     private func complete(with command: SlashCommand) {
-        text = command.name + " "
+        let typed = (slashQuery?.count ?? 0) + 1
+        text = String(menuText.dropLast(typed)) + command.name + " "
         focused = true
     }
 

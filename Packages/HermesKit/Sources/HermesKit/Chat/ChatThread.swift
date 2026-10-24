@@ -23,7 +23,7 @@ public final class ChatThread {
     /// Questions the agent asked through its clarify tool, waiting for your answers.
     public private(set) var questions: [ClarifyPrompt] = []
     /// Agent replies since you last had this chat on screen.
-    public private(set) var unreadCount = 0
+    public internal(set) var unreadCount = 0
     /// Goes up each time the gateway's copy of the transcript replaces the one on screen. Item
     /// IDs count from the start of each copy, so a view keyed by them must start over with it.
     public private(set) var transcriptLoad = 0
@@ -42,6 +42,16 @@ public final class ChatThread {
     public internal(set) var modelProviders: [ModelProvider] = []
     /// Your last message is being taken back (`undo()`, `edit(_:)`).
     public internal(set) var isRewinding = false
+    /// Questions asked on the side (`/btw`), oldest first, until you dismiss them.
+    public internal(set) var sideQuestions: [SideQuestion] = []
+    /// Tasks running on fresh agents in the background (`/bg`), oldest first.
+    public internal(set) var backgroundTasks: [BackgroundTask] = []
+    /// How full the context is and the tokens used; from `loadUsage()` and every reply.
+    public internal(set) var usage: ChatUsage?
+    /// `compress()` is running.
+    public internal(set) var isCompressing = false
+    /// Set by the app: a background task finished, with its task and result (or failure).
+    var backgroundTaskFinished: ((_ task: String, _ result: String) -> Void)?
 
     /// The live session the gateway routes this chat's events to; `nil` while offline.
     private(set) var sessionID: String?
@@ -152,6 +162,15 @@ public final class ChatThread {
             model = ChatModel(info: event.payload) ?? model
             return
         }
+        if event.type == "btw.complete" {
+            receiveSideAnswer(event.payload)
+            return
+        }
+        if event.type == "background.complete" {
+            receiveBackgroundResult(event.payload)
+            return
+        }
+        if event.type == "message.complete", let usage = ChatUsage(event.payload["usage"]) { self.usage = usage }
         let wasRunning = state.isRunning
         let itemsBefore = state.items.count
         state.apply(event)
@@ -196,6 +215,18 @@ public final class ChatThread {
     public func send(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard canSend, !text.isEmpty, let sessionID, let channel = channel() else { return }
+        if let question = Self.sideQuestion(in: text) {
+            askOnTheSide(question)
+            return
+        }
+        if let task = Self.backgroundTask(in: text) {
+            runInBackground(task)
+            return
+        }
+        if text.split(separator: " ").first?.lowercased() == "/reasoning" {
+            runReasoningCommand(text)
+            return
+        }
         if !state.isRunning, let command = command(in: text) {
             Task { await run(command, text: text, sessionID: sessionID, channel: channel) }
             return

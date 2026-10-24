@@ -11,6 +11,10 @@ public struct TranscriptItem: Identifiable, Equatable, Sendable, Codable {
         case activity([ToolStep])
         /// A centred system line, e.g. "Stopped" or an error.
         case notice(String)
+        /// What a background task (`/bg`) came back with: the task you gave and the agent's answer.
+        case background(task: String, result: String)
+        /// What a Hermes command printed, laid out for a terminal (tables, aligned columns).
+        case output(String)
     }
 
     public let id: Int
@@ -225,6 +229,17 @@ public struct ThreadState: Equatable, Sendable, Codable {
         draft = ""
         isRunning = false
         turnStart = items.count
+    }
+
+    /// A background task's answer joins the conversation without touching a running turn.
+    mutating func addBackgroundResult(task: String, result: String) {
+        sealDraft()
+        append(.background(task: task, result: result))
+    }
+
+    mutating func addOutput(_ text: String) {
+        sealDraft()
+        append(.output(text))
     }
 
     mutating func addNotice(_ text: String) {

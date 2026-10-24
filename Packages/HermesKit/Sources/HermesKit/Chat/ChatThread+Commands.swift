@@ -24,14 +24,16 @@ public struct SlashCommand: Identifiable, Equatable, Sendable {
 }
 
 extension ChatThread {
-    /// Built-ins `command.dispatch` runs that make sense in a messenger. The rest of Hermes's
-    /// registry drives the terminal UI (model pickers, config, …) and stays in the official app.
-    nonisolated static let messengerBuiltins: Set<String> = [
-        "/retry", "/undo", "/compress", "/plan", "/goal", "/learn",
+    /// Hermes built-ins left out of the menu although the official app offers them: they would
+    /// switch, rename or split the agent's one chat (which the app finds by its title), or style a
+    /// terminal.
+    nonisolated static let notInMessenger: Set<String> = [
+        "/new", "/resume", "/sessions", "/branch", "/title", "/handoff", "/import", "/profile",
+        "/skin", "/pet", "/hatch", "/palette", "/timestamps", "/suggestions",
     ]
 
-    /// Loads the `/` menu: the agent's skills, its quick and plugin commands, and the built-ins
-    /// above. Keeps the old list if the gateway can't answer.
+    /// Loads the `/` menu: the agent's skills, its quick and plugin commands, and Hermes's
+    /// built-ins that make sense here. Keeps the old list if the gateway can't answer.
     public func loadCommands() async {
         guard let sessionID, let channel = channel() else { return }
         guard let catalog = try? await channel.call("commands.catalog", params: ["session_id": .string(sessionID)])
@@ -45,10 +47,11 @@ extension ChatThread {
             guard case .object(let skills) = catalog["skills"] else { return [] }
             return Set(skills.keys)
         }()
-        // `commands` holds the registry's built-ins; anything else in `pairs` is quick, plugin or skill.
-        let registry: Set<String> = {
-            guard case .object(let commands) = catalog["commands"] else { return [] }
-            return Set(commands.keys)
+        // `commands` describes the registry's built-ins: those with a `desktop` reason are
+        // terminal-only, settings or advanced in the official app, so they stay out here too.
+        let registry: [String: JSONValue] = {
+            guard case .object(let commands) = catalog["commands"] else { return [:] }
+            return commands
         }()
         var seen: Set<String> = []
         return pairs.compactMap { pair -> SlashCommand? in
@@ -57,7 +60,9 @@ extension ChatThread {
             else { return nil }
             let description = fields.dropFirst().first?.stringValue ?? ""
             if skills.contains(name) { return SlashCommand(name: name, description: description, kind: .skill) }
-            guard !registry.contains(name) || messengerBuiltins.contains(name) else { return nil }
+            if let meta = registry[name] {
+                guard meta["desktop"]?.stringValue == nil, !notInMessenger.contains(name) else { return nil }
+            }
             return SlashCommand(name: name, description: description, kind: .command)
         }
     }
@@ -101,10 +106,35 @@ extension ChatThread {
             default:
                 // `exec` and `plugin`: output to read, no turn.
                 state.showCommand(text)
-                if let output = (result["output"]?.stringValue ?? result["notice"]?.stringValue)?.nonBlank {
-                    state.addNotice(output)
+                if let output = result["output"]?.stringValue?.nonBlank {
+                    state.addOutput(output)
+                } else if let notice = result["notice"]?.stringValue?.nonBlank {
+                    state.addNotice(notice)
                 }
             }
+        } catch GatewayError.rpc(code: 4018, let message) where message.hasPrefix("not a quick/plugin") {
+            // Not a quick, plugin or skill command: a Hermes built-in, which runs as Hermes's own
+            // slash command (on the live chat where the gateway applies it there).
+            await runBuiltin(command, text: text, sessionID: sessionID, channel: channel)
+        } catch {
+            state.addNotice(String(localized: "\(command.name) didn't run: \(AppModel.describe(error))"))
+        }
+    }
+
+    private func runBuiltin(_ command: SlashCommand, text: String, sessionID: String, channel: JSONRPCChannel) async {
+        do {
+            let result = try await channel.call(
+                "slash.exec", params: ["session_id": .string(sessionID), "command": .string(text)],
+                timeout: .seconds(120))
+            if result["type"]?.stringValue == "send", let message = result["message"]?.stringValue?.nonBlank {
+                // A command that composed the next message (/prompt): send it as yours.
+                state.sendLocally(message)
+                await submit(message, sessionID: sessionID, channel: channel)
+                return
+            }
+            state.showCommand(text)
+            state.addOutput(result["output"]?.stringValue?.nonBlank ?? String(localized: "(no output)"))
+            if let warning = result["warning"]?.stringValue?.nonBlank { state.addNotice(warning) }
         } catch {
             state.addNotice(String(localized: "\(command.name) didn't run: \(AppModel.describe(error))"))
         }

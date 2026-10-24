@@ -11,8 +11,9 @@ struct ModelControls: View {
     @State private var problem: String?
 
     /// The menus' row, centred between the box above and the window's bottom edge: `gap` on
-    /// either side of it, so its text sits as far from one as from the other.
-    static let height: CGFloat = 18
+    /// either side of it. Gap, row and gap add up to the box's 20 pt side margin (ThreadPane), so
+    /// the box sits as far from the bottom as from the sides.
+    static let height: CGFloat = 16
     static let gap: CGFloat = 2
 
     struct Pick: Equatable {
@@ -24,6 +25,9 @@ struct ModelControls: View {
     var body: some View {
         if let model = thread.model {
             HStack(spacing: 2) {
+                if let usage = thread.usage, let context = usage.context {
+                    ContextMeter(thread: thread, usage: usage, context: context)
+                }
                 Menu {
                     models(model)
                 } label: {
@@ -46,7 +50,12 @@ struct ModelControls: View {
             .buttonStyle(.plain)
             .menuIndicator(.hidden)
             .fixedSize()
-            .task(id: thread.isAttached) { if thread.isAttached { await thread.loadModels() } }
+            .task(id: thread.isAttached) {
+                guard thread.isAttached else { return }
+                async let models: Void = thread.loadModels()
+                async let usage: Void = thread.loadUsage()
+                _ = await (models, usage)
+            }
             .alert(
                 "Switch to \(confirming.map { Self.short($0.model) } ?? "")?",
                 isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
@@ -72,10 +81,10 @@ struct ModelControls: View {
     private func label(_ text: String) -> some View {
         HStack(spacing: 2) {
             Text(text).lineLimit(1)
-            Image(systemName: "chevron.down").font(.system(size: 6, weight: .medium))
+            Image(systemName: "chevron.down").font(.system(size: 5))
         }
-        .font(.system(size: 11))
-        .foregroundStyle(Theme.secondaryInk)
+        .font(.system(size: 10, weight: .light))
+        .foregroundStyle(Theme.secondaryInk.opacity(0.7))
         .padding(.horizontal, 6)
         .frame(height: Self.height)
         .contentShape(Rectangle())
@@ -161,3 +170,61 @@ struct ModelControls: View {
         }
     }
 }
+
+/// How full the chat's context is, as a small ring and percentage beside the model menu; its menu
+/// gives the numbers and compresses the conversation when it's getting full.
+private struct ContextMeter: View {
+    let thread: ChatThread
+    let usage: ChatUsage
+    let context: ChatUsage.Context
+
+    var body: some View {
+        Menu {
+            Section {
+                Text(
+                    "Context: \(approx)\(ChatThread.tokens(context.used)) of \(ChatThread.tokens(context.max)) tokens (\(approx)\(context.percent)%)"
+                )
+                Text(
+                    "This chat: \(ChatThread.tokens(usage.input)) tokens in, \(ChatThread.tokens(usage.output)) out, ^[\(usage.calls) call](inflect: true)"
+                )
+                if usage.compressions > 0 {
+                    Text("Compressed ^[\(usage.compressions) time](inflect: true)")
+                }
+            }
+            Button("Compress Conversation", systemImage: "arrow.down.right.and.arrow.up.left") {
+                Task { await thread.compress() }
+            }
+            .disabled(!thread.canCompress)
+        } label: {
+            HStack(spacing: 4) {
+                if thread.isCompressing {
+                    ProgressView().controlSize(.mini)
+                } else {
+                    ZStack {
+                        Circle().stroke(Theme.secondaryInk.opacity(0.25), lineWidth: 1.5)
+                        Circle()
+                            .trim(from: 0, to: CGFloat(min(context.percent, 100)) / 100)
+                            .stroke(tint, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                    }
+                    .frame(width: 9, height: 9)
+                }
+                Text("\(context.percent)%")
+            }
+            .font(.system(size: 10, weight: .light))
+            .foregroundStyle(Theme.secondaryInk.opacity(0.7))
+            .padding(.horizontal, 6)
+            .frame(height: ModelControls.height)
+            .contentShape(Rectangle())
+        }
+        .help("How full this chat's context is")
+        .accessibilityLabel(Text("Context \(context.percent) percent full"))
+    }
+
+    /// Hermes's own count rather than the provider's.
+    private var approx: String { context.estimated ? "~" : "" }
+
+    /// Amber once the context is mostly full, when compressing starts to matter.
+    private var tint: Color { context.percent >= 80 ? Theme.needsYouInk : Theme.secondaryInk.opacity(0.7) }
+}
+

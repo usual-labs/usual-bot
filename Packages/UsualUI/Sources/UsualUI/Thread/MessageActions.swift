@@ -83,7 +83,10 @@ struct MessageRow<Content: View>: View {
     @ViewBuilder let content: Content
 
     @Environment(\.messageActions) private var actions
-    @State private var hovering = false
+    /// The pointer is over the message, or left it a moment ago (on its way to the bar).
+    @State private var overMessage = false
+    @State private var overBar = false
+    @State private var leaving: Task<Void, Never>?
     @State private var picking = false
 
     var body: some View {
@@ -95,11 +98,13 @@ struct MessageRow<Content: View>: View {
                     Spacer(minLength: 64)
                     barSlot
                 }
-                message.frame(maxWidth: isMine ? nil : .infinity, alignment: .leading)
+                // Only the message itself shows the bar, not the empty row around it.
+                message
+                    .contentShape(Rectangle())
+                    .onHover(perform: hoverMessage)
+                    .frame(maxWidth: isMine ? nil : .infinity, alignment: .leading)
                 if !isMine { barSlot }
             }
-            .contentShape(Rectangle())
-            .onHover { hovering = $0 }
         #else
             message
                 .frame(maxWidth: .infinity, alignment: isMine ? .trailing : .leading)
@@ -147,12 +152,27 @@ struct MessageRow<Content: View>: View {
     #if os(macOS)
         @ViewBuilder private var barSlot: some View {
             if let actions {
-                let shown = hovering || picking
+                let shown = overMessage || overBar || picking
                 bar(actions)
+                    .onHover { overBar = $0 }
                     .opacity(shown ? 1 : 0)
                     .allowsHitTesting(shown)
                     // Room for all three buttons, so every reply wraps at the same width.
                     .frame(width: 104, alignment: isMine ? .trailing : .leading)
+            }
+        }
+
+        /// Leaving the message hides the bar after a moment, so the pointer can cross the gap
+        /// to it; reaching the bar keeps it up.
+        private func hoverMessage(_ inside: Bool) {
+            leaving?.cancel()
+            if inside {
+                overMessage = true
+            } else {
+                leaving = Task {
+                    try? await Task.sleep(for: .milliseconds(250))
+                    if !Task.isCancelled { overMessage = false }
+                }
             }
         }
 
