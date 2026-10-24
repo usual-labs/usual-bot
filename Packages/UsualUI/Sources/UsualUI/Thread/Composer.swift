@@ -13,6 +13,9 @@ struct Composer: View {
     @Binding var replyTo: QuotedMessage?
     /// You're rewriting your last message: Send replaces it.
     @Binding var editing: Bool
+    /// A call holds the microphone: no dictation or second call meanwhile.
+    var inCall = false
+    var startCall: (() -> Void)?
 
     var body: some View {
         // Background tasks and side answers float above the box; the model and thinking menus sit under it, on the right.
@@ -38,7 +41,7 @@ struct Composer: View {
             attaching: AttachmentSending(
                 attachments: $attachments, canSend: thread.canSendAttachments, isUploading: thread.isUploading,
                 send: thread.send(_:attachments:)),
-            replyTo: $replyTo, editing: $editing,
+            replyTo: $replyTo, editing: $editing, startCall: thread.isAttached ? startCall : nil, inCall: inCall,
             commands: SlashCommands(
                 list: thread.commands, load: { Task { await thread.loadCommands() } },
                 prefill: Binding(get: { thread.prefill }, set: { thread.prefill = $0 })),
@@ -81,6 +84,10 @@ struct MessageBox: View {
     var replyTo: Binding<QuotedMessage?>?
     /// Chats only: you're editing your last message; Send replaces it.
     var editing: Binding<Bool>?
+    /// Chats only: starts a voice call with the agent.
+    var startCall: (() -> Void)?
+    /// While a call runs it has the microphone, so the box offers no mic or call.
+    var inCall = false
     /// Chats only: skills and commands to offer after `/`.
     var commands: SlashCommands?
     let send: (String) -> Void
@@ -281,12 +288,17 @@ struct MessageBox: View {
                 .accessibilityLabel(Text("Uploading"))
         } else if isRunning, isEmpty, !hasAttachments, !dictation.isListening {
             RoundButton(systemImage: "stop.fill", label: stopLabel, action: stop)
-        } else if dictation.isListening || (isEmpty && !hasAttachments) {
+        } else if !inCall, dictation.isListening || (isEmpty && !hasAttachments) {
             // An empty box offers the mic, as Messages and Grok Bot do; Send takes over once
-            // there's something to send.
-            MicButton(dictation: dictation) {
-                dictation.start(after: text) { text = $0 }
-                focused = true
+            // there's something to send. In a chat, a call button sits beside it.
+            HStack(spacing: 6) {
+                if let startCall, !dictation.isListening, !isRunning {
+                    CallStartButton(action: startCall)
+                }
+                MicButton(dictation: dictation) {
+                    dictation.start(after: text) { text = $0 }
+                    focused = true
+                }
             }
         } else {
             RoundButton(systemImage: "arrow.up", label: String(localized: "Send"), action: submit)

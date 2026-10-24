@@ -104,7 +104,7 @@ final class Dictation {
     // MARK: Permissions
 
     /// Asks for the microphone and speech recognition the first time; afterwards says what's off.
-    private static func permissionProblem() async -> String? {
+    static func permissionProblem() async -> String? {
         // `@Sendable`: the answer comes on a background queue, and a closure made here would
         // otherwise be main-actor isolated and stop the app when it runs there.
         let speech: SFSpeechRecognizerAuthorizationStatus = await withCheckedContinuation { continuation in
@@ -281,5 +281,24 @@ struct DictationProblem: View {
             .accessibilityLabel(Text("Dismiss"))
         }
         .padding(.horizontal, 8)
+    }
+}
+
+/// Starts a voice call, beside the mic in an empty message box.
+struct CallStartButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "waveform")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.ink)
+                .frame(width: 28, height: 28)
+                .background(Theme.selection, in: Circle())
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .help("Voice call")
+        .accessibilityLabel(Text("Start a voice call"))
     }
 }

@@ -54,6 +54,12 @@ No confirmed recurring failures were established during source inspection. A mis
 - Second Mac crash (same day): macOS aborts an app that requests speech recognition without `NSSpeechRecognitionUsageDescription` in its Info.plist. Xcode's `INFOPLIST_KEY_NSSpeechRecognitionUsageDescription` build setting isn't generated for macOS, so both dictation strings live in `Config/Info.plist`. Check the built plist (`plutil -p`) after adding a usage string. It kept crashing after the fix because older builds with the same bundle ID (other DerivedData folders) were still registered with LaunchServices and lacked the key; deleting them, `lsregister -u` on each and `lsregister -f` on the current build, then opening it with `open`, cleared it. Keep one Mac build of a bundle ID around when testing privacy prompts.
 - Also: the iOS Simulator has no speech model, so dictation fails there with "couldn't start"; test recognition on a device or the Mac.
 
+## Echo cancellation fails to start on the Mac (seen 2026-10-24)
+
+- Symptom: a voice call said the microphone couldn't start.
+- Root cause (from the log): with `setVoiceProcessingEnabled(true)`, `AVAudioEngine` couldn't initialize the voice-processing unit (`AUVoiceProcessor initialize failure. err=-10875`). It depends on the audio devices; the maintainer's Mac runs virtual displays and devices.
+- Fix: `CallAudio.start()` retries without voice processing, and the call then takes turns (no listening while the agent speaks; barge-in off). The log says which mode a call got (category `call`). Unverified on the maintainer's Mac when written.
+
 ## Reply images showed a border wider than the picture (fixed 2026-10-24)
 
 - Symptom: a square image in a reply sat in a rounded border that ran on to its right, as if the aspect ratio were off.
@@ -71,3 +77,14 @@ No confirmed recurring failures were established during source inspection. A mis
 - Symptom: the profile panel's close button, as a `.primaryAction` or `.automatic` toolbar item, drew on the left next to Search and New Room.
 - Root cause: on macOS, `.primaryAction` is the leading edge, and with no other trailing items the toolbar packs everything to the left.
 - Fix (confirmed by screenshot 2026-10-23): on macOS 26, put `ToolbarSpacer(.flexible)` before a plain `ToolbarItem`; the button then sits at the window's top right as a glass circle (`profileCloseButton` in RootView.swift).
+
+## WebRTC on Apple platforms runs through WebKit (by design, 2026-10-24)
+
+- Apple ships no public WebRTC API, and GPT-Live needs one. Rather than a WebRTC binary
+  dependency, `LiveCall` runs the media in a hidden `WKWebView`. Gotchas: the web view must be in
+  the view hierarchy (`LiveCallHost`, 1 pt, near-transparent) or WebKit won't capture or play;
+  the page needs a secure origin for `getUserMedia` (loaded with an `https://…invalid/` base URL,
+  nothing fetched from it); autoplay needs `mediaTypesRequiringUserActionForPlayback = []` (and
+  inline playback on iPhone); microphone permission comes from the app (TCC) plus the
+  `WKUIDelegate` grant. iPhone audio routing under WebKit hasn't been tried.
+
