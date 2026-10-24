@@ -1,6 +1,6 @@
 # Usual Bot: roadmap after 0.1
 
-Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M12 and M14–M19 are built
+Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M12 and M14–M20 are built
 (each says how far it has been checked); M13 (voice call) is in progress. See `app-shell.md`
 and the package KBs for what exists. Each milestone below runs and can be demoed on its own, ships with
 tests, the demo mode (`AppModel.demo()`) and the KBs updated, and is checked on Mac and iPhone.
@@ -136,8 +136,8 @@ Added 24 October 2026 at the user's request, ahead of the rest; built the same d
     provider default ("" in `session.info`), so the menu shows "Default" with nothing ticked.
   - `session.info` events (and the `info` in resume/create results) carry `model`, `provider`
     and `reasoning_effort` ("" default, "none" off).
-- **Not built:** "Make default" (the profile's default model) and the Machine tab entry; fast
-  mode. Adding provider keys and the full Models settings stay in the official app.
+- **Not built:** the Machine tab entry and fast mode. Adding provider keys and the full Models
+  settings stay in the official app. ("Make default" came after, as M20.)
 - **Checked:** HermesKit tests (switch params, confirm, deferred, refused level, catalog, info);
   the menu in the demo on the iPhone Simulator and the Mac. Not yet tried against a real gateway.
 
@@ -230,3 +230,28 @@ official app's room reply does.
   model switches. `session.context_breakdown` (per-category breakdown) isn't used.
 - **Checked:** HermesKit tests (load, follow replies, no context yet, compress, refusal, short
   token counts); the meter and its menu in the demo on the Mac and the iPhone Simulator.
+
+## M20: Agent defaults (built; live gateway untested)
+
+Added 24 October 2026 at the user's pick, after M9–M19 were done.
+
+- **You can:** save a chat's model or thinking level as the agent's own default, from the menus
+  under the message box: **Make Default for <agent>** at the top of the model menu (shown when
+  the chat runs on another model than the agent's; otherwise "<agent>'s Default" with a seal)
+  and at the top of the thinking menu (when a level is set). Other chats with the agent, its
+  routines and rooms then use it. A pricier model asks first, as switching does. A notice in
+  the chat confirms it.
+- **Gateway:** the model goes through `profiles.configure {name, model, provider,
+  confirm_expensive_model?}`, the official Bots editor's call (`confirm_required` +
+  `confirm_message` writes nothing until resent; `applied.model` says whether it saved). The
+  thinking level goes through `config.set {session_id, key: "reasoning", value, scope: "global",
+  profile: <agent>}`, which writes `agent.reasoning_effort` in that agent's config and applies
+  it to the live chat too. `config.set` is scoped by `profile`, not by the session: without it
+  the gateway's main profile would change (the `/reasoning --global` path had that bug; fixed).
+- **Agent's default:** from the roster (`profiles.list`'s model and provider in
+  `Contact.details`); it updates on the next roster refresh. There's no default thinking level in
+  the roster, so the thinking menu always offers the button.
+- **Checked:** HermesKit tests (confirm then save, the reasoning call's params, `/reasoning
+  --global` carries `profile`); both menus in the iPhone Simulator demo (Forge's demo chat runs
+  on another model than its default).
+

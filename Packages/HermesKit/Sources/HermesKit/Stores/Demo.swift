@@ -92,6 +92,10 @@
             for thread in threads.values {
                 thread.commands = Demo.commands
                 thread.model = ChatModel(name: "claude-sonnet-5-5", provider: "anthropic", reasoning: .medium)
+                if thread.contactID == "forge" {
+                    // Switched for this chat only, so its menu offers Make Default.
+                    thread.model?.name = "claude-opus-5-5"
+                }
                 thread.modelProviders = Demo.models
                 thread.usage =
                     thread.usage

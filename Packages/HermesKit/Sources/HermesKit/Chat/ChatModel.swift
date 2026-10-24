@@ -161,7 +161,11 @@ extension ChatThread {
             var params: [String: JSONValue] = [
                 "session_id": .string(sessionID), "key": "reasoning", "value": .string(value),
             ]
-            if global { params["scope"] = "global" }
+            if global {
+                // The agent's own config; without `profile` the gateway's main profile would change.
+                params["scope"] = "global"
+                params["profile"] = .string(contactID)
+            }
             do {
                 let result = try await channel.call("config.set", params: .object(params))
                 let applied = result["value"]?.stringValue ?? value
@@ -173,6 +177,49 @@ extension ChatThread {
             } catch {
                 state.addNotice(String(localized: "/reasoning didn't run: \(AppModel.describe(error))"))
             }
+        }
+    }
+
+    /// Makes this chat's model the agent's default, as the official Bots editor does: its other
+    /// chats, routines and rooms use it from then on. A pricier model asks first, as switching does.
+    public func makeModelDefault(confirmed: Bool = false) async -> ModelSwitch {
+        guard let model, let channel = channel() else {
+            return .failed(String(localized: "The agent isn't connected."))
+        }
+        var params: [String: JSONValue] = [
+            "name": .string(contactID), "model": .string(model.name), "provider": .string(model.provider),
+        ]
+        if confirmed { params["confirm_expensive_model"] = true }
+        do {
+            let result = try await channel.call("profiles.configure", params: .object(params))
+            if result["confirm_required"]?.boolValue == true {
+                return .needsConfirmation(
+                    result["confirm_message"]?.stringValue?.nonBlank
+                        ?? String(localized: "\(model.name) costs more than the agent's default model."))
+            }
+            guard result["applied"]?["model"]?.boolValue != false else {
+                return .failed(String(localized: "The gateway couldn't save the agent's settings."))
+            }
+            state.addNotice(String(localized: "\(model.name) is now this agent's default model."))
+            return .switched
+        } catch {
+            return .failed(AppModel.describe(error))
+        }
+    }
+
+    /// Makes this chat's thinking level the agent's default (`agent.reasoning_effort` in its config).
+    public func makeReasoningDefault() async {
+        guard let level = model?.reasoning, let sessionID, let channel = channel() else { return }
+        do {
+            _ = try await channel.call(
+                "config.set",
+                params: [
+                    "session_id": .string(sessionID), "key": "reasoning", "value": .string(level.rawValue),
+                    "scope": "global", "profile": .string(contactID),
+                ])
+            state.addNotice(String(localized: "This agent now thinks at \(level.rawValue) by default."))
+        } catch {
+            state.addNotice(String(localized: "Couldn't change the default thinking: \(AppModel.describe(error))"))
         }
     }
 }

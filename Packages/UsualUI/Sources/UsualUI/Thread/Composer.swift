@@ -7,6 +7,8 @@ import SwiftUI
 struct Composer: View {
     let thread: ChatThread
     let agentName: String
+    /// The agent's default model, for the model menu's Make Default.
+    var agentDefault: AgentDetails?
     @Binding var attachments: [Attachment]
     @Binding var replyTo: QuotedMessage?
     /// You're rewriting your last message: Send replaces it.
@@ -23,7 +25,7 @@ struct Composer: View {
                     .padding(.bottom, 6)
             }
             box
-            ModelControls(thread: thread)
+            ModelControls(thread: thread, agentName: agentName, agentDefault: agentDefault)
         }
         .animation(.smooth(duration: 0.2), value: thread.sideQuestions)
         .animation(.smooth(duration: 0.2), value: thread.backgroundTasks)

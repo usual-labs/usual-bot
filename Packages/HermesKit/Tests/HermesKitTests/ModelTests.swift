@@ -119,4 +119,34 @@ struct ModelSwitchTests {
         await loaded
         #expect(thread.modelProviders.map(\.slug) == ["openai"])
     }
+
+    @Test func makingTheModelDefaultSavesItToTheAgent() async throws {
+        let (thread, gateway) = try await openThread()
+        async let first = thread.makeModelDefault()
+        _ = try await gateway.answer(
+            1, method: "profiles.configure", result: ["confirm_required": true, "confirm_message": "Pricey"])
+        #expect(await first == .needsConfirmation("Pricey"))
+
+        async let second = thread.makeModelDefault(confirmed: true)
+        let params = try await gateway.answer(
+            2, method: "profiles.configure", result: ["ok": true, "applied": ["model": true]])
+        #expect(
+            params == [
+                "name": "hermes", "model": "claude-opus-5-5", "provider": "anthropic",
+                "confirm_expensive_model": true,
+            ])
+        #expect(await second == .switched)
+        #expect(thread.state.items.last?.content == .notice("claude-opus-5-5 is now this agent's default model."))
+    }
+
+    @Test func defaultThinkingIsWrittenToTheAgentsOwnConfig() async throws {
+        let (thread, gateway) = try await openThread()
+        async let done: Void = thread.makeReasoningDefault()
+        let params = try await gateway.answer(1, method: "config.set", result: ["value": "medium"])
+        await done
+        #expect(
+            params == [
+                "session_id": "live-1", "key": "reasoning", "value": "medium", "scope": "global", "profile": "hermes",
+            ])
+    }
 }

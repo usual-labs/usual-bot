@@ -3,9 +3,12 @@ import SwiftUI
 
 /// The chat's model and how hard it thinks, as two small menus under the message box: the
 /// gateway's models (this provider's first, others in submenus), and the thinking levels for
-/// models that take one. A pick changes this chat only; the agent's default stays as it is.
+/// models that take one. A pick changes this chat only; Make Default saves it as the agent's own.
 struct ModelControls: View {
     let thread: ChatThread
+    let agentName: String
+    /// The agent's default model, as the roster reports it.
+    let agentDefault: AgentDetails?
     /// The gateway asked for a yes before switching (an expensive model).
     @State private var confirming: Pick?
     @State private var problem: String?
@@ -20,6 +23,8 @@ struct ModelControls: View {
         let model: String
         let provider: String
         let message: String
+        /// Asked while making it the agent's default, not while switching this chat.
+        var asDefault = false
     }
 
     var body: some View {
@@ -57,17 +62,24 @@ struct ModelControls: View {
                 _ = await (models, usage)
             }
             .alert(
-                "Switch to \(confirming.map { Self.short($0.model) } ?? "")?",
+                confirming?.asDefault == true
+                    ? "Make \(confirming.map { Self.short($0.model) } ?? "") the default?"
+                    : "Switch to \(confirming.map { Self.short($0.model) } ?? "")?",
                 isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
                 presenting: confirming
             ) { pick in
-                Button("Switch") { Task { await switchTo(pick.model, provider: pick.provider, confirmed: true) } }
-                Button("Keep \(Self.short(model.name))", role: .cancel) {}
+                if pick.asDefault {
+                    Button("Make Default") { Task { await makeDefault(confirmed: true) } }
+                    Button("Cancel", role: .cancel) {}
+                } else {
+                    Button("Switch") { Task { await switchTo(pick.model, provider: pick.provider, confirmed: true) } }
+                    Button("Keep \(Self.short(model.name))", role: .cancel) {}
+                }
             } message: { pick in
                 Text(pick.message)
             }
             .alert(
-                "Couldn't switch models",
+                "Couldn't change the model",
                 isPresented: Binding(get: { problem != nil }, set: { if !$0 { problem = nil } })
             ) {
                 Button("OK", role: .cancel) {}
@@ -108,9 +120,33 @@ struct ModelControls: View {
                 }
             }
         }
+        Section {
+            if isAgentDefault(model) {
+                Label("\(agentName)'s Default", systemImage: "checkmark.seal").disabled(true)
+            } else {
+                Button("Make Default for \(agentName)", systemImage: "pin") { Task { await makeDefault() } }
+            }
+        }
     }
 
-    private func levels(_ model: ChatModel) -> some View {
+    /// Whether the chat runs on the model the roster lists as the agent's default.
+    private func isAgentDefault(_ model: ChatModel) -> Bool {
+        guard let name = agentDefault?.model else { return false }
+        return name == model.name && (agentDefault?.provider.map { $0 == model.provider } ?? true)
+    }
+
+    private func makeDefault(confirmed: Bool = false) async {
+        switch await thread.makeModelDefault(confirmed: confirmed) {
+        case .switched, .next: break
+        case .needsConfirmation(let message):
+            if let model = thread.model {
+                confirming = Pick(model: model.name, provider: model.provider, message: message, asDefault: true)
+            }
+        case .failed(let message): problem = message
+        }
+    }
+
+    @ViewBuilder private func levels(_ model: ChatModel) -> some View {
         Picker(
             "Thinking",
             selection: Binding(get: { model.reasoning }, set: { level in if let level { thread.setReasoning(level) } })
@@ -120,6 +156,12 @@ struct ModelControls: View {
             }
         }
         .pickerStyle(.inline)
+        Section {
+            Button("Make Default for \(agentName)", systemImage: "pin") {
+                Task { await thread.makeReasoningDefault() }
+            }
+            .disabled(model.reasoning == nil)
+        }
     }
 
     /// One provider's models, the chat's own ticked.
