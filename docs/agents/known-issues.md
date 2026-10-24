@@ -32,3 +32,9 @@ unverified recommendation → prevention and status.
 - Fix: quit the app, `touch` the bundle, `lsregister -f <app>`, `killall Dock` (it relaunches),
   open the app again. Needed again only when the icon changes.
 
+## The gateway won't /retry a message with an image (seen 2026-10-24, shakedown)
+
+- `/retry` on a message that carried a photo answers "retry does not support media or unknown
+  content parts"; the app shows it as "/retry didn't run: …". Gateway behaviour, not an app bug:
+  send the message again with the image instead.
+

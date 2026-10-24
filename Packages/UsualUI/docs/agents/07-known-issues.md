@@ -58,7 +58,7 @@ No confirmed recurring failures were established during source inspection. A mis
 
 - Symptom: a voice call said the microphone couldn't start.
 - Root cause (from the log): with `setVoiceProcessingEnabled(true)`, `AVAudioEngine` couldn't initialize the voice-processing unit (`AUVoiceProcessor initialize failure. err=-10875`). It depends on the audio devices; the maintainer's Mac runs virtual displays and devices.
-- Fix: `CallAudio.start()` retries without voice processing, and the call then takes turns (no listening while the agent speaks; barge-in off). The log says which mode a call got (category `call`). Unverified on the maintainer's Mac when written.
+- Fix: `CallAudio.start()` retries without voice processing, and the call then takes turns (no listening while the agent speaks; barge-in off). The log says which mode a call got (category `call`). An on-device call worked on the maintainer's Mac in the 24 October shakedown.
 
 ## Reply images showed a border wider than the picture (fixed 2026-10-24)
 
@@ -87,4 +87,13 @@ No confirmed recurring failures were established during source inspection. A mis
   nothing fetched from it); autoplay needs `mediaTypesRequiringUserActionForPlayback = []` (and
   inline playback on iPhone); microphone permission comes from the app (TCC) plus the
   `WKUIDelegate` grant. iPhone audio routing under WebKit hasn't been tried.
+
+## Picking from the menu left the cursor mid-word (fixed 2026-10-24, shakedown)
+
+- Symptom: after picking `/reasoning` from the `/` menu on the Mac, the cursor sat where it was
+  before the pick ("/re|asoning"), so typing went into the middle.
+- Cause: the message box's `TextField` is bound to a `TextSelection`; replacing `text` keeps the
+  old selection.
+- Fix: `MessageBox.replaceText(with:)` sets the text and puts the insertion point at its end; menu
+  picks (`/` and `@`) and prefills (/retry, Edit) go through it. Checked in the iPhone Simulator.
 
