@@ -110,6 +110,7 @@ struct CommandRunTests {
         thread.send("/reasoning low --global")
         let global = try await gateway.answer(2, method: "config.set", result: ["value": "low"])
         #expect(global["scope"] == "global")
+        #expect(global["profile"] == "hermes")
         #expect(global["value"] == "low")
     }
 

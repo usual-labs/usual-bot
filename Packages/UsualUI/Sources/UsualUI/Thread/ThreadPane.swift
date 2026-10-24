@@ -31,7 +31,8 @@ struct ThreadPane: View {
             } bottom: {
                 if let thread, thread.phase == .ready {
                     Composer(
-                        thread: thread, agentName: contact.name, attachments: $attachments, replyTo: $replyTo,
+                        thread: thread, agentName: contact.name, agentDefault: contact.details,
+                        attachments: $attachments, replyTo: $replyTo,
                         editing: $editing
                     )
                     .frame(maxWidth: 780)
