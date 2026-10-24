@@ -37,6 +37,9 @@ public final class AppModel {
     public private(set) var problem: String?
     /// What the user last typed into the gateway field.
     public var gatewayInput: String
+    /// Set by the app to hear when a chat's background task (`/bg`) finishes, e.g. to notify you
+    /// when the app isn't in front. Gets the agent, the task and its result or failure.
+    @ObservationIgnored public var backgroundTaskFinished: ((Contact, String, String) -> Void)?
 
     private let tokenStore: any TokenStore
     private let http: any HTTPTransport
@@ -266,6 +269,10 @@ public final class AppModel {
     private func makeThread(_ id: Contact.ID, cached: CachedThread?) -> ChatThread {
         let thread = ChatThread(contactID: id, cached: cached, channel: { [weak self] in self?.channel })
         thread.isVisible = id == visibleContactID
+        thread.backgroundTaskFinished = { [weak self] task, result in
+            guard let self, let contact = contacts.first(where: { $0.id == id }) else { return }
+            backgroundTaskFinished?(contact, task, result)
+        }
         return thread
     }
 

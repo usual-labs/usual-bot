@@ -73,11 +73,31 @@
                     id: "demo-approval", sessionID: "sample",
                     command: "psql \"$STAGING_DATABASE_URL\" -f migrations/0042_search_index.sql",
                     description: "Runs a database migration on staging", choices: [.once, .session, .always]))
+            threads["atlas"]?.sideQuestions = [
+                SideQuestion(
+                    id: "demo-btw", question: "How many pages does docs search hold today?",
+                    answer: .answered("About **40,000 pages**, re-indexed nightly. Turbopuffer stores them for ~$6 a month."))
+            ]
             threads["ops"] = ChatThread.sample("ops", state: ThreadState(history: opsChat, running: false))
+            threads["ops"]?.state.addBackgroundResult(
+                task: "Check last night's backups on all three servers",
+                result: "All three backups finished between 02:10 and 02:40 and **restore-tested** clean.")
+            threads["ops"]?.usage = ChatUsage(
+                context: .init(used: 172_000, max: 200_000, percent: 86, estimated: false), input: 2_340_000,
+                output: 96_000, calls: 212, compressions: 2)
+            threads["ops"]?.backgroundTasks = [
+                BackgroundTask(id: "demo-bg", task: "Compare this month's server costs with last month's"),
+                BackgroundTask(id: "demo-bg2", task: "Find unused volumes"),
+            ]
             for thread in threads.values {
                 thread.commands = Demo.commands
                 thread.model = ChatModel(name: "claude-sonnet-5-5", provider: "anthropic", reasoning: .medium)
                 thread.modelProviders = Demo.models
+                thread.usage =
+                    thread.usage
+                    ?? ChatUsage(
+                        context: .init(used: 76_000, max: 200_000, percent: 38, estimated: false), input: 412_000,
+                        output: 31_500, calls: 46)
             }
             for (id, text) in [
                 ("scribe", "Two headline options for the launch post"),
@@ -112,6 +132,11 @@
                 name: "/release-notes", description: "Draft release notes from merged pull requests", kind: .skill),
             SlashCommand(
                 name: "/postgres-migrations", description: "Write and check safe database migrations", kind: .skill),
+            SlashCommand(
+                name: "/btw", description: "Ask a side question without interrupting", kind: .command),
+            SlashCommand(name: "/reasoning", description: "Show or set how hard the agent thinks", kind: .command),
+            SlashCommand(name: "/status", description: "Show session, model and token status", kind: .command),
+            SlashCommand(name: "/usage", description: "Show token usage and cost for this session", kind: .command),
             SlashCommand(name: "/retry", description: "Send your last message again", kind: .command),
             SlashCommand(name: "/undo", description: "Remove the last exchange", kind: .command),
             SlashCommand(name: "/compress", description: "Summarise the conversation to free context", kind: .command),

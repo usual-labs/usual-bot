@@ -21,3 +21,19 @@ struct SlashMenuTests {
         #expect(commands.matching("zzz").isEmpty)
     }
 }
+
+struct SlashWordTests {
+    @Test func aSlashWordOpensTheMenuAnywhere() {
+        #expect(MessageBox.slashWord(in: "/") == "")
+        #expect(MessageBox.slashWord(in: "/rel") == "rel")
+        #expect(MessageBox.slashWord(in: "clean this up with /cle") == "cle")
+        #expect(MessageBox.slashWord(in: "first line\n/web") == "web")
+    }
+
+    @Test func aFinishedWordOrAPathDoesNot() {
+        #expect(MessageBox.slashWord(in: "/retry ") == nil)
+        #expect(MessageBox.slashWord(in: "see /usr/bin") == nil)
+        #expect(MessageBox.slashWord(in: "and/or") == nil)
+        #expect(MessageBox.slashWord(in: "") == nil)
+    }
+}

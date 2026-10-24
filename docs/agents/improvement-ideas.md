@@ -15,3 +15,8 @@
   [roadmap.md](roadmap.md).
 
 Child-local ideas stay in their package KBs.
+
+- **Keychain without prompts on unsigned Mac builds.** `TokenStore` could use the data-protection
+  keychain (`kSecUseDataProtectionKeychain`), which has no per-app ACL prompts, but it needs a
+  team-signed app with a keychain access group; ad-hoc builds get `errSecMissingEntitlement`.
+  Only worth it together with a migration of the existing login-keychain items.

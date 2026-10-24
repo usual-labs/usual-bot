@@ -35,6 +35,7 @@ struct ThreadPane: View {
                         editing: $editing
                     )
                     .frame(maxWidth: 780)
+                    // ModelControls' row and gaps below the box add up to this margin too.
                     .padding(.horizontal, 20)
                 }
             }

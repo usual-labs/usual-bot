@@ -9,12 +9,12 @@ struct SlashCommands {
     /// Text a command put back (`/retry`); the box takes it and clears this.
     @Binding var prefill: String?
 
-    /// The commands matching what's typed after `/`: names starting with it first.
+    /// The skills and commands matching what's typed after `/`: names starting with it first.
     func matching(_ query: String) -> [SlashCommand] {
         let query = query.lowercased()
         let named = list.filter { $0.name.dropFirst().lowercased().contains(query) || query.isEmpty }
         let starting = named.filter { $0.name.dropFirst().lowercased().hasPrefix(query) }
-        return Array((starting + named.filter { !starting.contains($0) }).prefix(6))
+        return starting + named.filter { !starting.contains($0) }
     }
 }
 
@@ -39,26 +39,44 @@ struct SuggestionMenu: View {
     let highlight: (Int) -> Void
     let pick: (Suggestion) -> Void
 
+    /// Rows shown before the list scrolls.
+    private static let visibleRows = 7
+    private static let rowHeight: CGFloat = 36
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                Button {
-                    pick(item)
-                } label: {
-                    row(item)
-                        .padding(.horizontal, 10)
-                        .frame(minHeight: 36)
-                        .background(
-                            index == highlighted ? Theme.selection : .clear, in: RoundedRectangle(cornerRadius: 9)
-                        )
-                        .contentShape(Rectangle())
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                        Button {
+                            pick(item)
+                        } label: {
+                            row(item)
+                                .padding(.horizontal, 10)
+                                .frame(minHeight: Self.rowHeight)
+                                .background(
+                                    index == highlighted ? Theme.selection : .clear,
+                                    in: RoundedRectangle(cornerRadius: 9)
+                                )
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .onHover { if $0 { highlight(index) } }
+                        .accessibilityAddTraits(index == highlighted ? .isSelected : [])
+                        .id(item.id)
+                    }
                 }
-                .buttonStyle(.plain)
-                .onHover { if $0 { highlight(index) } }
-                .accessibilityAddTraits(index == highlighted ? .isSelected : [])
+                .padding(4)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(maxHeight: CGFloat(Self.visibleRows) * Self.rowHeight + 8)
+            .fixedSize(horizontal: false, vertical: true)
+            // Up and Down keep the highlighted row in view.
+            .onChange(of: highlighted) { _, index in
+                guard items.indices.contains(index) else { return }
+                proxy.scrollTo(items[index].id)
             }
         }
-        .padding(4)
         .floatingSurface(in: RoundedRectangle(cornerRadius: 14))
     }
 
@@ -66,6 +84,12 @@ struct SuggestionMenu: View {
         switch item {
         case .command(let command):
             HStack(alignment: .firstTextBaseline, spacing: 10) {
+                // Skills and commands share the menu; the icon tells them apart.
+                Image(systemName: command.kind == .skill ? "sparkles" : "command")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Theme.secondaryInk)
+                    .frame(width: 16)
+                    .accessibilityLabel(Text(command.kind == .skill ? "Skill" : "Command"))
                 Text(command.name)
                     .font(.system(size: 13.5, weight: .semibold))
                     .foregroundStyle(Theme.ink)
@@ -76,15 +100,7 @@ struct SuggestionMenu: View {
                     .font(.system(size: 13))
                     .foregroundStyle(Theme.secondaryInk)
                     .lineLimit(1)
-                Spacer(minLength: 8)
-                if command.kind == .skill {
-                    Text("Skill")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Theme.secondaryInk)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 2)
-                        .background(Theme.selection, in: Capsule())
-                }
+                Spacer(minLength: 0)
             }
             .accessibilityElement(children: .combine)
         case .mention(let mention):

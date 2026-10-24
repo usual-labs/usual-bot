@@ -26,9 +26,14 @@ group rooms, inline approvals and routines. Everything else stays in the officia
 - **Rooms.** Group chats with several agents. Messages go to everyone; `@name` talks to one.
 - **Skills and commands.** Type `/` to run one of the agent's skills or commands; switch skills on
   and off in its profile.
+- **Side questions.** `/btw` asks about the conversation while the agent works, without
+  interrupting it; the answer appears above the message box.
+- **Background tasks.** `/bg` hands a task to a fresh agent while you keep chatting; its result
+  joins the chat, with a notification if the app isn't in front.
 - **Edit and undo.** Rewrite your last message for a fresh reply, or take it back.
 - **Model and thinking.** Pick the model and how hard it thinks for each chat from the message
-  box; the agent's default stays as it is.
+  box; the agent's default stays as it is. A small meter shows how full the context is, with a
+  button to compress it.
 - **Routines.** Each agent's scheduled jobs, with a switch to pause and resume them.
 - **Dictation.** Tap the mic in an empty message box and speak; words appear as you talk,
   recognised on the device when it can.

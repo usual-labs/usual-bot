@@ -121,6 +121,21 @@ struct ItemView: View {
             ActivityLine(steps: steps, agentName: agentName)
         case .notice(let text):
             NoticeLine(text: text)
+        case .output(let text):
+            MessageRow(item: item, text: text, isMine: false) { CommandOutput(text: text) }
+        case .background(let task, let result):
+            MessageRow(item: item, text: result, isMine: false) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label {
+                        Text("Background task: \(task)").lineLimit(2)
+                    } icon: {
+                        Image(systemName: "arrow.triangle.branch")
+                    }
+                    .font(.system(size: 12.5, weight: .medium))
+                    .foregroundStyle(Theme.secondaryInk)
+                    MarkdownView(result)
+                }
+            }
         }
     }
 }
@@ -296,3 +311,24 @@ struct TypingIndicator: View {
         .accessibilityLabel(Text("Working"))
     }
 }
+
+/// What a Hermes command printed: terminal text, so monospaced and never wrapped (its columns
+/// line up); wide output scrolls sideways.
+struct CommandOutput: View {
+    let text: String
+
+    var body: some View {
+        ScrollView(.horizontal) {
+            Text(text)
+                .font(.system(size: 12.5, design: .monospaced))
+                .foregroundStyle(Theme.ink)
+                .fixedSize()
+                .textSelection(.enabled)
+                .padding(12)
+        }
+        .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.selection.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+

@@ -60,6 +60,12 @@ No confirmed recurring failures were established during source inspection. A mis
 - Root cause: `.frame(maxWidth: 420, maxHeight: 360)` around a `scaledToFit` image takes the whole 420 pt even when the image is narrower, and the clip and border follow the frame.
 - Fix: `MediaLoading.displaySize` sizes the image from its own pixels (at most 420 × 360 pt, no bigger than half its pixels) and the frame is that exact size. Unit-tested; the user confirmed the square image and the new bottom spacing look right on the Mac (24 October 2026).
 
+## A reply image pushed the iPhone transcript off-screen (fixed 2026-10-24)
+
+- Symptom: on iPhone the Ops demo reply's text and chart ran past the right edge.
+- Root cause: `ReplyImage` framed images at their exact display size (up to 420 pt wide), wider than the iPhone's column, and the reply's whole column grew with it.
+- Fix: `.aspectRatio(size, contentMode: .fit)` with `.frame(maxWidth: size.width)`: the same size where it fits, narrower (same shape, border still hugging) where it doesn't. Checked in the iPhone Simulator.
+
 ## Trailing toolbar items land on the leading side
 
 - Symptom: the profile panel's close button, as a `.primaryAction` or `.automatic` toolbar item, drew on the left next to Search and New Room.
