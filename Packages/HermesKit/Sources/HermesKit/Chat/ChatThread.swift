@@ -52,6 +52,20 @@ public final class ChatThread {
     public internal(set) var isCompressing = false
     /// Set by the app: a background task finished, with its task and result (or failure).
     var backgroundTaskFinished: ((_ task: String, _ result: String) -> Void)?
+    /// Background tasks' answers, also kept apart from the transcript: the gateway's copy of the
+    /// chat doesn't have them, so they're put back whenever it reloads. Newest last.
+    var backgroundResults: [BackgroundResult] = []
+    /// Set by the app: a background task's answer from its stored session, `nil` while it runs.
+    var storedAnswer: ((_ taskID: String) async -> String?)?
+    /// The gateway process's event numbering (`gateway.ready`'s `replay_epoch`); set by the app.
+    var replayEpoch: String?
+    /// The newest event seen from the live session, and the numbering it belongs to, so a short
+    /// drop can be replayed (`ChatThread+Recovery.swift`).
+    var lastSeq = 0
+    var seqEpoch: String?
+    /// The live session before the last drop.
+    var lastSessionID: String?
+    var recovery: Task<Void, Never>?
 
     /// The live session the gateway routes this chat's events to; `nil` while offline.
     private(set) var sessionID: String?
@@ -75,6 +89,9 @@ public final class ChatThread {
             state = cached.state
             lastViewed = cached.lastViewed
             unreadCount = cached.unreadCount
+            sideQuestions = cached.sideQuestions ?? []
+            backgroundTasks = cached.backgroundTasks ?? []
+            backgroundResults = cached.backgroundResults ?? []
             phase = .ready
         }
     }
@@ -115,9 +132,15 @@ public final class ChatThread {
     }
 
     private func attach(_ opened: BotChat.Opened) {
+        // The same live session in the same gateway process: what a short drop missed can be replayed.
+        let rejoined = opened.sessionID == lastSessionID && seqEpoch == replayEpoch && lastSeq > 0
+        if !rejoined { lastSeq = 0 }
         sessionID = opened.sessionID
+        lastSessionID = opened.sessionID
+        seqEpoch = replayEpoch
         model = ChatModel(info: opened.info) ?? model
-        state = ThreadState(history: opened.history, running: opened.running, inflight: opened.inflight)
+        state = ThreadState(
+            history: opened.history, running: opened.running, inflight: opened.inflight, kept: backgroundResults)
         transcriptLoad += 1
         banner = opened.historyOmitted ? String(localized: "Earlier messages are too long to load here.") : nil
         // The gateway re-sends any question still waiting, so the list starts from its answer.
@@ -133,11 +156,12 @@ public final class ChatThread {
             markViewed()
         }
         phase = .ready
+        recoverMissed(rejoined: rejoined)
     }
 
     /// Shows the gateway's copy of the transcript in place of the one on screen.
     func replaceTranscript(with history: [HistoryMessage]) {
-        state = ThreadState(history: history, running: false)
+        state = ThreadState(history: history, running: false, kept: backgroundResults)
         transcriptLoad += 1
     }
 
@@ -146,6 +170,7 @@ public final class ChatThread {
     func detach() {
         openTask?.cancel()
         openTask = nil
+        recovery?.cancel()
         sessionID = nil
         approvals = []
         questions = []
@@ -154,6 +179,7 @@ public final class ChatThread {
     // MARK: - Gateway traffic
 
     func apply(_ event: GatewayEvent) {
+        if let seq = event.seq { lastSeq = max(lastSeq, seq) }
         if event.type == "request.cancel" {
             withdraw(event.payload)
             return
@@ -446,7 +472,10 @@ public final class ChatThread {
     // MARK: - Offline cache
 
     var cacheEntry: CachedThread {
-        CachedThread(state: state.trimmed(to: CachedThread.itemLimit), lastViewed: lastViewed, unreadCount: unreadCount)
+        CachedThread(
+            state: state.trimmed(to: CachedThread.itemLimit), lastViewed: lastViewed, unreadCount: unreadCount,
+            sideQuestions: sideQuestions, backgroundTasks: backgroundTasks,
+            backgroundResults: Array(backgroundResults.suffix(20)))
     }
 
     #if DEBUG
@@ -459,28 +488,4 @@ public final class ChatThread {
             return thread
         }
     #endif
-}
-
-/// What the app keeps of a chat between launches.
-struct CachedThread: Codable, Equatable, Sendable {
-    static let itemLimit = 60
-
-    var state: ThreadState
-    var lastViewed: Date?
-    var unreadCount: Int
-}
-
-extension TranscriptItem {
-    var isReply: Bool {
-        if case .assistant = content { return true }
-        return false
-    }
-}
-
-extension ApprovalPrompt {
-    /// The command shortened for one line of text.
-    public var shortCommand: String {
-        let line = command.split(whereSeparator: \.isNewline).first.map(String.init) ?? command
-        return line.count > 60 ? String(line.prefix(59)) + "…" : line
-    }
 }

@@ -153,8 +153,16 @@ public struct ThreadState: Equatable, Sendable, Codable {
 
     public init() {}
 
-    init(history: [HistoryMessage], running: Bool, inflight: InflightTurn? = nil) {
+    /// `kept`: background tasks' answers, which the gateway's history lacks, put back in time order.
+    init(history: [HistoryMessage], running: Bool, inflight: InflightTurn? = nil, kept: [BackgroundResult] = []) {
+        var pending = kept.sorted { $0.date < $1.date }[...]
         for message in history {
+            if let time = message.timestamp {
+                while let next = pending.first, next.date.timeIntervalSince1970 <= time {
+                    append(.background(task: next.task, result: next.result))
+                    pending.removeFirst()
+                }
+            }
             switch message.role {
             case "user":
                 if let text = message.text?.nonBlank {
@@ -173,6 +181,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
                 break
             }
         }
+        for next in pending { append(.background(task: next.task, result: next.result)) }
         isRunning = running
         turnStart = items.count
         if running, let inflight {

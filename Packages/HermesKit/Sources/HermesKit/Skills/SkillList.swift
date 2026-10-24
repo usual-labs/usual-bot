@@ -98,7 +98,7 @@ public final class SkillList {
 
     #if DEBUG
         /// Tests and previews: a list already showing `skills`.
-        static func sample(_ skills: [Skill]) -> SkillList {
+        public static func sample(_ skills: [Skill]) -> SkillList {
             let list = SkillList(profile: "sample", auth: { nil })
             list.skills = skills
             list.phase = .ready

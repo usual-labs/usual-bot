@@ -10,27 +10,39 @@ struct RoomPane: View {
     let room: RoomThread
     /// Every agent on the gateway by profile, to give room members their sidebar look.
     let agents: [Contact.ID: Contact]
+    /// A member's skills, for the `/` menu; `nil` where there are none to show.
+    var skills: (Contact) -> SkillList? = { _ in nil }
 
     /// The message you're replying to; a reply to an agent goes to that agent only.
     @State private var replyTo: QuotedMessage?
+    @State private var showsInfo = false
 
     var body: some View {
         content
             .environment(\.messageActions, actions)
             .chatBars {
-                NamePill(contact: contact, members: members)
+                Button { showsInfo.toggle() } label: { NamePill(contact: contact, members: members) }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(Text("Shows the room's members"))
+                    .keyboardShortcut("i", modifiers: .command)
             } bottom: {
                 if room.phase == .ready {
                     MessageBox(
                         placeholder: placeholder, isRunning: !room.working.isEmpty, canSend: room.canSend,
                         stopLabel: String(localized: "Stop everyone in \(contact.name)"), mentions: mentions,
-                        replyTo: $replyTo, send: room.send, stop: room.stop
+                        replyTo: $replyTo, commands: roomSkills, send: room.send, stop: room.stop
                     )
                     .frame(maxWidth: 780)
                     .padding(.horizontal, 20)
                 }
             }
-            .onChange(of: room.roomID) { replyTo = nil }
+            .onChange(of: room.roomID) {
+                replyTo = nil
+                showsInfo = false
+            }
+            .inspector(isPresented: $showsInfo) {
+                RoomPanel(room: contact, members: members).inspectorColumnWidth(min: 260, ideal: 300, max: 400)
+            }
             .paneChrome()
             // Rooms push nothing: read new events while the room is on screen.
             .task(id: room.roomID) {
@@ -145,5 +157,14 @@ struct RoomPane: View {
 
     private var placeholder: String {
         String(localized: "Message \(contact.name) · @ to mention an agent")
+    }
+
+    /// The members' skills after `/`; reloaded each time the menu opens.
+    private var roomSkills: SlashCommands {
+        let lists = members.compactMap { member in skills(member).map { (member: member, list: $0) } }
+        return SlashCommands(
+            list: RoomSkills.commands(lists),
+            load: { for (_, list) in lists { Task { await list.refresh() } } },
+            prefill: .constant(nil))
     }
 }
