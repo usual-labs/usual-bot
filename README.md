@@ -37,6 +37,9 @@ group rooms, inline approvals and routines. Everything else stays in the officia
 - **Routines.** Each agent's scheduled jobs, with a switch to pause and resume them.
 - **Dictation.** Tap the mic in an empty message box and speak; words appear as you talk,
   recognised on the device when it can.
+- **Voice calls.** Talk with an agent: it hears you, answers aloud as it writes, and stops when
+  you speak over it. Use on-device speech, or Hermes's GPT-Live voice when your gateway has an
+  OpenAI key. The conversation stays in the chat.
 - **Quick message (Mac).** Press ⌥Space anywhere to message an agent without opening the window.
 - **Works offline.** The last chats are cached, and the app reconnects by itself.
 

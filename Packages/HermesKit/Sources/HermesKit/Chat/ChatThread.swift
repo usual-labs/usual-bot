@@ -357,10 +357,10 @@ public final class ChatThread {
         }
     }
 
-    func submit(_ text: String, sessionID: String, channel: JSONRPCChannel) async {
+    func submit(_ text: String, sessionID: String, channel: JSONRPCChannel, extra: [String: JSONValue] = [:]) async {
         do {
-            _ = try await channel.call(
-                "prompt.submit", params: ["session_id": .string(sessionID), "text": .string(text)])
+            let params = ["session_id": JSONValue.string(sessionID), "text": .string(text)].merging(extra) { $1 }
+            _ = try await channel.call("prompt.submit", params: .object(params))
         } catch {
             state.addNotice(AppModel.describe(error))
             state.endTurnLocally()

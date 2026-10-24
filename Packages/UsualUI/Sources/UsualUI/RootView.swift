@@ -37,6 +37,7 @@ public struct RootView: View {
                 GatewayStatusButton(gateway: gateway, link: model.link, compact: compact, signOut: model.signOut)
             }
             .environment(\.media, model.media)
+            .environment(\.voiceLive, model.voiceLive)
         }
     }
 

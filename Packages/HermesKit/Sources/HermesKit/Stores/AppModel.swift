@@ -63,6 +63,7 @@ public final class AppModel {
     @ObservationIgnored private var rooms: [Contact.ID: RoomThread] = [:]
     /// Images and files agents name in chats, read from the gateway.
     @ObservationIgnored public private(set) lazy var media = MediaStore(auth: { [weak self] in self?.auth })
+    @ObservationIgnored public private(set) lazy var voiceLive = VoiceLiveService(auth: { [weak self] in self?.auth })
 
     private static let gatewayKey = "gatewayAddress"
     private static let rosterInterval: Duration = .seconds(5)

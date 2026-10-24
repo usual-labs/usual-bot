@@ -21,3 +21,14 @@ unverified recommendation → prevention and status.
   that certificate, stable across rebuilds. One more prompt follows the first signed build
   (Always Allow); a renewed certificate asks once again. Builds without a team still see the
   prompt (README).
+
+## The Dock kept a blank icon after the app icon was added (fixed locally 2026-10-24)
+
+- Symptom: after `a35c1d4` added `AppIcon`, the Mac Dock still drew Usual Bot as the generic blank
+  app tile, although the built bundle had `AppIcon.icns` and `Assets.car` and
+  `NSWorkspace.icon(forFile:)` rendered the doodle.
+- Cause: the Dock and LaunchServices cache an app's icon per registration; the dev build had been
+  registered (and its icon cached) before it had one.
+- Fix: quit the app, `touch` the bundle, `lsregister -f <app>`, `killall Dock` (it relaunches),
+  open the app again. Needed again only when the icon changes.
+

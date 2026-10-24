@@ -1,0 +1,253 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>GPT-Live call</title>
+<script>
+// A GPT-Live call's media and events, run by WebKit's WebRTC inside the app (LiveCall.swift).
+// Ported from the official Hermes desktop app (apps/desktop/src/lib/voice-live.ts). It never sees
+// the gateway or its sign-in: the app exchanges the SDP offer and answer, and turns each
+// delegation into a Hermes turn. Messages to the app go through `webkit.messageHandlers.live`.
+
+const APPEND_CHAR_LIMIT = 1400
+const CONTEXT_WINDOW_MS = 5 * 60000
+const CONTEXT_MAX_FRAGMENTS = 80
+const ICE_GATHER_TIMEOUT_MS = 10000
+const CLOSE_TIMEOUT_MS = 15000
+
+let peer = null
+let events = null
+let microphone = null
+let audio = null
+let context = null
+let probe = null
+let closeTimer = null
+let finalized = false
+let counter = 0
+let transcript = []
+
+function post(type, body = {}) {
+  window.webkit.messageHandlers.live.postMessage({ type, ...body })
+}
+
+function nextId(prefix) {
+  counter += 1
+  return `${prefix}_${counter}`
+}
+
+function send(event) {
+  if (!events || events.readyState !== 'open') return false
+  events.send(JSON.stringify(event))
+  return true
+}
+
+function waitForIce(connection) {
+  if (connection.iceGatheringState === 'complete') return Promise.resolve()
+  return new Promise(resolve => {
+    const timer = setTimeout(resolve, ICE_GATHER_TIMEOUT_MS) // the vendor answers with what it has
+    connection.addEventListener('icegatheringstatechange', () => {
+      if (connection.iceGatheringState === 'complete') {
+        clearTimeout(timer)
+        resolve()
+      }
+    })
+  })
+}
+
+// Microphone and voice loudness, 0…1, ten times a second.
+function armProbe() {
+  try {
+    context = new AudioContext()
+    const analyser = stream => {
+      const node = context.createAnalyser()
+      node.fftSize = 512
+      context.createMediaStreamSource(stream).connect(node)
+      return node
+    }
+    const mic = analyser(microphone)
+    let voice = null
+    const level = node => {
+      if (!node) return 0
+      const buffer = new Uint8Array(node.frequencyBinCount)
+      node.getByteTimeDomainData(buffer)
+      let peak = 0
+      for (const sample of buffer) peak = Math.max(peak, Math.abs(sample - 128))
+      return Math.min(peak / 64, 1)
+    }
+    let quiet = 0
+    probe = setInterval(() => {
+      if (!voice && audio && audio.srcObject) voice = analyser(audio.srcObject)
+      const spoken = level(voice)
+      quiet = spoken > 0.09 ? 0 : quiet + 1
+      post('level', { mic: level(mic), speaking: quiet < 4 })
+    }, 100)
+  } catch {
+    // No analyser: no dots, the call still works.
+  }
+}
+
+async function start(history) {
+  try {
+    peer = new RTCPeerConnection()
+    audio = new Audio()
+    audio.autoplay = true
+    peer.addEventListener('track', event => {
+      audio.srcObject = new MediaStream([event.track])
+      audio.play().catch(() => undefined)
+    })
+    peer.addEventListener('connectionstatechange', () => {
+      if (peer.connectionState === 'failed' || peer.connectionState === 'disconnected') finish('connection_lost', null)
+    })
+    microphone = await navigator.mediaDevices.getUserMedia({
+      audio: { autoGainControl: true, echoCancellation: true, noiseSuppression: true },
+    })
+    for (const track of microphone.getAudioTracks()) peer.addTrack(track, microphone)
+    // Before the offer, so its m-line is negotiated.
+    events = peer.createDataChannel('oai-events')
+    events.addEventListener('message', ({ data }) => handle(String(data)))
+    events.addEventListener('close', () => finish('connection_lost', null))
+    const offer = await peer.createOffer()
+    await peer.setLocalDescription(offer)
+    await waitForIce(peer)
+    if (!peer.localDescription || !peer.localDescription.sdp) throw new Error('No local SDP offer')
+    armProbe()
+    post('offer', { sdp: peer.localDescription.sdp, history })
+  } catch (error) {
+    post('failed', { message: String((error && error.message) || error), name: (error && error.name) || '' })
+  }
+}
+
+async function answer(sdp) {
+  try {
+    await peer.setRemoteDescription({ type: 'answer', sdp })
+  } catch (error) {
+    post('failed', { message: String((error && error.message) || error), name: '' })
+  }
+}
+
+// The delegation's text is the user's last words; the spoken exchange around it goes as context.
+function delegation() {
+  const last = transcript[transcript.length - 1]
+  const floor = last ? last.endMs - CONTEXT_WINDOW_MS : 0
+  const recent = transcript.filter(fragment => fragment.endMs >= floor).slice(-CONTEXT_MAX_FRAGMENTS)
+  const turns = []
+  for (const fragment of recent) {
+    const previous = turns[turns.length - 1]
+    if (previous && previous.speaker === fragment.speaker) previous.text += fragment.text
+    else turns.push({ speaker: fragment.speaker, text: fragment.text })
+  }
+  const lastUser = [...turns].reverse().find(turn => turn.speaker === 'user')
+  const prompt = ((lastUser && lastUser.text) || '').replace(/\s+/g, ' ').trim()
+  const spoken = turns
+    .map(turn => `${turn.speaker === 'user' ? 'User' : 'Voice assistant'}: ${turn.text.replace(/\s+/g, ' ').trim()}`)
+    .filter(line => !line.endsWith(': '))
+    .join('\n')
+  return { prompt: prompt || spoken.slice(-400), context: spoken }
+}
+
+function handle(raw) {
+  let event
+  try {
+    event = JSON.parse(raw)
+  } catch {
+    return
+  }
+  switch (event.type) {
+    case 'session.started':
+      post('started', {})
+      return
+    case 'session.input_transcript.delta':
+    case 'session.output_transcript.delta': {
+      const fragment = {
+        speaker: event.type === 'session.input_transcript.delta' ? 'user' : 'assistant',
+        text: event.delta || '',
+        endMs: event.end_ms || 0,
+      }
+      transcript.push(fragment)
+      if (transcript.length > 2000) transcript.splice(0, transcript.length - 1500)
+      post('transcript', { speaker: fragment.speaker, text: fragment.text })
+      return
+    }
+    case 'session.delegation.created':
+      if (event.delegation && event.delegation.id) post('delegation', { id: event.delegation.id, ...delegation() })
+      return
+    case 'error': {
+      const code = (event.error && event.error.code) || ''
+      if (code === 'context_injection_incomplete') return // late appends after our own close
+      post('error', { message: (event.error && event.error.message) || 'GPT-Live error' })
+      return
+    }
+    case 'session.closed':
+      finish(event.reason || 'closed', (event.usage && event.usage.seconds) || null)
+      return
+  }
+}
+
+function chunks(text) {
+  const clean = text.replace(/\s+/g, ' ').trim()
+  if (!clean) return []
+  if (clean.length <= APPEND_CHAR_LIMIT) return [clean]
+  const out = []
+  let current = ''
+  for (const sentence of clean.split(/(?<=[.!?])\s+/)) {
+    if (sentence.length > APPEND_CHAR_LIMIT) {
+      if (current) out.push(current)
+      current = ''
+      for (let index = 0; index < sentence.length; index += APPEND_CHAR_LIMIT) {
+        out.push(sentence.slice(index, index + APPEND_CHAR_LIMIT))
+      }
+      continue
+    }
+    const candidate = current ? `${current} ${sentence}` : sentence
+    if (candidate.length > APPEND_CHAR_LIMIT) {
+      out.push(current)
+      current = sentence
+    } else {
+      current = candidate
+    }
+  }
+  if (current) out.push(current)
+  return out
+}
+
+// Hermes's answer, for the voice to say (paraphrased).
+function speak(delegationId, content) {
+  for (const chunk of chunks(content)) {
+    send({ type: 'session.commentary.append', delegation_id: delegationId, content: chunk, event_id: nextId('say') })
+  }
+}
+
+// Quiet progress for the voice ("Hermes is running the tests…").
+function think(delegationId, content) {
+  const text = content.replace(/\s+/g, ' ').trim().slice(0, APPEND_CHAR_LIMIT)
+  if (text) send({ type: 'session.thinking.append', delegation_id: delegationId, content: text, event_id: nextId('think') })
+}
+
+function setMuted(muted) {
+  for (const track of (microphone && microphone.getAudioTracks()) || []) track.enabled = !muted
+  send({ type: muted ? 'session.input_audio.mute' : 'session.input_audio.unmute', event_id: nextId(muted ? 'mute' : 'unmute') })
+}
+
+function close() {
+  if (finalized) return
+  if (!send({ type: 'session.close' })) {
+    finish('close_requested', null)
+    return
+  }
+  closeTimer = setTimeout(() => finish('close_requested', null), CLOSE_TIMEOUT_MS)
+}
+
+function finish(reason, seconds) {
+  if (finalized) return
+  finalized = true
+  if (closeTimer) clearTimeout(closeTimer)
+  if (probe) clearInterval(probe)
+  if (context) context.close().catch(() => undefined)
+  if (microphone) microphone.getTracks().forEach(track => track.stop())
+  if (events) events.close()
+  if (peer) peer.close()
+  if (audio) {
+    audio.srcObject = null
+    audio.pause()
+  }
+  post('closed', { reason, seconds })
+}
+</script>

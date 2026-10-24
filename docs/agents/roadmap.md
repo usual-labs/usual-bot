@@ -1,8 +1,8 @@
 # Usual Bot: roadmap after 0.1
 
-Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M12 and M14–M20 are built
-(each says how far it has been checked); M13 (voice call) is in progress. See `app-shell.md`
-and the package KBs for what exists. Each milestone below runs and can be demoed on its own, ships with
+Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M20 are built (each says
+how far it has been checked); none is planned after them yet. See `app-shell.md` and the
+package KBs for what exists. Each milestone below runs and can be demoed on its own, ships with
 tests, the demo mode (`AppModel.demo()`) and the KBs updated, and is checked on Mac and iPhone.
 
 Gateway facts come from a Hermes source checkout (`81a55437f3f`, 26 September 2026) and its
@@ -97,22 +97,40 @@ The mic replaces Send while the box is empty, as in Grok Bot.
 - **Done when:** dictation works on Mac and iPhone, stops cleanly when you send or tap again, and
   explains a denied permission with a way to the system setting.
 
-## M13: Voice call
+## M13: Voice call (built; a GPT-Live call verified on the Mac 2026-10-24)
 
-- **You can:** start a call with an agent from its chat: speak, hear its answer, interrupt by
-  speaking, end the call. The turns appear in the chat as normal messages.
-- **Approach:** Hermes's "chained" voice mode, built natively: M12's recogniser turns speech into
-  a turn (`prompt.submit`), and the reply is spoken as it streams. Speech out comes from the
-  gateway's `/api/audio/speak-stream` WebSocket (text in, 16-bit PCM out, sentence by sentence,
-  barge-in by `stop`), with `AVSpeechSynthesizer` as the fallback when the gateway has no
-  text-to-speech. `/api/audio/tts-lease` warms the engine when a call starts.
-- **Not planned:** GPT-Live (`/api/audio/voice-live/*`) needs an OpenAI key on the gateway and a
-  WebRTC library in the app, which would end the no-dependencies rule.
-- **App:** a call screen (agent avatar, speaking/listening state, mute, end); AVAudioSession on
-  iPhone (speaker and Bluetooth routing, interruptions); echo cancellation so the agent's voice
-  doesn't trigger barge-in.
-- **Done when:** a five-turn spoken conversation works on iPhone and Mac, interrupting stops the
-  agent's speech at once, and leaving the app ends the call cleanly.
+The call is a glass bar over the chat (Grok Bot's design) with settings and a live transcript.
+It has two engines, picked in the bar's settings (**Engine**: Automatic, On-device, GPT-Live;
+`@AppStorage("callEngine")`). Automatic uses GPT-Live when the agent's gateway selects it
+(`voice.voice_chat_mode: gpt-live`) and can run it, on-device speech otherwise; choosing GPT-Live
+where the gateway can't run it shows the gateway's reason instead of falling back.
+
+- **You can:** start a call with an agent from its chat (waveform button beside the mic): speak,
+  hear its answer, interrupt by speaking, mute, end. Your requests and the agent's replies are
+  ordinary messages in the chat.
+- **On-device engine** (`VoiceCall`, `CallAudio`): Apple's recogniser turns what you say into a
+  message after a 1.1 s pause; the reply is read aloud with `AVSpeechSynthesizer` as it streams
+  (voice, speed and language in the settings); microphone and voice share one `AVAudioEngine`
+  with voice processing, or take turns where that fails (error -10875 on the maintainer's Mac);
+  barge-in needs two recognised words. Not tried in a real call yet.
+- **GPT-Live engine** (`LiveCall`): OpenAI's full-duplex voice model (`gpt-live-1`) listens and
+  speaks at once and delegates real work to Hermes, as in the official app. The WebRTC media runs
+  in WebKit inside a hidden 1 pt web view (`live-call.html`, a port of the desktop's
+  `lib/voice-live.ts`), so the app still has no third-party dependency. The app, not the page,
+  exchanges the SDP offer through `POST /api/audio/voice-live/session?profile=` (seeded with the
+  chat's latest text turns), so neither the sign-in nor the OpenAI key reaches the page. Each
+  `session.delegation.created` becomes `prompt.submit` with `surface: voice-live` and the recent
+  spoken exchange as `voice_context`; the reply streams back as `session.commentary.append`
+  (whole sentences, code and file lines skipped) and tool progress as
+  `session.thinking.append`. Needs an OpenAI key on the gateway (`OPENAI_API_KEY` or
+  `voice.gpt_live.api_key`); OpenAI bills about $0.05 per call minute. The voice is the gateway's
+  (`voice.gpt_live.voice`).
+- **Checked:** the maintainer's GPT-Live call on the Mac worked (24 October 2026); unit tests for
+  the session calls, seed history, delegated turn and spoken sentences. Not tried: the on-device
+  engine in a real call, and either engine on iPhone (GPT-Live asks for the loudspeaker; WebKit
+  may route otherwise).
+- **Later:** the gateway's own text-to-speech (`/api/audio/speak-stream`) for the on-device
+  engine.
 
 ## M14: Model and reasoning level (built; live switch untested)
 

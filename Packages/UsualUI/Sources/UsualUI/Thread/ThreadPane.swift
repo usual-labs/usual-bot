@@ -18,6 +18,7 @@ struct ThreadPane: View {
     @State private var replyTo: QuotedMessage?
     /// You're rewriting your last message.
     @State private var editing = false
+    @State private var calling = false
     @State private var isDropTarget = false
 
     var body: some View {
@@ -25,6 +26,16 @@ struct ThreadPane: View {
             .environment(\.sentImages, thread?.sentImages ?? [:])
             .environment(\.mediaProfile, contact.details?.profile ?? contact.id)
             .environment(\.messageActions, actions)
+            // The call bar floats under the name; the conversation scrolls on behind it.
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if calling, let thread {
+                    CallBar(contact: contact, thread: thread) { calling = false }
+                        .padding(.top, 4)
+                        .padding(.bottom, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .animation(.smooth(duration: 0.25), value: calling)
             // The model menus under the box bring their own space, so the bar's margin shrinks.
             .chatBars(bottomPadding: thread?.model == nil ? nil : ModelControls.gap) {
                 namePill
@@ -33,7 +44,8 @@ struct ThreadPane: View {
                     Composer(
                         thread: thread, agentName: contact.name, agentDefault: contact.details,
                         attachments: $attachments, replyTo: $replyTo,
-                        editing: $editing
+                        editing: $editing,
+                        inCall: calling, startCall: { calling = true }
                     )
                     .frame(maxWidth: 780)
                     // ModelControls' row and gaps below the box add up to this margin too.
@@ -57,6 +69,7 @@ struct ThreadPane: View {
             .task(id: contact.id) { open() }
             .onChange(of: contact.id) {
                 attachments = []
+                calling = false
                 replyTo = nil
                 editing = false
             }

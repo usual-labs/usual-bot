@@ -6,6 +6,8 @@ import UniformTypeIdentifiers
 extension EnvironmentValues {
     /// Reads files agents name in chats from the gateway; set by the signed-in window.
     @Entry var media: MediaStore?
+    /// GPT-Live sessions for voice calls; set by the app.
+    @Entry var voiceLive: VoiceLiveService?
     /// The profile whose files a message names: the chat's agent, or a room reply's author.
     @Entry var mediaProfile: String?
 }
