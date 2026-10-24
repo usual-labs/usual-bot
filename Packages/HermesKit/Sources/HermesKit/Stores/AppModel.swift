@@ -37,6 +37,9 @@ public final class AppModel {
     public private(set) var problem: String?
     /// What the user last typed into the gateway field.
     public var gatewayInput: String
+    /// Reading the saved sign-in at launch (the Keychain may ask first): a splash, not the connect
+    /// screen, shows meanwhile.
+    public private(set) var isRestoring: Bool
     /// Set by the app to hear when a chat's background task (`/bg`) finishes, e.g. to notify you
     /// when the app isn't in front. Gets the agent, the task and its result or failure.
     @ObservationIgnored public var backgroundTaskFinished: ((Contact, String, String) -> Void)?
@@ -79,10 +82,12 @@ public final class AppModel {
         self.cache = cache
         self.makeSocket = makeSocket
         gatewayInput = defaults.string(forKey: Self.gatewayKey) ?? ""
+        isRestoring = defaults.string(forKey: Self.gatewayKey) != nil
     }
 
     /// Resumes the saved session, if this device has one.
     public func restore() async {
+        defer { isRestoring = false }
         guard case .signedOut = session,
             let saved = defaults.string(forKey: Self.gatewayKey),
             let gateway = try? GatewayAddress(parsing: saved)

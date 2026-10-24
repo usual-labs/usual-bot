@@ -13,6 +13,8 @@ public struct RootView: View {
 
     public var body: some View {
         switch model.session {
+        case .signedOut where model.isRestoring:
+            SplashView()
         case .signedOut, .signingIn:
             ConnectView(model: model, presenter: presenter)
         case .signedIn(let gateway):

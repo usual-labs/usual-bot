@@ -13,3 +13,15 @@ Verified 2026-10-23 in the iPhone 17 Pro simulator against the user's gateway: s
 Debug builds started with `USUALBOT_DEMO=1` use `AppModel.demo()` (made-up agents, a room, an approval and routines; never connects) instead of signing in; README screenshots come from it. Launch arguments such as `-selectedContact forge` pick the open chat without overwriting stored settings.
 
 Source anchors: `App/UsualBotApp.swift`, `App/SignInPresenters.swift`.
+
+Icon and launch: `App/Assets.xcassets` holds `AppIcon` (the Hermes doodle centred on white at 78%,
+1024 px for iPhone and every Mac size; the system rounds it on both; `ASSETCATALOG_COMPILER_APPICON_NAME
+= AppIcon` in `Config/Shared.xcconfig`), and the iPhone launch screen's `LaunchMark` (120 pt) and
+`LaunchBackground` (the window colour, light and dark), named by `UILaunchScreen` in `Config/Info.plist`
+(the generated launch screen setting is gone). While `AppModel.isRestoring` (a saved gateway at
+launch, until `restore()` finishes, including any Keychain prompt), `RootView` shows `SplashView`
+(the same mark, centred, ignoring safe areas), so the launch screen runs on into the app instead of
+the connect screen flashing. Checked: the built Mac icon (rendered by `NSWorkspace`), the iPhone
+launch screen and the sign-in page in the Simulator; the iPhone Home Screen icon wasn't seen (the
+Simulator drew every icon blank after a reinstall).
+

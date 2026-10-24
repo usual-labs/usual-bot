@@ -1,0 +1,27 @@
+{
+  "file": "png/hermes-doodle.png",
+  "dimensions": [
+    1254,
+    1254
+  ],
+  "mode": "RGBA",
+  "bytes": 884939,
+  "sha256": "a2276d778ab5270f0b6d9b6a568f448992f3a0d347241f28c7c8ab343cbba628",
+  "alpha_extrema": [
+    0,
+    255
+  ],
+  "fully_transparent_pixels": 800602,
+  "nontransparent_bounds": [
+    119,
+    103,
+    1224,
+    1160
+  ],
+  "corners_alpha": [
+    0,
+    0,
+    0,
+    0
+  ]
+}

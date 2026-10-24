@@ -35,6 +35,26 @@ struct LifecycleTests {
         }
     }
 
+    @Test func launchShowsTheSplashUntilTheSavedSignInIsRead() async throws {
+        let (model, _) = try makeModel()
+        #expect(model.isRestoring)
+        model.setForeground(false)
+        await model.restore()
+        #expect(!model.isRestoring)
+        #expect(model.session == .signedIn(testGateway))
+
+        // A saved address without a sign-in ends on the connect screen.
+        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        defaults.set(testGateway.baseURL.absoluteString, forKey: "gatewayAddress")
+        let empty = AppModel(
+            tokenStore: MemoryTokenStore(), http: ScriptedHTTP { _ in (500, "") }, defaults: defaults,
+            cache: OfflineCache(directory: .temporaryDirectory.appending(path: UUID().uuidString)))
+        #expect(empty.isRestoring)
+        await empty.restore()
+        #expect(!empty.isRestoring)
+        #expect(empty.session == .signedOut)
+    }
+
     @Test func backgroundKeepsTheSocketClosedUntilTheAppReturns() async throws {
         let (model, sockets) = try makeModel()
         model.setForeground(false)
