@@ -1,4 +1,4 @@
-# Keeps the workflows' pinned actions current. The repository only runs GitHub-owned actions
+# Keeps the workflows' pinned actions current. The repository only runs allow-listed actions
 # pinned to a commit, and Dependabot updates both the commit and its version comment.
 version: 2
 updates:
@@ -6,6 +6,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Wait a week after a release before proposing it, so a compromised version has time to be
+    # caught and pulled.
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns: ["*"]
