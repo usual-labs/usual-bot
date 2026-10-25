@@ -18,9 +18,10 @@ iPhone unless a section says otherwise.
 
 ## Contacts and the sidebar
 
-Each Hermes profile on your gateway is a contact, with one ongoing chat: the same "Bot Chat" the
-official Hermes app keeps for it. Rooms sit in the same list. The most recent conversation is at
-the top.
+Usual Bot follows Hermes [Bot Mode](https://hermes-agent.nousresearch.com/docs/user-guide/bot-mode).
+Each Bot (a Hermes profile) on your gateway is a contact, with one ongoing chat: the same "Bot
+Chat" the Hermes desktop app keeps for it. Bot Mode's group chats are the rooms, in the same
+list. The most recent conversation is at the top.
 
 - A ring around an avatar means the agent is working.
 - **Needs you** means it's waiting for your approval or an answer.

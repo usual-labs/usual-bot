@@ -20,10 +20,12 @@
 
 ![Usual Bot on the Mac: the chat list, and an agent asking to run a command](docs/screenshots/mac-approval.png)
 
-Usual Bot connects to the Hermes gateway you already run. Each Hermes profile shows up as a contact
-with one ongoing chat, and the sidebar shows which agents are working and which need you. It does
-one thing well: talking to your agents. Settings, skill setup and everything else stay in the
-official Hermes app.
+Usual Bot connects to the Hermes gateway you already run and works with Hermes
+[Bot Mode](https://hermes-agent.nousresearch.com/docs/user-guide/bot-mode): each Bot is a contact
+with its one ongoing Bot Chat, group chats are rooms, and routines sit in each Bot's profile.
+These are the same conversations you see in the Hermes desktop app. The sidebar shows which
+agents are working and which need you. It does one thing well: talking to your agents. Settings,
+skill setup and everything else stay in the official Hermes app.
 
 > [!NOTE]
 > Usual Bot is an independent open-source project, not made by Nous Research. It's young, and it's
@@ -101,8 +103,8 @@ All screenshots come from the built-in demo, with made-up agents.
 
 **Chatting**
 
-- **One chat per agent.** Each profile's ongoing chat, with streaming replies, Markdown, and tool
-  calls folded into one line you can open.
+- **One chat per agent.** Each Bot's ongoing Bot Chat from Hermes Bot Mode, with streaming
+  replies, Markdown, and tool calls folded into one line you can open.
 - **Images and files both ways.** Attach photos, PDFs and other files. Images an agent makes or
   finds show inline, open full size, and can be shared or saved.
 - **React, reply and copy.** Hover a message (long-press on iPhone) to react, quote it in a reply,
