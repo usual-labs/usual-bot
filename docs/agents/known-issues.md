@@ -38,8 +38,17 @@
   create, move or delete `v*` tags; the six signing secrets exist only in the `release`
   environment (required reviewer: the maintainer, `v*` tags only), not repo-wide. In
   `release.yml` the signing job has `contents: read` and a separate `publish` job without
-  secrets has `contents: write`. The org doesn't require two-factor authentication (changing
-  it needs the `admin:org` scope or the web UI).
+  secrets has `contents: write`, plus `id-token`/`attestations: write` to sign a
+  build-provenance attestation for the DMG (`actions/attest-build-provenance`). Two branch
+  rulesets on `main`: "main: no history rewrites" (deletion and force-push blocked, **no
+  bypass, not even admins**) and "main: pull requests and CI" (PR, linear history, required
+  `build` check from GitHub Actions; admins bypass, so the maintainer pushes directly).
+  Immutable releases are on (already enabled when checked; v0.2.0 itself predates it and isn't
+  immutable): the publish job creates a draft, attaches assets, then publishes; a published
+  release's assets and tag can't change and tags can't be reused, so test releases need a new
+  `-rc.N`. Dependabot (`.github/dependabot.yml`) groups weekly updates of the pinned actions;
+  vulnerability alerts and security-update PRs are on. The org doesn't require two-factor
+  authentication (changing it needs the `admin:org` scope or the web UI).
 - Release pipeline (verified 25 October 2026): the six secrets were set from the maintainer's
   Developer ID certificate (team G6WL4CPNV3) and an App Store Connect key with the
   **Developer** role, which notarytool accepted. `v0.2.0-rc.1` ran every step green on the

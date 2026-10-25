@@ -6,6 +6,11 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+### Added
+
+- Release downloads carry a build-provenance attestation: `gh attestation verify` shows the
+  workflow and commit a disk image came from.
+
 ## 0.2.0 - 2026-10-25
 
 ### Added
