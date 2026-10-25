@@ -9,8 +9,11 @@
 - `App/SignInPresenters.swift` — browser/web-auth presenters
 - `App/Assets.xcassets` — the app icon (`AppIcon`), the iPhone launch image (`LaunchMark`) and its
   background (`LaunchBackground`)
-- `scripts/make-app-icon.swift` — regenerates those images and UsualUI's `hermes-mark.png` from the
-  full-size Hermes doodle
+- `.github/workflows/ci.yml` — lint, both test suites, Mac and iOS Simulator builds on pushes and PRs
+- `.github/workflows/release.yml` — on a `v*` tag: Developer ID signed, notarized Mac `.dmg` on a
+  GitHub release, with the version's CHANGELOG section (required) as notes. Self-contained: the
+  notes extraction and the notarize-and-staple helper are inline. Setup and secrets:
+  `docs/guides/releasing.md`
 - `Config/Shared.xcconfig` — shared Xcode settings
 - `UsualBot.xcodeproj` — application project
 - `design/avatars` — avatar reference and artwork
@@ -23,7 +26,7 @@
 The `design/avatars/2026-10-24-hermes/` folder holds the Hermes doodle (a monochrome-doodle take
 on the official Hermes app icon's headphone character), its prompt, source attribution and alpha
 verification. It is the app's icon character: the app icon, the iPhone launch screen and the
-sign-in/splash mark are made from it with `scripts/make-app-icon.swift`. The full-size PNG and
+sign-in/splash mark are made from it. The full-size PNG and
 local reference files follow the design asset ignore rules; the generated, smaller copies in the
 app and UsualUI are tracked.
 

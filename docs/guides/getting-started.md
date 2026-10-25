@@ -1,13 +1,32 @@
 # Getting started
 
-This guide takes you from a fresh clone to chatting with your own agents. It has three parts:
-build the app, get your Hermes gateway ready, and sign in.
+This guide takes you from nothing to chatting with your own agents. It has three parts:
+get the app, get your Hermes gateway ready, and sign in.
 
-## 1. Build the app
+## 1. Get the app
+
+### Install a release (Mac)
+
+From version 0.2.0 on, each release has a signed and notarized disk image:
+
+1. Download `UsualBot-<version>.dmg` from the
+   [latest release](https://github.com/usual-labs/usual-bot/releases/latest).
+2. Open it and drag **Usual Bot** onto **Applications**.
+3. Open Usual Bot from Applications or Spotlight.
+
+To check the download, compare `shasum -a 256 UsualBot-<version>.dmg` with the `.sha256` file
+next to it on the release page. To update, download the new version and replace the app; your
+sign-in and settings stay.
+
+For the iPhone, or to change the code, build it yourself as below.
+
+### Build it yourself
 
 You need a Mac with **Xcode 26 or newer**. The app runs on macOS 15 and iOS 18 or later.
 
 ```sh
+git clone https://github.com/usual-labs/usual-bot.git
+cd usual-bot
 open UsualBot.xcodeproj
 ```
 
