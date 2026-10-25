@@ -6,6 +6,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+## 0.2.0 - 2026-10-25
+
 ### Added
 
 - **Attachments.** Send images, PDFs and other files: paperclip, drag and drop or paste on the Mac;
