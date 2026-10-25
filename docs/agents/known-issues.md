@@ -31,6 +31,15 @@
   and the app is `labs.usual.UsualBot` 0.2.0 (build 3) with the new icon. A first `v0.2.0`
   run on `49d9a41` was cancelled before publishing so the icon could ship, and the tag was
   moved; the `v0.2.0-rc.1` test pre-release and its tag were deleted afterwards.
+- GitHub security settings (25 October 2026, set via the API): Actions may run only
+  GitHub-owned actions pinned to a full commit SHA (`sha_pinning_required`), so a new action
+  must be pinned or CI fails; workflow runs from every outside contributor need approval;
+  secret scanning and push protection are on; the "Release tags" ruleset lets only repo admins
+  create, move or delete `v*` tags; the six signing secrets exist only in the `release`
+  environment (required reviewer: the maintainer, `v*` tags only), not repo-wide. In
+  `release.yml` the signing job has `contents: read` and a separate `publish` job without
+  secrets has `contents: write`. The org doesn't require two-factor authentication (changing
+  it needs the `admin:org` scope or the web UI).
 - Release pipeline (verified 25 October 2026): the six secrets were set from the maintainer's
   Developer ID certificate (team G6WL4CPNV3) and an App Store Connect key with the
   **Developer** role, which notarytool accepted. `v0.2.0-rc.1` ran every step green on the
