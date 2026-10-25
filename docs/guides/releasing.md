@@ -11,7 +11,8 @@ through TestFlight later.
 ## One-time setup
 
 You need a **paid Apple Developer Program membership**, and the **Account Holder** has to create the
-certificate. Everything below goes into the repository's secrets, and nothing is stored in git.
+certificate. Everything below goes into the secrets of the repository's protected `release`
+environment, and nothing is stored in git.
 
 ### 1. A Developer ID Application certificate
 
@@ -32,24 +33,28 @@ but new releases need a new certificate (and new secrets).
 3. Download the key, `AuthKey_<KEY ID>.p8`. Apple lets you download it **only once**.
 4. Note the **Key ID** (in the list) and the **Issuer ID** (above the list).
 
-### 3. The repository secrets
+### 3. The release environment and its secrets
 
 Export the certificate: in **Keychain Access**, open **login › My Certificates**, right-click
 "Developer ID Application: *your name* (*TEAM ID*)", choose **Export…**, and save it as
 `DeveloperID.p12` with a strong password. Exporting from **My Certificates** brings the private
 key along.
 
-Then set six secrets under the repository's **Settings › Secrets and variables › Actions**, or
+The `release` environment (**Settings › Environments**) holds the secrets. Only `v*` tags may use
+it, and every run waits until a maintainer approves it. Create it once with a required reviewer and
+a deployment rule for tags matching `v*`.
+
+Then set six secrets in that environment, under **Settings › Environments › release**, or
 with the GitHub CLI (each command without a file asks for the value, so it stays out of your shell
 history):
 
 ```sh
-base64 -i DeveloperID.p12 | gh secret set MACOS_CERTIFICATE_P12 -R usual-labs/usual-bot
-gh secret set MACOS_CERTIFICATE_PASSWORD -R usual-labs/usual-bot
-gh secret set APPLE_TEAM_ID -R usual-labs/usual-bot
-gh secret set APPSTORE_API_KEY_P8 -R usual-labs/usual-bot < AuthKey_XXXXXXXXXX.p8
-gh secret set APPSTORE_API_KEY_ID -R usual-labs/usual-bot
-gh secret set APPSTORE_API_ISSUER_ID -R usual-labs/usual-bot
+base64 -i DeveloperID.p12 | gh secret set MACOS_CERTIFICATE_P12 -R usual-labs/usual-bot --env release
+gh secret set MACOS_CERTIFICATE_PASSWORD -R usual-labs/usual-bot --env release
+gh secret set APPLE_TEAM_ID -R usual-labs/usual-bot --env release
+gh secret set APPSTORE_API_KEY_P8 -R usual-labs/usual-bot --env release < AuthKey_XXXXXXXXXX.p8
+gh secret set APPSTORE_API_KEY_ID -R usual-labs/usual-bot --env release
+gh secret set APPSTORE_API_ISSUER_ID -R usual-labs/usual-bot --env release
 ```
 
 | Secret | Value |
@@ -79,7 +84,8 @@ developer.apple.com, the key in App Store Connect) and make new ones.
    git push origin main v0.2.0
    ```
 
-4. **Watch the run** under **Actions › Release**. It takes about 10–20 minutes, mostly waiting for
+4. **Approve the run.** Under **Actions › Release**, the run waits for the `release` environment;
+   choose **Review deployments › Approve**. It then takes about 10–20 minutes, mostly waiting for
    Apple's notary service. The release appears under **Releases** when it's done.
 
 To try the pipeline without a real release, push a pre-release tag such as `v0.2.0-rc.1`. It uses
@@ -102,7 +108,8 @@ don't want to keep them.
 
 ## When it fails
 
-- **"Missing repository secrets"**: one of the secrets above isn't set. The message names it.
+- **"Missing secrets in the release environment"**: one of the secrets above isn't set in the
+  `release` environment. The message names it.
 - **"CHANGELOG.md has no … section"**: the changelog section is missing, or its heading doesn't
   start with `## <version>`.
 - **Signing errors in Archive or Export**: the `.p12` is probably missing its private key (export the

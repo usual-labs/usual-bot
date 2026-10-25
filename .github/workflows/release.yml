@@ -2,7 +2,8 @@ name: Release
 
 # Pushing a version tag (v0.2.0, or v0.2.0-rc.1 for a pre-release) builds the Mac app, signs it
 # with the team's Developer ID, has Apple notarize it, and publishes a GitHub release with the
-# .dmg attached. The repository secrets it needs are listed in docs/guides/releasing.md.
+# .dmg attached. Its secrets live in the protected `release` environment, which only `v*` tags may
+# use and which waits for a maintainer's approval; docs/guides/releasing.md lists them.
 
 on:
   push:
@@ -23,6 +24,7 @@ jobs:
   mac:
     runs-on: macos-26
     timeout-minutes: 60
+    environment: release
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -66,7 +68,7 @@ jobs:
             [ -n "$value" ] || missing="$missing $name"
           done
           if [ -n "$missing" ]; then
-            echo "::error::Missing repository secrets:$missing. See docs/guides/releasing.md."
+            echo "::error::Missing secrets in the release environment:$missing. See docs/guides/releasing.md."
             exit 1
           fi
 
