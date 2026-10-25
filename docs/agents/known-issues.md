@@ -101,3 +101,15 @@ unverified recommendation → prevention and status.
   them; tests and both unsigned builds passed afterwards.
 - Prevention: run the lint line from CONTRIBUTING before every commit, as CI does.
 
+
+## The heartbeat test failed once on a GitHub runner (fixed 2026-10-25)
+
+- Symptom: `silentSocketIsClosedAfterTheLimit` failed on CI for `ab6419c` (no `gateway.ping`
+  sent) while the same code passed before and locally.
+- Cause: the test used a 20 ms heartbeat with a 60 ms silence limit and a fixed 200 ms sleep.
+  On a slow runner the first heartbeat tick can arrive after the limit, so the channel closes
+  before it ever pings.
+- Fix: a 300 ms limit (15 heartbeats) and waiting for the ping, then for the socket to close
+  (`FakeSocket.isClosed`), instead of sleeping. Passed 15/15 runs locally.
+- Prevention: timing tests wait for the event with `waitUntil` and leave several intervals of
+  slack; don't assert after a fixed sleep.
