@@ -25,6 +25,12 @@
   would be better). The history was rewritten before the first push so that no
   commit contains the maintainer's tailnet IP or tailnet name; tests and comments use
   Tailscale's example address `100.101.102.103`. Tag `v0.1.0` has no GitHub release.
+  **Usual Bot 0.2.0 is released** (25 October 2026, tag `v0.2.0` on `fcb19b6`, the commit
+  with the fuller app icon; marked Latest): `UsualBot-0.2.0.dmg` + `.sha256`. The downloaded
+  DMG matched its checksum, `spctl` accepted the DMG and app as "Notarized Developer ID",
+  and the app is `labs.usual.UsualBot` 0.2.0 (build 3) with the new icon. A first `v0.2.0`
+  run on `49d9a41` was cancelled before publishing so the icon could ship, and the tag was
+  moved; the `v0.2.0-rc.1` test pre-release and its tag were deleted afterwards.
 - Release pipeline (verified 25 October 2026): the six secrets were set from the maintainer's
   Developer ID certificate (team G6WL4CPNV3) and an App Store Connect key with the
   **Developer** role, which notarytool accepted. `v0.2.0-rc.1` ran every step green on the
