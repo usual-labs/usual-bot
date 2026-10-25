@@ -305,16 +305,18 @@ struct ContextMeter: View {
             .disabled(!thread.canCompress)
         } label: {
             if compact {
-                // The number keeps a part-filled ring from reading as a spinner.
+                // The number keeps a part-filled ring from reading as a spinner. A grey pill, like
+                // the box's round buttons.
                 HStack(spacing: 5) {
                     ring(size: 16, lineWidth: 2)
                     Text("\(context.percent)%")
                 }
-                .font(.system(size: 14))
-                .foregroundStyle(Theme.secondaryInk)
-                .padding(.horizontal, 6)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Theme.ink)
+                .padding(.horizontal, 10)
                 .frame(height: buttonSize)
-                .contentShape(Rectangle())
+                .background(Theme.selection, in: Capsule())
+                .contentShape(Capsule())
             } else {
                 HStack(spacing: 4) {
                     ring(size: 9, lineWidth: 1.5)

@@ -91,7 +91,7 @@ struct ChatControls {
 
         var body: some View {
             let thread = chat.thread
-            HStack(spacing: 2) {
+            HStack(spacing: 6) {
                 if let usage = thread.usage, let context = usage.context {
                     ContextMeter(thread: thread, usage: usage, context: context, compact: true)
                 }
@@ -99,11 +99,13 @@ struct ChatControls {
                     Button {
                         pickingLevel.toggle()
                     } label: {
+                        // A grey circle like the box's other buttons; filled while its picker is open.
                         Image(systemName: Self.gauge(model.reasoning, reasons: thread.takesReasoning(model)))
-                            .font(.system(size: size * 0.55))
-                            .foregroundStyle(pickingLevel ? Theme.ink : Theme.ink.opacity(0.8))
+                            .font(.system(size: size * 15 / 28))
+                            .foregroundStyle(pickingLevel ? Theme.primaryInk : Theme.ink)
                             .frame(width: size, height: size)
-                            .contentShape(Rectangle())
+                            .background(pickingLevel ? Theme.primary : Theme.selection, in: Circle())
+                            .contentShape(Circle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text("Model and thinking"))

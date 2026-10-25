@@ -192,7 +192,7 @@ struct MessageBox: View {
                                 .layoutValue(key: ComposerLayout.RoleKey.self, value: .leading)
                         }
                         field
-                        HStack(spacing: 4) {
+                        HStack(spacing: 6) {
                             if expanded, let chat {
                                 ComposerControls(chat: chat, pickingLevel: $pickingLevel)
                             }
