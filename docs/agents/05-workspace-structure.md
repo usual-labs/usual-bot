@@ -13,8 +13,9 @@
 - `.github/workflows/zizmor.yml` — zizmor security lint of the workflows (pushes/PRs touching
   `.github/`), findings in code scanning; `.github/workflows/scorecard.yml` — OpenSSF Scorecard
   weekly and on pushes to main, publishes the README badge; `.github/dependabot.yml` — weekly grouped
-  updates of the pinned actions. CodeQL (Swift and Actions) runs as GitHub's default setup, with no
-  workflow file in the repo
+  updates of the pinned actions (7-day cooldown); `.github/workflows/codeql.yml` — CodeQL for Swift
+  (xcodebuild of the app on `macos-26`, manual build mode) and Actions, on pushes, PRs and weekly.
+  A package-only SwiftPM scan misses `App/`; the tracked workflow builds the app with Xcode
 - `.github/workflows/release.yml` — on a `v*` tag: Developer ID signed, notarized Mac `.dmg` on a
   GitHub release, with the version's CHANGELOG section (required) as notes. Self-contained: the
   notes extraction and the notarize-and-staple helper are inline. Setup and secrets:
