@@ -1,121 +1,167 @@
-# Usual Bot
+<p align="center">
+  <img src="App/Assets.xcassets/AppIcon.appiconset/icon-256.png" width="128" height="128" alt="The Usual Bot icon: the Hermes doodle with headphones">
+</p>
 
-A native Mac and iPhone client for [Hermes Agent](https://github.com/NousResearch/hermes-agent).
-Your Hermes profiles show up as contacts in a simple messenger: one ongoing chat per agent,
-group rooms, inline approvals and routines. Everything else stays in the official Hermes app.
+<h1 align="center">Usual Bot</h1>
+
+<p align="center">
+  <strong>A native messenger for your <a href="https://github.com/NousResearch/hermes-agent">Hermes Agent</a> team, on Mac and iPhone.</strong><br>
+  Each agent is a contact. Chat with them, approve what they want to run, and group them in rooms.
+</p>
+
+<p align="center">
+  <img alt="macOS 15+" src="https://img.shields.io/badge/macOS-15%2B-000000?logo=apple">
+  <img alt="iOS 18+" src="https://img.shields.io/badge/iOS-18%2B-000000?logo=apple">
+  <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white">
+  <img alt="SwiftUI" src="https://img.shields.io/badge/UI-SwiftUI-0A84FF">
+  <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
+</p>
 
 ![Usual Bot on the Mac: the chat list, and an agent asking to run a command](docs/screenshots/mac-approval.png)
 
-<p>
-  <img src="docs/screenshots/iphone-list.png" width="276" alt="The chat list on iPhone">
-  <img src="docs/screenshots/iphone-chat.png" width="276" alt="An approval in a chat on iPhone">
+Usual Bot connects to the Hermes gateway you already run. Each Hermes profile shows up as a contact
+with one ongoing chat, and the sidebar shows which agents are working and which need you. It does
+one thing well: talking to your agents. Settings, skill setup and everything else stay in the
+official Hermes app.
+
+> [!NOTE]
+> Usual Bot is an independent open-source project, not made by Nous Research. It's young: you build
+> it from source, and it's tested against the Hermes dashboard gateway. See [What you need](#what-you-need).
+
+## Quick start
+
+**Try it in a minute, without a gateway.** You need a Mac with Xcode 26 or newer.
+
+```sh
+cd usual-bot   # your clone of this repository
+xcodebuild -project UsualBot.xcodeproj -scheme UsualBot -destination 'platform=macOS' \
+  -derivedDataPath build build
+USUALBOT_DEMO=1 build/Build/Products/Debug/UsualBot.app/Contents/MacOS/UsualBot
+```
+
+That opens a made-up team of agents, a room and some routines. Nothing is sent anywhere.
+
+**Use it with your own agents.**
+
+1. `open UsualBot.xcodeproj`, pick the **UsualBot** scheme and **My Mac** (or an iPhone simulator),
+   and press **Run**.
+2. Make sure your Hermes dashboard can be reached from this device and has a sign-in set up.
+   [Getting started](docs/guides/getting-started.md#2-get-your-gateway-ready) shows how.
+3. In Usual Bot, enter the gateway's address, for example `100.101.102.103:9119`, and sign in
+   on the gateway's page that opens. Your agents appear as contacts.
+
+To run it on your own iPhone, set your Apple team in `Config/Local.xcconfig` first; see
+[Getting started](docs/guides/getting-started.md#run-it-on-your-iphone).
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/mac-side-question.png" alt="A chat on the Mac, with a side question answered above the message box"></td>
+    <td width="50%"><img src="docs/screenshots/mac-room.png" alt="A room on the Mac where several agents answer"></td>
+  </tr>
+  <tr>
+    <td>A chat, with a <code>/btw</code> side question answered while the agent keeps working.</td>
+    <td>A room: messages go to every agent, <code>@name</code> talks to one.</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/mac-profile.png" alt="An agent's profile beside its chat, with routines and their switches"></td>
+    <td><img src="docs/screenshots/mac-quick-message.png" alt="The quick message panel with an approval waiting"></td>
+  </tr>
+  <tr>
+    <td>An agent's routines beside its chat, and two background tasks running.</td>
+    <td>Press ⌥Space anywhere to message an agent or answer an approval.</td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/iphone-list.png" width="200" alt="The chat list on iPhone">
+  <img src="docs/screenshots/iphone-approval.png" width="200" alt="An approval in a chat on iPhone">
+  <img src="docs/screenshots/iphone-slash-menu.png" width="200" alt="The slash menu with skills and commands on iPhone">
+  <img src="docs/screenshots/iphone-approval-dark.png" width="200" alt="An approval on iPhone in dark mode">
 </p>
 
-## What it does
+All screenshots come from the built-in demo, with made-up agents.
 
-- **One chat per agent.** Each profile's ongoing "Bot Chat", with streaming replies, Markdown,
-  and tool calls folded into one line you can open.
-- **Images and files both ways.** Attach photos, PDFs and other files to a message; images an
-  agent makes or finds show inline, open full size, and can be shared or saved.
-- **Approvals and questions inline.** When an agent wants to run a command, allow it once, for the
-  chat, always, or deny it, right in the conversation. Questions from its clarify tool show up the
-  same way.
-- **React, reply and copy.** Hover a message (long-press on iPhone) to react with an emoji,
-  reply to it with a quote, or copy it.
-- **Stop and steer.** Stop a running turn, or send a message while it runs to steer it.
-- **Rooms.** Group chats with several agents. Messages go to everyone; `@name` talks to one.
-- **Skills and commands.** Type `/` to run one of the agent's skills or commands; switch skills on
-  and off in its profile.
-- **Side questions.** `/btw` asks about the conversation while the agent works, without
-  interrupting it; the answer appears above the message box.
-- **Background tasks.** `/bg` hands a task to a fresh agent while you keep chatting; its result
-  joins the chat, with a notification if the app isn't in front.
-- **Edit and undo.** Rewrite your last message for a fresh reply, or take it back.
-- **Model and thinking.** Pick the model and how hard it thinks for each chat from the message
-  box; the agent's default stays as it is. A small meter shows how full the context is, with a
-  button to compress it.
+## Features
+
+**Chatting**
+
+- **One chat per agent.** Each profile's ongoing chat, with streaming replies, Markdown, and tool
+  calls folded into one line you can open.
+- **Images and files both ways.** Attach photos, PDFs and other files. Images an agent makes or
+  finds show inline, open full size, and can be shared or saved.
+- **React, reply and copy.** Hover a message (long-press on iPhone) to react, quote it in a reply,
+  or copy it.
+- **Edit and undo.** Rewrite your last message for a fresh answer, or take it back.
+- **Dictation.** Tap the mic and speak; your words appear as you talk.
+- **Voice calls.** Talk with an agent and it answers aloud, and stops when you speak over it. Uses
+  on-device speech, or Hermes's GPT-Live voice when your gateway has an OpenAI key.
+
+**Staying in control**
+
+- **Approvals and questions inline.** When an agent wants to run a command, allow it once, for this
+  chat, always, or deny it, right in the conversation.
+- **Stop and steer.** Stop a running reply, or send a message while it runs to change course.
+- **Model and thinking.** Pick each chat's model and how hard it thinks, below the message box. A
+  small meter shows how full the context is, with a button to compress it.
+- **Needs you.** The sidebar marks agents that are working and agents waiting on you.
+
+**Getting more done**
+
+- **Skills and commands.** Type `/` anywhere in a message for the agent's skills and Hermes
+  commands, such as `/reasoning` or `/status`.
+- **Side questions.** `/btw` asks about the conversation without interrupting the agent.
+- **Background tasks.** `/bg` hands a task to a fresh agent while you keep chatting. You get a
+  notification when it's done, even if the app was closed.
+- **Rooms.** Group chats with several agents.
 - **Routines.** Each agent's scheduled jobs, with a switch to pause and resume them.
-- **Dictation.** Tap the mic in an empty message box and speak; words appear as you talk,
-  recognised on the device when it can.
-- **Voice calls.** Talk with an agent: it hears you, answers aloud as it writes, and stops when
-  you speak over it. Use on-device speech, or Hermes's GPT-Live voice when your gateway has an
-  OpenAI key. The conversation stays in the chat.
-- **Quick message (Mac).** Press ⌥Space anywhere to message an agent without opening the window.
-- **Works offline.** The last chats are cached, and the app reconnects by itself.
+- **Quick message (Mac).** ⌥Space opens a small panel to message any agent from anywhere.
+- **Works offline.** Recent chats are cached, and the app reconnects by itself and catches up on
+  what it missed.
 
-The sidebar shows which agents are working and which need you. Settings, skills and everything
-else stay in the official Hermes app.
-
-![A room on the Mac](docs/screenshots/mac-room.png)
+The [user guide](docs/guides/user-guide.md) walks through each of these.
 
 ## What you need
 
-- A Hermes gateway you can reach from the device: on your tailnet, on your home network, or on
-  the internet over `https`. Plain `http` is allowed only for private and Tailscale addresses.
-  On iPhone, a tailnet gateway works only while Tailscale is on.
-- Browser sign-in for native apps on the gateway (`native_pkce` in its `/api/status`).
-- Tested with the Hermes dashboard (port 9119) on Hermes Agent 0.21.5 and 0.22.5. Gateways that
-  speak Hermes's newer canonical session protocol connect, but chats there aren't supported yet.
+- **A Hermes gateway** running the dashboard (`hermes dashboard`, port 9119), reachable from your
+  device: on your tailnet, your home network, or the internet over `https`. Plain `http` is
+  allowed only for private and Tailscale addresses.
+- **Sign-in on the gateway.** The dashboard needs a sign-in method (username and password, or
+  OAuth); Usual Bot uses its browser sign-in for apps (`native_pkce` in `/api/status`).
+- **Tested with** Hermes Agent 0.21.5 and 0.22.5. Gateways that speak Hermes's newer canonical
+  session protocol (`hermes gateway`) connect, but chats there aren't supported yet.
+- **To build:** Xcode 26 or newer. The app runs on macOS 15 and iOS 18 or later.
 
-Sign in once with the gateway's address, for example `100.64.0.1:9119`. The app opens the
-gateway's sign-in page and keeps the session in the Keychain.
+## Documentation
 
-## Build
+| Guide | For |
+| --- | --- |
+| [Getting started](docs/guides/getting-started.md) | Building the app, preparing your gateway and signing in |
+| [User guide](docs/guides/user-guide.md) | Every feature, with keyboard shortcuts |
+| [Troubleshooting](docs/guides/troubleshooting.md) | What error messages mean and how to fix them |
+| [Architecture](docs/guides/architecture.md) | How the code is laid out and talks to the gateway |
+| [Contributing](CONTRIBUTING.md) | Setting up, checks, and how to send a pull request |
+| [Changelog](CHANGELOG.md) | What changed in each version |
 
-Requirements: Xcode 26 or newer. The app targets macOS 15 and iOS 18, and was tested on
-macOS 27, iOS 27 and the iOS 26 Simulator.
-
-```sh
-open UsualBot.xcodeproj
-```
-
-Pick the **UsualBot** scheme and a Mac or iPhone simulator, then Run. Unsigned and simulator builds
-need no setup. To run on your own device, copy `Config/Local.xcconfig.example` to
-`Config/Local.xcconfig` and set your team ID and bundle prefix (the file is gitignored).
-
-Without a team, Mac builds are signed "to run locally", and every rebuild looks like a new app to
-the Keychain: macOS asks once per build whether Usual Bot may read its saved sign-in. Choose
-**Always Allow**, or set your team to make the prompt go away.
-
-### Try it without a gateway
-
-Debug builds started with `USUALBOT_DEMO=1` show a made-up team of agents, a room and routines
-instead of signing in. Nothing is sent anywhere. In Xcode, add the variable under
-**Product › Scheme › Edit Scheme › Run › Arguments**. From the command line:
-
-```sh
-USUALBOT_DEMO=1 path/to/Debug/UsualBot.app/Contents/MacOS/UsualBot
-```
-
-The screenshots above come from it.
-
-## Layout
+## Project layout
 
 | Path | What lives there |
 | --- | --- |
-| `Packages/HermesKit` | Gateway connection, protocol types and state. No UI, no dependencies. |
-| `Packages/UsualUI` | Shared SwiftUI screens for Mac and iPhone. |
-| `App/` | The thin app shell and platform-only pieces (sign-in, the ⌥Space panel). |
+| `Packages/HermesKit` | Gateway sign-in, connection, protocol types and app state. No UI, no dependencies. |
+| `Packages/UsualUI` | The SwiftUI screens, shared by Mac and iPhone. |
+| `App/` | The thin app shell and platform pieces (sign-in, the ⌥Space panel, notifications). |
 | `Config/` | Build settings (`.xcconfig`), Info.plist and entitlements. |
-| `design/` | The avatar characters and their design notes. |
-
-Each package has an `AGENTS.md` and a `docs/agents/` folder describing how it works and its known
-issues; start there before changing it.
-
-## Checks
-
-```sh
-swift test --package-path Packages/HermesKit
-swift test --package-path Packages/UsualUI
-swift format lint --strict --recursive App Packages
-```
-
-CI runs the same checks and builds both platforms on every pull request.
+| `design/` | The avatar characters and the app icon's design notes. |
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Bug reports, fixes, accessibility work and protocol support are very welcome. Start with
+[CONTRIBUTING.md](CONTRIBUTING.md); everyone taking part follows the
+[Code of Conduct](CODE_OF_CONDUCT.md). Found a security problem? Please follow
+[SECURITY.md](SECURITY.md) instead of opening an issue.
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE).
+Usual Bot is licensed under the [Apache License 2.0](LICENSE). Hermes Agent is a separate project
+by Nous Research under its own license.

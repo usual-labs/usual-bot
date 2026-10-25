@@ -1,0 +1,77 @@
+name: Bug report
+description: Something in Usual Bot doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please leave out tokens, real gateway addresses and private
+        conversations; made-up examples are fine. For a security problem, follow SECURITY.md
+        instead of opening an issue.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Quote any message exactly.
+      placeholder: |
+        I sent a message with a PDF to an agent. I expected it to summarise the PDF, but the app showed
+        "…" and the draft disappeared.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a chat with an agent
+        2. Attach a 30 MB PDF
+        3. Send
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Device
+      multiple: true
+      options:
+        - Mac
+        - iPhone
+        - iPhone Simulator
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: macOS or iOS version
+      placeholder: macOS 26.1
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: Usual Bot version or commit
+      description: The release, or the commit you built (`git rev-parse --short HEAD`).
+      placeholder: 0.1.0 or 2d60891
+    validations:
+      required: true
+  - type: input
+    id: hermes-version
+    attributes:
+      label: Hermes version on the gateway
+      description: Shown in the agent's profile under Machine.
+      placeholder: 0.22.5
+  - type: dropdown
+    id: gateway
+    attributes:
+      label: How you reach the gateway
+      options:
+        - Tailscale
+        - Home network
+        - Internet over https
+        - Same machine
+        - Demo mode (no gateway)
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or logs
+      description: Screenshots help a lot. Check that they don't show anything private.

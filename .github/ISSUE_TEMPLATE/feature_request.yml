@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest something Usual Bot could do.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Usual Bot aims to stay a small, focused messenger for Hermes agents. Settings, skill setup
+        and gateway administration stay in the official Hermes app. Ideas that make talking to your
+        agents better are very welcome.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation and what gets in your way today.
+      placeholder: When an agent finishes a long task while I'm in another chat, I don't notice until I look.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+      description: How you imagine it working. Sketches and screenshots of other apps are welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: hermes
+    attributes:
+      label: Does it need something from Hermes?
+      description: If you know the gateway method or setting it would use, mention it here.
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Helping out
+      options:
+        - label: I'd like to work on this myself.
