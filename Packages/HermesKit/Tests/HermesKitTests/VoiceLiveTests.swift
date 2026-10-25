@@ -17,10 +17,17 @@ struct VoiceLiveTests {
 
     @Test func statusSaysWhetherGPTLiveCanStart() async throws {
         let http = ScriptedHTTP { _ in
-            (200, #"{"ok":true,"mode":"chained","available":false,"reason":"no OpenAI API key","model":"gpt-live-1","voice":"marin"}"#)
+            (
+                200,
+                #"{"ok":true,"mode":"chained","available":false,"reason":"no OpenAI API key","model":"gpt-live-1","voice":"marin"}"#
+            )
         }
         let status = try await service(http).status(profile: "ops")
-        #expect(status == VoiceLiveStatus(mode: "chained", available: false, reason: "no OpenAI API key", model: "gpt-live-1", voice: "marin"))
+        #expect(
+            status
+                == VoiceLiveStatus(
+                    mode: "chained", available: false, reason: "no OpenAI API key", model: "gpt-live-1", voice: "marin")
+        )
         #expect(http.requests.first?.url?.path == "/api/audio/voice-live/status")
         #expect(http.requests.first?.url?.query == "profile=ops")
     }
@@ -50,12 +57,19 @@ struct VoiceLiveTests {
                 ], running: false))
         #expect(
             thread.liveHistory() == [
-                ["type": "message", "role": "user", "content": [["type": "input_text", "text": "How are the servers?"]]],
-                ["type": "message", "role": "assistant", "content": [["type": "output_text", "text": "All healthy."]]],
+                [
+                    "type": "message", "role": "user",
+                    "content": [["type": "input_text", "text": "How are the servers?"]],
+                ],
+                [
+                    "type": "message", "role": "assistant",
+                    "content": [["type": "output_text", "text": "All healthy."]],
+                ],
             ])
-        #expect(thread.liveHistory(maxMessages: 1) == [
-            ["type": "message", "role": "assistant", "content": [["type": "output_text", "text": "All healthy."]]]
-        ])
+        #expect(
+            thread.liveHistory(maxMessages: 1) == [
+                ["type": "message", "role": "assistant", "content": [["type": "output_text", "text": "All healthy."]]]
+            ])
     }
 
     @Test func aDelegationIsAVoiceLiveTurn() async throws {

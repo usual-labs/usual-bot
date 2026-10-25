@@ -8,7 +8,8 @@ struct RecoveryTests {
     private func open(_ thread: ChatThread, _ gateway: ScriptedGateway, at index: Int, session: String) async throws {
         thread.open(knownID: "stored-1", dialect: .legacy)
         _ = try await gateway.answer(
-            index, method: "session.resume", result: ["session_id": .string(session), "running": false, "messages": .array([])])
+            index, method: "session.resume",
+            result: ["session_id": .string(session), "running": false, "messages": .array([])])
         try await waitUntilOnMain { thread.isAttached }
     }
 
@@ -112,7 +113,9 @@ struct RecoveryTests {
         #expect(thread.backgroundTasks.map(\.id) == ["bg_1"])
         // A cache from before these existed still loads.
         let old = try JSONDecoder().decode(
-            CachedThread.self, from: Data(#"{"state":{"items":[],"draft":"","isRunning":false,"nextID":0,"turnStart":0},"unreadCount":0}"#.utf8))
+            CachedThread.self,
+            from: Data(
+                #"{"state":{"items":[],"draft":"","isRunning":false,"nextID":0,"turnStart":0},"unreadCount":0}"#.utf8))
         #expect(old.sideQuestions == nil)
     }
 }

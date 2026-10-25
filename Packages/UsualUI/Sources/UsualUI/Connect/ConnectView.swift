@@ -122,4 +122,3 @@ struct SplashView: View {
             .ignoresSafeArea()
     }
 }
-

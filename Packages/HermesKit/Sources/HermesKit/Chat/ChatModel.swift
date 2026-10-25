@@ -150,8 +150,10 @@ extension ChatThread {
         state.showCommand(text)
         let words = (Self.words(after: ["/reasoning"], in: text) ?? "").split(separator: " ").map(String.init)
         let global = words.contains { ["--global", "-g", "global"].contains($0.lowercased()) }
-        let value = words.filter { !["--global", "-g", "global", "--session", "-s", "session"].contains($0.lowercased()) }
-            .joined(separator: " ")
+        let value = words.filter {
+            !["--global", "-g", "global", "--session", "-s", "session"].contains($0.lowercased())
+        }
+        .joined(separator: " ")
         guard !value.isEmpty else {
             let level = model?.reasoning.map(\.rawValue) ?? String(localized: "the model's default")
             state.addNotice(String(localized: "Thinking in this chat: \(level)"))

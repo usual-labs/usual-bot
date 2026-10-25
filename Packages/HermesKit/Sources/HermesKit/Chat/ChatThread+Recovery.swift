@@ -22,7 +22,8 @@ extension ChatThread {
     private func replay() async -> Bool {
         guard let sessionID, let channel = channel(),
             let result = try? await channel.call(
-                "session.events.since", params: ["session_id": .string(sessionID), "last_seen": .number(Double(lastSeq))])
+                "session.events.since",
+                params: ["session_id": .string(sessionID), "last_seen": .number(Double(lastSeq))])
         else { return false }
         guard result["truncated"]?.boolValue != true, result["epoch"]?.stringValue == replayEpoch,
             case .array(let frames) = result["events"]
@@ -46,7 +47,9 @@ extension ChatThread {
         // A task the gateway never confirmed may not have started at all.
         for task in backgroundTasks where task.id.hasPrefix("local-") {
             state.addNotice(
-                String(localized: "Usual Bot went offline as “\(task.task)” was starting; if no answer comes, start it again."))
+                String(
+                    localized:
+                        "Usual Bot went offline as “\(task.task)” was starting; if no answer comes, start it again."))
         }
         backgroundTasks.removeAll { $0.id.hasPrefix("local-") }
     }

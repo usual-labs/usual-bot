@@ -33,7 +33,9 @@ struct UsageTests {
         thread.apply(
             GatewayEvent(
                 type: "message.complete", sessionID: "live-1", seq: nil,
-                payload: ["text": "Done", "usage": ["context_used": 90_000, "context_max": 200_000, "context_percent": 45]]
+                payload: [
+                    "text": "Done", "usage": ["context_used": 90_000, "context_max": 200_000, "context_percent": 45],
+                ]
             ))
         #expect(thread.usage?.context?.percent == 45)
     }

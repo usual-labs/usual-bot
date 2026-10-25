@@ -21,10 +21,14 @@ struct RoomPane: View {
         content
             .environment(\.messageActions, actions)
             .chatBars {
-                Button { showsInfo.toggle() } label: { NamePill(contact: contact, members: members) }
-                    .buttonStyle(.plain)
-                    .accessibilityHint(Text("Shows the room's members"))
-                    .keyboardShortcut("i", modifiers: .command)
+                Button {
+                    showsInfo.toggle()
+                } label: {
+                    NamePill(contact: contact, members: members)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text("Shows the room's members"))
+                .keyboardShortcut("i", modifiers: .command)
             } bottom: {
                 if room.phase == .ready {
                     MessageBox(

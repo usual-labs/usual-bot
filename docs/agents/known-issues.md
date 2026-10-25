@@ -4,7 +4,8 @@
 
 - Native CI configuration is not evidence of a successful build or public release.
   CI runs on `macos-26`: the app uses the macOS 26 / iOS 26 SDK (Liquid Glass), which
-  the `macos-15` image's Xcode can't compile. With no remote yet, CI has never run.
+  the `macos-15` image's Xcode can't compile. Its first run was queued by the
+  25 October 2026 push; its result wasn't recorded here.
 
 For new issues record symptom → source-supported cause → verified fix or explicitly
 unverified recommendation → prevention and status.
@@ -37,4 +38,15 @@ unverified recommendation → prevention and status.
 - `/retry` on a message that carried a photo answers "retry does not support media or unknown
   content parts"; the app shows it as "/retry didn't run: …". Gateway behaviour, not an app bug:
   send the message again with the image instead.
+
+## CI's first run failed on swift-format lint (fixed 2026-10-25)
+
+- Symptom: the first push to GitHub failed CI at the Lint step with 42 `swift format lint --strict`
+  errors in 18 files (long lines, indentation, line breaks, trailing commas); tests and builds
+  never ran.
+- Cause: the M13–M22 work was tested and built locally but never linted, and nothing ran CI before
+  the repo had a remote.
+- Fix: `swift format format -i --recursive App Packages` (local swift-format 6.3.0) fixed all of
+  them; tests and both unsigned builds passed afterwards.
+- Prevention: run the lint line from CONTRIBUTING before every commit, as CI does.
 
