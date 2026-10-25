@@ -88,9 +88,9 @@ developer.apple.com, the key in App Store Connect) and make new ones.
    choose **Review deployments › Approve**. It then takes about 10–20 minutes, mostly waiting for
    Apple's notary service. The release appears under **Releases** when it's done.
 
-To try the pipeline without a real release, push a pre-release tag such as `v0.2.0-rc.1`. It uses
-the `0.2.0` notes and is marked as a pre-release; delete the release and the tag afterwards if you
-don't want to keep them.
+To try the pipeline without a real release, push a pre-release tag such as `v0.3.0-rc.1`. It uses
+the `0.3.0` notes and is marked as a pre-release. Releases are immutable once published: their
+files and tag can't change, and a tag can't be reused, so use a new `-rc.N` for each try.
 
 ## What the workflow does
 
@@ -104,9 +104,14 @@ don't want to keep them.
 6. Puts it in a disk image with a shortcut to Applications, signs, notarizes and staples that too,
    and checks it with Gatekeeper (`spctl`).
 7. Deletes the temporary keychain and key file, even when a step failed.
-8. A separate `publish` job, with no secrets and no environment, publishes the GitHub release
-   with the notes, the `.dmg` and its `.sha256`. The job that holds the secrets can only read the
-   repository, so a problem there can't change code or releases.
+8. A separate `publish` job, with no secrets and no environment, signs a build-provenance
+   attestation for the `.dmg`, then publishes the GitHub release with the notes, the `.dmg` and
+   its `.sha256` (as a draft first, because published releases are immutable). The job that holds
+   the secrets can only read the repository, so a problem there can't change code or releases.
+
+`main` and the `v*` tags are protected: nobody, maintainers included, can force-push or delete
+`main`; other changes need a pull request with green CI (maintainers can push directly); only
+maintainers can create, move or delete `v*` tags.
 
 ## When it fails
 

@@ -15,7 +15,8 @@ From version 0.2.0 on, each release has a signed and notarized disk image:
 3. Open Usual Bot from Applications or Spotlight.
 
 To check the download, compare `shasum -a 256 UsualBot-<version>.dmg` with the `.sha256` file
-next to it on the release page. To update, download the new version and replace the app; your
+next to it on the release page. To check that it was built by this project's release workflow from
+the tagged source, run `gh attestation verify UsualBot-<version>.dmg -R usual-labs/usual-bot`. To update, download the new version and replace the app; your
 sign-in and settings stay.
 
 For the iPhone, or to change the code, build it yourself as below.

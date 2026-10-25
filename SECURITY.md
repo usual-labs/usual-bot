@@ -37,7 +37,7 @@ sure which side a problem is on, report it here and we'll help route it.
 Usual Bot is young and built from source. Fixes land on `main` and in the next release; older
 releases don't get separate patches.
 
-## How the app protects your sign-in
+## How the app and its releases protect you
 
 - Tokens are stored in the Keychain, readable only on this device and only after it has been
   unlocked once since it started.
@@ -45,3 +45,7 @@ releases don't get separate patches.
   addresses.
 - The cached chats are written with file protection, in the app's own container.
 - Debug-only switches (such as recording socket frames) are compiled out of Release builds.
+- Releases are built by a GitHub workflow, signed with a Developer ID, notarized by Apple, and
+  immutable once published. Each disk image has a build-provenance attestation:
+  `gh attestation verify UsualBot-<version>.dmg -R usual-labs/usual-bot` shows the workflow and
+  commit it came from.

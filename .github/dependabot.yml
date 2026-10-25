@@ -1,0 +1,11 @@
+# Keeps the workflows' pinned actions current. The repository only runs GitHub-owned actions
+# pinned to a commit, and Dependabot updates both the commit and its version comment.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
