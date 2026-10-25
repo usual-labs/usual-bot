@@ -83,12 +83,14 @@ struct JSONRPCChannelTests {
 
     @Test func silentSocketIsClosedAfterTheLimit() async throws {
         let socket = FakeSocket()
+        // The limit is many heartbeats long, so a slow machine still pings before it gives up.
         let channel = JSONRPCChannel(
-            socket: socket, heartbeatInterval: .milliseconds(20), silenceLimit: .milliseconds(60))
+            socket: socket, heartbeatInterval: .milliseconds(20), silenceLimit: .milliseconds(300))
         await channel.start()
-        try await Task.sleep(for: .milliseconds(200))
+        try await waitUntil { socket.sent.contains { $0["method"] == "gateway.ping" } }
+        // Nothing answers, so the channel closes the socket once the silence limit passes.
+        try await waitUntil { socket.isClosed }
         await #expect(throws: GatewayError.timedOut) { try await channel.call("profiles.list") }
-        #expect(socket.sent.contains { $0["method"] == "gateway.ping" })
     }
 
     @Test func backoffDoublesToACap() {

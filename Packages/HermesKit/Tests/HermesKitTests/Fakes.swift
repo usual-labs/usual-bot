@@ -46,6 +46,8 @@ final class FakeSocket: WebSocketConnection {
     private let inbox = Mutex(Inbox())
     private let outbound = Mutex<[String]>([])
 
+    var isClosed: Bool { inbox.withLock { $0.closed } }
+
     var sent: [JSONValue] {
         outbound.withLock { $0 }.compactMap { try? JSONDecoder().decode(JSONValue.self, from: Data($0.utf8)) }
     }
