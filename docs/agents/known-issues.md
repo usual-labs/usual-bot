@@ -4,8 +4,9 @@
 
 - Native CI configuration is not evidence of a successful build or public release.
   CI runs on `macos-26`: the app uses the macOS 26 / iOS 26 SDK (Liquid Glass), which
-  the `macos-15` image's Xcode can't compile. Its first run was queued by the
-  25 October 2026 push; its result wasn't recorded here.
+  the `macos-15` image's Xcode can't compile. On GitHub, the first run failed at
+  lint (below); `fd067cb` passed every step (lint, both test suites, Mac and iOS Simulator
+  builds) on 25 October 2026.
 
 For new issues record symptom → source-supported cause → verified fix or explicitly
 unverified recommendation → prevention and status.
