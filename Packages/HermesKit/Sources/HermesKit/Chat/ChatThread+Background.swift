@@ -39,7 +39,8 @@ extension ChatThread {
                 backgroundTasks[index].id = taskID
             } catch {
                 backgroundTasks.removeAll { $0.id == localID }
-                state.addNotice(String(localized: "Couldn't start “\(text)” in the background: \(AppModel.describe(error))"))
+                state.addNotice(
+                    String(localized: "Couldn't start “\(text)” in the background: \(AppModel.describe(error))"))
             }
         }
     }

@@ -42,12 +42,13 @@ merely to collect marketing evidence.
 The 23 October 2026 local source inventory found no public landing site, Markdown
 blog collection, website package/build, canonical public origin or website deploy
 configuration in this repository. `design/avatars/2026-10-22/index.html` is an
-internal asset reference, not the product website. The Git repository has local
-history but no configured remote at this inspection. `.github/workflows/ci.yml`
+internal asset reference, not the product website. The source is public at
+`usual-labs/usual-bot` on GitHub (pushed 25 October 2026); that is a code repository, not a
+website. `.github/workflows/ci.yml`
 only lints/tests Swift and builds Mac/iOS targets; it does not publish a website.
 
 A blog post cannot yet be published at a verified `domain/blog` through this repo.
-Do not borrow Usual Design's site, invent a domain or treat a saved Markdown file,
+Do not borrow Usual UI's site, invent a domain or treat a saved Markdown file,
 Git commit, native build, GitHub artifact or message as public publication. Current
 permission to test one blog release does not itself provision a website target.
 The explicit one-post test already authorizes its agent-authored copy and scoped

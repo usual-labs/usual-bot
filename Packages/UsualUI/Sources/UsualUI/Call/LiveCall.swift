@@ -211,7 +211,9 @@ final class LiveCall: CallEngine {
             return true
         }
         if !current.said {
-            run("think(\(Self.literal(current.id)), \(Self.literal("Hermes finished that request without a spoken result.")))")
+            run(
+                "think(\(Self.literal(current.id)), \(Self.literal("Hermes finished that request without a spoken result.")))"
+            )
         }
         delegation = nil
         if phase == .thinking { phase = .listening }

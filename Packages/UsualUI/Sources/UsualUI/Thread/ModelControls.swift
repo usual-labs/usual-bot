@@ -173,7 +173,8 @@ struct ModelControls: View {
                 set: { name in Task { await switchTo(name, provider: provider.slug) } })
         ) {
             // The chat's model may sit outside an aggregator's shortlist.
-            let names = provider.slug == model.provider && !provider.models.contains(model.name)
+            let names =
+                provider.slug == model.provider && !provider.models.contains(model.name)
                 ? [model.name] + provider.models : provider.models
             ForEach(names, id: \.self) { name in Text(Self.short(name)).tag(name) }
         }
@@ -269,4 +270,3 @@ private struct ContextMeter: View {
     /// Amber once the context is mostly full, when compressing starts to matter.
     private var tint: Color { context.percent >= 80 ? Theme.needsYouInk : Theme.secondaryInk.opacity(0.7) }
 }
-

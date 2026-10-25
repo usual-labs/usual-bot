@@ -34,7 +34,8 @@ public final class VoiceLiveService {
 
     public func status(profile: String) async throws -> VoiceLiveStatus {
         guard let auth = auth() else { throw GatewayError.disconnected }
-        return try await auth.json(VoiceLiveStatus.self, path: "/api/audio/voice-live/status?profile=\(escape(profile))")
+        return try await auth.json(
+            VoiceLiveStatus.self, path: "/api/audio/voice-live/status?profile=\(escape(profile))")
     }
 
     /// Exchanges the WebRTC `offer` for the session's SDP answer. `history` seeds the voice with the
@@ -85,7 +86,9 @@ extension ChatThread {
             messages.insert(
                 [
                     "type": "message", "role": .string(role),
-                    "content": [["type": .string(role == "assistant" ? "output_text" : "input_text"), "text": .string(flat)]],
+                    "content": [
+                        ["type": .string(role == "assistant" ? "output_text" : "input_text"), "text": .string(flat)]
+                    ],
                 ], at: 0)
         }
         return .array(messages)

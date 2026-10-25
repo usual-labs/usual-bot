@@ -331,4 +331,3 @@ struct CommandOutput: View {
         .background(Theme.selection.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
     }
 }
-

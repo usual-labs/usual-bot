@@ -76,7 +76,8 @@
             threads["atlas"]?.sideQuestions = [
                 SideQuestion(
                     id: "demo-btw", question: "How many pages does docs search hold today?",
-                    answer: .answered("About **40,000 pages**, re-indexed nightly. Turbopuffer stores them for ~$6 a month."))
+                    answer: .answered(
+                        "About **40,000 pages**, re-indexed nightly. Turbopuffer stores them for ~$6 a month."))
             ]
             threads["ops"] = ChatThread.sample("ops", state: ThreadState(history: opsChat, running: false))
             threads["ops"]?.state.addBackgroundResult(

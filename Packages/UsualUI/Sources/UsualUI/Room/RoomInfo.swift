@@ -54,10 +54,12 @@ struct RoomPanel: View {
                 .padding(.horizontal, 12)
                 .background(Theme.pane, in: RoundedRectangle(cornerRadius: 14))
 
-                Text("Each agent answers here with its default model. To change one, open that agent's chat and choose Make Default in its model menu.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.secondaryInk)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "Each agent answers here with its default model. To change one, open that agent's chat and choose Make Default in its model menu."
+                )
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.secondaryInk)
+                .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 20)
             .padding(.top, 28)

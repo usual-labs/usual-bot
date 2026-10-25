@@ -2,14 +2,15 @@
 
 ## Implemented today
 
-- There is no landing-site/blog implementation, canonical website origin or
-  configured Git remote in the 23 October 2026 local inventory. The internal avatar
+- There is no landing-site/blog implementation or canonical website origin. The source is
+  public on GitHub at `usual-labs/usual-bot` (remote `origin`, pushed 25 October 2026). The internal avatar
   HTML gallery is not a product landing page. A blog publication task cannot be
   completed by placing Markdown in this native tree; follow
   [blog-publishing.md](blog-publishing.md) for the missing prerequisites.
 - Native CI configuration is not evidence of a successful build or public release.
   CI runs on `macos-26`: the app uses the macOS 26 / iOS 26 SDK (Liquid Glass), which
-  the `macos-15` image's Xcode can't compile. With no remote yet, CI has never run.
+  the `macos-15` image's Xcode can't compile. Its first run was queued by the
+  25 October 2026 push; its result wasn't recorded here.
 - Status (25 October 2026): the published-facing docs are README (quick start, features,
   screenshots), `docs/guides/` (getting started, user guide, troubleshooting, architecture),
   CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, CHANGELOG and `.github` issue/PR templates. Its
@@ -17,12 +18,12 @@
   real chats; Mac dark mode couldn't be captured (`-AppleInterfaceStyle Dark` as a launch
   argument didn't change the SwiftUI app), so the dark shot is iPhone. The README's
   quick-start build was checked from a clean clone without `Config/Local.xcconfig` (ad-hoc
-  signed, demo opens). Not done until the repo is published, and only by the maintainer:
-  enabling GitHub private vulnerability reporting (SECURITY.md relies on it), and the
-  Code of Conduct's contact (it points at the maintainer's GitHub profile; a dedicated
-  address would be better). The history was rewritten before the first push so that no
+  signed, demo opens). Open after publishing (25 October 2026): GitHub private
+  vulnerability reporting is still off, though SECURITY.md relies on it; the Code of
+  Conduct's contact points at the maintainer's GitHub profile (a dedicated address would
+  be better). The history was rewritten before the first push so that no
   commit contains the maintainer's tailnet IP or tailnet name; tests and comments use
-  Tailscale's example address `100.101.102.103`. Release `v0.1.0` is tagged locally only.
+  Tailscale's example address `100.101.102.103`. Tag `v0.1.0` is pushed; no GitHub release or built app is published.
 
 For new issues record symptom → source-supported cause → verified fix or explicitly
 unverified recommendation → prevention and status.
@@ -55,4 +56,15 @@ unverified recommendation → prevention and status.
 - `/retry` on a message that carried a photo answers "retry does not support media or unknown
   content parts"; the app shows it as "/retry didn't run: …". Gateway behaviour, not an app bug:
   send the message again with the image instead.
+
+## CI's first run failed on swift-format lint (fixed 2026-10-25)
+
+- Symptom: the first push to GitHub failed CI at the Lint step with 42 `swift format lint --strict`
+  errors in 18 files (long lines, indentation, line breaks, trailing commas); tests and builds
+  never ran.
+- Cause: the M13–M22 work was tested and built locally but never linted, and nothing ran CI before
+  the repo had a remote.
+- Fix: `swift format format -i --recursive App Packages` (local swift-format 6.3.0) fixed all of
+  them; tests and both unsigned builds passed afterwards.
+- Prevention: run the lint line from CONTRIBUTING before every commit, as CI does.
 

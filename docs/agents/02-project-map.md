@@ -12,4 +12,4 @@ Read the chosen child AGENTS.md and KB before editing. Child docs own detailed A
 
 ## Editorial publication boundary
 
-No landing-site project is present in this source inventory. Read [blog-publishing.md](blog-publishing.md) before preparing a marketing post; it records current product context and the missing website/Git/hosting prerequisite. The sibling Usual Design site is a separate product, not an assumed publication destination.
+No landing-site project is present in this source inventory. Read [blog-publishing.md](blog-publishing.md) before preparing a marketing post; it records current product context and the missing website/Git/hosting prerequisite. The sibling Usual UI site is a separate product, not an assumed publication destination.

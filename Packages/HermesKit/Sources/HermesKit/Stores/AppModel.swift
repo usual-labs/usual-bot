@@ -307,11 +307,15 @@ public final class AppModel {
         }
         struct Page: Decodable { let messages: [Row] }
         guard let auth else { return nil }
-        let escape = { (text: String) in text.addingPercentEncoding(withAllowedCharacters: .urlUnreservedCharacters) ?? text }
+        let escape = { (text: String) in
+            text.addingPercentEncoding(withAllowedCharacters: .urlUnreservedCharacters) ?? text
+        }
         guard
             let page = try? await auth.json(
                 Page.self,
-                path: "/api/sessions/\(escape(taskID))/messages?profile=\(escape(profile))&order=latest&limit=5&inline_images=false"),
+                path:
+                    "/api/sessions/\(escape(taskID))/messages?profile=\(escape(profile))&order=latest&limit=5&inline_images=false"
+            ),
             let last = page.messages.max(by: { ($0.timestamp ?? 0) < ($1.timestamp ?? 0) }),
             last.role == "assistant", last.toolCalls == nil || last.toolCalls == .array([]) || last.toolCalls == .null,
             let text = last.content?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty

@@ -58,7 +58,9 @@ struct SideQuestionTests {
         try await waitUntilOnMain { thread.sideQuestions.first?.answer == .failed("text required") }
 
         thread.apply(answer(["task_id": "btw_y", "question": "two", "text": "error: model unavailable"]))
-        #expect(thread.sideQuestions.last == SideQuestion(id: "btw_y", question: "two", answer: .failed("model unavailable")))
+        #expect(
+            thread.sideQuestions.last
+                == SideQuestion(id: "btw_y", question: "two", answer: .failed("model unavailable")))
     }
 
     @Test func onlyBtwWithWordsIsASideQuestion() {

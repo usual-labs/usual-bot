@@ -75,7 +75,8 @@ extension ChatThread {
             state.addNotice(
                 String(
                     localized:
-                        "Compressed the conversation from about \(Self.tokens(before)) to \(Self.tokens(after)) tokens."))
+                        "Compressed the conversation from about \(Self.tokens(before)) to \(Self.tokens(after)) tokens."
+                ))
         } catch {
             state.addNotice(String(localized: "Couldn't compress: \(AppModel.describe(error))"))
         }

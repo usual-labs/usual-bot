@@ -127,7 +127,8 @@ struct CallBar: View {
         } else if choice == "gpt-live" {
             engineProblem = String(
                 localized:
-                    "GPT-Live can't start: \(liveStatus?.reason ?? String(localized: "the gateway didn't answer")). Choose On-device in the call settings to talk anyway.")
+                    "GPT-Live can't start: \(liveStatus?.reason ?? String(localized: "the gateway didn't answer")). Choose On-device in the call settings to talk anyway."
+            )
             panel = .settings
             return
         }
