@@ -103,8 +103,10 @@ don't want to keep them.
 5. Notarizes the app and staples the ticket to it, so it opens even offline.
 6. Puts it in a disk image with a shortcut to Applications, signs, notarizes and staples that too,
    and checks it with Gatekeeper (`spctl`).
-7. Publishes the GitHub release with the notes, the `.dmg` and its `.sha256`.
-8. Deletes the temporary keychain and key file, even when a step failed.
+7. Deletes the temporary keychain and key file, even when a step failed.
+8. A separate `publish` job, with no secrets and no environment, publishes the GitHub release
+   with the notes, the `.dmg` and its `.sha256`. The job that holds the secrets can only read the
+   repository, so a problem there can't change code or releases.
 
 ## When it fails
 
