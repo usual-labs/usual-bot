@@ -16,7 +16,7 @@ successful real-device operation. Examples must use fictional agents/data.
 
 ## Understand the actual app before writing
 
-1. Read `README.md`, `app-shell.md`, both package KBs and current source. Prefer code and
+1. Read `README.md`, `docs/guides/user-guide.md`, `app-shell.md`, both package KBs and current source. Prefer code and
    current package KBs when they disagree. `docs/screenshots/` holds demo-mode screenshots
    with fictional agents, safe to reuse.
 2. The user enters their existing gateway address in the connection UI; `AppModel`

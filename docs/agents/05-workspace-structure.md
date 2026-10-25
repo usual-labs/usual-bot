@@ -14,6 +14,11 @@
 - `Config/Shared.xcconfig` — shared Xcode settings
 - `UsualBot.xcodeproj` — application project
 - `design/avatars` — avatar reference and artwork
+- `docs/guides/` — user and contributor guides (getting started, user guide, troubleshooting,
+  architecture), linked from the README; `docs/screenshots/` — demo-mode screenshots they use
+- `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md`,
+  `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md` — open-source project files.
+  When behaviour changes, update the matching guide and the changelog's Unreleased section.
 
 The `design/avatars/2026-10-24-hermes/` folder holds the Hermes doodle (a monochrome-doodle take
 on the official Hermes app icon's headphone character), its prompt, source attribution and alpha
