@@ -10,6 +10,11 @@
 - `App/Assets.xcassets` — the app icon (`AppIcon`), the iPhone launch image (`LaunchMark`) and its
   background (`LaunchBackground`)
 - `.github/workflows/ci.yml` — lint, both test suites, Mac and iOS Simulator builds on pushes and PRs
+- `.github/workflows/zizmor.yml` — zizmor security lint of the workflows (pushes/PRs touching
+  `.github/`), findings in code scanning; `.github/workflows/scorecard.yml` — OpenSSF Scorecard
+  weekly and on pushes to main, publishes the README badge; `.github/dependabot.yml` — weekly grouped
+  updates of the pinned actions. CodeQL (Swift and Actions) runs as GitHub's default setup, with no
+  workflow file in the repo
 - `.github/workflows/release.yml` — on a `v*` tag: Developer ID signed, notarized Mac `.dmg` on a
   GitHub release, with the version's CHANGELOG section (required) as notes. Self-contained: the
   notes extraction and the notarize-and-staple helper are inline. Setup and secrets:

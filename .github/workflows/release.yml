@@ -23,11 +23,12 @@ env:
 
 jobs:
   mac:
+    name: Build, sign and notarize
     runs-on: macos-26
     timeout-minutes: 60
     environment: release
     permissions:
-      contents: read
+      contents: read # check out the source; nothing else
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -197,15 +198,16 @@ jobs:
           retention-days: 7
 
   publish:
+    name: Publish
     needs: mac
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # No environment and no secrets: only the token that can create the release, and the
     # short-lived identity that signs the provenance attestation.
     permissions:
-      contents: write
-      id-token: write
-      attestations: write
+      contents: write # create the release and upload its files
+      id-token: write # a short-lived identity to sign the attestation
+      attestations: write # store the attestation
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:

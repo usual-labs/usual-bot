@@ -15,6 +15,7 @@
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white">
   <img alt="SwiftUI" src="https://img.shields.io/badge/UI-SwiftUI-0A84FF">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/usual-labs/usual-bot"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/usual-labs/usual-bot/badge"></a>
 </p>
 
 ![Usual Bot on the Mac: the chat list, and an agent asking to run a command](docs/screenshots/mac-approval.png)

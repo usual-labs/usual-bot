@@ -7,7 +7,7 @@ on:
 
 # Reading the code is all CI needs.
 permissions:
-  contents: read
+  contents: read # check out the source; nothing else
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -15,6 +15,8 @@ concurrency:
 
 jobs:
   build:
+    # The name is the required status check on main.
+    name: build
     runs-on: macos-26
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
