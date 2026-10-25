@@ -21,8 +21,10 @@ share settings or the Keychain item's trust with the released app.
 
 Source anchors: `App/UsualBotApp.swift`, `App/SignInPresenters.swift`.
 
-Icon and launch: `App/Assets.xcassets` holds `AppIcon` (the Hermes doodle centred on white at 78%,
-1024 px for iPhone and every Mac size; the system rounds it on both; `ASSETCATALOG_COMPILER_APPICON_NAME
+Icon and launch: `App/Assets.xcassets` holds `AppIcon` (the Hermes doodle on white, framed like the
+official Hermes icon since 25 October 2026: 104% of the tile wide, the bust running 6% off the
+bottom, 3% right of centre; 1024 px
+for iPhone and every Mac size; the system rounds it on macOS 26+ and iOS; `ASSETCATALOG_COMPILER_APPICON_NAME
 = AppIcon` in `Config/Shared.xcconfig`), and the iPhone launch screen's `LaunchMark` (120 pt) and
 `LaunchBackground` (the window colour, light and dark), named by `UILaunchScreen` in `Config/Info.plist`
 (the generated launch screen setting is gone). While `AppModel.isRestoring` (a saved gateway at
