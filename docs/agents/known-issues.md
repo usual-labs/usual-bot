@@ -9,8 +9,9 @@
   [blog-publishing.md](blog-publishing.md) for the missing prerequisites.
 - Native CI configuration is not evidence of a successful build or public release.
   CI runs on `macos-26`: the app uses the macOS 26 / iOS 26 SDK (Liquid Glass), which
-  the `macos-15` image's Xcode can't compile. Its first run was queued by the
-  25 October 2026 push; its result wasn't recorded here.
+  the `macos-15` image's Xcode can't compile. On GitHub, the first run failed at
+  lint (below); `fd067cb` passed every step (lint, both test suites, Mac and iOS Simulator
+  builds) on 25 October 2026.
 - Status (25 October 2026): the published-facing docs are README (quick start, features,
   screenshots), `docs/guides/` (getting started, user guide, troubleshooting, architecture),
   CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, CHANGELOG and `.github` issue/PR templates. Its
@@ -18,10 +19,10 @@
   real chats; Mac dark mode couldn't be captured (`-AppleInterfaceStyle Dark` as a launch
   argument didn't change the SwiftUI app), so the dark shot is iPhone. The README's
   quick-start build was checked from a clean clone without `Config/Local.xcconfig` (ad-hoc
-  signed, demo opens). Open after publishing (25 October 2026): GitHub private
-  vulnerability reporting is still off, though SECURITY.md relies on it; the Code of
-  Conduct's contact points at the maintainer's GitHub profile (a dedicated address would
-  be better). The history was rewritten before the first push so that no
+  signed, demo opens). GitHub private vulnerability reporting, which SECURITY.md
+  relies on, was turned on 25 October 2026 (API reports `enabled: true`). Still open: the
+  Code of Conduct's contact points at the maintainer's GitHub profile (a dedicated address
+  would be better). The history was rewritten before the first push so that no
   commit contains the maintainer's tailnet IP or tailnet name; tests and comments use
   Tailscale's example address `100.101.102.103`. Tag `v0.1.0` is pushed; no GitHub release or built app is published.
 
