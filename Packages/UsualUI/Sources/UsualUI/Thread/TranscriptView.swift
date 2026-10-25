@@ -69,6 +69,8 @@ struct ConversationScroll<Content: View>: View {
             .frame(maxWidth: .infinity)
         }
         .scrollPosition($position)
+        // iPhone: scrolling the conversation puts the keyboard away, as in Messages.
+        .scrollDismissesKeyboard(.interactively)
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .onAppear(perform: scrollToEnd)

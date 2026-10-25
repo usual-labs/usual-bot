@@ -1,9 +1,10 @@
 import HermesKit
 import SwiftUI
 
-/// The message box under a chat with one agent, with its model and thinking menus. Return sends.
-/// While the agent works, a message steers it and the empty box's button stops it. Files can go
-/// with a message between turns.
+/// The message box under a chat with one agent, with its model and thinking choices (menus under
+/// the box on the Mac, controls inside it while you type on iPhone). Return sends. While the agent
+/// works, a message steers it and the empty box's button stops it. Files can go with a message
+/// between turns.
 struct Composer: View {
     let thread: ChatThread
     let agentName: String
@@ -18,7 +19,8 @@ struct Composer: View {
     var startCall: (() -> Void)?
 
     var body: some View {
-        // Background tasks and side answers float above the box; the model and thinking menus sit under it, on the right.
+        // Background tasks and side answers float above the box; on the Mac the model and thinking
+        // menus sit under it, on the right.
         VStack(alignment: .trailing, spacing: ModelControls.gap) {
             if !thread.backgroundTasks.isEmpty {
                 BackgroundTasksBar(tasks: thread.backgroundTasks).padding(.bottom, 6)
@@ -28,8 +30,13 @@ struct Composer: View {
                     .padding(.bottom, 6)
             }
             box
-            ModelControls(thread: thread, agentName: agentName, agentDefault: agentDefault)
+            #if os(macOS)
+                ModelControls(thread: thread, agentName: agentName, agentDefault: agentDefault)
+            #endif
         }
+        #if os(iOS)
+            .task(id: thread.isAttached) { await thread.loadModelsAndUsage() }
+        #endif
         .animation(.smooth(duration: 0.2), value: thread.sideQuestions)
         .animation(.smooth(duration: 0.2), value: thread.backgroundTasks)
     }
@@ -45,6 +52,7 @@ struct Composer: View {
             commands: SlashCommands(
                 list: thread.commands, load: { Task { await thread.loadCommands() } },
                 prefill: Binding(get: { thread.prefill }, set: { thread.prefill = $0 })),
+            chat: ChatControls(thread: thread, agentName: agentName, agentDefault: agentDefault),
             send: send, stop: thread.stop)
     }
 
@@ -71,7 +79,9 @@ struct Mention: Identifiable, Equatable {
 }
 
 /// The rounded message box shared by chats and rooms: a growing text field, Send, and Stop while
-/// something runs and the box is empty. In rooms, typing `@` suggests members to mention.
+/// something runs and the box is empty. In rooms, typing `@` suggests members to mention. On
+/// iPhone a chat's box opens up while you type: the text gets its own row, and below it a row of
+/// buttons with the chat's context and a gauge for its model and thinking.
 struct MessageBox: View {
     let placeholder: String
     let isRunning: Bool
@@ -90,6 +100,8 @@ struct MessageBox: View {
     var inCall = false
     /// Chats only: skills and commands to offer after `/`.
     var commands: SlashCommands?
+    /// Chats only: the model, thinking and context controls the iPhone shows while you type.
+    var chat: ChatControls?
     let send: (String) -> Void
     let stop: () -> Void
 
@@ -105,6 +117,35 @@ struct MessageBox: View {
     @FocusState private var focused: Bool
     @Environment(\.conversationTaps) private var conversationTaps
     @State private var dictation = Dictation()
+    /// iPhone: the gauge's level picker is open above the box.
+    @State private var pickingLevel = false
+    /// iPhone: the model sheet is open.
+    @State private var choosingModel = false
+
+    #if os(iOS)
+        /// Larger than the Mac's, for thumbs: 34 pt buttons in 6 pt of padding.
+        private static let buttonSize: CGFloat = 34
+        private static let inset: CGFloat = 6
+        private static let fontSize: CGFloat = 17
+        private static let fieldPadding: CGFloat = 6
+    #else
+        private static let buttonSize: CGFloat = 28
+        private static let inset: CGFloat = 4
+        private static let fontSize: CGFloat = 15
+        private static let fieldPadding: CGFloat = 4
+    #endif
+    /// Round ends on one line.
+    private static var cornerRadius: CGFloat { buttonSize / 2 + inset }
+
+    /// iPhone: while you type in a chat, the text gets the box's whole width and the buttons and
+    /// the chat's settings move to a row below it.
+    private var expanded: Bool {
+        #if os(iOS)
+            focused && chat != nil
+        #else
+            false
+        #endif
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -113,6 +154,15 @@ struct MessageBox: View {
                     items: menu, highlighted: min(highlighted, menu.count - 1), highlight: { highlighted = $0 },
                     pick: pick)
             }
+            #if os(iOS)
+                if menu.isEmpty, pickingLevel, let chat {
+                    LevelPanel(chat: chat) {
+                        pickingLevel = false
+                        choosingModel = true
+                    }
+                    .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .bottom)))
+                }
+            #endif
             VStack(alignment: .leading, spacing: 4) {
                 if let quote = replyTo?.wrappedValue {
                     ReplyChip(quote: quote) { replyTo?.wrappedValue = nil }
@@ -135,13 +185,30 @@ struct MessageBox: View {
                             .padding(.horizontal, 8)
                     }
                 }
-                HStack(alignment: .bottom, spacing: 8) {
-                    if let attaching {
-                        AttachButton { attaching.attachments.append(contentsOf: $0) }
+                #if os(iOS)
+                    ComposerLayout(expanded: expanded) {
+                        if let attaching {
+                            AttachButton { attaching.attachments.append(contentsOf: $0) }
+                                .layoutValue(key: ComposerLayout.RoleKey.self, value: .leading)
+                        }
+                        field
+                        HStack(spacing: 4) {
+                            if expanded, let chat {
+                                ComposerControls(chat: chat, pickingLevel: $pickingLevel)
+                            }
+                            sendButton
+                        }
+                        .layoutValue(key: ComposerLayout.RoleKey.self, value: .trailing)
                     }
-                    field
-                    sendButton
-                }
+                #else
+                    HStack(alignment: .bottom, spacing: 8) {
+                        if let attaching {
+                            AttachButton { attaching.attachments.append(contentsOf: $0) }
+                        }
+                        field
+                        sendButton
+                    }
+                #endif
                 switch dictation.state {
                 case .denied(let message):
                     DictationProblem(message: message, showsSettings: true, dismiss: dictation.dismissProblem)
@@ -151,16 +218,31 @@ struct MessageBox: View {
                     EmptyView()
                 }
             }
-            // 36 pt tall on one line, like the name pill above.
-            .padding(4)
-            .floatingSurface(in: RoundedRectangle(cornerRadius: 18))
+            // On the Mac 36 pt tall on one line, like the name pill above.
+            .padding(Self.inset)
+            .floatingSurface(in: RoundedRectangle(cornerRadius: Self.cornerRadius))
         }
-        .onAppear { focused = true }
+        .environment(\.composerButtonSize, Self.buttonSize)
+        .animation(.smooth(duration: 0.25), value: expanded)
+        .animation(.smooth(duration: 0.2), value: pickingLevel)
+        #if os(macOS)
+            .onAppear { focused = true }
+        #else
+            // The level picker closes as you type on, put the keyboard away, or tap the chat.
+            .onChange(of: text) { pickingLevel = false }
+            .onChange(of: focused) { _, focused in if !focused { pickingLevel = false } }
+            .sheet(isPresented: $choosingModel) {
+                if let chat { ModelSheet(chat: chat) }
+            }
+        #endif
         .onDisappear { dictation.stop() }
         // The menu reads the gateway's list each time it opens.
         .onChange(of: slashQuery != nil) { _, open in if open { commands?.load() } }
-        // Clicking or tapping the conversation closes the menu, like Escape.
-        .onChange(of: conversationTaps) { closeMenu() }
+        // Clicking or tapping the conversation closes the menus, like Escape.
+        .onChange(of: conversationTaps) {
+            closeMenu()
+            pickingLevel = false
+        }
         .onChange(of: menuText) { _, text in
             highlighted = 0
             if text != dismissedText { dismissedText = nil }
@@ -252,7 +334,7 @@ struct MessageBox: View {
             selection: $selection, axis: .vertical
         )
         .textFieldStyle(.plain)
-        .font(.system(size: 15))
+        .font(.system(size: Self.fontSize))
         .lineLimit(1...8)
         .focused($focused)
         // Return sends, or picks from an open menu; Shift-Return starts a new line.
@@ -276,15 +358,15 @@ struct MessageBox: View {
                 Task { attaching?.attachments.append(contentsOf: await AttachmentLoader.load(providers)) }
             }
         #endif
-        .padding(.leading, attaching == nil ? 12 : 0)
-        .padding(.vertical, 4)
+        .padding(.leading, expanded ? 8 : (attaching == nil ? 12 : 0))
+        .padding(.vertical, Self.fieldPadding)
     }
 
     @ViewBuilder private var sendButton: some View {
         if attaching?.isUploading == true {
             ProgressView()
                 .controlSize(.small)
-                .frame(width: 28, height: 28)
+                .frame(width: Self.buttonSize, height: Self.buttonSize)
                 .accessibilityLabel(Text("Uploading"))
         } else if isRunning, isEmpty, !hasAttachments, !dictation.isListening {
             RoundButton(systemImage: "stop.fill", label: stopLabel, action: stop)
@@ -389,13 +471,14 @@ private struct RoundButton: View {
     let systemImage: String
     let label: String
     let action: () -> Void
+    @Environment(\.composerButtonSize) private var size
 
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 12, weight: .bold))
+                .font(.system(size: size * 12 / 28, weight: .bold))
                 .foregroundStyle(Theme.primaryInk)
-                .frame(width: 28, height: 28)
+                .frame(width: size, height: size)
                 .background(Theme.primary, in: Circle())
                 .contentShape(Circle())
         }

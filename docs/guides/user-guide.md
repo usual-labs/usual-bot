@@ -88,7 +88,7 @@ Commands that only make sense in a terminal or the desktop app are left out of t
 
 ## Model, thinking and context
 
-Below the message box, on the right:
+On the Mac they sit below the message box, on the right:
 
 - **The model menu** switches the model for this chat only. Expensive models ask first. If the
   agent is mid-reply, the switch takes effect from your next message.
@@ -98,6 +98,16 @@ Below the message box, on the right:
 
 Both menus also offer **Make Default for <agent>**, which saves the choice as the agent's default
 everywhere, including in the official Hermes app.
+
+On iPhone they appear inside the message box while you type, in the row of buttons under your
+text:
+
+- **The context ring** shows how full the context is; tap it for the numbers and **Compress
+  Conversation**.
+- **The gauge** shows how hard the model thinks: its needle rises with the level. Tap it to open a
+  slider of levels above the box, with the keyboard still up; tap or slide to a level.
+- **The model name** above the slider opens **Model and thinking**, with the full model list and
+  every level, each with **Make Default for <agent>**.
 
 ## Dictation and voice calls
 

@@ -37,7 +37,7 @@ struct RoomPane: View {
                         replyTo: $replyTo, commands: roomSkills, send: room.send, stop: room.stop
                     )
                     .frame(maxWidth: 780)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, ThreadPane.composerMargin)
                 }
             }
             .onChange(of: room.roomID) {

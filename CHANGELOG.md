@@ -11,6 +11,14 @@ All notable changes to Usual Bot are listed here. The format follows
 - Release downloads carry a build-provenance attestation: `gh attestation verify` shows the
   workflow and commit a disk image came from.
 
+### Changed
+
+- **iPhone message box.** It's larger and sits lower. While you type, your text gets its own row and
+  the buttons a row below it, with the context ring and a gauge for the model and thinking: the
+  gauge opens a level slider, and the model name opens the full model and thinking settings. The
+  row of menus under the box is gone on iPhone; the Mac is unchanged. The box no longer opens the
+  keyboard by itself when a chat opens, and scrolling the conversation puts the keyboard away.
+
 ## 0.2.0 - 2026-10-25
 
 ### Added

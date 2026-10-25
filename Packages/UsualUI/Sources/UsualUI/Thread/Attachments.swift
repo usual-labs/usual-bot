@@ -87,6 +87,7 @@ enum AttachmentLoader {
 /// Photos, the camera and Files.
 struct AttachButton: View {
     let add: ([Attachment]) -> Void
+    @Environment(\.composerButtonSize) private var size
 
     @State private var choosingFiles = false
     #if os(iOS)
@@ -159,9 +160,9 @@ struct AttachButton: View {
     private var icon: some View {
         // A grey circle the size of Send, as in the mockups.
         Image(systemName: "plus")
-            .font(.system(size: 13, weight: .semibold))
+            .font(.system(size: size * 13 / 28, weight: .semibold))
             .foregroundStyle(Theme.ink)
-            .frame(width: 28, height: 28)
+            .frame(width: size, height: size)
             .background(Theme.selection, in: Circle())
             .contentShape(Circle())
     }

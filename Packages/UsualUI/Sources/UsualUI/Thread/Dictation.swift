@@ -226,15 +226,16 @@ private final class SpeechSession: @unchecked Sendable {
 struct MicButton: View {
     let dictation: Dictation
     let start: () -> Void
+    @Environment(\.composerButtonSize) private var size
 
     var body: some View {
         Button {
             if dictation.isListening { dictation.stop() } else { start() }
         } label: {
             Image(systemName: dictation.isListening ? "stop.fill" : "mic.fill")
-                .font(.system(size: dictation.isListening ? 11 : 13, weight: .semibold))
+                .font(.system(size: size * (dictation.isListening ? 11 : 13) / 28, weight: .semibold))
                 .foregroundStyle(dictation.isListening ? Theme.primaryInk : Theme.ink)
-                .frame(width: 28, height: 28)
+                .frame(width: size, height: size)
                 .background(dictation.isListening ? Theme.primary : Theme.selection, in: Circle())
                 .overlay {
                     if dictation.isListening {
@@ -287,13 +288,14 @@ struct DictationProblem: View {
 /// Starts a voice call, beside the mic in an empty message box.
 struct CallStartButton: View {
     let action: () -> Void
+    @Environment(\.composerButtonSize) private var size
 
     var body: some View {
         Button(action: action) {
             Image(systemName: "waveform")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: size * 13 / 28, weight: .semibold))
                 .foregroundStyle(Theme.ink)
-                .frame(width: 28, height: 28)
+                .frame(width: size, height: size)
                 .background(Theme.selection, in: Circle())
                 .contentShape(Circle())
         }

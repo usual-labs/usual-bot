@@ -12,6 +12,14 @@ struct ThreadPane: View {
     /// Shows or hides the agent's profile; `nil` when the contact has none.
     var toggleProfile: (() -> Void)? = nil
 
+    /// The message box's distance from the window's sides, in chats and rooms. iPhone gives the
+    /// box more of its narrow width.
+    #if os(iOS)
+        static let composerMargin: CGFloat = 12
+    #else
+        static let composerMargin: CGFloat = 20
+    #endif
+
     /// Files waiting to go with the next message.
     @State private var attachments: [Attachment] = []
     /// The message you're replying to.
@@ -36,7 +44,8 @@ struct ThreadPane: View {
                 }
             }
             .animation(.smooth(duration: 0.25), value: calling)
-            // The model menus under the box bring their own space, so the bar's margin shrinks.
+            // On the Mac the model menus under the box bring their own space, so the bar's margin
+            // shrinks. iPhone shows them inside the box.
             .chatBars(bottomPadding: thread?.model == nil ? nil : ModelControls.gap) {
                 namePill
             } bottom: {
@@ -48,8 +57,8 @@ struct ThreadPane: View {
                         inCall: calling, startCall: { calling = true }
                     )
                     .frame(maxWidth: 780)
-                    // ModelControls' row and gaps below the box add up to this margin too.
-                    .padding(.horizontal, 20)
+                    // On the Mac, ModelControls' row and gaps below the box add up to this margin too.
+                    .padding(.horizontal, Self.composerMargin)
                 }
             }
             // Drop files anywhere on the chat to attach them.
@@ -206,9 +215,12 @@ struct NamePill: View {
 private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
     let top: Top
     let bottom: Bottom
+    /// The Mac's margin under `bottom`, in place of the usual one.
     let bottomPadding: CGFloat?
     /// Counts clicks and taps on the conversation, so the message box can close its menu.
     @State private var outsideTaps = 0
+    /// iPhone: the safe area under the bottom bar, the home indicator's or the keyboard's.
+    @State private var bottomInset: CGFloat = 0
 
     func body(content: Content) -> some View {
         let conversation = content.simultaneousGesture(TapGesture().onEnded { outsideTaps += 1 })
@@ -224,15 +236,38 @@ private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
         #else
             conversation
                 .safeAreaInset(edge: .bottom, spacing: 0) {
-                    bottom.padding(.top, 8).padding(.bottom, bottomPadding ?? 12)
+                    bottom.padding(.top, 8).padding(.bottom, iPhoneBottomPadding)
+                }
+                // A view that reaches past the safe area measures it.
+                .background {
+                    Color.clear
+                        .ignoresSafeArea(.container, edges: .bottom)
+                        .onGeometryChange(for: CGFloat.self) {
+                            $0.safeAreaInsets.bottom
+                        } action: {
+                            bottomInset = $0
+                        }
                 }
                 .navigationBarTitleDisplayMode(.inline)
                 .principalToolbarItem(top)
         #endif
     }
+
+    #if os(iOS)
+        /// iPhone: with the keyboard down the box reaches a little into the home indicator's area, so
+        /// it sits low like other messengers'; with the keyboard up it keeps clear of the keys. A home
+        /// indicator takes 34 pt at most and a keyboard hundreds (see known issues); phones without a
+        /// home indicator report none.
+        private var iPhoneBottomPadding: CGFloat {
+            if bottomInset > 50 { return 10 }
+            return bottomInset > 0 ? -8 : 12
+        }
+    #endif
 }
 
 extension EnvironmentValues {
     /// Goes up with each click or tap on the conversation above the message box.
     @Entry var conversationTaps = 0
+    /// The round buttons in the message box: 28 pt on the Mac, larger on iPhone.
+    @Entry var composerButtonSize: CGFloat = 28
 }

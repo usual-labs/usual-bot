@@ -97,3 +97,29 @@ No confirmed recurring failures were established during source inspection. A mis
 - Fix: `MessageBox.replaceText(with:)` sets the text and puts the insertion point at its end; menu
   picks (`/` and `@`) and prefills (/retry, Edit) go through it. Checked in the iPhone Simulator.
 
+## The bottom safe area doesn't separate the keyboard from the home indicator (confirmed 2026-10-25)
+
+- Symptom: an iPhone row under the message box that hung into the home-indicator area (since
+  replaced by controls inside the box) slid half under the keyboard when a reader that ignores
+  only `.container` decided how far it may hang.
+- Cause (measured in the iOS 26.5 Simulator, iPhone 17 Pro): at the bottom edge a clear view that
+  ignores `.container` and one that ignores `.keyboard` report the same
+  `safeAreaInsets.bottom`: 34 pt with the keyboard down (also with a hardware keyboard and the
+  field focused), 335 pt with it up. Neither isolates the home indicator.
+- Fix: `ChatBars` reads one value and treats 50 pt or less as the home indicator, anything larger
+  as the keyboard; `iPhoneBottomPadding` uses it to drop the message box 8 pt into the home
+  indicator's area only while the keyboard is down. Keep that threshold above 34 pt (iPhone) and
+  below any keyboard height if it changes.
+
+## Moving a view between stacks resets it (by design, 2026-10-25)
+
+- The iPhone message box puts its buttons in a row of their own while you type. Moving `+` or
+  the field from one `HStack` to another would make SwiftUI build new ones: the field would
+  lose focus as it gained it, and `+` would drop a photo picker it had open (its presentation
+  state lives in the button).
+- `ComposerLayout` is one custom `Layout` that only repositions the same subviews, tagged with
+  `ComposerLayout.RoleKey`. Keep views that hold focus or presentation state in one place in
+  the hierarchy and change the layout around them.
+- Demo mode can't show a level change: `ChatThread.setReasoning` needs a live session, so the
+  level slider snaps back there (the slider's drag was checked by screenshots mid-drag).
+
