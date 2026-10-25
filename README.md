@@ -5,8 +5,9 @@
 <h1 align="center">Usual Bot</h1>
 
 <p align="center">
-  <strong>A native messenger for your <a href="https://github.com/NousResearch/hermes-agent">Hermes Agent</a> team, on Mac and iPhone.</strong><br>
-  Each agent is a contact. Chat with them, approve what they want to run, and group them in rooms.
+  <strong>A new home for your <a href="https://github.com/NousResearch/hermes-agent">Hermes</a> Bots.</strong><br>
+  A native Mac and iPhone messenger that works with Hermes <a href="https://hermes-agent.nousresearch.com/docs/user-guide/bot-mode">Bot Mode</a>.<br>
+  Chat with your Bots, approve what they want to run, and group them in rooms.
 </p>
 
 <p align="center">
