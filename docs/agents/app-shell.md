@@ -12,6 +12,13 @@ Verified 2026-10-23 in the iPhone 17 Pro simulator against the user's gateway: s
 
 Debug builds started with `USUALBOT_DEMO=1` use `AppModel.demo()` (made-up agents, a room, an approval and routines; never connects) instead of signing in; README screenshots come from it. Launch arguments such as `-selectedContact forge` pick the open chat without overwriting stored settings.
 
+Released Mac builds (`.github/workflows/release.yml`) use bundle ID `labs.usual.UsualBot`
+(`BUNDLE_ID_PREFIX=labs.usual`), `MARKETING_VERSION` from the tag without any pre-release suffix and
+the run number as `CURRENT_PROJECT_VERSION`, are signed with Developer ID plus the hardened runtime
+(no provisioning profile; the entitlements need none), and are notarized and stapled, as is the
+`.dmg`. Debug/dev builds keep `dev.usualbot.local` (or the `Local.xcconfig` prefix), so they don't
+share settings or the Keychain item's trust with the released app.
+
 Source anchors: `App/UsualBotApp.swift`, `App/SignInPresenters.swift`.
 
 Icon and launch: `App/Assets.xcassets` holds `AppIcon` (the Hermes doodle centred on white at 78%,

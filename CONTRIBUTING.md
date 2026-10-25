@@ -84,6 +84,11 @@ In the pull request, describe the change and how you checked it. For UI changes,
 of the Mac and the iPhone (the demo is fine), in light and dark mode if colours changed. The pull
 request template has a short checklist.
 
+## Releases
+
+Maintainers publish releases by pushing a version tag; a workflow signs, notarizes and attaches the
+Mac disk image. See [Releasing](docs/guides/releasing.md).
+
 ## Debug switches
 
 Debug builds read these environment variables:

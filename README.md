@@ -25,15 +25,28 @@ one thing well: talking to your agents. Settings, skill setup and everything els
 official Hermes app.
 
 > [!NOTE]
-> Usual Bot is an independent open-source project, not made by Nous Research. It's young: you build
-> it from source, and it's tested against the Hermes dashboard gateway. See [What you need](#what-you-need).
+> Usual Bot is an independent open-source project, not made by Nous Research. It's young, and it's
+> tested against the Hermes dashboard gateway. See [What you need](#what-you-need).
 
-## Quick start
+## Install
+
+**Mac:** from version 0.2.0 on, download `UsualBot-<version>.dmg` from the
+[latest release](https://github.com/usual-labs/usual-bot/releases/latest), open it, and drag
+**Usual Bot** to Applications. It's signed and notarized by Apple, so it opens like any other app.
+Needs macOS 15 or later, on Apple silicon or Intel.
+
+**iPhone:** there's no download yet; build it from source (below).
+
+Then sign in to your gateway; [Getting started](docs/guides/getting-started.md#2-get-your-gateway-ready)
+shows what it needs.
+
+## Build from source
 
 **Try it in a minute, without a gateway.** You need a Mac with Xcode 26 or newer.
 
 ```sh
-cd usual-bot   # your clone of this repository
+git clone https://github.com/usual-labs/usual-bot.git
+cd usual-bot
 xcodebuild -project UsualBot.xcodeproj -scheme UsualBot -destination 'platform=macOS' \
   -derivedDataPath build build
 USUALBOT_DEMO=1 build/Build/Products/Debug/UsualBot.app/Contents/MacOS/UsualBot
@@ -131,7 +144,7 @@ The [user guide](docs/guides/user-guide.md) walks through each of these.
   OAuth); Usual Bot uses its browser sign-in for apps (`native_pkce` in `/api/status`).
 - **Tested with** Hermes Agent 0.21.5 and 0.22.5. Gateways that speak Hermes's newer canonical
   session protocol (`hermes gateway`) connect, but chats there aren't supported yet.
-- **To build:** Xcode 26 or newer. The app runs on macOS 15 and iOS 18 or later.
+- **The app** runs on macOS 15 and iOS 18 or later. Building it needs Xcode 26 or newer.
 
 ## Documentation
 
@@ -141,6 +154,7 @@ The [user guide](docs/guides/user-guide.md) walks through each of these.
 | [User guide](docs/guides/user-guide.md) | Every feature, with keyboard shortcuts |
 | [Troubleshooting](docs/guides/troubleshooting.md) | What error messages mean and how to fix them |
 | [Architecture](docs/guides/architecture.md) | How the code is laid out and talks to the gateway |
+| [Releasing](docs/guides/releasing.md) | For maintainers: signing, notarizing and publishing a release |
 | [Contributing](CONTRIBUTING.md) | Setting up, checks, and how to send a pull request |
 | [Changelog](CHANGELOG.md) | What changed in each version |
 

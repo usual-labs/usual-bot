@@ -9,4 +9,4 @@ One transparent assistant avatar matching the monochrome doodle family in `../20
 - [Exact prompt](PROMPT.md); generated with the built-in image generation tool.
 - [Verification](verification.json): transparent corners/background and an opaque interior are present. Saved image bytes are unchanged from the generated original.
 
-The artwork preserves the icon's black bob, bangs, headphones, and three-quarter bust while simplifying its face to two dots. It is a custom interpretation, not an official replacement logo. Since 24 October 2026 it is Usual Bot's app icon character: `scripts/make-app-icon.swift` makes the app icon (on white), the iPhone launch image and the sign-in/splash mark from it.
+The artwork preserves the icon's black bob, bangs, headphones, and three-quarter bust while simplifying its face to two dots. It is a custom interpretation, not an official replacement logo. Since 24 October 2026 it is Usual Bot's app icon character: the app icon (on white), the iPhone launch image and the sign-in/splash mark are made from it.

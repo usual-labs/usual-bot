@@ -24,7 +24,15 @@
   Code of Conduct's contact points at the maintainer's GitHub profile (a dedicated address
   would be better). The history was rewritten before the first push so that no
   commit contains the maintainer's tailnet IP or tailnet name; tests and comments use
-  Tailscale's example address `100.101.102.103`. Tag `v0.1.0` is pushed; no GitHub release or built app is published.
+  Tailscale's example address `100.101.102.103`. Tag `v0.1.0` is pushed; no GitHub release or built app is published yet.
+- Release pipeline (25 October 2026): `release.yml` is written but has never run. Checked
+  locally: its notes step (release, pre-release, missing section, bad tag), the export-options plist, a Release archive with the release
+  bundle ID and version stamping (universal arm64/x86_64, hardened runtime, sandbox
+  entitlements, no `get-task-allow`) and the DMG layout, all ad-hoc signed because this Mac
+  has no Developer ID certificate. Unverified until the maintainer adds the six secrets and
+  pushes a pre-release tag: Developer ID signing without a provisioning profile, export,
+  notarization (including whether the API key's Developer role suffices) and `spctl`. The
+  README's install link points at `releases/latest`, which 404s until the first release.
 
 For new issues record symptom → source-supported cause → verified fix or explicitly
 unverified recommendation → prevention and status.

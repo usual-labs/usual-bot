@@ -1,0 +1,186 @@
+name: Release
+
+# Pushing a version tag (v0.2.0, or v0.2.0-rc.1 for a pre-release) builds the Mac app, signs it
+# with the team's Developer ID, has Apple notarize it, and publishes a GitHub release with the
+# .dmg attached. The repository secrets it needs are listed in docs/guides/releasing.md.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+
+env:
+  # The released app's bundle ID is labs.usual.UsualBot. Changing it later makes the app look new
+  # to macOS: people sign in again and lose their settings.
+  BUNDLE_ID_PREFIX: labs.usual
+
+jobs:
+  mac:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version and notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+            echo "::error::Tag $GITHUB_REF_NAME isn't a version like v1.2.3 or v1.2.3-rc.1."
+            exit 1
+          fi
+          # The notes are the changelog's section for this version; a pre-release takes the notes of
+          # the version it leads up to.
+          notes_version="${version%%-*}"
+          awk -v version="$notes_version" '
+            /^## / { if (found) exit; if ($2 == version) { found = 1; next } }
+            found { print }
+          ' CHANGELOG.md | sed '/./,$!d' > "$RUNNER_TEMP/notes.md"
+          if [ ! -s "$RUNNER_TEMP/notes.md" ]; then
+            echo "::error::CHANGELOG.md has no \"## $notes_version\" section. Rename Unreleased to \"## $notes_version - <date>\" first."
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          # macOS wants a plain x.y.z as the app's version; the build number tells pre-releases apart.
+          echo "APP_VERSION=${version%%-*}" >> "$GITHUB_ENV"
+          echo "DMG=UsualBot-$version.dmg" >> "$GITHUB_ENV"
+          case "$version" in *-*) echo "PRERELEASE=--prerelease" >> "$GITHUB_ENV" ;; esac
+
+      - name: Check the signing secrets
+        env:
+          MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          APPSTORE_API_KEY_P8: ${{ secrets.APPSTORE_API_KEY_P8 }}
+        run: |
+          missing=""
+          for name in MACOS_CERTIFICATE_P12 MACOS_CERTIFICATE_PASSWORD APPLE_TEAM_ID \
+              APPSTORE_API_KEY_ID APPSTORE_API_ISSUER_ID APPSTORE_API_KEY_P8; do
+            eval "value=\${$name}"
+            [ -n "$value" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing. See docs/guides/releasing.md."
+            exit 1
+          fi
+
+      - name: Toolchain
+        run: xcodebuild -version
+
+      - name: Import the Developer ID certificate
+        env:
+          MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/release.keychain-db"
+          password="$(openssl rand -base64 24)"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          printf '%s' "$MACOS_CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -f pkcs12 -T /usr/bin/codesign -T /usr/bin/security
+          rm "$RUNNER_TEMP/certificate.p12"
+          # Apple's intermediate for Developer ID certificates, in case the runner lacks it.
+          curl -fsSL https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer -o "$RUNNER_TEMP/DeveloperIDG2CA.cer"
+          security import "$RUNNER_TEMP/DeveloperIDG2CA.cer" -k "$keychain" || true
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          security find-identity -v -p codesigning "$keychain"
+          echo "KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+
+      - name: Archive
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: >
+          xcodebuild archive -project UsualBot.xcodeproj -scheme UsualBot -configuration Release
+          -destination 'generic/platform=macOS' -archivePath "$RUNNER_TEMP/UsualBot.xcarchive"
+          MARKETING_VERSION="$APP_VERSION" CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
+          BUNDLE_ID_PREFIX="$BUNDLE_ID_PREFIX" DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
+          CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Developer ID Application"
+          OTHER_CODE_SIGN_FLAGS="--timestamp --keychain $KEYCHAIN"
+
+      - name: Export the signed app
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>developer-id</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Developer ID Application</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/UsualBot.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+          app="$RUNNER_TEMP/export/UsualBot.app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign -dv "$app" 2>&1 | grep -E 'Authority=Developer ID Application|flags=.*runtime'
+          echo "APP=$app" >> "$GITHUB_ENV"
+
+      - name: Write the App Store Connect key
+        env:
+          APPSTORE_API_KEY_P8: ${{ secrets.APPSTORE_API_KEY_P8 }}
+        run: |
+          printf '%s\n' "$APPSTORE_API_KEY_P8" > "$RUNNER_TEMP/notary-key.p8"
+          echo "NOTARY_KEY_PATH=$RUNNER_TEMP/notary-key.p8" >> "$GITHUB_ENV"
+
+      - name: Notarize the app and the disk image
+        env:
+          NOTARY_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+        run: |
+          # Sends a file to Apple's notary service, waits for the verdict, and staples the ticket to
+          # the app or disk image so it opens without a network check. If Apple refuses it, its log
+          # names the file and the rule.
+          notarize() {
+            result=$(xcrun notarytool submit "$1" --key "$NOTARY_KEY_PATH" --key-id "$NOTARY_KEY_ID" \
+              --issuer "$NOTARY_ISSUER_ID" --wait --timeout 30m --output-format json)
+            id=$(printf '%s' "$result" | plutil -extract id raw -o - -)
+            status=$(printf '%s' "$result" | plutil -extract status raw -o - -)
+            echo "Notarization $id: $status"
+            if [ "$status" != "Accepted" ]; then
+              xcrun notarytool log "$id" --key "$NOTARY_KEY_PATH" --key-id "$NOTARY_KEY_ID" \
+                --issuer "$NOTARY_ISSUER_ID"
+              exit 1
+            fi
+            xcrun stapler staple "$2"
+            xcrun stapler validate "$2"
+          }
+
+          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/UsualBot.zip"
+          notarize "$RUNNER_TEMP/UsualBot.zip" "$APP"
+
+          stage="$RUNNER_TEMP/dmg"
+          mkdir -p "$stage"
+          ditto "$APP" "$stage/UsualBot.app"
+          ln -s /Applications "$stage/Applications"
+          hdiutil create -volname "Usual Bot" -srcfolder "$stage" -fs HFS+ -format UDZO -ov "$DMG"
+          codesign --sign "Developer ID Application" --keychain "$KEYCHAIN" --timestamp "$DMG"
+          notarize "$DMG" "$DMG"
+          spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
+          shasum -a 256 "$DMG" > "$DMG.sha256"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME" "$DMG" "$DMG.sha256"
+          --title "Usual Bot $VERSION" --notes-file "$RUNNER_TEMP/notes.md" --verify-tag $PRERELEASE
+
+      - name: Clean up
+        if: always()
+        run: |
+          [ -n "${KEYCHAIN:-}" ] && security delete-keychain "$KEYCHAIN" || true
+          rm -f "$RUNNER_TEMP/notary-key.p8"

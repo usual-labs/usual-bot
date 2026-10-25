@@ -28,6 +28,8 @@ All notable changes to Usual Bot are listed here. The format follows
 - **App icon, launch screen and sign-in mark** from the Hermes doodle.
 - Guides for getting started, using the app, troubleshooting and the architecture; a security
   policy, code of conduct, and issue and pull request templates.
+- **A signed, notarized Mac download.** Each release on GitHub has a disk image built by a
+  release workflow; released apps use the bundle ID `labs.usual.UsualBot`.
 
 ### Fixed
 
