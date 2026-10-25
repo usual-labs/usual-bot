@@ -9,4 +9,3 @@
 | Native app shell | App/, Config/, UsualBot.xcodeproj/ | App lifecycle, platform sign-in presenters, signing and Xcode target settings | App composes UsualUI and HermesKit; does not own their domain implementation |
 
 Read the chosen child AGENTS.md and KB before editing. Child docs own detailed APIs and local conventions.
-
