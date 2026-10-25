@@ -47,7 +47,13 @@
   immutable): the publish job creates a draft, attaches assets, then publishes; a published
   release's assets and tag can't change and tags can't be reused, so test releases need a new
   `-rc.N`. Dependabot (`.github/dependabot.yml`) groups weekly updates of the pinned actions;
-  vulnerability alerts and security-update PRs are on. The org doesn't require two-factor
+  vulnerability alerts and security-update PRs are on. Automated security checks: CodeQL default
+  setup (Swift + Actions; GitHub turned it on by itself, no workflow file), zizmor
+  (`zizmor.yml`, clean even at `--persona pedantic` on 25 October 2026) and OpenSSF Scorecard
+  (`scorecard.yml`, README badge). The Actions allow-list adds exactly two third-party actions,
+  `zizmorcore/zizmor-action` and `ossf/scorecard-action` (any SHA, but pins are required). The CI
+  job keeps `name: build` because that is the required status check on main; renaming it means
+  updating the "main: pull requests and CI" ruleset. The org doesn't require two-factor
   authentication (changing it needs the `admin:org` scope or the web UI).
 - Release pipeline (verified 25 October 2026): the six secrets were set from the maintainer's
   Developer ID certificate (team G6WL4CPNV3) and an App Store Connect key with the
