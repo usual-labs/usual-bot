@@ -30,6 +30,9 @@ public struct Contact: Identifiable, Hashable, Sendable, Codable {
     public var chatID: String?
     /// What the profile panel shows about an agent; `nil` for rooms.
     public var details: AgentDetails?
+    /// The agent's own picture on the gateway, set in the official app, or `nil` when it has none
+    /// and the client draws one of its own characters. `BotPictures` holds the image itself.
+    public var picture: Picture?
 
     public init(
         id: String,
@@ -42,7 +45,8 @@ public struct Contact: Identifiable, Hashable, Sendable, Codable {
         activity: Activity = .idle,
         isPinned: Bool = false,
         chatID: String? = nil,
-        details: AgentDetails? = nil
+        details: AgentDetails? = nil,
+        picture: Picture? = nil
     ) {
         self.id = id
         self.name = name
@@ -55,6 +59,22 @@ public struct Contact: Identifiable, Hashable, Sendable, Codable {
         self.isPinned = isPinned
         self.chatID = chatID
         self.details = details
+        self.picture = picture
+    }
+
+    /// An agent's own picture (uploaded or generated in the official app) as the roster reports it.
+    public struct Picture: Hashable, Sendable, Codable {
+        /// The revision of the agent's Bot Mode settings. The official app saves them with every new
+        /// picture, so a new revision means the picture may have changed.
+        public var revision: Int
+        /// The official app marked it a photo, so even a 160 px PNG is the user's picture and not
+        /// a still of the app's drawn face.
+        public var isPhoto: Bool
+
+        public init(revision: Int, isPhoto: Bool) {
+            self.revision = revision
+            self.isPhoto = isPhoto
+        }
     }
 }
 

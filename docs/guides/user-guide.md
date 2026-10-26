@@ -23,6 +23,8 @@ Each Bot (a Hermes profile) on your gateway is a contact, with one ongoing chat:
 Chat" the Hermes desktop app keeps for it. Bot Mode's group chats are the rooms, in the same
 list. The most recent conversation is at the top.
 
+- A Bot shows the picture you gave it in the Hermes app. Without one, it gets one of Usual Bot's
+  characters.
 - A ring around an avatar means the agent is working.
 - **Needs you** means it's waiting for your approval or an answer.
 - Search (⌘F on the Mac) filters the list by name.

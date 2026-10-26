@@ -14,8 +14,9 @@ struct RosterTests {
            "canonical_session":{"id":"s1","resolved_id":"s1b","root_title":"Bot Chat","title":"Bot Chat",
              "preview":"Pushed release/0.3.1","started_at":1700000000,"last_active":1700000500.5,"message_count":42},
            "last_session":null,"worker_session":null},
-          {"name":"scout","description":"Reads feeds","display_name":"Scout","ui_meta":{"hermes-bots":{"color":7}},
-           "canonical_session":null},
+          {"name":"scout","description":"Reads feeds","display_name":"Scout",
+           "ui_meta_revisions":{"hermes-bots":4},"ui_meta":{"hermes-bots":{"color":7,"imageKind":"photo"}},
+           "has_avatar":true,"canonical_session":null},
           {"name":"old-bot","ui_meta":{"hermes-bots":{"hidden":true}}},
           {"name":"ops","ui_meta":"not-an-object","canonical_session":{"id":"s3","preview":"","last_active":0}}
         ],"bot_mode_protocol":true,"install_id":"i1"}
@@ -33,12 +34,14 @@ struct RosterTests {
         #expect(hermes.preview == "Pushed release/0.3.1")
         #expect(hermes.lastActive == Date(timeIntervalSince1970: 1_700_000_500.5))
         #expect(hermes.isPinned)
+        #expect(hermes.picture == nil)  // No avatar asset: the app draws its character.
 
         let scout = contacts[1]
         #expect(scout.name == "Scout")
         #expect(scout.tint == nil)
         #expect(scout.preview == "Reads feeds")
         #expect(scout.lastActive == nil)
+        #expect(scout.picture == Contact.Picture(revision: 4, isPhoto: true))
 
         let ops = contacts[2]
         #expect(ops.name == "Ops")

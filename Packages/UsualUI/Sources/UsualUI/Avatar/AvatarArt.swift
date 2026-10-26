@@ -12,8 +12,24 @@ import SwiftUI
 @MainActor
 enum AvatarArt {
     private static var cache: [String: Image] = [:]
+    /// Agents' own pictures, decoded once per change, by contact ID.
+    private static var pictures: [String: (data: Data, image: Image)] = [:]
 
     static func image(_ character: String) -> Image? { resource("avatar-\(character)") }
+
+    /// An agent's own picture (PNG, JPEG or WebP) from the gateway.
+    static func picture(_ data: Data, for contactID: String) -> Image? {
+        if let cached = pictures[contactID], cached.data == data { return cached.image }
+        #if canImport(AppKit)
+            guard let platformImage = NSImage(data: data) else { return nil }
+            let image = Image(nsImage: platformImage)
+        #else
+            guard let platformImage = UIImage(data: data) else { return nil }
+            let image = Image(uiImage: platformImage)
+        #endif
+        pictures[contactID] = (data, image)
+        return image
+    }
 
     /// Any PNG in the package's resources, by file name without the extension.
     static func resource(_ name: String) -> Image? {

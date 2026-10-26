@@ -1,6 +1,6 @@
 # Usual Bot: roadmap after 0.1
 
-Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M22 are built (each says how far it has been checked).
+Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M23 are built (each says how far it has been checked).
 
 Shakedown, 24 October 2026: the maintainer went through every feature on the Mac against their
 (legacy-protocol) gateway: attachments (photo and file), reactions, a skill, `/status`,
@@ -322,3 +322,29 @@ Picked 24 October 2026, before the real-gateway shakedown.
 - **Checked:** a UI test for the merged skill menu; the menu (mid-message) and the panel in the
   iPhone Simulator demo.
 
+## M23: Bot pictures from Hermes (built; verified on the Mac against the maintainer's gateway 2026-10-26)
+
+- **You see:** a Bot that has a picture in the Hermes desktop app (uploaded or generated there)
+  shows it in Usual Bot: in the list, the chat header, rooms, the profile and the ⌥Space panel.
+  A Bot with one of the Hermes app's drawn faces, or none, keeps its Usual Bot character.
+- **How:** `profiles.list` rows carry `has_avatar`, `ui_meta_revisions['hermes-bots']` and
+  `ui_meta['hermes-bots'].imageKind` (`photo` or `shape`); `Contact.picture` keeps them.
+  `BotPictures` (HermesKit) reads each picture with `profiles.get_asset {name, asset: "avatar"}`
+  (a data URL: PNG, JPEG or WebP, at most 2 MB), keeps it in the offline cache, and
+  `AgentAvatar` shows it on the usual circle (the `botPictures` environment value).
+- **The drawn face's still:** the desktop app also stores a 160 × 160 PNG of its drawn face as
+  the avatar for its own notices (`isBackfilledFacePng` in its `avatar-image.ts`); uploads and
+  generated pictures are 256 px. Like the desktop's Bot list, a 160 × 160 PNG counts only when
+  `imageKind` is `photo`. In practice every Bot the desktop has shown gets such a still, so
+  `has_avatar` is true for nearly every Bot and this rule decides what shows.
+- **When pictures update:** the roster refreshes every 5 s, so a picture is read again only
+  when its revision changes (the desktop saves its Bot settings with every new picture) and once
+  per connection. `profiles.set_asset` alone doesn't bump the revision, so a picture changed
+  without the desktop shows after the next reconnect or launch. A failed read waits for the next
+  revision or connection. Room pictures (a room's own image) aren't shown.
+- **Checked:** HermesKit tests (roster decoding, one read per revision, the face still, removed
+  pictures, cached pictures read again); a render of `AgentAvatar` with and without a picture;
+  Mac and iPhone Simulator builds. On the Mac against the maintainer's gateway (a temporary
+  diagnostic build, 2026-10-26): all 12 Bots reported `has_avatar` with a 160 × 160 PNG still
+  (about 3 KB) and no `imageKind`, so all kept their characters as intended. The maintainer then
+  gave a Bot a picture in the Hermes app and reported that Usual Bot showed it.

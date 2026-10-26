@@ -8,6 +8,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Added
 
+- **Bot pictures.** A Bot that has a picture in the Hermes app (uploaded or generated there) shows
+  it in Usual Bot too. Bots with a drawn face or no picture keep Usual Bot's own characters.
 - **Homebrew.** Install with `brew install --cask usual-labs/tap/usual-bot`, and update with
   `brew upgrade --cask usual-bot`.
 - Release downloads carry a build-provenance attestation: `gh attestation verify` shows the

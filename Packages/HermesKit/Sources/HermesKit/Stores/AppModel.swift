@@ -66,6 +66,8 @@ public final class AppModel {
     /// Images and files agents name in chats, read from the gateway.
     @ObservationIgnored public private(set) lazy var media = MediaStore(auth: { [weak self] in self?.auth })
     @ObservationIgnored public private(set) lazy var voiceLive = VoiceLiveService(auth: { [weak self] in self?.auth })
+    /// Agents' own pictures from the official app; agents without one keep the app's characters.
+    @ObservationIgnored public let pictures = BotPictures()
 
     private static let gatewayKey = "gatewayAddress"
     private static let rosterInterval: Duration = .seconds(5)
@@ -105,6 +107,7 @@ public final class AppModel {
             threads = snapshot.threads.reduce(into: [:]) { threads, entry in
                 threads[entry.key] = makeThread(entry.key, cached: entry.value)
             }
+            pictures.restore(snapshot.pictures ?? [:])
             lastSaved = snapshot
         }
         begin(AuthSession(gateway: gateway, tokens: tokens, store: tokenStore, http: http))
@@ -154,6 +157,7 @@ public final class AppModel {
         routineLists = [:]
         skillLists = [:]
         media.clear()
+        pictures.clear()
         rooms = [:]
         gatewayDetails = nil
         lastSaved = nil
@@ -389,7 +393,8 @@ public final class AppModel {
     /// Writes the roster and recent messages for next launch, when they changed.
     private func saveCache(for gateway: GatewayAddress) {
         let snapshot = OfflineCache.Snapshot(
-            contacts: contacts, threads: threads.filter { $0.value.phase == .ready }.mapValues(\.cacheEntry))
+            contacts: contacts, threads: threads.filter { $0.value.phase == .ready }.mapValues(\.cacheEntry),
+            pictures: pictures.stored)
         guard snapshot != lastSaved else { return }
         do {
             try cache.save(snapshot, for: gateway)
@@ -403,6 +408,7 @@ public final class AppModel {
         let result = try await channel.call("profiles.list", params: ["include_sessions": true])
         let list = try result.decode(ProfileList.self)
         let agents = list.profiles.compactMap(Contact.init(profile:))
+        pictures.refresh(agents, on: channel)
         contacts = agents + (await refreshRooms(on: channel) ?? contacts.filter { $0.kind != .agent })
     }
 

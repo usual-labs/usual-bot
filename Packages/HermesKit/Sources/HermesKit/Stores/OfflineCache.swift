@@ -8,6 +8,8 @@ struct OfflineCache: Sendable {
     struct Snapshot: Codable, Equatable, Sendable {
         var contacts: [Contact]
         var threads: [Contact.ID: CachedThread]
+        /// Agents' own pictures. Optional, so a cache written before pictures still loads.
+        var pictures: [Contact.ID: BotPictures.Stored]? = nil
     }
 
     let directory: URL

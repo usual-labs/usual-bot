@@ -1,12 +1,14 @@
 import HermesKit
 import SwiftUI
 
-/// An agent's avatar: its character on a soft circle in the agent's colour.
+/// An agent's avatar: the picture it was given in the official app, or else its character on a soft
+/// circle in the agent's colour.
 struct AgentAvatar: View {
     let contact: Contact
     var size: CGFloat = 44
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.botPictures) private var pictures
     @State private var pulse = false
 
     var body: some View {
@@ -14,14 +16,21 @@ struct AgentAvatar: View {
         let tint = contact.tintColor(style: style)
         ZStack {
             Circle().fill(Theme.pane)
-            Circle().fill(tint.opacity(0.28))
-            if let art = AvatarArt.image(style.character) {
-                art
+            if let picture = pictures?.data(for: contact.id).flatMap({ AvatarArt.picture($0, for: contact.id) }) {
+                picture
                     .resizable()
                     .interpolation(.high)
-                    .scaledToFit()
-                    // The art keeps a transparent margin; fill more of the circle with the character.
-                    .scaleEffect(1.15)
+                    .scaledToFill()
+            } else {
+                Circle().fill(tint.opacity(0.28))
+                if let art = AvatarArt.image(style.character) {
+                    art
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                        // The art keeps a transparent margin; fill more of the circle with the character.
+                        .scaleEffect(1.15)
+                }
             }
         }
         .clipShape(Circle())
@@ -62,6 +71,11 @@ struct RoomAvatar: View {
         .frame(width: size, height: size, alignment: .topLeading)
         .accessibilityHidden(true)
     }
+}
+
+extension EnvironmentValues {
+    /// Agents' own pictures from the gateway; without them every agent shows its character.
+    @Entry var botPictures: BotPictures?
 }
 
 extension Contact {

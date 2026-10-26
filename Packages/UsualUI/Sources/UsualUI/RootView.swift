@@ -38,6 +38,7 @@ public struct RootView: View {
                 GatewayStatusButton(gateway: gateway, link: model.link, compact: compact, signOut: model.signOut)
             }
             .environment(\.media, model.media)
+            .environment(\.botPictures, model.pictures)
             .environment(\.voiceLive, model.voiceLive)
         }
     }

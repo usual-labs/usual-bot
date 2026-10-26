@@ -10,6 +10,10 @@ struct ProfileRow: Decodable, Sendable {
     let provider: String?
     let skillCount: Int?
     let bot: BotMeta?
+    /// The revision of each `ui_meta` namespace; `hermes-bots` is the Bot Mode settings.
+    let uiMetaRevisions: [String: Int]?
+    /// Whether the profile has an `avatar` asset (read with `profiles.get_asset`).
+    let hasAvatar: Bool?
     let canonicalSession: SessionSummary?
 
     /// The desktop's per-bot presentation settings, stored in `profile.yaml` under
@@ -19,6 +23,8 @@ struct ProfileRow: Decodable, Sendable {
         let color: String?
         let hidden: Bool?
         let pinned: Bool?
+        /// `photo` for an uploaded or generated picture, `shape` for one of the app's drawn faces.
+        let imageKind: String?
 
         init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -26,9 +32,10 @@ struct ProfileRow: Decodable, Sendable {
             color = try? container.decodeIfPresent(String.self, forKey: .color)
             hidden = try? container.decodeIfPresent(Bool.self, forKey: .hidden)
             pinned = try? container.decodeIfPresent(Bool.self, forKey: .pinned)
+            imageKind = try? container.decodeIfPresent(String.self, forKey: .imageKind)
         }
 
-        private enum CodingKeys: String, CodingKey { case title, color, hidden, pinned }
+        private enum CodingKeys: String, CodingKey { case title, color, hidden, pinned, imageKind }
     }
 
     /// The profile's one long-lived conversation, titled exactly "Bot Chat".
@@ -61,6 +68,9 @@ struct ProfileRow: Decodable, Sendable {
         provider = try? container.decodeIfPresent(String.self, forKey: .provider)
         skillCount = try? container.decodeIfPresent(Int.self, forKey: .skillCount)
         bot = (try? container.decodeIfPresent(UIMeta.self, forKey: .uiMeta))?.bot
+        uiMetaRevisions = (try? container.decodeIfPresent([String: JSONValue].self, forKey: .uiMetaRevisions))?
+            .compactMapValues(\.intValue)
+        hasAvatar = try? container.decodeIfPresent(Bool.self, forKey: .hasAvatar)
         canonicalSession = try? container.decodeIfPresent(SessionSummary.self, forKey: .canonicalSession)
     }
 
@@ -76,7 +86,8 @@ struct ProfileRow: Decodable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case name, displayName, description, model, provider, skillCount, uiMeta, canonicalSession
+        case name, displayName, description, model, provider, skillCount, uiMeta, uiMetaRevisions, hasAvatar
+        case canonicalSession
     }
 }
 
@@ -105,7 +116,11 @@ extension Contact {
             chatID: chat.map { $0.resolvedId ?? $0.id },
             details: AgentDetails(
                 profile: profile.name, description: profile.description?.nonBlank, model: profile.model?.nonBlank,
-                provider: profile.provider?.nonBlank, skillCount: profile.skillCount))
+                provider: profile.provider?.nonBlank, skillCount: profile.skillCount),
+            picture: profile.hasAvatar == true
+                ? Picture(
+                    revision: profile.uiMetaRevisions?["hermes-bots"] ?? 0, isPhoto: profile.bot?.imageKind == "photo")
+                : nil)
     }
 
     /// Previews are the start of the last message, usually Markdown, cut at 80 characters by the
