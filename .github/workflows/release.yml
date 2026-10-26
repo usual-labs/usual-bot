@@ -52,6 +52,8 @@ jobs:
             echo "::error::CHANGELOG.md has no \"## $notes_version\" section. Rename Unreleased to \"## $notes_version - <date>\" first."
             exit 1
           fi
+          # Every release says the app is independent of Nous Research, whatever the changelog says.
+          printf '\n%s\n' "Usual Bot is an independent open-source app, not made by, affiliated with or endorsed by Nous Research, the makers of Hermes Agent." >> "$RUNNER_TEMP/notes.md"
           echo "VERSION=$version" >> "$GITHUB_ENV"
           # macOS wants a plain x.y.z as the app's version; the build number tells pre-releases apart.
           echo "APP_VERSION=${version%%-*}" >> "$GITHUB_ENV"

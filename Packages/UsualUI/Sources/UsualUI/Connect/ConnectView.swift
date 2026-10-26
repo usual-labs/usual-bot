@@ -25,6 +25,10 @@ struct ConnectView: View {
             } else {
                 form
             }
+            Text("An independent app, not made by or affiliated with Nous Research.")
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.secondaryInk)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: 380)
         .padding(32)

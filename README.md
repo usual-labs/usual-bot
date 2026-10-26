@@ -11,6 +11,10 @@
 </p>
 
 <p align="center">
+  <sub>Free and open source, notarized by Apple, and independent: not made by, affiliated with or endorsed by Nous Research.</sub>
+</p>
+
+<p align="center">
   <img alt="macOS 15+" src="https://img.shields.io/badge/macOS-15%2B-000000?logo=apple">
   <img alt="iOS 18+" src="https://img.shields.io/badge/iOS-18%2B-000000?logo=apple">
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white">
@@ -29,8 +33,8 @@ agents are working and which need you. It does one thing well: talking to your a
 skill setup and everything else stay in the official Hermes app.
 
 > [!NOTE]
-> Usual Bot is an independent open-source project, not made by Nous Research. It's young, and it's
-> tested against the Hermes dashboard gateway. See [What you need](#what-you-need).
+> Usual Bot is young, and it's tested against the Hermes dashboard gateway. See
+> [What you need](#what-you-need).
 
 ## Install
 
@@ -192,3 +196,7 @@ Bug reports, fixes, accessibility work and protocol support are very welcome. St
 
 Usual Bot is licensed under the [Apache License 2.0](LICENSE). Hermes Agent is a separate project
 by Nous Research under its own license.
+
+Hermes and Hermes Agent are names of Nous Research. Usual Bot's icon is a fan drawing of the
+Hermes Agent character. Usual Bot is an independent project: it isn't made by, affiliated with or
+endorsed by Nous Research.

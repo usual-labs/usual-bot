@@ -36,6 +36,7 @@ on the official Hermes app icon's headphone character), its prompt, source attri
 verification. It is the app's icon character: the app icon, the iPhone launch screen and the
 sign-in/splash mark are made from it. The full-size PNG and
 local reference files follow the design asset ignore rules; the generated, smaller copies in the
-app and UsualUI are tracked.
+app and UsualUI are tracked. The copies of Nous Research's official icon (`references/`) were never
+committed and must stay out of git: the repository holds only our drawing.
 
 Do not treat generated copies, dependencies, fixtures, archives or sample snippets as independent shipped products. Their semantics remain with their owning source project.

@@ -75,7 +75,8 @@ developer.apple.com, the key in App Store Connect) and make new ones.
 1. **Check CI is green** on the commit you want to release.
 2. **Update the changelog.** Rename `## Unreleased` in `CHANGELOG.md` to the version and date,
    for example `## 0.2.0 - 2026-11-02`, and add a fresh empty `## Unreleased` above it. The
-   workflow uses that section as the release notes, and stops if it's missing.
+   workflow uses that section as the release notes, adds a line saying Usual Bot is independent of
+   Nous Research, and stops if the section is missing.
 3. **Commit, tag and push:**
 
    ```sh

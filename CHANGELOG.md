@@ -15,6 +15,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Changed
 
+- The sign-in screen and the Mac's About box say Usual Bot is an independent app, not made by or
+  affiliated with Nous Research. Release notes say so too.
 - **iPhone message box.** It's larger and sits lower. While you type, your text gets its own row and
   the buttons a row below it, with the context ring and a gauge for the model and thinking: the
   gauge opens a level slider, and the model name opens the full model and thinking settings. The
