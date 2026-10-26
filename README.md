@@ -19,7 +19,7 @@
   <a href="https://scorecard.dev/viewer/?uri=github.com/usual-labs/usual-bot"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/usual-labs/usual-bot/badge"></a>
 </p>
 
-![Usual Bot on the Mac: the chat list, and an agent asking to run a command](docs/screenshots/mac-approval.png)
+https://github.com/user-attachments/assets/3c48ca26-d8e7-4028-8acd-c5afce1ca191
 
 Usual Bot connects to the Hermes gateway you already run and works with Hermes
 [Bot Mode](https://hermes-agent.nousresearch.com/docs/user-guide/bot-mode): each Bot is a contact
@@ -72,6 +72,8 @@ To run it on your own iPhone, set your Apple team in `Config/Local.xcconfig` fir
 
 ## Screenshots
 
+![Usual Bot on the Mac: the chat list, and an agent asking to run a command](docs/screenshots/mac-approval.png)
+
 <table>
   <tr>
     <td width="50%"><img src="docs/screenshots/mac-side-question.png" alt="A chat on the Mac, with a side question answered above the message box"></td>
@@ -98,7 +100,7 @@ To run it on your own iPhone, set your Apple team in `Config/Local.xcconfig` fir
   <img src="docs/screenshots/iphone-approval-dark.png" width="200" alt="An approval on iPhone in dark mode">
 </p>
 
-All screenshots come from the built-in demo, with made-up agents.
+The film and all screenshots come from the built-in demo, with made-up agents.
 
 ## Features
 
