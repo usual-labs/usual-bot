@@ -4,7 +4,7 @@
 PRODUCT_NAME = UsualBot
 INFOPLIST_KEY_CFBundleDisplayName = Usual Bot
 INFOPLIST_KEY_NSHumanReadableCopyright = An independent app, not made by, affiliated with or endorsed by Nous Research.
-MARKETING_VERSION = 0.2.0
+MARKETING_VERSION = 0.3.0
 CURRENT_PROJECT_VERSION = 1
 
 BUNDLE_ID_PREFIX = dev.usualbot.local

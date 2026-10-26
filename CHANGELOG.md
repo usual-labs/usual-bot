@@ -6,6 +6,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+## 0.3.0 - 2026-10-26
+
 ### Added
 
 - **Bot pictures.** A Bot that has a picture in the Hermes app (uploaded or generated there) shows
