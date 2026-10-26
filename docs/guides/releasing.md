@@ -87,6 +87,9 @@ developer.apple.com, the key in App Store Connect) and make new ones.
 4. **Approve the run.** Under **Actions › Release**, the run waits for the `release` environment;
    choose **Review deployments › Approve**. It then takes about 10–20 minutes, mostly waiting for
    Apple's notary service. The release appears under **Releases** when it's done.
+5. **Bump the Homebrew cask** in [usual-labs/homebrew-tap](https://github.com/usual-labs/homebrew-tap):
+   set `version` and `sha256` (from the release's `.sha256` file) in `Casks/usual-bot.rb`, and commit
+   it as `usual-bot <version>`. That repo's `AGENTS.md` lists the checks. Skip this for pre-releases.
 
 To try the pipeline without a real release, push a pre-release tag such as `v0.3.0-rc.1`. It uses
 the `0.3.0` notes and is marked as a pre-release. Releases are immutable once published: their

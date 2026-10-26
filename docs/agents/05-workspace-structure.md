@@ -19,7 +19,9 @@
 - `.github/workflows/release.yml` — on a `v*` tag: Developer ID signed, notarized Mac `.dmg` on a
   GitHub release, with the version's CHANGELOG section (required) as notes. Self-contained: the
   notes extraction and the notarize-and-staple helper are inline. Setup and secrets:
-  `docs/guides/releasing.md`
+  `docs/guides/releasing.md`. The Homebrew cask (`brew install --cask usual-labs/tap/usual-bot`)
+  lives in the separate public repo `usual-labs/homebrew-tap` (local checkout
+  `../homebrew-tap/`); nothing bumps it automatically, so release step 5 does it by hand
 - `Config/Shared.xcconfig` — shared Xcode settings
 - `UsualBot.xcodeproj` — application project
 - `design/avatars` — avatar reference and artwork

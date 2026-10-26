@@ -8,6 +8,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Added
 
+- **Homebrew.** Install with `brew install --cask usual-labs/tap/usual-bot`, and update with
+  `brew upgrade --cask usual-bot`.
 - Release downloads carry a build-provenance attestation: `gh attestation verify` shows the
   workflow and commit a disk image came from.
 

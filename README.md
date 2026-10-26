@@ -34,7 +34,13 @@ skill setup and everything else stay in the official Hermes app.
 
 ## Install
 
-**Mac:** from version 0.2.0 on, download `UsualBot-<version>.dmg` from the
+**Mac:** install it with [Homebrew](https://brew.sh):
+
+```bash
+brew install --cask usual-labs/tap/usual-bot
+```
+
+Or download `UsualBot-<version>.dmg` from the
 [latest release](https://github.com/usual-labs/usual-bot/releases/latest), open it, and drag
 **Usual Bot** to Applications. It's signed and notarized by Apple, so it opens like any other app.
 Needs macOS 15 or later, on Apple silicon or Intel.

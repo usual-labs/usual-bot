@@ -7,7 +7,14 @@ get the app, get your Hermes gateway ready, and sign in.
 
 ### Install a release (Mac)
 
-From version 0.2.0 on, each release has a signed and notarized disk image:
+With [Homebrew](https://brew.sh), one command installs the latest release:
+
+```sh
+brew install --cask usual-labs/tap/usual-bot
+```
+
+`brew upgrade --cask usual-bot` updates it later. Without Homebrew, use the signed and notarized
+disk image that each release has (from version 0.2.0 on):
 
 1. Download `UsualBot-<version>.dmg` from the
    [latest release](https://github.com/usual-labs/usual-bot/releases/latest).
