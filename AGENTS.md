@@ -12,6 +12,13 @@
 - [roadmap.md](docs/agents/roadmap.md) — Usual Bot: milestones M9–M23 (attachments, skills, voice, model and reasoning, Bot pictures, and more).
 - [known-issues.md](docs/agents/known-issues.md) — Usual Bot: cross-project known issues.
 
+## Documentation placement
+
+- **The rule, whenever you write docs:** if it's solely about the Usual Bot software, it goes in this repository; otherwise it goes in the root Usual folder (the parent workspace; private Usual Bot notes in its `docs/agents/usual-bot/`).
+- This is a public open-source repository. Keep only documentation solely about the Usual Bot software and appropriate for users or contributors: implementation, architecture, behavior, APIs, setup, testing, releases and guides. Technical decisions and artwork provenance belong with that software.
+- Legal/IP reviews, trademark research, business/marketing strategy, launch plans, private internal decisions and maintainer account or publication-session records belong outside this repository. In the maintainer's Usual workspace, put private Usual Bot notes in the parent `docs/agents/usual-bot/` directory, not this repository's `docs/agents/`. In a standalone clone, keep those notes outside the checkout.
+- Check placement before creating, moving, committing or publishing documentation. Keep public credits and licensing notices with the software; public build instructions must work without private notes or local maintainer scripts.
+
 ## Operating protocol
 
 - BEFORE thinking about or making ANY change, read the relevant `docs/agents/` files and always skim `known-issues.md`.

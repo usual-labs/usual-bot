@@ -34,3 +34,8 @@ the connect screen flashing. Checked: the built Mac icon (rendered by `NSWorkspa
 launch screen and the sign-in page in the Simulator; the iPhone Home Screen icon wasn't seen (the
 Simulator drew every icon blank after a reinstall).
 
+Independence copy is defined in `ConnectView.swift` for sign-in and in
+`INFOPLIST_KEY_NSHumanReadableCopyright` (`Config/Shared.xcconfig`) for the Mac About box.
+The README and release-notes generation in `.github/workflows/release.yml` also include it.
+These locations were checked in source on 26 October 2026; no runtime check was performed.
+

@@ -25,6 +25,8 @@
 - `Config/Shared.xcconfig` — shared Xcode settings
 - `UsualBot.xcodeproj` — application project
 - `design/avatars` — avatar reference and artwork
+- `AGENTS.md`, `docs/agents/` and `design/` contain public software and asset documentation only;
+  legal research, launch planning and private maintainer records stay outside the checkout
 - `docs/guides/` — user and contributor guides (getting started, user guide, troubleshooting,
   architecture), linked from the README; `docs/screenshots/` — demo-mode screenshots they use
 - `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md`,
@@ -34,9 +36,10 @@
 The `design/avatars/2026-10-24-hermes/` folder holds the Hermes doodle (a monochrome-doodle take
 on the official Hermes app icon's headphone character), its prompt, source attribution and alpha
 verification. It is the app's icon character: the app icon, the iPhone launch screen and the
-sign-in/splash mark are made from it. The full-size PNG and
-local reference files follow the design asset ignore rules; the generated, smaller copies in the
-app and UsualUI are tracked. The copies of Nous Research's official icon (`references/`) were never
+sign-in/splash mark are derived from it. The full-size PNG and local reference files follow the
+design asset ignore rules; the generated, smaller copies in the app and UsualUI are tracked.
+A fresh clone builds with those tracked copies; no local artwork-generation script is required.
+The copies of Nous Research's official icon (`references/`) were never
 committed and must stay out of git: the repository holds only our drawing.
 
 Do not treat generated copies, dependencies, fixtures, archives or sample snippets as independent shipped products. Their semantics remain with their owning source project.

@@ -2,11 +2,20 @@
 
 ## Implemented today
 
-- Native CI configuration is not evidence of a successful build or public release.
-  CI runs on `macos-26`: the app uses the macOS 26 / iOS 26 SDK (Liquid Glass), which
-  the `macos-15` image's Xcode can't compile. On GitHub, the first run failed at
-  lint (below); `fd067cb` passed every step (lint, both test suites, Mac and iOS Simulator
-  builds) on 25 October 2026.
+- CI uses `macos-26`: the app needs the macOS 26 / iOS 26 SDK (Liquid Glass),
+  which the `macos-15` image's Xcode cannot compile. Configuration is not proof of a
+  successful run. Recorded CI evidence: `2ada691` (run as `fd067cb`, before the 26 October
+  history rewrite) passed lint, both test suites and the Mac and iOS Simulator builds on
+  25 October 2026.
+- Keep the CI job's `name: build` aligned with the required status check. Renaming it
+  also requires updating the repository's branch rule; changing YAML alone is insufficient.
+- Workflow actions are pinned to full commit SHAs. When adding an action, check both
+  the pin and the repository's Actions allow-list. CodeQL builds the app with Xcode;
+  a package-only SwiftPM scan does not cover `App/`.
+- Public build/release setup, signing-secret names, environment protection, immutable-release
+  behavior and troubleshooting live in [the release guide](../guides/releasing.md).
+  Maintainer credentials, account administration and release-session diaries do not belong
+  in the public knowledge base.
 
 For new issues record symptom → source-supported cause → verified fix or explicitly
 unverified recommendation → prevention and status.
@@ -22,11 +31,11 @@ unverified recommendation → prevention and status.
   use an Apple Development certificate. The designated requirement is then the bundle ID plus
   that certificate, stable across rebuilds. One more prompt follows the first signed build
   (Always Allow); a renewed certificate asks once again. Builds without a team still see the
-  prompt (README).
+  prompt (README). The local fix was verified on 24 October 2026; it was not rerun in this audit.
 
 ## The Dock kept a blank icon after the app icon was added (fixed locally 2026-10-24)
 
-- Symptom: after `a35c1d4` added `AppIcon`, the Mac Dock still drew Usual Bot as the generic blank
+- Symptom: after `97a938d` added `AppIcon`, the Mac Dock still drew Usual Bot as the generic blank
   app tile, although the built bundle had `AppIcon.icns` and `Assets.car` and
   `NSWorkspace.icon(forFile:)` rendered the doodle.
 - Cause: the Dock and LaunchServices cache an app's icon per registration; the dev build had been
@@ -54,8 +63,8 @@ unverified recommendation → prevention and status.
 
 ## The heartbeat test failed once on a GitHub runner (fixed 2026-10-25)
 
-- Symptom: `silentSocketIsClosedAfterTheLimit` failed on CI for `ab6419c` (no `gateway.ping`
-  sent) while the same code passed before and locally.
+- Symptom: `silentSocketIsClosedAfterTheLimit` failed on CI for `82a69da` (run as `ab6419c`;
+  no `gateway.ping` sent) while the same code passed before and locally.
 - Cause: the test used a 20 ms heartbeat with a 60 ms silence limit and a fixed 200 ms sleep.
   On a slow runner the first heartbeat tick can arrive after the limit, so the channel closes
   before it ever pings.
