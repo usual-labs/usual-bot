@@ -2,13 +2,12 @@
 
 ## Planned/aspirational
 
-- **Planned: messaging features M9–M19.** Attachments, images in replies, skills and
-  slash commands, dictation, voice call, edit/undo, reactions, side questions,
-  background tasks, usage, model and reasoning level. One milestone each, in
-  [roadmap.md](roadmap.md).
-
 Child-local ideas stay in their package KBs.
 
+- **Replay switch.** A debug switch that plays sanitized frames through the real channel, so a
+  change can be seen working without a gateway. `AppModel.demo()` skips the channel entirely.
+- **Contributor vouching, size labels and triage or stale bots.** Worth adding once outside pull
+  requests arrive in volume; the repository doesn't have that yet.
 - **Keychain without prompts on unsigned Mac builds.** `TokenStore` could use the data-protection
   keychain (`kSecUseDataProtectionKeychain`), which has no per-app ACL prompts, but it needs a
   team-signed app with a keychain access group; ad-hoc builds get `errSecMissingEntitlement`.
