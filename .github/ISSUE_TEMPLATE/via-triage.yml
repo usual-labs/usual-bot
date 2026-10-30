@@ -1,0 +1,74 @@
+name: Triage report
+description: Filed by a coding agent that investigated with you, following the triage playbook. For hand-written reports, use the bug report form.
+labels: [bug, via-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep one problem per issue. Leave out tokens, real gateway addresses, home directory paths
+        and private conversations.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: The problem in your own words.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnosis
+    attributes:
+      label: Diagnosis
+      description: What the investigation found, grounded in logs and source.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The smallest steps that reproduce it, if any were found.
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: Usual Bot version
+      description: The version the problem happened on, or unknown.
+      placeholder: 0.3.0
+    validations:
+      required: true
+  - type: input
+    id: hermes-version
+    attributes:
+      label: Hermes version on the gateway
+      description: Or unknown.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Device and system
+      placeholder: Mac, macOS 26.1
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Only the most relevant log lines. Redacted.
+      render: shell
+  - type: input
+    id: related
+    attributes:
+      label: Related issues
+      description: Issues that look similar, and why this isn't a duplicate.
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Fix applied or workaround
+      description: Anything that was run on the machine to unblock you.
+  - type: input
+    id: agent
+    attributes:
+      label: Filed by
+      description: Which agent and model produced this report.
+      placeholder: Hermes (model name)
