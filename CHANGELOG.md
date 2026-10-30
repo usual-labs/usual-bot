@@ -6,6 +6,11 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+### Fixed
+
+- **Mac tab bar.** Window tabs are off, so View no longer offers Show Tab Bar and the tab bar can't
+  cover the top of the window.
+
 ## 0.3.0 - 2026-10-26
 
 ### Added
