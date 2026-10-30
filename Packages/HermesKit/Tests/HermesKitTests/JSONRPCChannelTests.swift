@@ -107,6 +107,7 @@ struct JSONRPCChannelTests {
 func waitUntilOnMain(_ condition: @escaping @MainActor () -> Bool) async throws {
     for _ in 0..<200 {
         if condition() { return }
+        // sleep-ok: the poll behind every wait in these tests
         try await Task.sleep(for: .milliseconds(5))
     }
     Issue.record("Condition never became true")
@@ -116,6 +117,7 @@ func waitUntilOnMain(_ condition: @escaping @MainActor () -> Bool) async throws 
 func waitUntil(_ condition: @escaping @Sendable () -> Bool) async throws {
     for _ in 0..<200 {
         if condition() { return }
+        // sleep-ok: the poll behind every wait in these tests
         try await Task.sleep(for: .milliseconds(5))
     }
     Issue.record("Condition never became true")

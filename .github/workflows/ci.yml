@@ -29,6 +29,9 @@ jobs:
       - name: Lint
         run: swift format lint --strict --recursive App Packages
 
+      - name: Check test waits
+        run: scripts/check-test-waits.sh
+
       - name: Test HermesKit
         run: swift test --package-path Packages/HermesKit
 

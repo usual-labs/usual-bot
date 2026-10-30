@@ -1,0 +1,9 @@
+# Changes here need a maintainer's approval: they control what CI runs, how releases are
+# signed, and how sign-in and tokens are handled. Everything else follows the normal checks.
+/.github/ @iamomiid @arminayat
+/.githooks/ @iamomiid @arminayat
+/scripts/ @iamomiid @arminayat
+/Config/ @iamomiid @arminayat
+/SECURITY.md @iamomiid @arminayat
+/Packages/HermesKit/Sources/HermesKit/Auth/ @iamomiid @arminayat
+/Packages/HermesKit/Sources/HermesKit/Gateway/GatewayAddress.swift @iamomiid @arminayat

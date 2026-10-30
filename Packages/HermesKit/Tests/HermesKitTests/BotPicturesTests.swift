@@ -58,6 +58,7 @@ struct BotPicturesTests {
 
         pictures.refresh([scout(revision: 1, isPhoto: false)], on: channel)
         _ = try await gateway.answer(0, method: "profiles.get_asset", result: asset(face))
+        // sleep-ok: the picture should stay unset, so there is no event to wait for
         try await Task.sleep(for: .milliseconds(50))
         #expect(pictures.data(for: "scout") == nil)
 
