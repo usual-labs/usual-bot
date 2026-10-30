@@ -25,6 +25,8 @@ struct UsualBotApp: App {
         TaskNotifications.watch(model)
         #if os(macOS)
             _quickPanel = State(initialValue: QuickPanelController(model: model))
+            // The window has no title bar for tabs to sit under; this also removes the tab menu items.
+            NSWindow.allowsAutomaticWindowTabbing = false
         #endif
     }
 

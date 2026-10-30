@@ -43,6 +43,17 @@ unverified recommendation → prevention and status.
 - Fix: quit the app, `touch` the bundle, `lsregister -f <app>`, `killall Dock` (it relaunches),
   open the app again. Needed again only when the icon changes.
 
+## View > Show Tab Bar drew a tab bar across the Mac window (fixed 2026-10-30)
+
+- Symptom: macOS's automatic View > Show Tab Bar and Window tab items were available, and the tab
+  bar sat between the hidden title bar's toolbar and the panes.
+- Cause: a `WindowGroup` gets AppKit's automatic window tabbing unless the app turns it off.
+- Fix: `NSWindow.allowsAutomaticWindowTabbing = false` in `UsualBotApp.init`. Verified in the demo
+  build by dumping the opened View and Window menus, with the flag on as a control. Windows already
+  tabbed when the app relaunches weren't tested.
+- Prevention: AppKit fills these menus when they open, so `NSApp.mainMenu` read at launch shows
+  neither the tab items nor Enter Full Screen. Open the menu before checking its items.
+
 ## The gateway won't /retry a message with an image (seen 2026-10-24, shakedown)
 
 - `/retry` on a message that carried a photo answers "retry does not support media or unknown
