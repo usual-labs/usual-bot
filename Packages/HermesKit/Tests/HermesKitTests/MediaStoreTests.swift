@@ -40,6 +40,7 @@ struct MediaStoreTests {
         let started = Mutex(0)
         let http = ScriptedHTTP { _ in
             started.withLock { $0 += 1 }
+            // sleep-ok: a slow server, so both calls overlap
             try await Task.sleep(for: .milliseconds(50))
             return (200, #"{"dataUrl":"data:image/png;base64,\#(png.base64EncodedString())"}"#)
         }

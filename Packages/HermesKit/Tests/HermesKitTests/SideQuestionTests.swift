@@ -47,6 +47,7 @@ struct SideQuestionTests {
         thread.apply(answer(["task_id": "btw_x", "question": "why?", "text": "Because."]))
         #expect(thread.sideQuestions.map(\.answer) == [.answered("Because.")])
         _ = try await gateway.answer(1, method: "prompt.btw", result: ["task_id": "btw_x"])
+        // sleep-ok: nothing should change, so there is no event to wait for
         try await Task.sleep(for: .milliseconds(20))
         #expect(thread.sideQuestions.map(\.id) == ["btw_x"])
     }

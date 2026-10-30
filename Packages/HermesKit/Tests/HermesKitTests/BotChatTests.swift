@@ -76,6 +76,7 @@ struct BotChatTests {
         } catch {
             #expect(error as? GatewayError == .rpc(code: 5006, message: "database is locked"))
         }
+        // sleep-ok: nothing should be sent, so there is no event to wait for
         try await Task.sleep(for: .milliseconds(50))
         #expect(gateway.socket.sent.count == 1)
     }
