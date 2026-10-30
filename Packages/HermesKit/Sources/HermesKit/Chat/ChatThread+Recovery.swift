@@ -10,9 +10,12 @@ extension ChatThread {
     /// they're answered (their answer may have gone to a session that's gone).
     func recoverMissed(rejoined: Bool) {
         recovery?.cancel()
+        // Only what's waiting now can be lost: the chat already takes new questions and tasks.
+        let unanswered = Set(
+            sideQuestions.filter { $0.answer == .waiting }.map(\.id) + backgroundTasks.map(\.id))
         recovery = Task { [weak self] in
             guard let self else { return }
-            if !(rejoined ? await replay() : false) { loseUnansweredWork() }
+            if !(rejoined ? await replay() : false) { loseUnansweredWork(unanswered) }
             await checkBackgroundTasks()
         }
     }
@@ -39,13 +42,14 @@ extension ChatThread {
     }
 
     /// Answers that can't arrive any more: they were meant for a session that's gone.
-    private func loseUnansweredWork() {
-        for index in sideQuestions.indices where sideQuestions[index].answer == .waiting {
+    private func loseUnansweredWork(_ unanswered: Set<String>) {
+        for index in sideQuestions.indices
+        where sideQuestions[index].answer == .waiting && unanswered.contains(sideQuestions[index].id) {
             sideQuestions[index].answer = .failed(
                 String(localized: "The answer was lost while Usual Bot was offline. Ask again."))
         }
         // A task the gateway never confirmed may not have started at all.
-        for task in backgroundTasks where task.id.hasPrefix("local-") {
+        for task in backgroundTasks where task.id.hasPrefix("local-") && unanswered.contains(task.id) {
             state.addNotice(
                 String(
                     localized:
