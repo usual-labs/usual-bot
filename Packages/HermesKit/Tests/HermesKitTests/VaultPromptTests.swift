@@ -128,6 +128,7 @@ struct VaultChatTests {
         let (thread, gateway) = try await openThread([saveRequest])
         #expect(!thread.answer(thread.vaultPrompts[0], secret: "hunter2-test", identifier: " "))
         #expect(thread.vaultPrompts.count == 1)
+        // sleep-ok: nothing should be sent, so there is no event to wait for
         try await Task.sleep(for: .milliseconds(30))
         #expect(gateway.socket.sent.count == 1)
     }
@@ -147,6 +148,7 @@ struct VaultChatTests {
         #expect(thread.vaultAnswersAreUnencrypted)
         #expect(!thread.answer(prompt, secret: "123456"))
         #expect(thread.vaultPrompts.count == 1)
+        // sleep-ok: nothing should be sent, so there is no event to wait for
         try await Task.sleep(for: .milliseconds(30))
         #expect(gateway.socket.sent.count == 1)
 
@@ -212,6 +214,7 @@ struct VaultRoutingTests {
                     socket.deliver(String(decoding: try! JSONEncoder().encode(reply), as: UTF8.self))
                 }
                 seen = sent.count
+                // sleep-ok: the fake socket has no signal for a new frame
                 try? await Task.sleep(for: .milliseconds(5))
             }
         }

@@ -23,9 +23,8 @@ All notable changes to Usual Bot are listed here. The format follows
   then took its error text for your answer: it saved that text as the secret, so the skill never
   asked again, and passed it to `sudo` as the password. If a skill has misbehaved since, check its
   variable in the profile's `.env` for a JSON error and remove it.
-- Usual Bot no longer refuses a secret or sudo request with an error. With no other Hermes app
-  attached, the gateway treated that error as the answer.
-
+- **Side questions after a reconnect.** A `/btw` question or `/bg` task sent right after a chat
+  reconnected could show as lost, even though the gateway had it.
 - **Mac tab bar.** Window tabs are off, so View no longer offers Show Tab Bar and the tab bar can't
   cover the top of the window.
 

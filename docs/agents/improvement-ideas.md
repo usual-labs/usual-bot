@@ -4,7 +4,7 @@
 
 - **Hermes features the app doesn't surface yet.** From a Hermes source read (`bf0203a794`,
   22 October 2026); none confirmed against a live gateway. Check each call on the app's
-  dashboard socket first, as the milestones do.
+  dashboard socket first.
   - **Search across chats:** `GET /api/sessions/search`. The app's search matches the contact
     list only.
   - **Playing audio and video:** a delivered non-image file shows as a file to save or share
@@ -24,6 +24,10 @@
 
 Child-local ideas stay in their package KBs.
 
+- **Replay switch.** A debug switch that plays sanitized frames through the real channel, so a
+  change can be seen working without a gateway. `AppModel.demo()` skips the channel entirely.
+- **Contributor vouching, size labels and triage or stale bots.** Worth adding once outside pull
+  requests arrive in volume; the repository doesn't have that yet.
 - **Keychain without prompts on unsigned Mac builds.** `TokenStore` could use the data-protection
   keychain (`kSecUseDataProtectionKeychain`), which has no per-app ACL prompts, but it needs a
   team-signed app with a keychain access group; ad-hoc builds get `errSecMissingEntitlement`.

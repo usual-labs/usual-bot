@@ -1,4 +1,4 @@
-`docs/agents/` is this layer's persistent agent memory and authoritative maintained reference for how this code behaves; code is the source of truth.
+`docs/agents/` holds what the code can't show; code is the source of truth. The root `AGENTS.md` has the documentation rules, surfaces and traps.
 
 ## Knowledge index
 
@@ -15,9 +15,8 @@
 
 ## Operating protocol
 
-- BEFORE thinking about or making ANY change, read the relevant `docs/agents/` files and always skim `07-known-issues.md`.
-- AFTER any change or new learning, update the relevant KB files in the SAME turn before finishing. Record non-obvious bugs and gotchas in `07-known-issues.md`; deferred improvements in `06-improvement-ideas.md`; behavior, architecture, structure and conventions in the matching state file. Rewrite stale state rather than appending history.
+- Before changing something, read the KB files for that area and skim `07-known-issues.md`.
+- Record non-obvious bugs and gotchas in `07-known-issues.md`, deferred improvements in `06-improvement-ideas.md`, and changed decisions in the file that holds them, in the same turn. Most changes need neither.
 - Update workspace KBs only when relationships, boundaries, project routing or shared conventions change.
-- Code is the source of truth. If code and the KB disagree, fix the KB. Distinguish implemented behavior from planned/aspirational intent, and source evidence from runtime verification.
-- Triggers: changed product behavior, architectural boundary, folder convention, tooling, UI direction, added/removed cross-project link, debugged issue or spotted improvement.
+- Code is the source of truth. If code and the KB disagree, fix the KB. Distinguish implemented behavior from planned intent, and source evidence from runtime verification.
 - Do not run browser tests unless explicitly requested. Keep changes focused, use YAGNI, and keep files below 500 lines where practical. Report meaningful behavior/setup/deployment changes after implementation.

@@ -97,6 +97,7 @@ struct SecretPromptTests {
     @Test func emptyAnswerSendsNothing() async throws {
         let (thread, gateway) = try await openThread([secretRequest])
         thread.answer(try #require(thread.secrets.first), with: "")
+        // sleep-ok: nothing should be sent, so there is no event to wait for
         try await Task.sleep(for: .milliseconds(30))
         #expect(gateway.socket.sent.count == 1)
         #expect(thread.secrets.count == 1)
@@ -190,6 +191,7 @@ struct SecretPromptTests {
                     socket.deliver(#"{"jsonrpc":"2.0","id":\#(id),"result":\#(result)}"#)
                 }
                 answered = sent.count
+                // sleep-ok: the fake socket has no signal for a new frame
                 try? await Task.sleep(for: .milliseconds(5))
             }
         }

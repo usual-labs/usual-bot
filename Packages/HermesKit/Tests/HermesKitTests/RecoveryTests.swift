@@ -48,6 +48,26 @@ struct RecoveryTests {
         try await waitUntilOnMain { thread.sideQuestions.first?.answer == .answered("About ten minutes.") }
     }
 
+    @Test func workStartedDuringRecoveryIsNotLost() async throws {
+        let (thread, gateway) = await makeThread()
+        try await open(thread, gateway, at: 0, session: "live-1")
+        thread.apply(GatewayEvent(type: "message.complete", sessionID: "live-1", seq: 41, payload: ["text": ""]))
+
+        thread.detach()
+        try await open(thread, gateway, at: 1, session: "live-1")
+        try await waitUntilOnMain { gateway.socket.sent.count > 2 }
+        thread.askOnTheSide("why?")
+        thread.runInBackground("check the backups")
+        // The gateway can't replay, but both went to the session the chat is on now.
+        _ = try await gateway.answer(2, method: "session.events.since", result: ["truncated": true])
+        _ = try await gateway.answer(3, method: "prompt.btw", result: ["task_id": "btw_2"])
+        _ = try await gateway.answer(4, method: "prompt.background", result: ["task_id": "bg_2"])
+        try await waitUntilOnMain { thread.backgroundTasks.first?.id == "bg_2" }
+        #expect(thread.sideQuestions.first?.id == "btw_2")
+        #expect(thread.sideQuestions.first?.answer == .waiting)
+        #expect(thread.state.items.isEmpty)
+    }
+
     @Test func aNewSessionLosesSideAnswersButFindsBackgroundResults() async throws {
         let (thread, gateway) = await makeThread()
         var asked: [String] = []

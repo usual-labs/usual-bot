@@ -1,0 +1,6 @@
+#!/bin/sh
+# Lints the Swift files in this commit. Turn it on with: git config core.hooksPath .githooks
+staged=$(git diff --cached --name-only --diff-filter=ACMR -- '*.swift')
+[ -z "$staged" ] && exit 0
+# shellcheck disable=SC2086 # the repository's Swift paths have no spaces
+exec swift format lint --strict $staged

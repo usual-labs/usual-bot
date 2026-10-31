@@ -46,17 +46,6 @@ the background, so this is the common case there.
 - Cleaning up: releases up to 0.3.0 can have left that JSON in a profile's `.env`. Removing the
   line lets the skill ask again.
 
-## Work sent as a chat attached was reported as lost (fixed 2026-10-31)
-
-- Symptom: `/btw` or `/bg` sent right after a chat attached could end as "lost while Usual Bot was
-  offline" or "went offline as … was starting". Found as test failures: `main` passed 20 of 20 runs,
-  and the branch with more tests failed 3 of 20.
-- Cause: `attach` schedules `recoverMissed` as a task and the chat is already attached, so a send can
-  land first; `loseUnansweredWork` then took it for work from the old session.
-- Fix: `recoverMissed` notes what's waiting before it starts and loses only that.
-- Prevention: `workAskedAsTheChatAttachesIsNotLost` sends before the recovery task runs, so it fails
-  without the fix every time, with no timing involved.
-
 ## A prompt answered in another app stays on screen (source finding, 2026-10-31)
 
 The gateway sends `request.cancel` when a request times out or is cancelled, not when another client
