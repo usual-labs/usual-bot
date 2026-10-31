@@ -55,7 +55,7 @@ extension ChatThread {
                     localized:
                         "Usual Bot went offline as “\(task.task)” was starting; if no answer comes, start it again."))
         }
-        backgroundTasks.removeAll { $0.id.hasPrefix("local-") }
+        backgroundTasks.removeAll { $0.id.hasPrefix("local-") && unanswered.contains($0.id) }
     }
 
     /// Looks up each waiting background task's stored session until it has an answer.
