@@ -9,7 +9,17 @@
 - `App/SignInPresenters.swift` — browser/web-auth presenters
 - `App/Assets.xcassets` — the app icon (`AppIcon`), the iPhone launch image (`LaunchMark`) and its
   background (`LaunchBackground`)
-- `.github/workflows/ci.yml` — lint, both test suites, Mac and iOS Simulator builds on pushes and PRs
+- `.github/workflows/ci.yml` — lint, the test-wait check, both test suites, Mac and iOS Simulator
+  builds on pushes and PRs
+- `scripts/check.sh` — the same checks locally (`--fast` skips the builds);
+  `scripts/check-test-waits.sh` — rejects unexplained fixed sleeps in tests; `.githooks/pre-commit`
+  — optional lint of staged Swift files (`git config core.hooksPath .githooks`)
+- `.github/CODEOWNERS` — maintainer approval on workflows, signing, scripts, sign-in and tokens, with
+  the `main` ruleset's code owner review
+- `.github/triage/PLAYBOOK.md` and `.github/ISSUE_TEMPLATE/via-triage.yml` — support triage that a
+  user runs in their own agent; linked from `docs/guides/troubleshooting.md`
+- `CLAUDE.md` imports `AGENTS.md`; shared agent skills live in `.agents/skills`, linked from
+  `.claude/skills`
 - `.github/workflows/zizmor.yml` — zizmor security lint of the workflows (pushes/PRs touching
   `.github/`), findings in code scanning; `.github/workflows/scorecard.yml` — OpenSSF Scorecard
   weekly and on pushes to main, publishes the README badge; `.github/dependabot.yml` — weekly grouped
@@ -31,7 +41,7 @@
   architecture), linked from the README; `docs/screenshots/` — demo-mode screenshots they use
 - `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md`,
   `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md` — open-source project files.
-  When behaviour changes, update the matching guide and the changelog's Unreleased section.
+  When users would notice a change, update the matching guide and the changelog's Unreleased section.
 
 The `design/avatars/2026-10-24-hermes/` folder holds the Hermes doodle (a monochrome-doodle take
 on the official Hermes app icon's headphone character), its prompt, source attribution and alpha

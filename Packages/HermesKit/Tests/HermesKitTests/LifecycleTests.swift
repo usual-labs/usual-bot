@@ -31,6 +31,7 @@ struct LifecycleTests {
 
     private func waitForSockets(_ count: Int, in sockets: SocketLog) async {
         for _ in 0..<200 where sockets.count < count {
+            // sleep-ok: the poll behind waiting for a socket
             try? await Task.sleep(for: .milliseconds(10))
         }
     }
@@ -59,6 +60,7 @@ struct LifecycleTests {
         let (model, sockets) = try makeModel()
         model.setForeground(false)
         await model.restore()
+        // sleep-ok: nothing should happen, so there is no event to wait for
         try await Task.sleep(for: .milliseconds(200))
         #expect(sockets.count == 0)
 

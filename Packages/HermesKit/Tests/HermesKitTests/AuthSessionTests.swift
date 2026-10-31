@@ -41,6 +41,7 @@ struct AuthSessionTests {
         let calls = Mutex(0)
         let http = ScriptedHTTP { _ in
             calls.withLock { $0 += 1 }
+            // sleep-ok: a slow server, so the callers overlap
             try await Task.sleep(for: .milliseconds(50))
             return (200, tokenJSON(access: "a1", refresh: "r1", expiresAt: 1_000_900))
         }

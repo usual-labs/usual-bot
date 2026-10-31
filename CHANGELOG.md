@@ -8,6 +8,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Fixed
 
+- **Side questions after a reconnect.** A `/btw` question or `/bg` task sent right after a chat
+  reconnected could show as lost, even though the gateway had it.
 - **Mac tab bar.** Window tabs are off, so View no longer offers Show Tab Bar and the tab bar can't
   cover the top of the window.
 
