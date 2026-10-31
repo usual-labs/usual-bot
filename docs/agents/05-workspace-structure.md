@@ -15,7 +15,7 @@
   `scripts/check-test-waits.sh` — rejects unexplained fixed sleeps in tests; `.githooks/pre-commit`
   — optional lint of staged Swift files (`git config core.hooksPath .githooks`)
 - `.github/CODEOWNERS` — maintainer approval on workflows, signing, scripts, sign-in and tokens, with
-  the `main` ruleset's code owner review; `.coderabbit.yaml` — bot review, pointed at the conventions
+  the `main` ruleset's code owner review
 - `.github/triage/PLAYBOOK.md` and `.github/ISSUE_TEMPLATE/via-triage.yml` — support triage that a
   user runs in their own agent; linked from `docs/guides/troubleshooting.md`
 - `CLAUDE.md` imports `AGENTS.md`; shared agent skills live in `.agents/skills`, linked from
