@@ -22,7 +22,6 @@ struct SideQuestionTests {
         GatewayEvent(type: "btw.complete", sessionID: "live-1", seq: nil, payload: payload)
     }
 
-
     @Test func btwAsksOnTheSideEvenWhileTheAgentWorks() async throws {
         let (thread, gateway) = try await openThread(running: true)
         thread.send("/btw which file are you editing?")
