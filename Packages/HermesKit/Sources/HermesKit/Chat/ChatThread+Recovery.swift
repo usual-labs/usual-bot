@@ -10,9 +10,12 @@ extension ChatThread {
     /// they're answered (their answer may have gone to a session that's gone).
     func recoverMissed(rejoined: Bool) {
         recovery?.cancel()
+        // Only what's waiting now: anything asked from here on went to this session.
+        let questions = Set(sideQuestions.filter { $0.answer == .waiting }.map(\.id))
+        let tasks = Set(backgroundTasks.filter { $0.id.hasPrefix("local-") }.map(\.id))
         recovery = Task { [weak self] in
             guard let self else { return }
-            if !(rejoined ? await replay() : false) { loseUnansweredWork() }
+            if !(rejoined ? await replay() : false) { loseUnansweredWork(questions: questions, tasks: tasks) }
             await checkBackgroundTasks()
         }
     }
@@ -39,19 +42,20 @@ extension ChatThread {
     }
 
     /// Answers that can't arrive any more: they were meant for a session that's gone.
-    private func loseUnansweredWork() {
-        for index in sideQuestions.indices where sideQuestions[index].answer == .waiting {
+    private func loseUnansweredWork(questions: Set<String>, tasks: Set<String>) {
+        for index in sideQuestions.indices
+        where questions.contains(sideQuestions[index].id) && sideQuestions[index].answer == .waiting {
             sideQuestions[index].answer = .failed(
                 String(localized: "The answer was lost while Usual Bot was offline. Ask again."))
         }
         // A task the gateway never confirmed may not have started at all.
-        for task in backgroundTasks where task.id.hasPrefix("local-") {
+        for task in backgroundTasks where tasks.contains(task.id) {
             state.addNotice(
                 String(
                     localized:
                         "Usual Bot went offline as “\(task.task)” was starting; if no answer comes, start it again."))
         }
-        backgroundTasks.removeAll { $0.id.hasPrefix("local-") }
+        backgroundTasks.removeAll { tasks.contains($0.id) }
     }
 
     /// Looks up each waiting background task's stored session until it has an answer.

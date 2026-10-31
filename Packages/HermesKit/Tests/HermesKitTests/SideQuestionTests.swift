@@ -22,6 +22,21 @@ struct SideQuestionTests {
         GatewayEvent(type: "btw.complete", sessionID: "live-1", seq: nil, payload: payload)
     }
 
+    /// Recovery runs in its own task after attaching, so this can land before it does.
+    @Test func workAskedAsTheChatAttachesIsNotLost() async throws {
+        let (thread, gateway) = try await openThread()
+        thread.recoverMissed(rejoined: false)
+        thread.send("/btw which file are you editing?")
+        thread.send("/bg summarise last week's incidents")
+        let side = try await gateway.answer(1, method: "prompt.btw", result: ["task_id": "btw_a1b2c3"])
+        #expect(side["text"] == "which file are you editing?")
+        _ = try await gateway.answer(2, method: "prompt.background", result: ["task_id": "bg_a1b2c3"])
+        try await waitUntilOnMain { thread.backgroundTasks.first?.id == "bg_a1b2c3" }
+        try await waitUntilOnMain { thread.sideQuestions.first?.id == "btw_a1b2c3" }
+        #expect(thread.sideQuestions.first?.answer == .waiting)
+        #expect(thread.state.items.isEmpty)
+    }
+
     @Test func btwAsksOnTheSideEvenWhileTheAgentWorks() async throws {
         let (thread, gateway) = try await openThread(running: true)
         thread.send("/btw which file are you editing?")
