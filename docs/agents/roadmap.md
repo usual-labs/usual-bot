@@ -349,7 +349,7 @@ Picked 24 October 2026, before the real-gateway shakedown.
   (about 3 KB) and no `imageKind`, so all kept their characters as intended. The maintainer then
   gave a Bot a picture in the Hermes app and reported that Usual Bot showed it.
 
-## M24: Secret and sudo prompts (built; live gateway untested)
+## M24: Secret and sudo prompts (built; verified against a real gateway 2026-10-31)
 
 - **You see:** when a skill needs a secret or a command needs the sudo password, a card in the chat
   (and in the ⌥Space panel) with the environment variable and the gateway's wording, or the
@@ -375,7 +375,51 @@ Picked 24 October 2026, before the real-gateway shakedown.
   chats this way, and it has no other route. Loopback and Tailscale addresses show no warning.
 - **Checked:** HermesKit tests (receiving, answering, skipping, withdrawal, reopened requests,
   other methods still declined, no chat or a malformed request, recorded frames, what counts as
-  unencrypted); both cards and the masked field in the iPhone Simulator demo. The 4404 behaviour
-  was reproduced by calling the gateway's `server_requests` module directly, with its contract
-  registry stubbed. Not tried against a real gateway, and not looked at on the Mac or in the
-  ⌥Space panel.
+  unencrypted); the cards in the demo on the Mac and the iPhone Simulator, with the iPhone's field
+  checked as masked. On a real gateway (Hermes `bf0203a794`, legacy dialect, a throwaway profile,
+  31 October 2026), real agent turns through `ChatThread`, `SecretPrompt` and the cards' `answer`
+  and `skip`, without `AppModel`: an answer was saved under the variable, a skip saved nothing, and
+  a sudo answer reached a stand-in `sudo` on stdin. The same turns answered 4404 saved the JSON
+  error, or sent it to `sudo`. Not tried: typing into the ⌥Space panel's card, and the app's own
+  sign-in against that gateway.
+
+## M25: Credential vault (built; calls and save-login verified against a real gateway 2026-10-31)
+
+- **You can:** open a Bot's profile, Vault tab, and see what its Hermes profile has saved (labels,
+  usernames, sites, never a secret); add a login, card or address; remove a local item; switch a
+  password manager on or off, and unlock or lock it. Items from a password manager show its name
+  and can't be removed here. In a chat, cards ask for a master password (`vault.unlock_prompt`), a
+  login to save (`vault.save_login`) or a one-time code (`vault.code`), each with skip or cancel.
+  The ⌥Space panel shows the cards too, and "needs you for a sign-in" with Open.
+- **Remote clients may use it:** `tui_gateway/methods_vault.py` has no peer or loopback check; its
+  docstring's "localhost" is descriptive. `/api/ws` is gated by `gateway_ws` in
+  `hermes_cli/web_routers/chat_ws.py`. Without a session authority, `tui_gateway/ws.py` hands
+  requests to `server.dispatch`. With one, `AuthorityConnection.dispatch` answers -32601 for
+  `vault.*` and `ws_legacy_fallback.py` lets the interactive grant run the same handlers.
+- **Every call names `profile`:** `_profile_scoped` otherwise uses the launch or ticket profile, so
+  a vault call would reach the wrong Bot's vault. An unknown profile gets 4064; unknown param keys
+  get 4000.
+- **Prompts only come on the legacy path:** only `agent_callbacks.py::_wire_callbacks` installs the
+  three callbacks, from the legacy turn path; `gateway/` installs none, so authority turns report
+  `prompt_unavailable`/`unlock_unavailable`. The app chats only on the legacy dialect, so prompts
+  arrive where chat works. The screen isn't tied to a dialect.
+- **Skip, never decline:** the three methods are answered `{"value": ""}` on every path without a
+  card (no matching chat, unreadable params). See HermesKit `07-known-issues.md`.
+- **Plain http:** the same `GatewayAddress.isUnencrypted` as M24: on such an address no secret goes
+  out unless "Send it anyway" is ticked. It starts off for every send, is never remembered, and the
+  model enforces it (`allowingUnencrypted`), not only the view.
+- **All three kinds** `vault.add` accepts shipped together, because the form stayed small.
+- **Secrets:** masked fields; the sheet's and card's values are dropped once sent or withdrawn;
+  gateway errors pass `VaultRedaction.scrub`; the recorder blanks answers and params; `vault.list`
+  is metadata, and `VaultItem` has no field for a secret.
+- **Checked:** HermesKit tests (params with `profile`, list decoding, the three requests, withdrawal,
+  skip, failures, replay on reattach, other methods still 4404, recording, a live `AppModel` over
+  `FakeSocket`), with each protection reverted once to see its test fail; the cards in the Mac demo
+  and the Vault tab in the iPhone Simulator demo. On a real gateway (the throwaway profile as in
+  M24): `VaultList` listed sources and added logins with and without an authenticator key, a card
+  and an address, then removed them; the plain http refusal held; `vault.save_login` from a real
+  agent turn saved the login typed into `ChatThread.answer`. No test secret reached the gateway's
+  logs. Not tried: `vault.unlock_prompt` (no password manager was installed) and `vault.code` (no
+  page with a code field), a real password manager, and a client on a remote address.
+- **Small gaps seen live:** a draft `isComplete` refuses (such as a malformed origin) returns `false`
+  with no `problem`, and switching on a manager that isn't installed quietly stays off.

@@ -123,3 +123,16 @@ No confirmed recurring failures were established during source inspection. A mis
 - Demo mode can't show a level change: `ChatThread.setReasoning` needs a live session, so the
   level slider snaps back there (the slider's drag was checked by screenshots mid-drag).
 
+
+## The background-task bar can cover the end of the chat (seen 2026-10-31)
+
+In the Mac demo, Ops opens with the bottom of its secret card, Skip and Send included, under the
+background-task bar until you scroll; Ledger, without the bar, opens with its last card clear. The
+transcript's bottom inset doesn't seem to count that bar, so any last item is affected. Unverified on
+a real gateway, and not fixed yet.
+
+## `ImageRenderer` draws secure fields and switches as yellow blocks (seen 2026-10-31)
+
+A test render of the vault views shows a yellow block with a prohibited sign in place of each
+`SecureField` and `Toggle`: `ImageRenderer` can't draw controls backed by AppKit. It isn't a layout
+fault; sizes are right, but those controls need a run of the app to be seen.

@@ -73,6 +73,20 @@ without it. A secret is saved on the gateway under the name the card shows; Usua
 If your gateway uses plain `http` away from this device and outside Tailscale, others on your
 network could read what you send, so the card warns you and the button says **Send Unencrypted**.
 
+Agents can sign in to sites for you without seeing your passwords. Open a Bot's profile and pick the
+**Vault** tab to see what's saved for it (labels, usernames and sites, never the secrets), add a
+login, card or address, remove one, or switch on, unlock or lock a password manager on the gateway.
+In a chat, cards ask for a master password, a login to save or a one-time code, and you can skip any
+of them. On that same kind of plain `http` gateway, nothing secret goes out until you tick **Send it
+anyway** for that send.
+
+<p align="center">
+  <img src="../screenshots/iphone-vault.png" width="240" alt="A Bot's Vault tab on iPhone, with saved logins, a card, an address and password managers">
+  <img src="../screenshots/iphone-secret.png" width="240" alt="A card in a chat on iPhone asking for a secret in a masked field">
+</p>
+
+![Cards on the Mac asking for a one-time code and a sudo password, with a warning about plain http](../screenshots/mac-masked-prompts.png)
+
 ## Skills and commands
 
 Type `/` anywhere in the message box to open a menu of the agent's skills (✦) and Hermes's commands

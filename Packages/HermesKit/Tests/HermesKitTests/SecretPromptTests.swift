@@ -128,7 +128,7 @@ struct SecretPromptTests {
 
     @Test func recordedFramesLeaveOutTheAnswer() {
         let answer: JSONValue = ["jsonrpc": "2.0", "id": "srq-1", "result": ["value": .string(value)]]
-        #expect(FrameRecorder.redacted(answer)["result"]?["value"] == "<redacted>")
+        #expect(FrameRecorder.redacted(answer)["result"]?["value"] == "")
         #expect(FrameRecorder.redacted(answer)["id"] == "srq-1")
         let choice: JSONValue = ["jsonrpc": "2.0", "id": "srq-2", "result": ["choice": "once"]]
         #expect(FrameRecorder.redacted(choice) == choice)
@@ -238,7 +238,7 @@ struct SecretPromptTests {
         }
     }
 
-    @Test(arguments: ["vault.unlock_prompt", "vault.save_login", "vault.code", "preview.read", "mcp.setup"])
+    @Test(arguments: ["preview.read", "terminal.read", "window.read", "tour", "mcp.setup"])
     func otherMethodsAreStillDeclined(method: String) async throws {
         let (model, socket) = try await connect()
         defer { model.signOut() }

@@ -11,9 +11,18 @@ All notable changes to Usual Bot are listed here. The format follows
 - **Secret and sudo prompts.** When a skill needs a secret or a command needs your sudo password,
   a card in the chat asks for it in a masked field. Send it or skip it. On a gateway using plain
   http away from this device, the card warns you first and the button says Send Unencrypted.
+- **Credential vault.** A Bot's profile has a Vault tab: see what's saved (never the secrets), add
+  logins, cards and addresses, remove them, and switch on, unlock or lock password managers on the
+  gateway. In a chat, cards ask for a master password, a login to save or a one-time code, and you
+  can skip any of them. On a plain http gateway away from this device and outside Tailscale, nothing
+  secret is sent until you tick "Send it anyway" for that send.
 
 ### Fixed
 
+- **Secret and sudo requests.** Usual Bot used to decline these. With no other app attached, Hermes
+  then took its error text for your answer: it saved that text as the secret, so the skill never
+  asked again, and passed it to `sudo` as the password. If a skill has misbehaved since, check its
+  variable in the profile's `.env` for a JSON error and remove it.
 - Usual Bot no longer refuses a secret or sudo request with an error. With no other Hermes app
   attached, the gateway treated that error as the answer.
 

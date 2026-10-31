@@ -275,9 +275,12 @@ private struct QuickAnswer: View {
         }
         if !thread.state.draft.isEmpty {
             MarkdownView(thread.state.draft)
-        } else if thread.state.isRunning, thread.approvals.isEmpty, thread.questions.isEmpty, thread.secrets.isEmpty {
+        } else if thread.state.isRunning, thread.approvals.isEmpty, thread.questions.isEmpty, thread.secrets.isEmpty,
+            thread.vaultPrompts.isEmpty
+        {
             TypingIndicator()
         }
+        VaultCards(thread: thread, agentName: contact.name)
         ForEach(thread.approvals) { approval in
             ApprovalCard(approval: approval, agentName: contact.name) { thread.answer(approval, with: $0) }
         }
@@ -419,7 +422,13 @@ private struct WaitingOnYou: View {
                     id: prompt.id, contact: contact, title: SecretCard.title(prompt, agentName: contact.name),
                     command: nil, answer: nil)
             }
-            return approvals + questions + secrets
+            let vault = thread.vaultPrompts.map { prompt in
+                WaitingRow.Row(
+                    id: prompt.id, contact: contact,
+                    title: String(localized: "\(contact.name) needs you for a sign-in"),
+                    command: nil, answer: nil)
+            }
+            return approvals + questions + secrets + vault
         }
     }
 }

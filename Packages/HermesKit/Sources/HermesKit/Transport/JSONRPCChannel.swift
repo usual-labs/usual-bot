@@ -44,6 +44,8 @@ public actor JSONRPCChannel {
     private let heartbeatInterval: Duration
     private let silenceLimit: Duration
     private var nextID = 1
+    /// Calls that carried a secret. Kept after they finish: a late reply may still quote it.
+    private var sensitiveCalls: Set<Int> = []
     private var pending: [Int: CheckedContinuation<JSONValue, any Error>] = [:]
     private var ready: Result<GatewayReady, any Error>?
     private var readyWaiters: [CheckedContinuation<GatewayReady, any Error>] = []
@@ -80,13 +82,15 @@ public actor JSONRPCChannel {
         return try await withCheckedThrowingContinuation { readyWaiters.append($0) }
     }
 
-    /// Sends a request and waits for its result. JSON-RPC errors throw `.rpc`.
-    public func call(_ method: String, params: JSONValue = [:], timeout: Duration = .seconds(30)) async throws
-        -> JSONValue
-    {
+    /// Sends a request and waits for its result. JSON-RPC errors throw `.rpc`. A `sensitive` call
+    /// carries a secret, so its reply, which may quote it, isn't recorded.
+    public func call(
+        _ method: String, params: JSONValue = [:], timeout: Duration = .seconds(30), sensitive: Bool = false
+    ) async throws -> JSONValue {
         if let closedError { throw closedError }
         let id = nextID
         nextID += 1
+        if sensitive { sensitiveCalls.insert(id) }
         let frame: JSONValue = [
             "jsonrpc": "2.0", "id": .number(Double(id)), "method": .string(method), "params": params,
         ]
@@ -148,10 +152,11 @@ public actor JSONRPCChannel {
 
     func handle(_ text: String) {
         lastInbound = .now
+        let decoded = try? JSONDecoder().decode(JSONValue.self, from: Data(text.utf8))
         #if DEBUG
-            FrameRecorder.record("in", text)
+            if decoded?["id"]?.intValue.map(sensitiveCalls.contains) != true { FrameRecorder.record("in", text) }
         #endif
-        guard let frame = try? JSONDecoder().decode(JSONValue.self, from: Data(text.utf8)) else {
+        guard let frame = decoded else {
             Self.log.error("Dropped a frame that isn't JSON")
             return
         }

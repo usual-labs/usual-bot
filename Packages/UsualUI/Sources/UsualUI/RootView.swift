@@ -30,7 +30,7 @@ public struct RootView: View {
                     guard contact.kind == .agent else { return nil }
                     return ProfilePanel(
                         contact: contact, routines: model.routines(for: contact), skills: model.skills(for: contact),
-                        gateway: gateway, link: model.link,
+                        vault: model.vault(for: contact), gateway: gateway, link: model.link,
                         gatewayDetails: model.gatewayDetails, loadGatewayDetails: { await model.loadGatewayDetails() },
                         close: close)
                 }

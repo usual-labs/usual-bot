@@ -62,6 +62,7 @@ public final class AppModel {
     @ObservationIgnored private var threads: [Contact.ID: ChatThread] = [:]
     @ObservationIgnored private var routineLists: [Contact.ID: RoutineList] = [:]
     @ObservationIgnored private var skillLists: [Contact.ID: SkillList] = [:]
+    @ObservationIgnored private var vaultLists: [Contact.ID: VaultList] = [:]
     @ObservationIgnored private var rooms: [Contact.ID: RoomThread] = [:]
     /// Images and files agents name in chats, read from the gateway.
     @ObservationIgnored public private(set) lazy var media = MediaStore(auth: { [weak self] in self?.auth })
@@ -156,6 +157,7 @@ public final class AppModel {
         threads = [:]
         routineLists = [:]
         skillLists = [:]
+        vaultLists = [:]
         media.clear()
         pictures.clear()
         rooms = [:]
@@ -170,7 +172,8 @@ public final class AppModel {
         /// a gateway. Nothing connects, because there is no session to connect with.
         func showDemo(
             gateway: GatewayAddress, contacts: [Contact], threads: [Contact.ID: ChatThread],
-            rooms: [Contact.ID: RoomThread], routines: [Contact.ID: RoutineList], skills: [Contact.ID: SkillList]
+            rooms: [Contact.ID: RoomThread], routines: [Contact.ID: RoutineList], skills: [Contact.ID: SkillList],
+            vaults: [Contact.ID: VaultList]
         ) {
             session = .signedIn(gateway)
             link = .online(.legacy)
@@ -179,6 +182,7 @@ public final class AppModel {
             self.rooms = rooms
             routineLists = routines
             skillLists = skills
+            vaultLists = vaults
         }
     #endif
 
@@ -290,6 +294,7 @@ public final class AppModel {
         thread.storedAnswer = { [weak self] taskID in await self?.storedAnswer(taskID: taskID, profile: id) }
         thread.gateway = { [weak self] in self?.auth?.gateway }
         thread.replayEpoch = replayEpoch
+        thread.gatewayIsUnencrypted = { [weak self] in self?.auth?.gateway.isUnencrypted ?? true }
         return thread
     }
 
@@ -352,6 +357,16 @@ public final class AppModel {
         return list
     }
 
+    /// The vault of `contact`'s profile. Call `VaultList.refresh()` to load it.
+    public func vault(for contact: Contact) -> VaultList {
+        if let list = vaultLists[contact.id] { return list }
+        let list = VaultList(
+            profile: contact.details?.profile ?? contact.id, channel: { [weak self] in self?.channel },
+            gatewayIsUnencrypted: { [weak self] in self?.auth?.gateway.isUnencrypted ?? true })
+        vaultLists[contact.id] = list
+        return list
+    }
+
     /// Loads what the Machine tab shows. Parts the gateway doesn't answer stay empty.
     public func loadGatewayDetails() async {
         guard let auth else { return }
@@ -375,11 +390,21 @@ public final class AppModel {
     }
 
     /// Answers the gateway's questions: approvals, clarify questions and masked prompts go to their
-    /// chat. Anything else is declined as "not shown here" (4404): the gateway then lets another
-    /// attached app, such as the official one, answer, and gives up at once when no app can, so the
-    /// agent never waits on Usual Bot.
+    /// chat. Masked prompts with no chat to show them are skipped, never declined: the only app
+    /// declining settles the request with error text, which the gateway takes for the answer.
+    /// Anything else is declined as "not shown here" (4404): the gateway then lets another attached
+    /// app, such as the official one, answer, and gives up at once when no app can, so the agent
+    /// never waits on Usual Bot.
     private func handle(_ request: ServerRequest, on channel: JSONRPCChannel) async {
         let thread = threads.values.first { $0.sessionID != nil && $0.sessionID == request.sessionID }
+        if VaultPrompt.methods.contains(request.method) {
+            if let thread, let prompt = VaultPrompt(request) {
+                thread.receive(prompt)
+            } else {
+                await channel.respond(to: request.id, result: VaultPrompt.skipped)
+            }
+            return
+        }
         if let thread, let approval = ApprovalPrompt(request) {
             thread.receive(approval)
             return

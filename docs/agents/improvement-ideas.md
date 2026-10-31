@@ -2,10 +2,25 @@
 
 ## Planned/aspirational
 
-- **Planned: messaging features M9–M19.** Attachments, images in replies, skills and
-  slash commands, dictation, voice call, edit/undo, reactions, side questions,
-  background tasks, usage, model and reasoning level. One milestone each, in
-  [roadmap.md](roadmap.md).
+- **Hermes features the app doesn't surface yet.** From a Hermes source read (`bf0203a794`,
+  22 October 2026); none confirmed against a live gateway. Check each call on the app's
+  dashboard socket first, as the milestones do.
+  - **Search across chats:** `GET /api/sessions/search`. The app's search matches the contact
+    list only.
+  - **Playing audio and video:** a delivered non-image file shows as a file to save or share
+    (`MediaView`), with no player.
+  - **Connected apps:** `connectors.*`, the `connection.request` event, and MCP servers
+    (`/api/mcp/*`).
+  - **Managing Bots:** `profiles.create`, `PATCH /api/profiles/{name}`, `profiles.set_asset`. The
+    roster is read-only: no create, rename, picture change or row menu.
+  - **Routines:** the Routines tab only switches a job on or off. `/api/cron/jobs` also creates,
+    edits, runs and deletes, `/{id}/runs` gives history and `/api/cron/blueprints` gives templates.
+  - **Live activity:** `status.update`, `todo.updated`, `reasoning.delta`, `tool.progress`,
+    `notification.show` and `subagent.*` are ignored.
+  - **Rooms:** `groups.rename`, `groups.disband` and `groups.retry`.
+  - **Usage across chats:** `usage.bars`, `insights.get`, `/api/analytics/usage`.
+  - **Bot desktop:** `display.*` with a ticket for `/api/display/ws` (raw RFB), Take over through
+    `display.lease.*`. Largest of these: it needs a VNC viewer in the app.
 
 Child-local ideas stay in their package KBs.
 
