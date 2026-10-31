@@ -6,7 +6,7 @@
     /// Debug builds only. Launched with `USUALBOT_RECORD_FRAMES=1`, the app appends every socket frame
     /// to `<temporary directory>/usualbot-frames.jsonl`, one `{"dir":"in"|"out","frame":…}` per line,
     /// so real gateway traffic can be turned into test fixtures. Frames hold your conversations:
-    /// anonymise them before committing anything.
+    /// anonymise them before committing anything. Answers to masked prompts are left out.
     enum FrameRecorder {
         static let fileURL: URL? = {
             guard ProcessInfo.processInfo.environment["USUALBOT_RECORD_FRAMES"] == "1" else { return nil }
@@ -18,10 +18,21 @@
 
         private static let lock = Mutex(())
 
+        /// An outgoing frame without the answer to a masked prompt (`result.value`), which must
+        /// never reach this file. It has no other outgoing use.
+        static func redacted(_ frame: JSONValue) -> JSONValue {
+            guard case .object(var fields) = frame, case .object(var result)? = fields["result"],
+                result["value"] != nil
+            else { return frame }
+            result["value"] = "<redacted>"
+            fields["result"] = .object(result)
+            return .object(fields)
+        }
+
         static func record(_ direction: String, _ text: String) {
             guard let fileURL else { return }
             let frame = (try? JSONDecoder().decode(JSONValue.self, from: Data(text.utf8))) ?? .string(text)
-            let entry: JSONValue = ["dir": .string(direction), "frame": frame]
+            let entry: JSONValue = ["dir": .string(direction), "frame": direction == "out" ? redacted(frame) : frame]
             guard var line = try? JSONEncoder().encode(entry) else { return }
             line.append(0x0A)
             lock.withLock { _ in

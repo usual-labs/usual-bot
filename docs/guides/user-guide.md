@@ -67,6 +67,12 @@ When an agent asks you a question with choices, the same kind of card shows the 
 or type your own answer. Approvals also wait in the ⌥Space panel on the Mac, so you can answer
 without opening the chat.
 
+When a skill needs a secret, such as an API key, or a command needs your sudo password, a card asks
+for it in a masked field. **Send** gives it to your gateway, and **Skip** lets the agent carry on
+without it. A secret is saved on the gateway under the name the card shows; Usual Bot keeps no copy.
+If your gateway uses plain `http` away from this device and outside Tailscale, others on your
+network could read what you send, so the card warns you and the button says **Send Unencrypted**.
+
 ## Skills and commands
 
 Type `/` anywhere in the message box to open a menu of the agent's skills (✦) and Hermes's commands

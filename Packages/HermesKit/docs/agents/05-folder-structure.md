@@ -6,6 +6,7 @@
 - `Sources/HermesKit/Stores/AppModel.swift` — state orchestration
 - `Sources/HermesKit/Stores/OfflineCache.swift` — offline cache
 - `Sources/HermesKit/Auth/TokenStore.swift` — Keychain
+- `Sources/HermesKit/Chat/SecretPrompt.swift`, `Chat/ChatThread+Secrets.swift` — masked secret and sudo prompts
 - `Sources/HermesKit/Transport/GatewayConnection.swift` — connection handshake
 - `Sources/HermesKit/Transport/JSONRPCChannel.swift` — RPC
 - `Sources/HermesKit/Gateway/GatewayAddress.swift` — address validation

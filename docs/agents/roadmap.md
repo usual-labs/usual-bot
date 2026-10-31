@@ -1,6 +1,6 @@
 # Usual Bot: roadmap after 0.1
 
-Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M23 are built (each says how far it has been checked).
+Milestones M0–M8 (through the 0.1.0 tag) are done. Below, M9–M24 are built (each says how far it has been checked).
 
 Shakedown, 24 October 2026: the maintainer went through every feature on the Mac against their
 (legacy-protocol) gateway: attachments (photo and file), reactions, a skill, `/status`,
@@ -348,3 +348,34 @@ Picked 24 October 2026, before the real-gateway shakedown.
   diagnostic build, 2026-10-26): all 12 Bots reported `has_avatar` with a 160 × 160 PNG still
   (about 3 KB) and no `imageKind`, so all kept their characters as intended. The maintainer then
   gave a Bot a picture in the Hermes app and reported that Usual Bot showed it.
+
+## M24: Secret and sudo prompts (built; live gateway untested)
+
+- **You see:** when a skill needs a secret or a command needs the sudo password, a card in the chat
+  (and in the ⌥Space panel) with the environment variable and the gateway's wording, or the
+  command, above a masked field, with Skip and Send. The agent shows as Needs you meanwhile.
+- **Wire format:** server requests `secret {session_id, env_var, prompt, metadata?}` and
+  `sudo {session_id, command}`, both answered `{value}`, where `""` means skipped
+  (`tui_gateway/contracts/server_requests.py`, `tui_gateway/agent_callbacks.py`). An error answer
+  also ends in an empty value (`server._ask`). `metadata` isn't shown. The gateway waits 300 s for
+  a secret and 120 s for a password, then sends `request.cancel` with reason `timeout`. Requests
+  still open come back in `session.resume`'s `open_requests`.
+- **How:** `SecretPrompt` (one type for both requests) in `ChatThread.secrets`, handled in
+  `ChatThread+Secrets.swift`; `SecretCard` in UsualUI. Rooms show no such card.
+- **Never 4404:** `AppModel.handle` answers these two with an empty value when no chat can take
+  them. With no other client attached, a 4404 settles the request with a JSON error as its value,
+  and the gateway would save that as the secret (HermesKit known issues).
+- **Keeping the value private:** only `SecretCard`'s `@State` holds it, emptied on send, skip and
+  disappearing; a reconnect removes the card too. It isn't in `CachedThread`, and notices name what
+  was asked for. `FrameRecorder` blanks `result.value` in outgoing frames. Swift strings can't be
+  wiped, so the bytes stay in process memory until they're overwritten.
+- **Plain http:** `GatewayAddress.isUnencrypted` is true for `http` off this device outside
+  Tailscale (a LAN address, `.local` or a single-label name). The card then warns, and its button
+  reads Send Unencrypted. Sending stays possible: such a gateway already carries your sign-in and
+  chats this way, and it has no other route. Loopback and Tailscale addresses show no warning.
+- **Checked:** HermesKit tests (receiving, answering, skipping, withdrawal, reopened requests,
+  other methods still declined, no chat or a malformed request, recorded frames, what counts as
+  unencrypted); both cards and the masked field in the iPhone Simulator demo. The 4404 behaviour
+  was reproduced by calling the gateway's `server_requests` module directly, with its contract
+  registry stubbed. Not tried against a real gateway, and not looked at on the Mac or in the
+  ⌥Space panel.

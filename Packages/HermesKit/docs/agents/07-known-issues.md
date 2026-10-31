@@ -22,3 +22,25 @@ session. Background answers are recovered from the task's stored session (`ChatT
 side answers can't be (Hermes doesn't store them) and show as lost. iPhone apps close the socket in
 the background, so this is the common case there.
 
+## Declining a one-string request hands the agent a JSON error (source finding, 2026-10-31)
+
+- Symptom: `secret`, `sudo` and the other requests answered with one string (`ValueResult`) don't
+  end as "skipped" when the app declines them with 4404 and is the only client attached.
+- Cause: `server_requests._decline` doesn't check the method. When every answering client has
+  declined, it settles the request with `{"value": <JSON error about Hermes Desktop>}`. `_ask`
+  returns that, and `secret_cb` skips only on an empty value, so it would save the JSON as the
+  secret; sudo would get it as the password. Reproduced by calling `resolve_response` directly with
+  the contract registry stubbed (Hermes `bf0203a794`); the saving step is read from source, not run.
+- Fix here: `AppModel.handle` never declines `secret` or `sudo`: without a chat, or for a malformed
+  request, it answers `{"value": ""}`. That skip beats any other attached app, which only matters
+  in the moment before a chat attaches, since a session this app joined has a chat.
+- Still open: the three `vault.*` requests are declined with 4404, so they can hit the same thing
+  until they're handled. The lasting fix is in Hermes: limit that settlement to window-owned
+  requests.
+
+## A prompt answered in another app stays on screen (source finding, 2026-10-31)
+
+The gateway sends `request.cancel` when a request times out or is cancelled, not when another client
+answers it (`server_requests.resolve_response`). A secret, sudo or clarify card answered in the
+official app stays here until the next reconnect. Answering it then does nothing: the gateway
+drops the response, and the app's notice still says it was sent.

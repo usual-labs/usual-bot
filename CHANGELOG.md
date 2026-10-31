@@ -6,7 +6,16 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+### Added
+
+- **Secret and sudo prompts.** When a skill needs a secret or a command needs your sudo password,
+  a card in the chat asks for it in a masked field. Send it or skip it. On a gateway using plain
+  http away from this device, the card warns you first and the button says Send Unencrypted.
+
 ### Fixed
+
+- Usual Bot no longer refuses a secret or sudo request with an error. With no other Hermes app
+  attached, the gateway treated that error as the answer.
 
 - **Mac tab bar.** Window tabs are off, so View no longer offers Show Tab Bar and the tab bar can't
   cover the top of the window.

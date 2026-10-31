@@ -18,7 +18,7 @@ enum BotChat {
         let historyOmitted: Bool
         /// The turn still running when the app attached, if any.
         var inflight: InflightTurn? = nil
-        /// Questions (approvals) the gateway asked earlier and is still waiting on.
+        /// Questions (approvals, clarify, masked prompts) the gateway asked earlier and still waits on.
         var openRequests: [ServerRequest] = []
         /// The session's model and reasoning level, as `session.info` reports them.
         var info: JSONValue? = nil

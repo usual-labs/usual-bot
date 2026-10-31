@@ -122,7 +122,7 @@ struct QuestionCard: View {
     }
 }
 
-/// The pill buttons used on approval and question cards.
+/// The pill buttons used on approval, question and secret cards.
 struct CardButtonStyle: ButtonStyle {
     let primary: Bool
     /// Takes the full width, for buttons stacked in a narrow card.

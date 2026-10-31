@@ -80,6 +80,11 @@
                         "About **40,000 pages**, re-indexed nightly. Turbopuffer stores them for ~$6 a month."))
             ]
             threads["ops"] = ChatThread.sample("ops", state: ThreadState(history: opsChat, running: false))
+            threads["ops"]?.receive(
+                SecretPrompt(
+                    id: "demo-secret", sessionID: "sample",
+                    kind: .secret(
+                        name: "STATUSPAGE_API_KEY", message: "The status-report skill needs a Statuspage API key.")))
             threads["ops"]?.state.addBackgroundResult(
                 task: "Check last night's backups on all three servers",
                 result: "All three backups finished between 02:10 and 02:40 and **restore-tested** clean.")
@@ -111,6 +116,12 @@
                 threads[id] = ChatThread.sample(
                     id, state: ThreadState(history: [HistoryMessage(role: "assistant", text: text)], running: false))
             }
+            threads["ledger"]?.receive(
+                SecretPrompt(
+                    id: "demo-sudo", sessionID: "sample", kind: .sudo(command: "sudo systemctl restart invoice-worker"))
+            )
+            // Shows the warning a gateway on plain http gets.
+            threads["ledger"]?.gateway = { try? GatewayAddress(parsing: "http://192.168.1.20:9119") }
             return threads
         }
 

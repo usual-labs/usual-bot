@@ -24,6 +24,7 @@ Problems in this repository's code, for example:
 - the loopback sign-in listener and its `state` and PKCE checks;
 - sending a sign-in or token over plain `http`, or to the wrong host;
 - the offline cache, notifications or logs exposing conversations;
+- a secret or sudo password reaching anything but the gateway that asked for it;
 - an approval being granted without the person choosing it;
 - the GPT-Live web view reaching more than it should.
 

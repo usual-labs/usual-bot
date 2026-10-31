@@ -9,7 +9,7 @@
 - [05-workspace-structure.md](docs/agents/05-workspace-structure.md) — Usual Bot: workspace structure.
 - [app-shell.md](docs/agents/app-shell.md) — Usual Bot: app shell.
 - [improvement-ideas.md](docs/agents/improvement-ideas.md) — Usual Bot: cross-project improvement ideas.
-- [roadmap.md](docs/agents/roadmap.md) — Usual Bot: milestones M9–M23 (attachments, skills, voice, model and reasoning, Bot pictures, and more).
+- [roadmap.md](docs/agents/roadmap.md) — Usual Bot: milestones M9–M24 (attachments, skills, voice, model and reasoning, Bot pictures, and more).
 - [known-issues.md](docs/agents/known-issues.md) — Usual Bot: cross-project known issues.
 
 ## Documentation placement

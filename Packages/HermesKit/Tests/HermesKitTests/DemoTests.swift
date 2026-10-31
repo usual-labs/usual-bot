@@ -15,5 +15,12 @@ struct DemoTests {
         let room = try #require(contacts.first { $0.kind != .agent })
         #expect(model.room(for: room)?.state.items.count == 5)
         #expect(model.thread(for: try #require(contacts.first { $0.id == "atlas" })).state.items.count == 5)
+
+        let ops = model.thread(for: try #require(contacts.first { $0.id == "ops" }))
+        #expect(ops.secrets.count == 1)
+        #expect(!ops.isLinkUnencrypted)
+        let ledger = model.thread(for: try #require(contacts.first { $0.id == "ledger" }))
+        #expect(ledger.secrets.first?.kind == .sudo(command: "sudo systemctl restart invoice-worker"))
+        #expect(ledger.isLinkUnencrypted)
     }
 }

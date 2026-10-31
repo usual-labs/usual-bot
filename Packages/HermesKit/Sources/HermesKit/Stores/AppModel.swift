@@ -288,6 +288,7 @@ public final class AppModel {
             backgroundTaskFinished?(contact, task, result)
         }
         thread.storedAnswer = { [weak self] taskID in await self?.storedAnswer(taskID: taskID, profile: id) }
+        thread.gateway = { [weak self] in self?.auth?.gateway }
         thread.replayEpoch = replayEpoch
         return thread
     }
@@ -373,9 +374,10 @@ public final class AppModel {
         thread.apply(event)
     }
 
-    /// Answers the gateway's questions: approvals and clarify questions go to their chat. Anything else is declined as
-    /// "not shown here" (4404): the gateway then lets another attached app, such as the official
-    /// one, answer, and gives up at once when no app can, so the agent never waits on Usual Bot.
+    /// Answers the gateway's questions: approvals, clarify questions and masked prompts go to their
+    /// chat. Anything else is declined as "not shown here" (4404): the gateway then lets another
+    /// attached app, such as the official one, answer, and gives up at once when no app can, so the
+    /// agent never waits on Usual Bot.
     private func handle(_ request: ServerRequest, on channel: JSONRPCChannel) async {
         let thread = threads.values.first { $0.sessionID != nil && $0.sessionID == request.sessionID }
         if let thread, let approval = ApprovalPrompt(request) {
@@ -384,6 +386,16 @@ public final class AppModel {
         }
         if let thread, let prompt = ClarifyPrompt(request) {
             thread.receive(prompt)
+            return
+        }
+        if SecretPrompt.methods.contains(request.method) {
+            // Never 4404: when no other app is attached, the gateway answers a decline with a JSON
+            // error as the value, and would save that as the secret. An empty value is a skip.
+            if let thread, let prompt = SecretPrompt(request) {
+                thread.receive(prompt)
+            } else {
+                await channel.respond(to: request.id, result: ["value": ""])
+            }
             return
         }
         await channel.decline(
