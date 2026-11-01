@@ -3,7 +3,7 @@ import Foundation
 /// Opens an authenticated JSON-RPC socket to a gateway: mint a ticket, dial `/api/ws?ticket=…`,
 /// wait for `gateway.ready`.
 struct GatewayConnector: Sendable {
-    typealias SocketFactory = @Sendable (URL) -> any WebSocketConnection
+    typealias SocketFactory = @Sendable (URL) async throws -> any WebSocketConnection
 
     private let auth: AuthSession
     private let makeSocket: SocketFactory
@@ -15,7 +15,7 @@ struct GatewayConnector: Sendable {
 
     func connect() async throws -> (JSONRPCChannel, GatewayReady) {
         let ticket = try await auth.webSocketTicket()
-        let channel = JSONRPCChannel(socket: makeSocket(auth.gateway.webSocketURL(ticket: ticket)))
+        let channel = JSONRPCChannel(socket: try await makeSocket(auth.gateway.webSocketURL(ticket: ticket)))
         await channel.start()
         do {
             let ready = try await channel.waitUntilReady()

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		5B0B00000000000000000101 /* HermesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5B0B00000000000000000201 /* HermesKit */; };
 		5B0B00000000000000000102 /* UsualUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5B0B00000000000000000202 /* UsualUI */; };
+		5B0B00000000000000000103 /* Tailnet in Frameworks */ = {isa = PBXBuildFile; productRef = 5B0B00000000000000000203 /* Tailnet */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 			files = (
 				5B0B00000000000000000101 /* HermesKit in Frameworks */,
 				5B0B00000000000000000102 /* UsualUI in Frameworks */,
+				5B0B00000000000000000103 /* Tailnet in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -90,6 +92,7 @@
 			packageProductDependencies = (
 				5B0B00000000000000000201 /* HermesKit */,
 				5B0B00000000000000000202 /* UsualUI */,
+				5B0B00000000000000000203 /* Tailnet */,
 			);
 			productName = UsualBot;
 			productReference = 5B0B00000000000000000301 /* UsualBot.app */;
@@ -122,6 +125,7 @@
 			packageReferences = (
 				5B0B00000000000000000501 /* XCLocalSwiftPackageReference "Packages/HermesKit" */,
 				5B0B00000000000000000502 /* XCLocalSwiftPackageReference "Packages/UsualUI" */,
+				5B0B00000000000000000503 /* XCLocalSwiftPackageReference "Packages/Tailnet" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5B0B00000000000000000602 /* Products */;
@@ -212,6 +216,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/UsualUI;
 		};
+		5B0B00000000000000000503 /* XCLocalSwiftPackageReference "Packages/Tailnet" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Tailnet;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -224,6 +232,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5B0B00000000000000000502 /* XCLocalSwiftPackageReference "Packages/UsualUI" */;
 			productName = UsualUI;
+		};
+		5B0B00000000000000000203 /* Tailnet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5B0B00000000000000000503 /* XCLocalSwiftPackageReference "Packages/Tailnet" */;
+			productName = Tailnet;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

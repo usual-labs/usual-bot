@@ -77,6 +77,14 @@ public final class AppModel {
         self.init(tokenStore: KeychainTokenStore(), http: URLSession.shared, defaults: .standard, cache: OfflineCache())
     }
 
+    /// Sends all gateway traffic, requests and the socket alike, through the session `session`
+    /// returns at the time, e.g. one routed through the app's own Tailscale device.
+    public convenience init(session: @escaping @Sendable () async throws -> URLSession) {
+        self.init(
+            tokenStore: KeychainTokenStore(), http: SessionTransport(session: session), defaults: .standard,
+            cache: OfflineCache(), makeSocket: { URLSessionWebSocket(url: $0, session: try await session()) })
+    }
+
     init(
         tokenStore: any TokenStore, http: any HTTPTransport, defaults: UserDefaults, cache: OfflineCache,
         makeSocket: @escaping GatewayConnector.SocketFactory = { URLSessionWebSocket(url: $0) }
@@ -142,6 +150,12 @@ public final class AppModel {
 
     public func cancelSignIn() {
         signInTask?.cancel()
+    }
+
+    /// Drops the socket and connects again at once, e.g. after the route to the gateway changed.
+    public func reconnect() {
+        guard let auth else { return }
+        connect(auth)
     }
 
     public func signOut() {

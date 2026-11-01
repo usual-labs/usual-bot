@@ -13,6 +13,16 @@ extension URLSession: HTTPTransport {
     }
 }
 
+/// Sends each request through whichever session `session` returns then, e.g. one routed through
+/// the app's own Tailscale device, which can change while the app runs.
+struct SessionTransport: HTTPTransport {
+    let session: @Sendable () async throws -> URLSession
+
+    func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        try await session().send(request)
+    }
+}
+
 extension HTTPTransport {
     /// Sends `request` and decodes a 2xx JSON body. Network failures become `.unreachable`,
     /// other statuses `.http` with the gateway's `detail` or `error` message when it gives one.

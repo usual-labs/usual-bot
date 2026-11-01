@@ -2,13 +2,18 @@ import HermesKit
 import SwiftUI
 
 /// The main window: the connect screen until signed in, then contacts and the selected thread.
-public struct RootView: View {
+public struct RootView<GatewayMenu: View>: View {
     @Bindable var model: AppModel
     let presenter: any SignInPresenter
+    /// More items for the gateway menu, after the gateway's status.
+    let gatewayMenu: () -> GatewayMenu
 
-    public init(model: AppModel, presenter: any SignInPresenter) {
+    public init(
+        model: AppModel, presenter: any SignInPresenter, @ViewBuilder gatewayMenu: @escaping () -> GatewayMenu
+    ) {
         self.model = model
         self.presenter = presenter
+        self.gatewayMenu = gatewayMenu
     }
 
     public var body: some View {
@@ -35,7 +40,8 @@ public struct RootView: View {
                         close: close)
                 }
             ) { compact in
-                GatewayStatusButton(gateway: gateway, link: model.link, compact: compact, signOut: model.signOut)
+                GatewayStatusButton(
+                    gateway: gateway, link: model.link, compact: compact, signOut: model.signOut, more: gatewayMenu)
             }
             .environment(\.media, model.media)
             .environment(\.botPictures, model.pictures)
@@ -46,6 +52,12 @@ public struct RootView: View {
     private var emptyText: LocalizedStringKey {
         if case .online = model.link { return "No agents on this gateway yet." }
         return "Connecting…"
+    }
+}
+
+extension RootView where GatewayMenu == EmptyView {
+    public init(model: AppModel, presenter: any SignInPresenter) {
+        self.init(model: model, presenter: presenter) { EmptyView() }
     }
 }
 
@@ -134,7 +146,7 @@ struct ContactsSplitView<Footer: View>: View {
                     // No title: the bar holds only the gateway status and New Room.
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
-                        ToolbarItem(placement: .topBarLeading) { footer(true) }
+                        ToolbarItem(placement: .topBarLeading) { footer(false) }
                         ToolbarItem(placement: .primaryAction) { newRoomButton }
                     }
             } detail: {
@@ -325,68 +337,6 @@ struct ContactsSplitView<Footer: View>: View {
     private func members(of contact: Contact) -> [Contact] {
         let byID = Dictionary(contacts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         return ContactList.members(of: contact, in: byID)
-    }
-}
-
-/// The sidebar footer: which gateway, whether it's reachable, and sign-out.
-struct GatewayStatusButton: View {
-    let gateway: GatewayAddress
-    let link: AppModel.Link
-    /// In the narrow window's rail: the status dot alone.
-    var compact = false
-    let signOut: () -> Void
-
-    var body: some View {
-        Menu {
-            Section(gateway.displayName) {
-                Text(statusText)
-            }
-            Button("Sign Out", role: .destructive, action: signOut)
-        } label: {
-            HStack(spacing: 8) {
-                Circle().fill(dotColor).frame(width: 8, height: 8)
-                if !compact {
-                    Text(label)
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Theme.secondaryInk)
-                        .lineLimit(1)
-                    Spacer(minLength: 0)
-                }
-            }
-            #if os(macOS)
-                .frame(minWidth: compact ? 44 : nil, minHeight: 28)
-            #endif
-            .contentShape(Rectangle())
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .accessibilityLabel(Text("Gateway \(gateway.displayName), \(statusText)"))
-    }
-
-    private var label: String {
-        switch link {
-        case .online: return gateway.displayName
-        case .connecting: return String(localized: "Connecting…")
-        case .offline: return String(localized: "Offline, retrying…")
-        }
-    }
-
-    private var statusText: String {
-        switch link {
-        case .online(let dialect):
-            return dialect == .canonical ? String(localized: "Connected") : String(localized: "Connected (dashboard)")
-        case .connecting: return String(localized: "Connecting…")
-        case .offline(let reason): return reason
-        }
-    }
-
-    private var dotColor: Color {
-        switch link {
-        case .online: return Theme.online
-        case .connecting: return Theme.needsYouInk
-        case .offline: return Theme.danger
-        }
     }
 }
 
