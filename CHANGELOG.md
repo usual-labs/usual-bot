@@ -33,6 +33,9 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Fixed
 
+- **Background work no longer looks like your messages.** When a background process or subagent
+  finished, Hermes's note appeared as a long message from you, and in the sidebar. It's now one line
+  you can open for the details. Undo and Edit act on your own last message instead of that note.
 - **The sidebar stays at the window's edge.** On the Mac, with no chat open, the list sat away from
   the left edge with an empty strip beside it.
 - **The end of a chat stays in view.** A new message, a card asking for something or the background

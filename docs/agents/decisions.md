@@ -58,6 +58,10 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   every 20 s in its stored session.
 - Answers can beat the reply carrying their task ID: side answers match by question, background
   results by the oldest task still waiting.
+- Turns Hermes starts itself (a process or subagent finishing, an internal notification) are stored
+  as user rows so the model reads them. `GatewayTurn` shows them by `display_kind`, and by wording
+  for untyped rows. An unknown kind stays a message, so nothing you wrote can disappear. A live card
+  on `message.start` is handled but hasn't been seen on a real gateway.
 - Background results aren't in the gateway's history, so the app keeps them apart and puts them back
   by time whenever the transcript is rebuilt. There's no cancel, because the gateway has no call for it.
 

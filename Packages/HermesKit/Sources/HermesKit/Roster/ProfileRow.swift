@@ -126,6 +126,7 @@ extension Contact {
     /// Previews are the start of the last message, usually Markdown, cut at 80 characters by the
     /// gateway (so bold or code can be left unclosed). The list shows them as plain text.
     static func plainPreview(_ text: String) -> String {
+        if let note = GatewayTurn.preview(of: text) { return note }
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
         var plain = (try? AttributedString(markdown: text, options: options)).map { String($0.characters) } ?? text
         for marker in ["**", "__", "~~", "`"] {

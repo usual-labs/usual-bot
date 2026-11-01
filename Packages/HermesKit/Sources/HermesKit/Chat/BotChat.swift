@@ -62,7 +62,10 @@ enum BotChat {
         }
         let inflight = result["inflight"].flatMap { turn -> InflightTurn? in
             guard case .object = turn else { return nil }
-            return InflightTurn(user: turn["user"]?.stringValue ?? "", assistant: turn["assistant"]?.stringValue ?? "")
+            return InflightTurn(
+                user: turn["user"]?.stringValue ?? "", assistant: turn["assistant"]?.stringValue ?? "",
+                displayKind: turn["display_kind"]?.stringValue,
+                displayText: turn["display_metadata"]?["display_text"]?.stringValue)
         }
         return Opened(
             sessionID: live, history: history, running: result["running"]?.boolValue ?? false,

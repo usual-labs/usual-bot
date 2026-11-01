@@ -234,6 +234,8 @@ struct ItemView: View {
             ActivityLine(steps: steps, agentName: agentName)
         case .notice(let text):
             NoticeLine(text: text)
+        case .result(let title, let detail):
+            ResultLine(title: title, detail: detail)
         case .output(let text):
             MessageRow(item: item, text: text, isMine: false) { CommandOutput(text: text) }
         case .background(let task, let result):

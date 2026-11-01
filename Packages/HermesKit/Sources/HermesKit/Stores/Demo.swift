@@ -251,6 +251,19 @@
                 HistoryMessage(role: "tool", name: "terminal", context: "ssh web-1 uptime && df -h /"),
                 HistoryMessage(role: "tool", name: "image_generate", context: "CPU chart, last 12 hours"),
                 HistoryMessage(
+                    role: "user",
+                    text: """
+                        [IMPORTANT: Background process proc_demo completed normally (exit code 0).
+                        Command: ./verify-backups.sh --all
+                        Output:
+                        web-1: backup verified
+                        web-2: backup verified
+                        db-1: backup verified
+                        ]
+                        """,
+                    displayKind: "process_complete",
+                    displayText: "Background Process Finished: ./verify-backups.sh --all"),
+                HistoryMessage(
                     role: "assistant",
                     text: """
                         All 3 servers healthy, backups verified. CPU peaked at 61% during the 03:00 \
