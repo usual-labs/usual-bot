@@ -2,11 +2,12 @@
 
 ## Implemented today
 
-RootView owns top-level routing; ContactsSplitView handles selection; ContactList/ContactRow own roster; ThreadPane, Composer and TranscriptView own conversation presentation; RoomPane/NewRoomSheet own rooms; ProfilePanel owns agent profile/routine UI. QuickMessageView is the ⌥Space panel's content.
+RootView owns top-level routing; ContactsSplitView handles selection; ContactList/ContactRow own roster; ThreadPane, Composer and TranscriptView own conversation presentation; RoomPane/NewRoomSheet own rooms; ProfilePanel owns agent profile/routine UI. QuickMessageView is the ⌥Space panel's content. `GatewayStatusButton` (Settings/) is the Mac sidebar footer and the iPhone list's top-left menu; the app adds its own items before Sign Out (`RootView`'s `gatewayMenu`, the iPhone's Tailscale section) and its own settings to the connect screen between the address and Sign In (`connectOptions`, the iPhone's Built-in Tailscale switch).
 
 ## What the code doesn't explain
 
 - **Mac and iPhone differ on purpose.** The Mac lays its sidebar out itself and keeps the model row under the message box. iPhone keeps NavigationSplitView and puts those controls in the box (`ComposerLayout`, `ComposerControls`). See 07-known-issues.md for why.
+- **The iPhone gateway button shows the address** (`footer(false)`) and is `fixedSize`, since the navigation bar otherwise squeezes it to "…".
 - **iPhone doesn't autofocus the message box,** and scrolling dismisses the keyboard, so the resting pill stays reachable.
 - **Attachments are for chats, not rooms.** HEIC, HEIF and TIFF become JPEG because the gateway takes only PNG, JPEG, GIF, WebP and BMP as images. The draft stays if an upload fails.
 - **Suggestion menus.** Only letters, digits, `-` and `_` open the `/` menu, so paths don't. iPhone menus that open upward list their items in reverse (system behaviour).

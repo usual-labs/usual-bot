@@ -2,18 +2,28 @@ import HermesKit
 import SwiftUI
 
 /// The main window: the connect screen until signed in, then contacts and the selected thread.
-public struct RootView: View {
+public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
     @Bindable var model: AppModel
     let presenter: any SignInPresenter
+    /// Settings on the connect screen, between the address and Sign In.
+    let connectOptions: () -> ConnectOptions
+    /// More items for the gateway menu, after the gateway's status.
+    let gatewayMenu: () -> GatewayMenu
     #if os(macOS)
         @Environment(\.openSettings) private var openSettings
     #else
         @State private var showsSettings = false
     #endif
 
-    public init(model: AppModel, presenter: any SignInPresenter) {
+    public init(
+        model: AppModel, presenter: any SignInPresenter,
+        @ViewBuilder connectOptions: @escaping () -> ConnectOptions,
+        @ViewBuilder gatewayMenu: @escaping () -> GatewayMenu
+    ) {
         self.model = model
         self.presenter = presenter
+        self.connectOptions = connectOptions
+        self.gatewayMenu = gatewayMenu
     }
 
     public var body: some View {
@@ -34,7 +44,7 @@ public struct RootView: View {
         case .signedOut where model.isRestoring:
             SplashView()
         case .signedOut, .signingIn:
-            ConnectView(model: model, presenter: presenter)
+            ConnectView(model: model, presenter: presenter, options: connectOptions)
         case .signedIn(let gateway):
             ContactsSplitView(
                 contacts: model.sidebarContacts, sections: model.sections, emptyText: emptyText,
@@ -59,7 +69,8 @@ public struct RootView: View {
                     let layout = AnyLayout(HStackLayout(spacing: 8))
                 #endif
                 layout {
-                    GatewayStatusButton(gateway: gateway, link: model.link, compact: compact, signOut: model.signOut)
+                    GatewayStatusButton(
+                        gateway: gateway, link: model.link, compact: compact, signOut: model.signOut, more: gatewayMenu)
                     settingsButton
                 }
                 .fixedSize(horizontal: compact, vertical: false)
@@ -91,6 +102,12 @@ public struct RootView: View {
     private var emptyText: LocalizedStringKey {
         if case .online = model.link { return "No agents on this gateway yet." }
         return "Connecting…"
+    }
+}
+
+extension RootView where ConnectOptions == EmptyView, GatewayMenu == EmptyView {
+    public init(model: AppModel, presenter: any SignInPresenter) {
+        self.init(model: model, presenter: presenter, connectOptions: { EmptyView() }, gatewayMenu: { EmptyView() })
     }
 }
 
@@ -181,7 +198,7 @@ struct ContactsSplitView<Footer: View>: View {
                     // No title: the bar holds only the gateway status and New Room.
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
-                        ToolbarItem(placement: .topBarLeading) { footer(true) }
+                        ToolbarItem(placement: .topBarLeading) { footer(false) }
                         ToolbarItem(placement: .primaryAction) { newRoomButton }
                     }
             } detail: {

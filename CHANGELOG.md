@@ -27,6 +27,11 @@ All notable changes to Usual Bot are listed here. The format follows
   secret is sent until you tick "Send it anyway" for that send.
 - **Vault filters.** The Vault tab sorts what's saved into All, Logins, Payments and Addresses, with
   a count on each, and New item asks what you're adding.
+- **Built-in Tailscale on iPhone.** Reach a gateway on your tailnet with the Tailscale VPN off: turn
+  on Built-in Tailscale on the connect screen or in the gateway menu at the top left, and sign in to
+  Tailscale once. The app then joins your tailnet as a device of its own. A gateway that signs in
+  through Google still needs the VPN for that sign-in, since Google doesn't allow it inside apps. The
+  top left also shows the gateway's address now.
 
 ### Changed
 

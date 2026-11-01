@@ -9,20 +9,31 @@ struct UsualBotApp: App {
         @State private var presenter = BrowserSignInPresenter()
         @State private var quickPanel: QuickPanelController
     #else
-        @State private var presenter = WebAuthSignInPresenter()
+        /// The app's own Tailscale device, which gateway traffic takes while it's on.
+        @State private var tailscale: BuiltInTailscale
+        @State private var systemSignIn = WebAuthSignInPresenter()
+        @State private var tailnetSignIn: TailnetSignInPresenter
         @Environment(\.scenePhase) private var scenePhase
     #endif
 
     init() {
+        #if os(iOS)
+            let tailscale = BuiltInTailscale()
+            _tailscale = State(initialValue: tailscale)
+            _tailnetSignIn = State(initialValue: TailnetSignInPresenter(tailnet: tailscale.tailnet))
+            let live = { AppModel(session: { try await tailscale.session() }) }
+        #else
+            let live = { AppModel() }
+        #endif
         #if DEBUG
             // USUALBOT_DEMO=1 (or --demo) shows made-up agents instead of signing in, for screenshots and for
             // trying the app without a Hermes gateway.
             let demo =
                 ProcessInfo.processInfo.environment["USUALBOT_DEMO"] == "1"
                 || ProcessInfo.processInfo.arguments.contains("--demo")
-            let model = demo ? AppModel.demo() : AppModel()
+            let model = demo ? AppModel.demo() : live()
         #else
-            let model = AppModel()
+            let model = live()
         #endif
         _model = State(initialValue: model)
         TaskNotifications.watch(model)
@@ -35,14 +46,19 @@ struct UsualBotApp: App {
 
     var body: some Scene {
         WindowGroup(id: "main") {
-            RootView(model: model, presenter: presenter)
-                .task { await model.restore() }
-                #if os(macOS)
+            #if os(macOS)
+                RootView(model: model, presenter: presenter)
+                    .task { await model.restore() }
                     .providesMainWindow(to: quickPanel)
-                #else
-                    // iOS suspends a backgrounded app's sockets; reconnect on return instead.
-                    .onChange(of: scenePhase) { _, phase in model.setForeground(phase != .background) }
-                #endif
+            #else
+                RootView(model: model, presenter: signInPresenter) {
+                    TailscaleConnectOption(tailscale: tailscale)
+                } gatewayMenu: {
+                    TailscaleMenu(tailscale: tailscale, reconnect: model.reconnect)
+                }
+                .task { await model.restore() }
+                .onChange(of: scenePhase) { _, phase in setForeground(phase != .background) }
+            #endif
         }
         #if os(macOS)
             // No title bar: the panes reach the top of the window, which drags by its background.
@@ -62,4 +78,19 @@ struct UsualBotApp: App {
             }
         #endif
     }
+
+    #if os(iOS)
+        /// The system sheet can't reach a tailnet, so sign-in goes through the built-in device
+        /// while it's on.
+        private var signInPresenter: any SignInPresenter {
+            tailscale.isOn ? tailnetSignIn : systemSignIn
+        }
+
+        /// iOS suspends a backgrounded app's sockets, so the app closes its gateway socket and stops
+        /// the built-in Tailscale device, and reconnects on return, which starts the device again.
+        private func setForeground(_ foreground: Bool) {
+            model.setForeground(foreground)
+            if !foreground { tailscale.suspend() }
+        }
+    #endif
 }

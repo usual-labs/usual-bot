@@ -1,33 +1,43 @@
 import HermesKit
 import SwiftUI
 
-/// The sidebar footer: which gateway, whether it's reachable, and sign-out.
-struct GatewayStatusButton: View {
+/// Which gateway, whether it's reachable, and sign-out: the Mac sidebar's footer, and on iPhone
+/// the chat list's top-left button. `more` adds items to its menu, such as the app's Tailscale.
+struct GatewayStatusButton<More: View>: View {
     let gateway: GatewayAddress
     let link: AppModel.Link
     /// In the narrow window's rail: the status dot alone.
     var compact = false
     let signOut: () -> Void
+    @ViewBuilder let more: () -> More
 
     var body: some View {
         Menu {
             Section(gateway.displayName) {
                 Text(statusText)
             }
+            more()
             Button("Sign Out", role: .destructive, action: signOut)
         } label: {
             HStack(spacing: 8) {
                 Circle().fill(dotColor).frame(width: 8, height: 8)
                 if !compact {
                     Text(label)
-                        .font(.system(size: 12.5))
                         .foregroundStyle(Theme.secondaryInk)
                         .lineLimit(1)
-                    Spacer(minLength: 0)
+                    #if os(macOS)
+                        Spacer(minLength: 0)
+                    #endif
                 }
             }
             #if os(macOS)
+                .font(.system(size: 12.5))
                 .frame(minWidth: compact ? 44 : nil, minHeight: 28)
+            #else
+                .font(.system(size: 15))
+                .padding(.horizontal, 4)
+                // The navigation bar would otherwise squeeze the address down to "…".
+                .fixedSize()
             #endif
             .contentShape(Rectangle())
         }
