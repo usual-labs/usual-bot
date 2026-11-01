@@ -25,6 +25,10 @@ struct ProfileRow: Decodable, Sendable {
         let pinned: Bool?
         /// `photo` for an uploaded or generated picture, `shape` for one of the app's drawn faces.
         let imageKind: String?
+        /// The sidebar section this Bot is filed under. The name rides along so another client that
+        /// has never seen the section can rebuild it.
+        let sectionId: String?
+        let sectionName: String?
 
         init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -33,9 +37,13 @@ struct ProfileRow: Decodable, Sendable {
             hidden = try? container.decodeIfPresent(Bool.self, forKey: .hidden)
             pinned = try? container.decodeIfPresent(Bool.self, forKey: .pinned)
             imageKind = try? container.decodeIfPresent(String.self, forKey: .imageKind)
+            sectionId = try? container.decodeIfPresent(String.self, forKey: .sectionId)
+            sectionName = try? container.decodeIfPresent(String.self, forKey: .sectionName)
         }
 
-        private enum CodingKeys: String, CodingKey { case title, color, hidden, pinned, imageKind }
+        private enum CodingKeys: String, CodingKey {
+            case title, color, hidden, pinned, imageKind, sectionId, sectionName
+        }
     }
 
     /// The profile's one long-lived conversation, titled exactly "Bot Chat".
@@ -120,7 +128,9 @@ extension Contact {
             picture: profile.hasAvatar == true
                 ? Picture(
                     revision: profile.uiMetaRevisions?["hermes-bots"] ?? 0, isPhoto: profile.bot?.imageKind == "photo")
-                : nil)
+                : nil,
+            sectionID: profile.bot?.sectionId?.nonBlank,
+            sectionName: profile.bot?.sectionName?.trimmingCharacters(in: .whitespacesAndNewlines).nonBlank)
     }
 
     /// Previews are the start of the last message, usually Markdown, cut at 80 characters by the

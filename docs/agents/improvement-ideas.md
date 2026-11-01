@@ -12,7 +12,7 @@
   - **Connected apps:** `connectors.*`, the `connection.request` event, and MCP servers
     (`/api/mcp/*`).
   - **Managing Bots:** `profiles.create`, `PATCH /api/profiles/{name}`, `profiles.set_asset`. The
-    roster is read-only: no create, rename, picture change or row menu.
+    roster only writes a Bot's section: no create, rename or picture change.
   - **Routines:** the Routines tab only switches a job on or off. `/api/cron/jobs` also creates,
     edits, runs and deletes, `/{id}/runs` gives history and `/api/cron/blueprints` gives templates.
   - **Live activity:** `status.update`, `todo.updated`, `reasoning.delta`, `tool.progress`,

@@ -69,6 +69,8 @@ public final class AppModel {
     @ObservationIgnored public private(set) lazy var voiceLive = VoiceLiveService(auth: { [weak self] in self?.auth })
     /// Agents' own pictures from the official app; agents without one keep the app's characters.
     @ObservationIgnored public let pictures = BotPictures()
+    /// How the sidebar is grouped.
+    @ObservationIgnored public let sections: SidebarSections
 
     private static let gatewayKey = "gatewayAddress"
     private static let rosterInterval: Duration = .seconds(5)
@@ -87,8 +89,13 @@ public final class AppModel {
         self.defaults = defaults
         self.cache = cache
         self.makeSocket = makeSocket
+        sections = SidebarSections(defaults: defaults)
         gatewayInput = defaults.string(forKey: Self.gatewayKey) ?? ""
         isRestoring = defaults.string(forKey: Self.gatewayKey) != nil
+        sections.save = { [weak self] profile, placement in
+            guard let channel = self?.channel else { throw GatewayError.disconnected }
+            try await BotMetaWrite.setSection(placement, profile: profile, on: channel)
+        }
     }
 
     /// Resumes the saved session, if this device has one.
@@ -160,6 +167,7 @@ public final class AppModel {
         vaultLists = [:]
         media.clear()
         pictures.clear()
+        sections.clear()
         rooms = [:]
         gatewayDetails = nil
         lastSaved = nil
@@ -183,6 +191,8 @@ public final class AppModel {
             routineLists = routines
             skillLists = skills
             vaultLists = vaults
+            sections.save = { _, _ in }
+            sections.reconcile(contacts)
         }
     #endif
 
@@ -191,6 +201,8 @@ public final class AppModel {
     private func begin(_ auth: AuthSession) {
         self.auth = auth
         session = .signedIn(auth.gateway)
+        sections.load(for: auth.gateway)
+        sections.reconcile(contacts)
         connect(auth)
     }
 
@@ -258,7 +270,7 @@ public final class AppModel {
     /// Contacts as the sidebar shows them: the roster plus each chat's live activity and unread count.
     public var sidebarContacts: [Contact] {
         contacts.map { contact in
-            var contact = contact
+            var contact = sections.placed(contact)
             if let thread = threads[contact.id] {
                 contact.activity = thread.activity
                 contact.unreadCount = thread.unreadCount
@@ -447,6 +459,7 @@ public final class AppModel {
         let agents = list.profiles.compactMap(Contact.init(profile:))
         pictures.refresh(agents, on: channel)
         contacts = agents + (await refreshRooms(on: channel) ?? contacts.filter { $0.kind != .agent })
+        sections.reconcile(contacts)
     }
 
     /// Lists the gateway's rooms and catches up any that have new events. Returns `nil` when the

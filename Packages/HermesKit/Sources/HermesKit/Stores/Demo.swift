@@ -68,28 +68,38 @@
             [
                 agent(
                     "forge", "Forge", preview: "Needs your OK to run the migration", minutesAgo: 2,
-                    about: "Writes and ships code across the web app and the API; opens pull requests."),
+                    about: "Writes and ships code across the web app and the API; opens pull requests.",
+                    section: Self.product),
                 agent(
                     "atlas", "Atlas", preview: "Turbopuffer fits best: cheapest at our size, and…", minutesAgo: 14,
-                    about: "Researches tools, papers and competitors, and writes short recommendations."),
+                    about: "Researches tools, papers and competitors, and writes short recommendations.",
+                    section: Self.product),
                 agent(
                     "scribe", "Scribe", preview: "Two headline options for the launch post", minutesAgo: 95,
                     about: "Drafts posts, release notes and emails in the house style."),
                 agent(
                     "ops", "Ops", preview: "All 3 servers healthy, backups verified", minutesAgo: 6 * 60,
-                    about: "Watches servers, backups and costs, and reports each morning."),
+                    about: "Watches servers, backups and costs, and reports each morning.",
+                    section: Self.backOffice),
                 agent(
                     "ledger", "Ledger", preview: "October invoices are drafted for review", minutesAgo: 26 * 60,
-                    about: "Keeps the books: invoices, receipts and the monthly close."),
+                    about: "Keeps the books: invoices, receipts and the monthly close.",
+                    section: Self.backOffice),
             ]
         }
 
-        private func agent(_ id: String, _ name: String, preview: String, minutesAgo: Double, about: String) -> Contact
-        {
+        private static let product = ContactSection(id: "demo-product", name: "Product")
+        private static let backOffice = ContactSection(id: "demo-back-office", name: "Back office")
+
+        private func agent(
+            _ id: String, _ name: String, preview: String, minutesAgo: Double, about: String,
+            section: ContactSection? = nil
+        ) -> Contact {
             Contact(
                 id: id, name: name, preview: preview, lastActive: ago(minutesAgo), chatID: "demo-\(id)",
                 details: AgentDetails(
-                    profile: id, description: about, model: "claude-sonnet-5-5", provider: "anthropic", skillCount: 12))
+                    profile: id, description: about, model: "claude-sonnet-5-5", provider: "anthropic", skillCount: 12),
+                sectionID: section?.id, sectionName: section?.name)
         }
 
         var threads: [Contact.ID: ChatThread] {

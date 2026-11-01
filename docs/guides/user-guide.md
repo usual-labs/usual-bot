@@ -31,7 +31,25 @@ list. The most recent conversation is at the top.
 - The dot at the bottom of the sidebar (top left on iPhone) shows the connection. Click it to see
   the gateway and to sign out.
 
-On the Mac, drag the sidebar narrower and it becomes a rail of avatars.
+On the Mac, drag the sidebar narrower and it becomes a rail of avatars, with a line between
+sections.
+
+### Sections
+
+Sections group the sidebar however you like. Until you make one, the list has no headings.
+
+- **Make one:** right-click a chat on the Mac, or touch and hold it on iPhone, and choose **Move to
+  New Section**. Type a name and press Return.
+- **Move a chat:** use **Move to Section** in the same menu, or on the Mac drag it to a section.
+  **Remove from Section** puts it back under Unassigned, which holds everything not in a section.
+- **Fold a section:** click its heading. A folded section still shows **Needs you** or an unread
+  count, so nothing waiting for you goes out of sight.
+- **Rename, reorder or delete one:** right-click its heading on the Mac, or tap **…** on iPhone.
+  Deleting a section keeps its chats: they move to Unassigned.
+
+A Bot's section is saved on the Bot, so it shows on your other devices and in the Hermes desktop
+app. Each device keeps its own order of sections, what's folded, and which section a room is in.
+Searching lists every match together, without headings.
 
 ## Chatting with an agent
 

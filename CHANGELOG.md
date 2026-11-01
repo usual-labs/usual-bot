@@ -8,6 +8,10 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Added
 
+- **Sections.** Group your Bots and rooms in the sidebar. Right-click a chat on the Mac, or touch and
+  hold it on iPhone, to move it to a section, or on the Mac drag it to one. Click a heading to fold
+  it; a folded section still shows anything that needs you. A Bot's section is saved on the Bot, so
+  the Hermes desktop app sees the same groups.
 - **Secret and sudo prompts.** When a skill needs a secret or a command needs your sudo password,
   a card in the chat asks for it in a masked field. Send it or skip it. On a gateway using plain
   http away from this device, the card warns you first and the button says Send Unencrypted.

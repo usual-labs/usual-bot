@@ -88,6 +88,25 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 - The roster refreshes every 5 s, so a picture is read again only when its revision changes, and
   once per connection. `profiles.set_asset` alone doesn't bump the revision.
 
+## Sidebar sections
+
+- **The official app's model, so both clients see the same groups.** A Bot's section is
+  `sectionId` and `sectionName` in `ui_meta['hermes-bots']`, and the name rides along so a client
+  that never saw the section can rebuild it. The list of sections, their order, empty sections and
+  folding stay on each device, and so does a room's section, which Hermes doesn't sync either.
+- **A write replaces all of `hermes-bots`,** so `BotMetaWrite` reads it raw, changes the two fields
+  and sends it back with its revision. `ProfileRow.BotMeta` drops fields it doesn't know, so it
+  can't be the source of a write.
+- **The gateway's word settles everything.** A move holds over the 5 s roster read until the roster
+  shows it, or for two reads after the write. A write that fails drops the move, and the next read
+  puts the Bot, and if need be its section, back where the gateway says.
+- **A rename of a section with Bots in it is several writes.** While the Bots disagree, the local
+  name stays, as in the official app.
+- **Sections come from a chat's menu, not from New Room's `+`:** a section starts with something in
+  it. Heading actions are a `…` button on iPhone because list headers there have no context menu.
+- **Search and the ⌥Space panel stay flat,** and the rail shows lines instead of headings and folds
+  nothing, because it has no heading to unfold with.
+
 ## Masked prompts
 
 - **Never answer `secret`, `sudo` or `vault.*` with 4404.** With no other client attached, Hermes
@@ -114,6 +133,9 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 
 ## Not verified
 
+- Sections against a live gateway: `profiles.configure` is confirmed from the Hermes source only,
+  never run on the app's dashboard socket. Dragging between sections and Esc in the name field
+  haven't been run, because both need the real pointer or keyboard on the Mac.
 - Agent defaults against a live gateway; they're left out of shakedowns because they change an
   agent's default model everywhere.
 - iPhone on a real device beyond sign-in: calls, dictation and GPT-Live audio routing.

@@ -19,7 +19,7 @@ public struct RootView: View {
             ConnectView(model: model, presenter: presenter)
         case .signedIn(let gateway):
             ContactsSplitView(
-                contacts: model.sidebarContacts, emptyText: emptyText,
+                contacts: model.sidebarContacts, sections: model.sections, emptyText: emptyText,
                 thread: { $0.kind == .agent ? model.thread(for: $0) : nil },
                 room: { model.room(for: $0) },
                 skills: { $0.kind == .agent ? model.skills(for: $0) : nil },
@@ -53,6 +53,8 @@ public struct RootView: View {
 /// into a list that pushes the thread.
 struct ContactsSplitView<Footer: View>: View {
     let contacts: [Contact]
+    /// How the sidebar is grouped; `nil` lists everything together.
+    var sections: SidebarSections?
     var emptyText: LocalizedStringKey = "No agents yet."
     var thread: (Contact) -> ChatThread? = { _ in nil }
     var room: (Contact) -> RoomThread? = { _ in nil }
@@ -155,7 +157,8 @@ struct ContactsSplitView<Footer: View>: View {
                     .foregroundStyle(Theme.secondaryInk)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ContactList(contacts: contacts, query: query, compact: compact, selection: $selection)
+                ContactList(
+                    contacts: contacts, sections: sections, query: query, compact: compact, selection: $selection)
             }
             #if os(macOS)
                 if compact {
