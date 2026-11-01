@@ -33,6 +33,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Fixed
 
+- **The sidebar stays at the window's edge.** On the Mac, with no chat open, the list sat away from
+  the left edge with an empty strip beside it.
 - **The end of a chat stays in view.** A new message, a card asking for something or the background
   task bar could land under the message box until you scrolled. A chat now follows its end unless
   you've scrolled away.

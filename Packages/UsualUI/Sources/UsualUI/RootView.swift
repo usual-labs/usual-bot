@@ -267,7 +267,9 @@ struct ContactsSplitView<Footer: View>: View {
         } else {
             ContentUnavailableView(
                 "No chat selected", systemImage: "bubble.left.and.bubble.right",
-                description: Text("Pick an agent or a room from the list."))
+                description: Text("Pick an agent or a room from the list.")
+            )
+            .paneChrome()
         }
     }
 
