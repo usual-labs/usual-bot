@@ -57,6 +57,7 @@ public struct QuickMessageView: View {
         .background(Color.clear.contentShape(Rectangle()).onTapGesture(perform: close))
         .onAppear(perform: appeared)
         .onChange(of: shownAt) { appeared() }
+        .appPreferences()
         .environment(\.botPictures, model.pictures)
         #if os(macOS)
             .onExitCommand(perform: close)

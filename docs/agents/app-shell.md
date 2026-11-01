@@ -19,6 +19,11 @@ the run number as `CURRENT_PROJECT_VERSION`, are signed with Developer ID plus t
 `.dmg`. Debug/dev builds keep `dev.usualbot.local` (or the `Local.xcconfig` prefix), so they don't
 share settings or the Keychain item's trust with the released app.
 
+Device preferences live in UsualUI’s Settings view. The native shell supplies the Mac-only launch
+at login and Quick Message shortcut controls. Shortcut recording suspends this app’s registration;
+cancelling or leaving the window restores it, and a refused replacement keeps the previous choice.
+The menu bar labels the shortcut macOS accepted, which may be ⌃⌥Space rather than ⌥Space.
+
 Source anchors: `App/UsualBotApp.swift`, `App/SignInPresenters.swift`.
 
 Icon and launch: `App/Assets.xcassets` holds `AppIcon` (the Hermes doodle on white, framed like the

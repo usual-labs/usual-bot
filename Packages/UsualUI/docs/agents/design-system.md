@@ -4,7 +4,7 @@
 
 `Theme.swift` centralizes colours: neutral surfaces, ink, border, selection and the agent palette. `window` sits behind `pane`, a reply sits on `bubble`, and `surface` is anything floating. Glass is gone on purpose: `floatingSurface` is solid, so bubbles and cards keep their contrast over whatever scrolls behind them.
 
-**Text.** Chat text (replies, your bubbles, quotes, list items) gets its typography from `messageFont()`: `Theme.messageSize` (15 pt on the Mac, 16 pt on iPhone) with 4 pt line spacing, regular weight in both modes. Markdown headings are that size plus 5, 2 or 0. Markdown blocks sit 10 pt apart so paragraphs stay distinct from the line spacing. Don't add per-view `.lineSpacing`.
+**Text.** Chat text (replies, your bubbles, quotes, list items) gets its typography from `messageFont()`: `messageTextSize` in the environment (15 pt on the Mac, 16 pt on iPhone by default, adjusted by the device’s Settings) with 4 pt line spacing, regular weight in both modes. Markdown headings are that size plus 5, 2 or 0. Markdown blocks sit 10 pt apart so paragraphs stay distinct from the line spacing. Don't add per-view `.lineSpacing`.
 
 **Colour of a chat.** `Contact.accent` is the Bot's picked or palette colour, passed through `readableUnderWhite`, because white text sits on it in your bubbles and in the voice and send buttons. `chatContact` carries the contact to views inside a chat. It's nil in a room, where there's no single colour, so those fall back to `Theme.userBubble` and `Theme.primary`.
 

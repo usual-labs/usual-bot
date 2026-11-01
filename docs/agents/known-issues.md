@@ -29,6 +29,13 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 
 ## Mac
 
+- **Carbon shares hot keys unless registration is exclusive.** A successful registration with
+  options `0` can compete with another app for the same shortcut. Keep `kEventHotKeyExclusive` so
+  conflicts are reported; `scripts/check-shortcuts.sh` reserves a key in a second process to check
+  refusal, fallback and release without touching saved preferences.
+- **SwiftUI buttons can leave the shortcut recorder as first responder.** Disable and Restore Default
+  must end recording explicitly; waiting for `resignFirstResponder` leaves the next key able to
+  replace the shortcut after the user disabled it. The shortcut check covers both actions.
 - **The Keychain asks for the password after every rebuild without a team.** Ad-hoc builds' designated
   requirement is their `cdhash`, and `TokenStore`'s file-based keychain item trusts the exact app that
   saved it. Set your team in the gitignored `Config/Local.xcconfig`; the requirement is then the bundle

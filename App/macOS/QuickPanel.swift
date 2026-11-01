@@ -13,20 +13,19 @@
         private let model: AppModel
         @ObservationIgnored private var panel: QuickPanel?
         @ObservationIgnored private var hosting: NSHostingController<QuickMessageView>?
-        @ObservationIgnored private var hotKey: HotKey?
         /// Opens the main window when it was closed; set by the main window.
         @ObservationIgnored var openMainWindow: () -> Void = {}
 
-        /// The panel's shortcut, as menus show it; `nil` when the system took none.
-        private(set) var shortcut: String?
+        let keyboardShortcut = QuickMessageShortcut()
+        /// The shortcut macOS accepted, as the menu bar shows it.
+        var shortcut: String? { keyboardShortcut.label }
 
         /// The card is 640 pt wide; the rest leaves room for its shadow and an answer.
         private static let size = NSSize(width: 720, height: 680)
 
         init(model: AppModel) {
             self.model = model
-            hotKey = HotKey([.optionSpace, .controlOptionSpace]) { [weak self] in self?.toggle() }
-            shortcut = hotKey?.combo?.label
+            keyboardShortcut.action = { [weak self] in self?.toggle() }
             Self.log.notice("Quick message shortcut: \(self.shortcut ?? "none", privacy: .public)")
             #if DEBUG
                 // USUALBOT_SHOW_QUICK_PANEL=1 opens the panel shortly after launch, for screenshots.
@@ -145,6 +144,7 @@
                 controller.show()
             }
             Button("Open Usual Bot") { controller.showMainWindow() }
+            SettingsLink { Text("Settings…") }
             Divider()
             Button("Quit Usual Bot") { NSApp.terminate(nil) }
                 .keyboardShortcut("q")

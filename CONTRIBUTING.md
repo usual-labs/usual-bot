@@ -4,7 +4,7 @@ Thanks for helping. Bugs, polish, accessibility, translations and Hermes protoco
 welcome, and so are good bug reports.
 
 Usual Bot aims to stay small: a messenger for your Hermes agents, not a second Hermes app.
-Settings, skill setup and gateway administration belong in the official app, so changes that add
+Agent configuration, skill setup and gateway administration belong in the official app, so changes that add
 them here are unlikely to be merged. If you're unsure whether an idea fits, open a feature request
 first and we'll talk it through before you write code.
 
@@ -116,7 +116,7 @@ Debug builds read these environment variables:
 
 | Variable | What it does |
 | --- | --- |
-| `USUALBOT_DEMO=1` | Shows made-up agents instead of signing in. Never connects; a message gets a scripted reply. |
+| `USUALBOT_DEMO=1` or the `--demo` launch argument | Shows made-up agents instead of signing in. Never connects; a message gets a scripted reply. |
 | `USUALBOT_SHOW_QUICK_PANEL=1` | Opens the ⌥Space panel shortly after launch (Mac). |
 | `USUALBOT_WINDOW_WIDTH=560` | Opens the main window at that width (Mac). |
 | `USUALBOT_RECORD_FRAMES=1` | Appends every socket frame to `usualbot-frames.jsonl` in the app's temporary directory, with answers to masked prompts and vault secrets blanked. |

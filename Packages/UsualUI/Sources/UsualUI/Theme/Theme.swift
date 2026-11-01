@@ -163,8 +163,4 @@ extension View {
             .shadow(color: .black.opacity(0.06), radius: 5, y: 2)
     }
 
-    /// Message text: `Theme.messageSize` with 22 pt lines on the Mac.
-    func messageFont() -> some View {
-        font(.system(size: Theme.messageSize)).lineSpacing(4)
-    }
 }

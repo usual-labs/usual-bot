@@ -8,6 +8,7 @@ struct QuestionCard: View {
     let answer: ([String: [String]]) -> Void
     let skip: () -> Void
 
+    @Environment(\.messageTextSize) private var messageSize
     @State private var picked: [String: [String]] = [:]
     @State private var typed: [String: String] = [:]
 
@@ -34,7 +35,7 @@ struct QuestionCard: View {
     private func questionView(_ question: ClarifyPrompt.Question) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(question.text)
-                .font(.system(size: Theme.messageSize, weight: .semibold))
+                .font(.system(size: messageSize, weight: .semibold))
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             ForEach(Array(question.choices.enumerated()), id: \.element) { index, choice in
@@ -48,7 +49,7 @@ struct QuestionCard: View {
                             .foregroundStyle(Theme.ink)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .font(.system(size: Theme.messageSize))
+                    .font(.system(size: messageSize))
                     .padding(.horizontal, 4)
                     .frame(minHeight: 34)
                     .contentShape(RoundedRectangle(cornerRadius: 10))

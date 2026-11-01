@@ -5,6 +5,11 @@ import SwiftUI
 public struct RootView: View {
     @Bindable var model: AppModel
     let presenter: any SignInPresenter
+    #if os(macOS)
+        @Environment(\.openSettings) private var openSettings
+    #else
+        @State private var showsSettings = false
+    #endif
 
     public init(model: AppModel, presenter: any SignInPresenter) {
         self.model = model
@@ -12,6 +17,19 @@ public struct RootView: View {
     }
 
     public var body: some View {
+        Group { content }
+            .appPreferences()
+            #if os(iOS)
+                .sheet(isPresented: $showsSettings) { SettingsView(model: model) }
+                .overlay(alignment: .topTrailing) {
+                    if case .signedOut = model.session, !model.isRestoring {
+                        settingsButton.padding(16)
+                    }
+                }
+            #endif
+    }
+
+    @ViewBuilder private var content: some View {
         switch model.session {
         case .signedOut where model.isRestoring:
             SplashView()
@@ -35,12 +53,39 @@ public struct RootView: View {
                         close: close)
                 }
             ) { compact in
-                GatewayStatusButton(gateway: gateway, link: model.link, compact: compact, signOut: model.signOut)
+                #if os(macOS)
+                    let layout = compact ? AnyLayout(VStackLayout(spacing: 4)) : AnyLayout(HStackLayout(spacing: 8))
+                #else
+                    let layout = AnyLayout(HStackLayout(spacing: 8))
+                #endif
+                layout {
+                    GatewayStatusButton(gateway: gateway, link: model.link, compact: compact, signOut: model.signOut)
+                    settingsButton
+                }
+                .fixedSize(horizontal: compact, vertical: false)
             }
             .environment(\.media, model.media)
             .environment(\.botPictures, model.pictures)
             .environment(\.voiceLive, model.voiceLive)
         }
+    }
+
+    private var settingsButton: some View {
+        Button {
+            #if os(macOS)
+                openSettings()
+            #else
+                showsSettings = true
+            #endif
+        } label: {
+            Image(systemName: "gearshape")
+                .frame(width: 32, height: 32)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(Theme.secondaryInk)
+        .accessibilityLabel(Text("Settings"))
+        .help("Settings")
     }
 
     private var emptyText: LocalizedStringKey {
@@ -331,73 +376,6 @@ struct ContactsSplitView<Footer: View>: View {
         let byID = Dictionary(contacts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         return ContactList.members(of: contact, in: byID)
     }
-}
-
-/// The sidebar footer: which gateway, whether it's reachable, and sign-out.
-struct GatewayStatusButton: View {
-    let gateway: GatewayAddress
-    let link: AppModel.Link
-    /// In the narrow window's rail: the status dot alone.
-    var compact = false
-    let signOut: () -> Void
-
-    var body: some View {
-        Menu {
-            Section(gateway.displayName) {
-                Text(statusText)
-            }
-            Button("Sign Out", role: .destructive, action: signOut)
-        } label: {
-            HStack(spacing: 8) {
-                Circle().fill(dotColor).frame(width: 8, height: 8)
-                if !compact {
-                    Text(label)
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Theme.secondaryInk)
-                        .lineLimit(1)
-                    Spacer(minLength: 0)
-                }
-            }
-            #if os(macOS)
-                .frame(minWidth: compact ? 44 : nil, minHeight: 28)
-            #endif
-            .contentShape(Rectangle())
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .menuIndicator(.hidden)
-        .accessibilityLabel(Text("Gateway \(gateway.displayName), \(statusText)"))
-    }
-
-    private var label: String {
-        switch link {
-        case .online: return gateway.displayName
-        case .connecting: return String(localized: "Connecting…")
-        case .offline: return String(localized: "Offline, retrying…")
-        }
-    }
-
-    private var statusText: String {
-        switch link {
-        case .online(let dialect):
-            return dialect == .canonical ? String(localized: "Connected") : String(localized: "Connected (dashboard)")
-        case .connecting: return String(localized: "Connecting…")
-        case .offline(let reason): return reason
-        }
-    }
-
-    private var dotColor: Color {
-        switch link {
-        case .online: return Theme.online
-        case .connecting: return Theme.needsYouInk
-        case .offline: return Theme.danger
-        }
-    }
-}
-
-#Preview("Contacts") {
-    ContactsSplitView(contacts: SampleData.contacts()) { _ in EmptyView() }
-        .frame(width: 1000, height: 640)
 }
 
 #if os(macOS)

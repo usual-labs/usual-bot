@@ -9,8 +9,8 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 
 ## Scope
 
-- Usual Bot is a messenger for Hermes agents. Settings, provider keys, skill setup and gateway
-  administration stay in the official app.
+- Usual Bot is a messenger for Hermes agents. Agent configuration, provider keys, skill setup and
+  gateway administration stay in the official app. Device-local preferences belong in Usual Bot.
 - Fast mode isn't built. Only a message that starts with a command runs it; a `/skill` later in the
   text is sent as written, as in the official app.
 

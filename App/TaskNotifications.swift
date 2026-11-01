@@ -1,5 +1,6 @@
 import HermesKit
 import UserNotifications
+import UsualUI
 
 #if os(macOS)
     import AppKit
@@ -28,6 +29,8 @@ enum TaskNotifications {
     }
 
     private static func post(agent: String, task: String, result: String) async {
+        let defaults = UserDefaults.standard
+        guard defaults.object(forKey: AppPreferences.notificationsKey) as? Bool != false else { return }
         let center = UNUserNotificationCenter.current()
         switch await center.notificationSettings().authorizationStatus {
         case .notDetermined:
@@ -39,9 +42,15 @@ enum TaskNotifications {
         }
         let content = UNMutableNotificationContent()
         content.title = String(localized: "\(agent) finished a background task")
-        content.subtitle = task
-        content.body = plain(result)
-        content.sound = .default
+        if defaults.object(forKey: AppPreferences.notificationPreviewsKey) as? Bool != false {
+            content.subtitle = task
+            content.body = plain(result)
+        } else {
+            content.body = String(localized: "Open Usual Bot to read the result.")
+        }
+        if defaults.object(forKey: AppPreferences.notificationSoundKey) as? Bool != false {
+            content.sound = .default
+        }
         try? await center.add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
     }
 

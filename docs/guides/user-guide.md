@@ -14,6 +14,7 @@ iPhone unless a section says otherwise.
 - [An agent's profile: routines, skills and machine](#an-agents-profile-routines-skills-and-machine)
 - [Quick message (Mac)](#quick-message-mac)
 - [Offline and reconnecting](#offline-and-reconnecting)
+- [Settings](#settings)
 - [Keyboard shortcuts](#keyboard-shortcuts)
 
 ## Contacts and the sidebar
@@ -53,7 +54,8 @@ Searching lists every match together, without headings.
 
 ## Chatting with an agent
 
-Type in the message box and press Return to send (Shift-Return for a new line). Replies stream in
+Type in the message box and press Return to send (Shift-Return for a new line). On Mac, Settings
+can change sending to ⌘Return, leaving Return for new lines. Replies stream in
 as the agent writes them, with Markdown, code blocks you can copy, and tables. While the agent uses
 tools, one line such as "Forge edited 1 file and ran 1 command" sums them up; click it to see each
 step.
@@ -188,15 +190,16 @@ iPhone).
 
 ## Quick message (Mac)
 
-Press **⌥Space** anywhere to open a small panel over whatever you're doing.
+Press **⌥Space**, or the shortcut you chose in Settings, to open a small panel over whatever
+you’re doing.
 
 - Pick the agent along the top (Tab moves to the next), type, and press Return to send. The answer
   shows in the panel.
 - ⌘Return opens the full chat; Esc closes the panel.
 - **Waiting on you** lists approvals from every agent, with Allow and Deny.
 
-Usual Bot keeps running in the menu bar after you close its window, so ⌥Space keeps working. Quit
-it from the menu bar item.
+Usual Bot keeps running in the menu bar after you close its window. Quick Message stays available
+there even if you disable its shortcut. Quit the app from the menu bar item.
 
 ## Offline and reconnecting
 
@@ -208,15 +211,41 @@ app goes to the background and reopens when you come back.
 If an answer couldn't be recovered (for example, the gateway restarted meanwhile), the chat says
 so instead of leaving you waiting.
 
+## Settings
+
+Open **Settings…** from the Usual Bot menu (⌘, on Mac), the menu bar item, or the gear beside the
+connection indicator. Preferences stay on this device.
+
+- **General:** follow the system appearance or choose light or dark, and change chat text size.
+  On Mac, choose Return or ⌘Return to send messages, and whether to launch at login.
+- **Quick Message (Mac):** in General, click the keyboard shortcut and press a new combination
+  including Control, Option or Command. Esc cancels. A shortcut macOS refuses leaves your previous
+  choice in place. **Disable Shortcut** keeps Quick Message available from the menu bar;
+  **Restore Default** tries ⌥Space, then ⌃⌥Space if needed. The menu bar shows the active shortcut.
+  Quick Message itself always uses Return to send and ⌘Return to open the full chat.
+- **Notifications:** control background task completion alerts, sounds and previews. When previews
+  are off, new alerts contain neither the task description nor the reply text. System notification
+  settings and Focus also apply. On iPhone the app disconnects in the background, so these aren’t
+  push notifications: an alert needs the app to still be running.
+- **Voice:** choose the call engine and the language, voice and speed for on-device speech. These
+  preferences are shared with the controls inside a call; GPT-Live’s voice stays on the gateway.
+- **Connection:** see the gateway address, status, version and identity when available, or sign out.
+  Signing out removes the saved sign-in and cached chats for that gateway from this device.
+
+The About section has the app version, guide, source and license links. Agent configuration,
+provider keys and gateway administration stay in Hermes.
+
 ## Keyboard shortcuts
 
 | Shortcut | Where | What it does |
 | --- | --- | --- |
-| ⌥Space | Anywhere (Mac) | Opens the quick message panel |
+| ⌥Space (configurable in Settings) | Anywhere (Mac) | Opens the quick message panel |
 | ⌘F | Sidebar | Search agents and rooms |
 | ↑ / ↓ | Sidebar | Move between chats |
+| ⌘, | Mac | Open Settings |
 | ⌘I | Chat or room | Show the profile or room details |
-| Return | Message box | Send, or pick from the open `/` or `@` menu |
+| Return | Message box | Send by default, or pick from the open `/` or `@` menu |
+| ⌘Return | Mac message box | Send when chosen in Settings |
 | Shift-Return | Message box | New line |
 | ↑ / ↓, Tab | `/` or `@` menu | Move, pick |
 | Esc | `/` or `@` menu, reply, edit | Close the menu or cancel |

@@ -8,6 +8,11 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Added
 
+- **Settings.** Choose appearance, chat text size, notification sounds and previews, and voice
+  preferences. See the gateway connection and sign out. On Mac, set launch at login and Return or
+  ⌘Return to send, and record, disable or restore the Quick Message keyboard shortcut. Open
+  Settings with ⌘, on Mac or the gear beside the connection indicator on either platform.
+
 - **Sections.** Group your Bots and rooms in the sidebar. Right-click a chat on the Mac, or touch and
   hold it on iPhone, to move it to a section, or on the Mac drag it to one. Click a heading to fold
   it; a folded section still shows anything that needs you. A Bot's section is saved on the Bot, so

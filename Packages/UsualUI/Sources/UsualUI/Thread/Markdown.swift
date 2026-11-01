@@ -171,6 +171,7 @@ enum MarkdownBlock: Equatable {
 /// Renders a Markdown reply, block by block.
 struct MarkdownView: View {
     let blocks: [MarkdownBlock]
+    @Environment(\.messageTextSize) private var messageSize
 
     init(_ markdown: String) {
         blocks = MarkdownBlock.parse(markdown)
@@ -193,7 +194,7 @@ struct MarkdownView: View {
         case .paragraph(let text):
             Text(styled(text)).fixedSize(horizontal: false, vertical: true)
         case .heading(let level, let text):
-            let size = Theme.messageSize + (level == 1 ? 5 : level == 2 ? 2 : 0)
+            let size = messageSize + (level == 1 ? 5 : level == 2 ? 2 : 0)
             Text(styled(text, size: size, weight: .semibold))
                 .font(.system(size: size, weight: .semibold))
                 .padding(.top, 4)
@@ -222,8 +223,9 @@ struct MarkdownView: View {
     /// Gives bold, italic and inline-code runs their own fonts. Text draws Markdown's bold and
     /// italic only while no explicit font is set, and the chat always sets one.
     private func styled(
-        _ text: AttributedString, size: CGFloat = Theme.messageSize, weight: Font.Weight = .regular
+        _ text: AttributedString, size: CGFloat? = nil, weight: Font.Weight = .regular
     ) -> AttributedString {
+        let size = size ?? messageSize
         var text = text
         for (inline, range) in text.runs[\.inlinePresentationIntent] {
             guard let inline, !inline.isEmpty else { continue }
@@ -243,6 +245,7 @@ struct MarkdownView: View {
 struct CodeBlock: View {
     let language: String?
     let code: String
+    @Environment(\.messageTextSize) private var messageSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -261,7 +264,7 @@ struct CodeBlock: View {
             .padding(.top, 4)
             ScrollView(.horizontal, showsIndicators: false) {
                 Text(code)
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.system(size: 13 + messageSize - Theme.messageSize, design: .monospaced))
                     .foregroundStyle(Theme.ink)
                     .fixedSize()
                     .padding(.horizontal, 12)
