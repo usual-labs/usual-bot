@@ -2,6 +2,14 @@
 
 Record a new issue as symptom → root cause → verified fix or workaround → prevention, with status, and label untested recommendations. Once fixed, keep only the trap and how to avoid it.
 
+## Conversation scrolling
+
+- **A blank stretch below a chat's last message came back once after the settling fix,** on the Mac
+  in a chat about 5,000 pt tall ending in a result line, then went away; cause unknown, never
+  reproduced. `ConversationScroll` only corrects its position in the 500 ms after a chat opens or
+  reloads, so a height change after that (a profile panel, a resize, a result line folding) is the
+  first suspect. Note what happened just before it, and read `distanceFromEnd` while it shows.
+
 ## macOS window and sidebar
 
 - **macOS 26's sidebar width can't be set.** Its floating sidebar keeps a 140 pt floor and ignores `navigationSplitViewColumnWidth`, `NSSplitView.setPosition` and pinned item thickness. Don't drive sidebar widths through NavigationSplitView or its AppKit split view; ContactsSplitView lays the Mac sidebar out itself. Dragging the edge wasn't verified by automation.
