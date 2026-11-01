@@ -6,7 +6,7 @@
 |---|---|---|---|
 | HermesKit | [Packages/HermesKit](../../Packages/HermesKit/AGENTS.md) | Gateway auth, transport and domain state | Foundation library; no UI ownership |
 | UsualUI | [Packages/UsualUI](../../Packages/UsualUI/AGENTS.md) | Native screens and reusable UI | Depends on HermesKit |
-| Tailnet (branch `built-in-tailscale`) | Packages/Tailnet | The iPhone's built-in Tailscale device (TailscaleKit wrapper); see improvement-ideas.md | iOS only; TailscaleKit.xcframework is built locally, not in git |
+| Tailnet (branch `built-in-tailscale`) | Packages/Tailnet | The iPhone's built-in Tailscale device (TailscaleKit wrapper); see improvement-ideas.md | iOS only; TailscaleKit comes from a `usual-labs/tailscalekit-build` release by URL and checksum |
 | Native app shell | App/, Config/, UsualBot.xcodeproj/ | App lifecycle, platform sign-in presenters, signing and Xcode target settings | App composes UsualUI and HermesKit; does not own their domain implementation |
 
 Read the chosen child AGENTS.md and KB before editing. Child docs own detailed APIs and local conventions.

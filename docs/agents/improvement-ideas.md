@@ -44,12 +44,20 @@ Child-local ideas stay in their package KBs.
   no socket errors); gateway sign-in through the web view and the gateway menu reported working
   by the maintainer. Simulator checked for the header, menu and connect-screen switch. Builds:
   iPhone, Simulator, Mac (skips the iOS-only framework via a platform-conditional dependency);
-  HermesKit and UsualUI tests and lint pass. Before shipping: the framework isn't in git, so CI,
-  CodeQL, release and contributors can't build, Mac builds included (a missing
-  `binaryTarget(path:)` fails package resolution on every platform); options are committing it
-  (69 MB unzipped), a checksummed release asset (25 MB zipped, recommended) or building it from
-  source in each build (needs Go 1.27). It was built for iOS 18.1 because TailscaleKit's Xcode
-  project sets that (its Go archive targets 12.0), while the app targets 18.0 (linker warning);
-  `IPHONEOS_DEPLOYMENT_TARGET=18.0` on its xcodebuild fixes that. It adds 21 MB (36 MB Debug
-  app); tsnet uploads node logs to Tailscale (logtail) like Tailscale's own clients. Zero-code
+  HermesKit and UsualUI tests and lint pass. Before shipping: CI hasn't run on this branch (not pushed);
+  it adds 21 MB (36 MB Debug app); tsnet uploads node logs to Tailscale (logtail) like
+  Tailscale's own clients; the Google hand-off is untested; if the iPhone app is ever
+  distributed, its credits need TailscaleKit's BSD-3 notice. Framework (decided and published
+  2026-11-01): `Packages/Tailnet/Package.swift` downloads `TailscaleKit.xcframework.zip` from the
+  `libtailscale-ac7ed43` release of `usual-labs/tailscalekit-build` (checkout
+  `../tailscalekit-build`) by URL and checksum. That repo's manually run workflow builds a
+  libtailscale commit for an iOS minimum (18.0 here; TailscaleKit's own project says 18.1,
+  overridden with `XCODE_XCCONFIG_FILE`), zips it with libtailscale's LICENSE, attests it and
+  publishes an immutable release (the repo allows GitHub-owned actions only). Verified: the
+  release zip matched its notes' checksum, its attestation names the repo's `build.yml` on main,
+  and Xcode downloaded it and built the app for Simulator, Mac and iPhone; it ran on the iPhone.
+  To update Tailscale, run that workflow (trial first) and copy the new URL and checksum.
+  Tailscale publishes no prebuilt TailscaleKit; the only prebuilt found (`indiagrams/tunnelless`,
+  a patched fork without attestation) says not to depend on it. Committing the framework (69 MB
+  per version) and building from source in every build (Go 1.27) were rejected. Zero-code
   alternative: Tailscale's VPN On Demand can start the VPN when a `*.ts.net` name is resolved.

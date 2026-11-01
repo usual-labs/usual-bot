@@ -22,6 +22,3 @@ design/avatars/*.zip
 design/avatars/*/png/
 design/avatars/*/references/
 design/avatars/*/receipts/
-
-# Built from tailscale/libtailscale (`make ios-fat`), not checked in.
-Packages/Tailnet/TailscaleKit.xcframework/
