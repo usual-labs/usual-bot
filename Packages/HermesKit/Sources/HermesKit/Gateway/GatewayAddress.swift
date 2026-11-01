@@ -69,6 +69,21 @@ public struct GatewayAddress: Hashable, Sendable, Codable {
         return octets[0] == 100 && (64...127).contains(octets[1])
     }
 
+    /// Plain `http` that leaves this device outside a tunnel, so others on the network can read it.
+    /// Loopback stays on the device and Tailscale encrypts its traffic itself. Secrets go over this
+    /// only with your say-so each time.
+    public var isUnencrypted: Bool {
+        guard baseURL.scheme?.lowercased() == "http", let host = baseURL.host(percentEncoded: false) else {
+            return false
+        }
+        return !Self.isLoopback(host: host.trimmingCharacters(in: CharacterSet(charactersIn: "[]")).lowercased())
+            && !isTailnet
+    }
+
+    private static func isLoopback(host: String) -> Bool {
+        host == "localhost" || host == "::1" || ipv4Octets(host)?.first == 127
+    }
+
     /// Loopback, private-network, link-local and Tailscale (100.64.0.0/10, fd7a::/16) addresses,
     /// plus `.local` and single-label names. Traffic to these never crosses the open internet
     /// unencrypted on its own, so plain `http` is allowed. App Transport Security agrees.

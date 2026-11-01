@@ -7,7 +7,10 @@
 - `Sources/UsualUI/Theme/Theme.swift` — colors and RGB parser
 - `Sources/UsualUI/Thread/Composer.swift` — message input
 - `Sources/UsualUI/Thread/ApprovalCard.swift` — approval UI
+- `Sources/UsualUI/Thread/SecretCard.swift` — masked secret and sudo prompts
 - `Sources/UsualUI/Room/RoomPane.swift` — rooms
+- `Sources/UsualUI/Profile/VaultView.swift`, `VaultAddSheet.swift`, `VaultFields.swift` — the Vault tab
+- `Sources/UsualUI/Thread/VaultCard.swift` — in-chat vault cards
 
 No local database schema/migration files were found in this layer; that does not imply dependencies or remote systems lack persistence.
 

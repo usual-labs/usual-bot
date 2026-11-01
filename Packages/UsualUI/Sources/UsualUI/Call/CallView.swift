@@ -148,7 +148,7 @@ struct CallBar: View {
         case .starting: String(localized: "Connecting")
         case .listening: call.muted ? String(localized: "Muted") : String(localized: "Listening")
         case .thinking:
-            call.thread.approvals.isEmpty
+            call.thread.approvals.isEmpty && call.thread.secrets.isEmpty
                 ? String(localized: "Thinking") : String(localized: "Waiting for your OK in the chat")
         case .speaking: String(localized: "\(contact.name) is speaking")
         case .ended: String(localized: "Call ended")

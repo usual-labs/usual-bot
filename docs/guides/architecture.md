@@ -46,7 +46,7 @@ one request in flight at a time and saves the new refresh token before using the
 **Connection** (`Transport/`). `GatewayConnection` mints a single-use WebSocket ticket, opens
 `/api/ws`, waits for `gateway.ready`, declares its capabilities and pings every 15 seconds.
 `JSONRPCChannel` matches requests to responses and splits the stream into events and
-server-to-client requests (approvals). `AppModel` reconnects with backoff (300 ms doubling to
+server-to-client requests (approvals, questions, secret and sudo prompts). `AppModel` reconnects with backoff (300 ms doubling to
 15 s) and re-attaches open chats.
 
 **Two dialects.** `gateway.ready` says whether the gateway speaks the **legacy** session protocol

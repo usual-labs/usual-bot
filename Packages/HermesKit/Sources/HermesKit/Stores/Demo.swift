@@ -21,7 +21,11 @@
             model.showDemo(
                 gateway: Demo.gateway, contacts: demo.agents + [demo.roomContact], threads: demo.threads,
                 rooms: [demo.roomContact.id: demo.room], routines: routines,
-                skills: Dictionary(uniqueKeysWithValues: demo.agents.map { ($0.id, SkillList.sample(Demo.skills)) }))
+                skills: Dictionary(uniqueKeysWithValues: demo.agents.map { ($0.id, SkillList.sample(Demo.skills)) }),
+                vaults: Dictionary(
+                    uniqueKeysWithValues: demo.agents.map {
+                        ($0.id, VaultList.sample(items: demo.vaultItems, sources: Demo.vaultSources))
+                    }))
             model.media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }
             return model
         }
@@ -80,6 +84,11 @@
                         "About **40,000 pages**, re-indexed nightly. Turbopuffer stores them for ~$6 a month."))
             ]
             threads["ops"] = ChatThread.sample("ops", state: ThreadState(history: opsChat, running: false))
+            threads["ops"]?.receive(
+                SecretPrompt(
+                    id: "demo-secret", sessionID: "sample",
+                    kind: .secret(
+                        name: "STATUSPAGE_API_KEY", message: "The status-report skill needs a Statuspage API key.")))
             threads["ops"]?.state.addBackgroundResult(
                 task: "Check last night's backups on all three servers",
                 result: "All three backups finished between 02:10 and 02:40 and **restore-tested** clean.")
@@ -111,8 +120,51 @@
                 threads[id] = ChatThread.sample(
                     id, state: ThreadState(history: [HistoryMessage(role: "assistant", text: text)], running: false))
             }
+            threads["ledger"]?.receive(
+                SecretPrompt(
+                    id: "demo-sudo", sessionID: "sample", kind: .sudo(command: "sudo systemctl restart invoice-worker"))
+            )
+            for prompt in Demo.vaultPrompts { threads["ledger"]?.receive(prompt) }
+            // Shows the warning a gateway on plain http gets.
+            threads["ledger"]?.gateway = { try? GatewayAddress(parsing: "http://192.168.1.20:9119") }
             return threads
         }
+
+        /// Made-up logins, a card and an address; there is no secret behind any of them.
+        var vaultItems: [VaultItem] {
+            let added = ISO8601DateFormatter().string(from: ago(9 * 24 * 60))
+            return [
+                VaultItem(
+                    id: "demo-login", kind: "login", label: "Example Mail", origin: "https://mail.example.com",
+                    createdAt: added, identifier: "demo-user@example.com", identifierType: "email", hasOtp: true),
+                VaultItem(
+                    id: "demo-team", kind: "login", label: "Example Docs", origin: "https://docs.example.com",
+                    createdAt: added, identifier: "demo-user", identifierType: "username", backend: "bitwarden"),
+                VaultItem(id: "demo-card", kind: "payment", label: "Demo test card", createdAt: added),
+                VaultItem(id: "demo-address", kind: "address", label: "1 Example Street", createdAt: added),
+            ]
+        }
+
+        static let vaultSources = [
+            VaultSource(
+                name: "local", displayName: "Hermes vault", enabled: true, needsUnlock: false, unlocked: true,
+                installed: true),
+            VaultSource(
+                name: "bitwarden", displayName: "Bitwarden", enabled: true, needsUnlock: true, unlocked: true,
+                installed: true),
+            VaultSource(
+                name: "onepassword", displayName: "1Password", enabled: true, needsUnlock: true, unlocked: false,
+                installed: false),
+        ]
+
+        static let vaultPrompts = [
+            VaultPrompt(
+                id: "demo-unlock", sessionID: "sample", kind: .unlock(backend: "bitwarden", displayName: "Bitwarden")),
+            VaultPrompt(
+                id: "demo-save", sessionID: "sample",
+                kind: .saveLogin(origin: "https://billing.example.com", site: "billing.example.com")),
+            VaultPrompt(id: "demo-code", sessionID: "sample", kind: .code(site: "billing.example.com", hint: nil)),
+        ]
 
         static let skills = [
             Skill(

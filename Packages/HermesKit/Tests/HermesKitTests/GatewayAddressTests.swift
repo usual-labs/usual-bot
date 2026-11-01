@@ -45,6 +45,16 @@ struct GatewayAddressTests {
         #expect(try GatewayAddress(parsing: input).isTailnet == isTailnet)
     }
 
+    @Test(arguments: [
+        ("http://100.101.102.103:9119", false), ("192.168.1.10:9119", true), ("http://hermes.local:9119", true),
+        ("http://[fd7a:115c:a1e0::1]:9119", false),
+        ("http://127.0.0.1:9119", false), ("http://localhost:9119", false), ("http://[::1]:9119", false),
+        ("https://hermes.example.com", false), ("https://100.101.102.103", false),
+    ])
+    func unencryptedAddresses(input: String, isUnencrypted: Bool) throws {
+        #expect(try GatewayAddress(parsing: input).isUnencrypted == isUnencrypted)
+    }
+
     @MainActor @Test func unreachableTailnetGatewaySaysToCheckTailscale() throws {
         let error = GatewayError.unreachable("Could not connect to the server.")
         let tailnet = AppModel.describe(error, for: try GatewayAddress(parsing: "100.101.102.103:9119"))

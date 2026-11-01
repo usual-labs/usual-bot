@@ -15,6 +15,9 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **Don't overlay transcript rows.** Replies run the full column width, so an overlay covers text; `MessageRow` puts the bar in a fixed slot beside the message.
 - **Size reply images from their own pixels, and let them shrink.** A `maxWidth`/`maxHeight` frame around `scaledToFit` takes the whole width, so the border runs past the picture. A fixed size pushes the iPhone column off-screen. `ReplyImage` uses `.aspectRatio(size, contentMode: .fit)` with `.frame(maxWidth: size.width)`.
 
+- **The background-task bar can cover the end of the chat.** Seen in the Mac demo: Ops opens with its last card's Skip and Send under the bar until you scroll. The transcript's bottom inset doesn't seem to count the bar. Unverified on a real gateway, and not fixed yet.
+- **`ImageRenderer` draws `SecureField` and `Toggle` as yellow blocks,** because it can't draw controls backed by AppKit. Sizes are right, but those controls need a run of the app to be seen.
+
 ## Message box
 
 - **iOS fires `onSubmit` for a Return `onKeyPress` handled.** `MessageBox` notes when Return picked from a menu (`pickedAt`) and ignores a submit within 0.3 s.

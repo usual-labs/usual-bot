@@ -275,9 +275,12 @@ private struct QuickAnswer: View {
         }
         if !thread.state.draft.isEmpty {
             MarkdownView(thread.state.draft)
-        } else if thread.state.isRunning, thread.approvals.isEmpty, thread.questions.isEmpty {
+        } else if thread.state.isRunning, thread.approvals.isEmpty, thread.questions.isEmpty, thread.secrets.isEmpty,
+            thread.vaultPrompts.isEmpty
+        {
             TypingIndicator()
         }
+        VaultCards(thread: thread, agentName: contact.name)
         ForEach(thread.approvals) { approval in
             ApprovalCard(approval: approval, agentName: contact.name) { thread.answer(approval, with: $0) }
         }
@@ -285,6 +288,11 @@ private struct QuickAnswer: View {
             QuestionCard(
                 prompt: prompt, agentName: contact.name, answer: { thread.answer(prompt, with: $0) },
                 skip: { thread.skip(prompt) })
+        }
+        ForEach(thread.secrets) { prompt in
+            SecretCard(
+                prompt: prompt, agentName: contact.name, isUnencrypted: thread.isLinkUnencrypted,
+                answer: { thread.answer(prompt, with: $0) }, skip: { thread.skip(prompt) })
         }
     }
 
@@ -409,7 +417,18 @@ private struct WaitingOnYou: View {
                     id: prompt.id, contact: contact, title: String(localized: "\(contact.name) has a question"),
                     command: nil, answer: nil)
             }
-            return approvals + questions
+            let secrets = thread.secrets.map { prompt in
+                WaitingRow.Row(
+                    id: prompt.id, contact: contact, title: SecretCard.title(prompt, agentName: contact.name),
+                    command: nil, answer: nil)
+            }
+            let vault = thread.vaultPrompts.map { prompt in
+                WaitingRow.Row(
+                    id: prompt.id, contact: contact,
+                    title: String(localized: "\(contact.name) needs you for a sign-in"),
+                    command: nil, answer: nil)
+            }
+            return approvals + questions + secrets + vault
         }
     }
 }
@@ -419,7 +438,7 @@ private struct WaitingRow: View {
         let id: String
         let contact: Contact
         let title: String
-        /// The command an approval is for; `nil` for questions, which open the chat.
+        /// The command an approval is for; `nil` for questions and masked prompts, which open the chat.
         let command: String?
         let answer: ((ApprovalPrompt.Choice) -> Void)?
     }

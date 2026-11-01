@@ -84,9 +84,35 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 - The roster refreshes every 5 s, so a picture is read again only when its revision changes, and
   once per connection. `profiles.set_asset` alone doesn't bump the revision.
 
+## Masked prompts
+
+- **Never answer `secret`, `sudo` or `vault.*` with 4404.** With no other client attached, Hermes
+  takes the error as the answer (HermesKit known issues). Without a card, answer `{"value": ""}`,
+  which is Hermes's skip. Rooms show no cards, so their requests get the skip too.
+- A typed value lives only in the card's state and leaves it on send, skip or disappearing. It isn't
+  cached, notices name what was asked for, and the frame recorder blanks it. Swift strings can't be
+  wiped, so the bytes stay in process memory until they're overwritten.
+- **Plain http means off this device and outside Tailscale** (`GatewayAddress.isUnencrypted`). A
+  `100.64.0.0/10` address doesn't prove Tailscale, but a warning on every send to a normal tailnet
+  gateway teaches people to click through it. Secrets warn and the button says Send Unencrypted;
+  sending stays possible, as such a gateway already carries the sign-in and chats that way. Vault
+  secrets need Send it anyway ticked for each send, and the model enforces that, not only the view.
+
+## Vault
+
+- **Remote clients may use it.** `tui_gateway/methods_vault.py` has no peer or loopback check; its
+  docstring's "localhost" is descriptive. With a session authority, `AuthorityConnection.dispatch`
+  answers -32601 for `vault.*` and `ws_legacy_fallback.py` lets the interactive grant run the same
+  handlers.
+- **Every call names `profile`.** Otherwise `_profile_scoped` uses the launch or ticket profile, so
+  a call would reach the wrong Bot's vault.
+- `VaultItem` has no field for a secret: `vault.list` is metadata, and it stays that way here.
+
 ## Not verified
 
 - Agent defaults against a live gateway; they're left out of shakedowns because they change an
   agent's default model everywhere.
 - iPhone on a real device beyond sign-in: calls, dictation and GPT-Live audio routing.
 - The background task notification firing.
+- The vault against a live gateway beyond a loopback client on the legacy dialect: `vault.unlock_prompt`
+  and `vault.code`, a real password manager, a client on a remote address, and the authority path.

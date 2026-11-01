@@ -24,10 +24,11 @@ struct TranscriptView: View {
             if !thread.state.draft.isEmpty {
                 MarkdownView(thread.state.draft)
             } else if thread.state.isRunning, !lastItemIsLiveActivity, thread.approvals.isEmpty,
-                thread.questions.isEmpty
+                thread.questions.isEmpty, thread.secrets.isEmpty, thread.vaultPrompts.isEmpty
             {
                 TypingIndicator()
             }
+            VaultCards(thread: thread, agentName: agentName)
             ForEach(thread.approvals) { approval in
                 ApprovalCard(approval: approval, agentName: agentName) { thread.answer(approval, with: $0) }
             }
@@ -35,6 +36,11 @@ struct TranscriptView: View {
                 QuestionCard(
                     prompt: prompt, agentName: agentName, answer: { thread.answer(prompt, with: $0) },
                     skip: { thread.skip(prompt) })
+            }
+            ForEach(thread.secrets) { prompt in
+                SecretCard(
+                    prompt: prompt, agentName: agentName, isUnencrypted: thread.isLinkUnencrypted,
+                    answer: { thread.answer(prompt, with: $0) }, skip: { thread.skip(prompt) })
             }
         }
     }
