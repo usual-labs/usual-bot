@@ -89,17 +89,15 @@ struct ConversationScroll<Content: View>: View {
     /// estimates move the end while nobody scrolls.
     @State private var followsEnd = true
     @State private var isNearEnd = true
-
-    /// The column's last view. Scrolling to it places the newest message exactly; scrolling to the
-    /// bottom edge trusts the lazy stack's estimate of rows it hasn't measured, which on iPhone
-    /// left a long chat parked in blank space past its end.
-    private static var end: String { "end" }
+    /// Where the column ends, as last measured.
+    @State private var end: CGFloat = 0
+    /// Just after a chat opens or reloads, when the lazy stack is still measuring.
+    @State private var isSettling = true
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 12) {
                 content
-                Color.clear.frame(height: 0).id(Self.end)
             }
             .animation(reduceMotion || reload != settledReload ? nil : Self.arrive, value: arrival)
             .padding(.vertical, 16)
@@ -121,30 +119,41 @@ struct ConversationScroll<Content: View>: View {
             }
         }
         .onScrollGeometryChange(for: Bool.self, of: \.isNearEnd) { _, new in isNearEnd = new }
-        // The anchor usually keeps up, but not with a column that started shorter than its window,
-        // nor after a scroll to the end marker. The marker is no help here: until a new row is laid
-        // out it's still above it, so scrolling to it would pull the row back under the box.
-        .onScrollGeometryChange(for: CGFloat.self, of: \.endY) { _, end in
-            if followsEnd { position.scrollTo(y: end) }
+        // The anchor can't hold a column that started shorter than its window. Following the
+        // measured end also settles a long chat: each move shows rows the lazy stack only estimated,
+        // and measuring them moves the end again until it stops. A scroll to a view can't do this.
+        // It lands on an estimate that may be out by hundreds of points, and if the column's height
+        // doesn't change afterwards, nothing puts it right.
+        .onScrollGeometryChange(for: CGFloat.self, of: \.endY) { _, new in
+            end = new
+            if followsEnd { position.scrollTo(y: new) }
+        }
+        // A move can be dropped when it meets the anchor's own, and no later change in the column's
+        // height would retry it. Only while settling: later this would fight a scrollbar drag.
+        .onScrollGeometryChange(for: CGFloat.self, of: \.distanceFromEnd) { _, distance in
+            if isSettling, followsEnd, abs(distance) > 1 { position.scrollTo(y: end) }
+        }
+        .task(id: reload) {
+            isSettling = true
+            try? await Task.sleep(for: .milliseconds(500))
+            if !Task.isCancelled { isSettling = false }
         }
         .onAppear {
             // A chat that's already loaded has nothing to settle.
             settledReload = reload
-            scrollToEnd()
         }
         .onChange(of: reload) {
             settledReload = reload
-            followsEnd = true
-            scrollToEnd()
+            // When it's already following, a second scroll here would race it with an older end.
+            if !followsEnd {
+                followsEnd = true
+                position.scrollTo(y: end)
+            }
         }
     }
 
     /// Quick, with the slightest overshoot.
     private static var arrive: Animation { .spring(duration: 0.32, bounce: 0.12) }
-
-    private func scrollToEnd() {
-        position.scrollTo(id: Self.end, anchor: .bottom)
-    }
 }
 
 extension ScrollPhase {
@@ -157,7 +166,9 @@ extension ScrollGeometry {
     /// `containerSize` leaves out the bars.
     fileprivate var endY: CGFloat { max(contentSize.height - containerSize.height, 0) }
 
-    /// Allows for the end marker, which stops 16 pt short inside the column's padding.
+    fileprivate var distanceFromEnd: CGFloat { contentOffset.y + contentInsets.top - endY }
+
+    /// With a little slack.
     /// `contentOffset` counts from behind the top bar.
     fileprivate var isNearEnd: Bool { contentOffset.y + contentInsets.top >= endY - 40 }
 }
