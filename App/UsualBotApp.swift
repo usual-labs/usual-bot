@@ -47,6 +47,8 @@ struct UsualBotApp: App {
                     .providesMainWindow(to: quickPanel)
             #else
                 RootView(model: model, presenter: signInPresenter) {
+                    TailscaleConnectOption(tailscale: tailscale)
+                } gatewayMenu: {
                     TailscaleMenu(tailscale: tailscale, reconnect: model.reconnect)
                 }
                 .task { await model.restore() }

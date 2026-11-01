@@ -2,17 +2,22 @@ import HermesKit
 import SwiftUI
 
 /// The main window: the connect screen until signed in, then contacts and the selected thread.
-public struct RootView<GatewayMenu: View>: View {
+public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
     @Bindable var model: AppModel
     let presenter: any SignInPresenter
+    /// Settings on the connect screen, between the address and Sign In.
+    let connectOptions: () -> ConnectOptions
     /// More items for the gateway menu, after the gateway's status.
     let gatewayMenu: () -> GatewayMenu
 
     public init(
-        model: AppModel, presenter: any SignInPresenter, @ViewBuilder gatewayMenu: @escaping () -> GatewayMenu
+        model: AppModel, presenter: any SignInPresenter,
+        @ViewBuilder connectOptions: @escaping () -> ConnectOptions,
+        @ViewBuilder gatewayMenu: @escaping () -> GatewayMenu
     ) {
         self.model = model
         self.presenter = presenter
+        self.connectOptions = connectOptions
         self.gatewayMenu = gatewayMenu
     }
 
@@ -21,7 +26,7 @@ public struct RootView<GatewayMenu: View>: View {
         case .signedOut where model.isRestoring:
             SplashView()
         case .signedOut, .signingIn:
-            ConnectView(model: model, presenter: presenter)
+            ConnectView(model: model, presenter: presenter, options: connectOptions)
         case .signedIn(let gateway):
             ContactsSplitView(
                 contacts: model.sidebarContacts, emptyText: emptyText,
@@ -55,9 +60,9 @@ public struct RootView<GatewayMenu: View>: View {
     }
 }
 
-extension RootView where GatewayMenu == EmptyView {
+extension RootView where ConnectOptions == EmptyView, GatewayMenu == EmptyView {
     public init(model: AppModel, presenter: any SignInPresenter) {
-        self.init(model: model, presenter: presenter) { EmptyView() }
+        self.init(model: model, presenter: presenter, connectOptions: { EmptyView() }, gatewayMenu: { EmptyView() })
     }
 }
 

@@ -11,7 +11,8 @@ The device can't open a connection to the address you entered.
 
 - Check the address and port, for example `100.101.102.103:9119`.
 - For a Tailscale address (`100.x.y.z` or a `.ts.net` name), make sure Tailscale is on and signed
-  in **on this device**. On iPhone this is the most common cause.
+  in **on this device**. On iPhone this is the most common cause; there you can also turn on
+  **Built-in Tailscale** (connect screen, or the gateway menu at the top left) instead of the VPN.
 - Make sure the dashboard listens on that address, not only on `127.0.0.1`
   ([Getting started](getting-started.md#it-must-be-reachable-from-your-device)).
 - From the same device or network, `curl http://<address>/api/status` should answer.

@@ -62,9 +62,17 @@ import HermesKit
     /// device, for a tailnet gateway while the Tailscale VPN is off. The system sheet can't: it
     /// loads pages outside the app, where the tailnet isn't reachable. The gateway's redirect to
     /// `http://127.0.0.1` still reaches the app's listener; the proxy dials loopback directly.
+    /// Google refuses sign-in inside apps, so a gateway that sends you there gets the system sheet
+    /// instead, which reaches the tailnet only while the Tailscale VPN is on.
     @MainActor
-    final class TailnetSignInPresenter: NSObject, SignInPresenter, UIAdaptivePresentationControllerDelegate {
+    final class TailnetSignInPresenter: NSObject, SignInPresenter, UIAdaptivePresentationControllerDelegate,
+        WKNavigationDelegate
+    {
         private let tailnet: Tailnet
+        private let system = WebAuthSignInPresenter()
+        /// Gateways, by host, whose sign-in went to Google; they get the system sheet from then on.
+        private var googleGateways: Set<String> = []
+        private var gatewayHost: String?
         private var sheet: UIViewController?
         private var onCancel: (@MainActor () -> Void)?
 
@@ -73,6 +81,10 @@ import HermesKit
         }
 
         func present(_ url: URL, onCancel: @escaping @MainActor () -> Void) {
+            gatewayHost = url.host()
+            if let gatewayHost, googleGateways.contains(gatewayHost) {
+                return system.present(url, onCancel: onCancel)
+            }
             self.onCancel = onCancel
             Task {
                 guard let proxies = try? await tailnet.session().configuration.proxyConfigurations else {
@@ -83,6 +95,7 @@ import HermesKit
                 let configuration = WKWebViewConfiguration()
                 configuration.websiteDataStore = store
                 let webView = WKWebView(frame: .zero, configuration: configuration)
+                webView.navigationDelegate = self
                 let page = UIViewController()
                 page.view = webView
                 page.navigationItem.leftBarButtonItem = UIBarButtonItem(
@@ -96,6 +109,7 @@ import HermesKit
         }
 
         func dismiss() {
+            system.dismiss()
             sheet?.dismiss(animated: true)
             sheet = nil
             onCancel = nil
@@ -106,10 +120,39 @@ import HermesKit
             cancel()
         }
 
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async
+            -> WKNavigationActionPolicy
+        {
+            guard navigationAction.request.url?.host() == "accounts.google.com" else { return .allow }
+            explainGoogle()
+            return .cancel
+        }
+
         private func cancel() {
             let onCancel = onCancel
             dismiss()
             onCancel?()
+        }
+
+        /// Ends this sign-in and says how to finish it: Google shows an error page
+        /// ("disallowed_useragent") to sign-ins inside apps.
+        private func explainGoogle() {
+            if let gatewayHost { googleGateways.insert(gatewayHost) }
+            let sheet = sheet
+            self.sheet = nil
+            cancel()
+            let alert = UIAlertController(
+                title: String(localized: "Sign in with Google in Safari"),
+                message: String(
+                    localized: """
+                        Google doesn't allow signing in inside apps, so this gateway's sign-in opens \
+                        in Safari, which reaches your tailnet only through the Tailscale VPN. Turn \
+                        the VPN on in the Tailscale app and sign in again. Once you're signed in, \
+                        you can turn it off.
+                        """),
+                preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: String(localized: "OK"), style: .default))
+            sheet?.dismiss(animated: true) { Self.topViewController()?.present(alert, animated: true) }
         }
 
         private static func topViewController() -> UIViewController? {
