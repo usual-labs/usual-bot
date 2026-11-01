@@ -86,7 +86,7 @@ import HermesKit
                 return system.present(url, onCancel: onCancel)
             }
             self.onCancel = onCancel
-            Task {
+            Task { [self] in
                 guard let proxies = try? await tailnet.session().configuration.proxyConfigurations else {
                     return cancel()
                 }
