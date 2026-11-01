@@ -114,5 +114,7 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   agent's default model everywhere.
 - iPhone on a real device beyond sign-in: calls, dictation and GPT-Live audio routing.
 - The background task notification firing.
-- The vault against a live gateway beyond a loopback client on the legacy dialect: `vault.unlock_prompt`
-  and `vault.code`, a real password manager, a client on a remote address, and the authority path.
+- The vault beyond a loopback client on the legacy dialect: `vault.unlock_prompt` and `vault.code`, a
+  real password manager, a client on a remote address, and the authority path. Sign-in, secret cards
+  and the background bar were run against a real gateway on the Mac and in the iPhone Simulator,
+  and sudo and adding a login on the Mac. Scrolling away from a chat's end was tried only on the Mac.

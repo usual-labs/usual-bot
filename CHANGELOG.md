@@ -19,6 +19,9 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Fixed
 
+- **The end of a chat stays in view.** A new message, a card asking for something or the background
+  task bar could land under the message box until you scrolled. A chat now follows its end unless
+  you've scrolled away.
 - **Secret and sudo requests.** Usual Bot used to decline these. With no other app attached, Hermes
   then took its error text for your answer: it saved that text as the secret, so the skill never
   asked again, and passed it to `sudo` as the password. If a skill has misbehaved since, check its

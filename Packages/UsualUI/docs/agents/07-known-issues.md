@@ -8,6 +8,8 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **Views under the toolbar strip don't show,** because the title bar container covers that strip. Search and New Room are a `.navigation` toolbar item after a spacer sized from the sidebar, with the toolbar's shared glass hidden and each button drawn by `GlassCircleButtonStyle` (`.buttonStyle(.glass)` looked flat). The toolbar also gives the window buttons their room.
 - **Trailing toolbar items land on the leading side.** `.primaryAction` is the leading edge on macOS. On macOS 26, put `ToolbarSpacer(.flexible)` before a plain `ToolbarItem` (`profileCloseButton`).
 
+- **With no chat selected, the Mac sidebar sits about 200 pt in from the window's left edge,** leaving a blank strip. Seen right after sign-in and in the demo with an unknown `-selectedContact`; selecting a chat puts it back. Cause not looked into.
+
 ## Lists and text
 
 - **Open bottom-anchored lazy lists by scrolling to a view,** not the bottom edge. `defaultScrollAnchor(.bottom)` and `ScrollPosition(edge: .bottom)` use the `LazyVStack`'s estimate, which opened long iPhone chats blank. `ConversationScroll` scrolls to an end marker.
@@ -15,7 +17,7 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **Don't overlay transcript rows.** Replies run the full column width, so an overlay covers text; `MessageRow` puts the bar in a fixed slot beside the message.
 - **Size reply images from their own pixels, and let them shrink.** A `maxWidth`/`maxHeight` frame around `scaledToFit` takes the whole width, so the border runs past the picture. A fixed size pushes the iPhone column off-screen. `ReplyImage` uses `.aspectRatio(size, contentMode: .fit)` with `.frame(maxWidth: size.width)`.
 
-- **The background-task bar can cover the end of the chat.** Seen in the Mac demo: Ops opens with its last card's Skip and Send under the bar until you scroll. The transcript's bottom inset doesn't seem to count the bar. Unverified on a real gateway, and not fixed yet.
+- **Keep a conversation at its end with `ScrollPosition.scrollTo(y:)`, not the end marker.** `defaultScrollAnchor(.bottom)` can't hold a column that started shorter than its window, and after a scroll to the marker it stops holding at all: new messages, cards and the background bar landed under the message box. Scrolling to the marker again doesn't help, because it's stale until the new row is laid out and pulled the view back 123 pt. `ConversationScroll` follows the measured end until you scroll by hand. Whether you left the end comes from scroll phases, since lazy estimates move it while nobody scrolls. `scrollTo(y:)` counts from the content's top, `contentOffset` from behind the top bar, and `containerSize` leaves the bars out. The demo can't show this: its cards exist from the start, so check a card arriving on a real gateway.
 - **`ImageRenderer` draws `SecureField` and `Toggle` as yellow blocks,** because it can't draw controls backed by AppKit. Sizes are right, but those controls need a run of the app to be seen.
 
 ## Message box

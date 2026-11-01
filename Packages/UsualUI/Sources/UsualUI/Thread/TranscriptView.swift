@@ -51,12 +51,17 @@ struct TranscriptView: View {
     }
 }
 
-/// A conversation's scrolling column, opened at its newest message and kept there as it grows.
+/// A conversation's scrolling column, opened at its newest message and kept there as it grows, until
+/// you scroll away from it.
 struct ConversationScroll<Content: View>: View {
     /// Changes when the conversation is reloaded; it then scrolls back to the newest message.
     var reload = 0
     @ViewBuilder let content: Content
     @State private var position = ScrollPosition()
+    /// Off once you've scrolled away from the end. Measuring alone can't tell: the lazy stack's
+    /// estimates move the end while nobody scrolls.
+    @State private var followsEnd = true
+    @State private var isNearEnd = true
 
     /// The column's last view. Scrolling to it places the newest message exactly; scrolling to the
     /// bottom edge trusts the lazy stack's estimate of rows it hasn't measured, which on iPhone
@@ -79,13 +84,45 @@ struct ConversationScroll<Content: View>: View {
         .scrollDismissesKeyboard(.interactively)
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
+        .onScrollPhaseChange { old, new in
+            if new.isByHand {
+                followsEnd = false
+            } else if old.isByHand {
+                followsEnd = isNearEnd
+            }
+        }
+        .onScrollGeometryChange(for: Bool.self, of: \.isNearEnd) { _, new in isNearEnd = new }
+        // The anchor usually keeps up, but not with a column that started shorter than its window,
+        // nor after a scroll to the end marker. The marker is no help here: until a new row is laid
+        // out it's still above it, so scrolling to it would pull the row back under the box.
+        .onScrollGeometryChange(for: CGFloat.self, of: \.endY) { _, end in
+            if followsEnd { position.scrollTo(y: end) }
+        }
         .onAppear(perform: scrollToEnd)
-        .onChange(of: reload, scrollToEnd)
+        .onChange(of: reload) {
+            followsEnd = true
+            scrollToEnd()
+        }
     }
 
     private func scrollToEnd() {
         position.scrollTo(id: Self.end, anchor: .bottom)
     }
+}
+
+extension ScrollPhase {
+    /// Moving under your finger, wheel or trackpad, not because the app scrolled.
+    fileprivate var isByHand: Bool { self == .tracking || self == .interacting || self == .decelerating }
+}
+
+extension ScrollGeometry {
+    /// Where the column's end is for `ScrollPosition`, which counts from the content's top.
+    /// `containerSize` leaves out the bars.
+    fileprivate var endY: CGFloat { max(contentSize.height - containerSize.height, 0) }
+
+    /// Allows for the end marker, which stops 16 pt short inside the column's padding.
+    /// `contentOffset` counts from behind the top bar.
+    fileprivate var isNearEnd: Bool { contentOffset.y + contentInsets.top >= endY - 40 }
 }
 
 /// Who wrote a room reply: the name and the agent contact behind the avatar.

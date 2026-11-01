@@ -24,6 +24,8 @@
 
 Child-local ideas stay in their package KBs.
 
+- **Jump to the end when you send.** Scrolled up, a message you send stays out of sight below, as
+  `ConversationScroll` only returns to following when you scroll back to the end yourself.
 - **Replay switch.** A debug switch that plays sanitized frames through the real channel, so a
   change can be seen working without a gateway. `AppModel.demo()` skips the channel entirely.
 - **Contributor vouching, size labels and triage or stale bots.** Worth adding once outside pull

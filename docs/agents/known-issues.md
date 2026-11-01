@@ -46,3 +46,11 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 
 - `/retry` on a message with a photo answers "retry does not support media or unknown content parts".
   That's the gateway's behaviour: send the message again with the image.
+- **A real sign-in needs a gated gateway, which loopback isn't.** `dashboard --isolated` on `127.0.0.1`
+  reports no `native_pkce`, so the app refuses it. To test sign-in without a real login, give a
+  throwaway profile `dashboard.public_url: https://usualbot-test.invalid` and start the server with
+  `HERMES_DASHBOARD_BASIC_AUTH_USERNAME`, `_PASSWORD` and `_SECRET`. That server still lists every
+  profile in the Hermes home, and the machine's running gateway picks up a new profile by itself:
+  open only the throwaway agent. A debug build keeps its settings under its own bundle ID, apart from
+  the installed app's. `CFFIXED_USER_HOME` moves its cache but not `UserDefaults`, so afterwards
+  delete `gatewayAddress` from that domain, and the Keychain item for the test address.
