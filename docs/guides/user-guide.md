@@ -25,7 +25,7 @@ list. The most recent conversation is at the top.
 
 - A Bot shows the picture you gave it in the Hermes app. Without one, it gets one of Usual Bot's
   characters.
-- A ring around an avatar means the agent is working.
+- An avatar that gently moves means the agent is working.
 - **Needs you** means it's waiting for your approval or an answer.
 - Search (⌘F on the Mac) filters the list by name.
 - The dot at the bottom of the sidebar (top left on iPhone) shows the connection. Click it to see

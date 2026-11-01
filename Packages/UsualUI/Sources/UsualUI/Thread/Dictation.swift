@@ -1,4 +1,5 @@
 import AVFoundation
+import HermesKit
 import Observation
 import Speech
 import SwiftUI
@@ -289,14 +290,15 @@ struct DictationProblem: View {
 struct CallStartButton: View {
     let action: () -> Void
     @Environment(\.composerButtonSize) private var size
+    @Environment(\.chatContact) private var contact
 
     var body: some View {
         Button(action: action) {
             Image(systemName: "waveform")
                 .font(.system(size: size * 13 / 28, weight: .semibold))
-                .foregroundStyle(Theme.ink)
+                .foregroundStyle(contact == nil ? Theme.primaryInk : Theme.userBubbleInk)
                 .frame(width: size, height: size)
-                .background(Theme.selection, in: Circle())
+                .background(contact?.accent ?? Theme.primary, in: Circle())
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)

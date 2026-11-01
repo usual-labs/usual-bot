@@ -102,11 +102,15 @@ struct MessageRow<Content: View>: View {
                 message
                     .contentShape(Rectangle())
                     .onHover(perform: hoverMessage)
-                    .frame(maxWidth: isMine ? nil : .infinity, alignment: .leading)
-                if !isMine { barSlot }
+                if !isMine {
+                    barSlot
+                    Spacer(minLength: 0)
+                }
             }
         #else
             message
+                // Your bubbles leave the agent's side clear, as in any messenger.
+                .padding(.leading, isMine ? 48 : 0)
                 .frame(maxWidth: .infinity, alignment: isMine ? .trailing : .leading)
                 .contextMenu { if let actions { menu(actions) } }
         #endif
@@ -156,6 +160,7 @@ struct MessageRow<Content: View>: View {
                 bar(actions)
                     .onHover { overBar = $0 }
                     .opacity(shown ? 1 : 0)
+                    .animation(.easeOut(duration: 0.12), value: shown)
                     .allowsHitTesting(shown)
                     // Room for all three buttons, so every reply wraps at the same width.
                     .frame(width: 104, alignment: isMine ? .trailing : .leading)
@@ -196,8 +201,6 @@ struct MessageRow<Content: View>: View {
             }
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(Theme.secondaryInk)
-            .padding(.horizontal, 4)
-            .floatingSurface(in: Capsule())
         }
 
         private func barButton(_ systemImage: String, _ label: String, action: @escaping () -> Void) -> some View {

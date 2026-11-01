@@ -44,10 +44,11 @@ struct RoomPane: View {
                 replyTo = nil
                 showsInfo = false
             }
+            // Inside the inspector: outside, the name drops below the window buttons' line.
+            .paneChrome()
             .inspector(isPresented: $showsInfo) {
                 RoomPanel(room: contact, members: members).inspectorColumnWidth(min: 260, ideal: 300, max: 400)
             }
-            .paneChrome()
             // Rooms push nothing: read new events while the room is on screen.
             .task(id: room.roomID) {
                 while !Task.isCancelled {
@@ -75,12 +76,13 @@ struct RoomPane: View {
             .padding(.horizontal, 32)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .ready:
-            transcript
+            // As in a chat: one room's messages mustn't animate into the next.
+            transcript.id(contact.id)
         }
     }
 
     private var transcript: some View {
-        ConversationScroll {
+        ConversationScroll(arrival: [room.state.items.count, room.pending.count, room.working.count]) {
             if !room.driverRunning {
                 NoticeLine(
                     text: String(localized: "The gateway's room service isn't running, so agents won't answer."))
@@ -91,22 +93,24 @@ struct RoomPane: View {
             }
             ForEach(room.state.items) { item in
                 ItemView(item: item, agentName: contact.name, author: author)
+                    .transition(.settle)
             }
             ForEach(room.pending) { message in
                 UserBubble(text: message.text)
                     .opacity(0.6)
                     .accessibilityLabel(Text("Sending: \(message.text)"))
+                    .transition(.rise)
             }
             ForEach(room.working.sorted(), id: \.self) { memberID in
                 if let author = author(memberID) {
                     replyingRow(String(localized: "\(author.name) is replying…")) {
-                        AgentAvatar(contact: author.contact, size: 28)
+                        AgentAvatar(contact: author.contact.with(activity: .working), size: 24)
                     }
                 }
             }
             if room.isBusy, room.working.isEmpty {
                 // An older gateway says only that someone is answering, not who.
-                replyingRow(String(localized: "Agents are replying…")) { RoomAvatar(members: members, size: 28) }
+                replyingRow(String(localized: "Agents are replying…")) { RoomAvatar(members: members, size: 24) }
             }
             ForEach(room.approvals) { approval in
                 ApprovalCard(
@@ -117,13 +121,11 @@ struct RoomPane: View {
     }
 
     private func replyingRow(_ text: String, @ViewBuilder avatar: () -> some View) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             avatar()
-            TypingIndicator()
-            Text(text)
-                .font(.system(size: 13))
-                .foregroundStyle(Theme.secondaryInk)
+            ShimmerText(text: text)
         }
+        .padding(.leading, 8)
     }
 
     /// A member's name and avatar: the agent's own from the sidebar when it's on this gateway.

@@ -36,6 +36,7 @@ public struct QuickMessageView: View {
                 if let sent, let contact = contacts.first(where: { $0.id == sent.contactID }) {
                     answerHeader(contact)
                     QuickAnswer(model: model, contact: contact, start: sent.start, agents: agentsByProfile)
+                        .environment(\.chatContact, contact.kind == .agent ? contact : nil)
                     messageField(placeholder: String(localized: "Reply to \(contact.name)"))
                 } else {
                     recipientRow
@@ -274,11 +275,11 @@ private struct QuickAnswer: View {
             ItemView(item: item, agentName: contact.name)
         }
         if !thread.state.draft.isEmpty {
-            MarkdownView(thread.state.draft)
+            AgentBubble { MarkdownView(thread.state.draft) }
         } else if thread.state.isRunning, thread.approvals.isEmpty, thread.questions.isEmpty, thread.secrets.isEmpty,
             thread.vaultPrompts.isEmpty
         {
-            TypingIndicator()
+            WorkingRow(text: String(localized: "Thinking…"))
         }
         VaultCards(thread: thread, agentName: contact.name)
         ForEach(thread.approvals) { approval in
@@ -304,12 +305,7 @@ private struct QuickAnswer: View {
             UserBubble(text: message.text).opacity(0.6)
         }
         if room.isBusy {
-            HStack(spacing: 10) {
-                TypingIndicator()
-                Text(replyingLine(room))
-                    .font(.system(size: 13))
-                    .foregroundStyle(Theme.secondaryInk)
-            }
+            ShimmerText(text: replyingLine(room))
         }
         ForEach(room.approvals) { approval in
             ApprovalCard(approval: approval.prompt, agentName: room.state.name(approval.memberID)) {

@@ -8,7 +8,9 @@ struct VaultView: View {
     let agentName: String
     let isOnline: Bool
 
-    @State private var isAdding = false
+    /// What New item is adding.
+    @State private var adding: VaultDraft.Kind?
+    @State private var filter: Filter = .all
     @State private var unlocking: VaultSource?
     @State private var removing: VaultItem?
 
@@ -47,7 +49,7 @@ struct VaultView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .task(id: "\(list.profile) \(isOnline)") { await list.refresh() }
-        .sheet(isPresented: $isAdding) { VaultAddSheet(list: list) }
+        .sheet(item: $adding) { VaultAddSheet(list: list, kind: $0) }
         .sheet(item: $unlocking) { VaultUnlockSheet(list: list, source: $0) }
         .confirmationDialog(
             "Remove “\(removing?.label ?? "")”?",
@@ -65,19 +67,70 @@ struct VaultView: View {
             HStack {
                 sectionTitle("Saved")
                 Spacer(minLength: 8)
-                Button("Add") { isAdding = true }
-                    .buttonStyle(CardButtonStyle(primary: false))
+                newItemMenu
             }
-            .padding(.bottom, 4)
-            if list.items.isEmpty {
-                Text("Nothing saved yet.")
+            .padding(.bottom, 10)
+            filters
+                .padding(.bottom, 4)
+            let shown = list.items.filter(filter.includes)
+            if shown.isEmpty {
+                Text(filter.emptyText)
                     .font(.system(size: 13.5))
                     .foregroundStyle(Theme.secondaryInk)
                     .padding(.vertical, 8)
             }
-            ForEach(list.items) { item in
+            ForEach(shown) { item in
                 VaultItemRow(item: item, managers: list.sources) { removing = item }
                 Divider().overlay(Theme.border)
+            }
+        }
+    }
+
+    private var newItemMenu: some View {
+        Menu {
+            Button("Login", systemImage: "key") { adding = .login }
+            Button("Card", systemImage: "creditcard") { adding = .payment }
+            Button("Address", systemImage: "mappin.and.ellipse") { adding = .address }
+        } label: {
+            HStack(spacing: 4) {
+                Text("New item")
+                Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold))
+            }
+            .font(.system(size: 13.5, weight: .semibold))
+            .foregroundStyle(Theme.primaryInk)
+            .padding(.horizontal, 14)
+            .frame(minHeight: 34)
+            .background(Theme.primary, in: Capsule())
+            .contentShape(Capsule())
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+    }
+
+    /// The kinds of item, each with how many there are.
+    private var filters: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 2) {
+                ForEach(Filter.allCases, id: \.self) { option in
+                    Button {
+                        filter = option
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text(option.title).foregroundStyle(Theme.ink)
+                            Text(list.items.filter(option.includes).count, format: .number)
+                                .foregroundStyle(Theme.secondaryInk)
+                        }
+                        .font(.system(size: 13))
+                        .padding(.horizontal, 10)
+                        .frame(minHeight: 30)
+                        .background(filter == option ? Theme.selection : .clear, in: Capsule())
+                        .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(filter == option ? .isSelected : [])
+                }
             }
         }
     }
@@ -100,6 +153,43 @@ struct VaultView: View {
             .foregroundStyle(Theme.secondaryInk)
             .accessibilityAddTraits(.isHeader)
     }
+}
+
+/// Which of the saved items show.
+private enum Filter: CaseIterable {
+    case all, logins, payments, addresses
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .all: "All"
+        case .logins: "Logins"
+        case .payments: "Payments"
+        case .addresses: "Addresses"
+        }
+    }
+
+    var emptyText: LocalizedStringKey {
+        switch self {
+        case .all: "Nothing saved yet. Add something with New item."
+        case .logins: "No logins yet. Add one with New item."
+        case .payments: "No cards yet. Add one with New item."
+        case .addresses: "No addresses yet. Add one with New item."
+        }
+    }
+
+    func includes(_ item: VaultItem) -> Bool {
+        switch self {
+        case .all: true
+        case .payments: item.kind == "payment"
+        case .addresses: item.kind == "address"
+        // As the row's icon does, anything else counts as a login.
+        case .logins: item.kind != "payment" && item.kind != "address"
+        }
+    }
+}
+
+extension VaultDraft.Kind: @retroactive Identifiable {
+    public var id: Self { self }
 }
 
 private struct VaultItemRow: View {

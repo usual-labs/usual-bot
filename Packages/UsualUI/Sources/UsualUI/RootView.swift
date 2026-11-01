@@ -406,13 +406,13 @@ struct GatewayStatusButton: View {
             let row = HStack(spacing: 8) {
                 Color.clear.frame(width: shown ? leading : 0, height: 1)
                 if shown {
-                    search.sidebarGlassButton()
-                    newRoom.sidebarGlassButton()
+                    search.sidebarCircleButton()
+                    newRoom.sidebarCircleButton()
                 }
             }
             .labelStyle(.iconOnly)
             if #available(macOS 26, *) {
-                // The buttons bring their own glass; the toolbar shouldn't wrap them in more.
+                // The buttons bring their own surface; the toolbar shouldn't wrap them in glass.
                 toolbar { ToolbarItem(placement: .navigation) { row }.sharedBackgroundVisibility(.hidden) }
             } else {
                 toolbar { ToolbarItem(placement: .navigation) { row } }
@@ -420,7 +420,7 @@ struct GatewayStatusButton: View {
         }
 
         /// The open profile panel's close button, at the window's top right over the panel and level
-        /// with the window buttons; macOS 26 draws it as a Liquid Glass circle.
+        /// with the window buttons; macOS 26 draws it as a glass circle.
         @ViewBuilder fileprivate func profileCloseButton(shown: Bool, close: @escaping () -> Void) -> some View {
             let button = Button("Close Profile", systemImage: "xmark", action: close).help("Close Profile")
             if #available(macOS 26, *) {
@@ -437,21 +437,21 @@ struct GatewayStatusButton: View {
             }
         }
 
-        /// A round Liquid Glass button: glass from macOS 26, a solid circle before.
-        fileprivate func sidebarGlassButton() -> some View {
-            buttonStyle(GlassCircleButtonStyle())
+        /// A round button, on the surface the name pill beside it uses.
+        fileprivate func sidebarCircleButton() -> some View {
+            buttonStyle(CircleButtonStyle())
         }
     }
 #endif
 
 #if os(macOS)
-    /// The sidebar's Search and New Room: an icon on a glass circle that answers a press.
-    private struct GlassCircleButtonStyle: ButtonStyle {
+    /// The sidebar's Search and New Room: an icon on a circle that answers a press.
+    private struct CircleButtonStyle: ButtonStyle {
         func makeBody(configuration: Configuration) -> some View {
-            GlassCircle(configuration: configuration)
+            FloatingCircle(configuration: configuration)
         }
 
-        private struct GlassCircle: View {
+        private struct FloatingCircle: View {
             let configuration: Configuration
             @Environment(\.isEnabled) private var isEnabled
 
@@ -461,20 +461,10 @@ struct GatewayStatusButton: View {
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(Theme.ink)
                     .frame(width: 36, height: 36)
-                    .glassCircle()
+                    .floatingSurface(in: Circle())
                     .contentShape(Circle())
                     .scaleEffect(configuration.isPressed ? 0.94 : 1)
                     .opacity(isEnabled ? 1 : 0.45)
-            }
-        }
-    }
-
-    extension View {
-        @ViewBuilder fileprivate func glassCircle() -> some View {
-            if #available(macOS 26, *) {
-                glassEffect(.regular.interactive(), in: Circle())
-            } else {
-                floatingSurface(in: Circle())
             }
         }
     }

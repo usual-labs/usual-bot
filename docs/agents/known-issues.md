@@ -5,8 +5,8 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 
 ## CI and releases
 
-- CI uses `macos-26`: the app needs the macOS 26 / iOS 26 SDK (Liquid Glass), which the `macos-15`
-  image's Xcode can't compile.
+- CI uses `macos-26`: the app needs the macOS 26 / iOS 26 SDK (`ToolbarSpacer`,
+  `sharedBackgroundVisibility`), which the `macos-15` image's Xcode can't compile.
 - Keep the CI job's `name: build` aligned with the required status check. Renaming it also needs the
   repository's branch rule updated.
 - Workflow actions are pinned to full commit SHAs. When adding an action, check both the pin and the

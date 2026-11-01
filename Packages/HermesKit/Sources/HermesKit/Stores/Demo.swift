@@ -7,7 +7,8 @@
     extension AppModel {
         /// A made-up team of agents, their chats, a room and routines, shown as signed in to an
         /// example gateway. For screenshots, and for trying the app without Hermes: Debug builds
-        /// launched with `USUALBOT_DEMO=1` use it. It never connects, so nothing can be sent.
+        /// launched with `USUALBOT_DEMO=1` use it. It never connects: a chat answers what you send
+        /// with a scripted reply.
         public static func demo(now: Date = .now) -> AppModel {
             let model = AppModel(
                 tokenStore: KeychainTokenStore(), http: URLSession.shared,
@@ -28,6 +29,30 @@
                     }))
             model.media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }
             return model
+        }
+    }
+
+    extension ChatThread {
+        /// A turn from a pretend gateway: thinking, two tool calls, then a reply as it streams.
+        func playDemoReply() {
+            let chunks = [
+                "I read the notes and ran the checks. ", "Everything you asked about still holds, ",
+                "and nothing else needs your attention.\n\n", "- The tests pass.\n", "- The logs are quiet.",
+            ]
+            let script: [(pause: Double, type: String, payload: [String: JSONValue])] =
+                [
+                    (0.9, "tool.start", ["tool_id": .string("demo-1"), "name": .string("read_file")]),
+                    (1.2, "tool.complete", ["tool_id": .string("demo-1")]),
+                    (0.1, "tool.start", ["tool_id": .string("demo-2"), "name": .string("terminal")]),
+                    (1.2, "tool.complete", ["tool_id": .string("demo-2")]),
+                ] + chunks.map { (0.35, "message.delta", ["text": .string($0)]) } + [(0.3, "message.complete", [:])]
+            Task {
+                for step in script {
+                    try? await Task.sleep(for: .seconds(step.pause))
+                    state.apply(
+                        GatewayEvent(type: step.type, sessionID: "sample", seq: nil, payload: .object(step.payload)))
+                }
+            }
         }
     }
 
@@ -120,6 +145,15 @@
                 threads[id] = ChatThread.sample(
                     id, state: ThreadState(history: [HistoryMessage(role: "assistant", text: text)], running: false))
             }
+            threads["scribe"]?.receive(
+                ClarifyPrompt(
+                    id: "demo-question", sessionID: "sample",
+                    questions: [
+                        .init(
+                            id: "headline", text: "Which headline should lead the launch post?",
+                            choices: ["Search that keeps up", "Find anything in your docs", "Something else"],
+                            allowsMultiple: false)
+                    ]))
             threads["ledger"]?.receive(
                 SecretPrompt(
                     id: "demo-sudo", sessionID: "sample", kind: .sudo(command: "sudo systemctl restart invoice-worker"))
@@ -127,6 +161,7 @@
             for prompt in Demo.vaultPrompts { threads["ledger"]?.receive(prompt) }
             // Shows the warning a gateway on plain http gets.
             threads["ledger"]?.gateway = { try? GatewayAddress(parsing: "http://192.168.1.20:9119") }
+            for thread in threads.values { thread.playsDemoReplies = true }
             return threads
         }
 

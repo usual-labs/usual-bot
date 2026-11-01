@@ -28,7 +28,7 @@ struct ContactRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(contact.name)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
                     Spacer(minLength: 0)
@@ -40,7 +40,7 @@ struct ContactRow: View {
                 }
                 HStack(spacing: 8) {
                     Text(previewText)
-                        .font(.system(size: 13.5))
+                        .font(.system(size: 13))
                         .foregroundStyle(Theme.secondaryInk)
                         .lineLimit(1)
                     Spacer(minLength: 0)
@@ -48,15 +48,24 @@ struct ContactRow: View {
                 }
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder private var avatar: some View {
         switch contact.kind {
-        case .agent: AgentAvatar(contact: contact)
-        case .room: RoomAvatar(members: members)
+        case .agent: AgentAvatar(contact: contact, size: avatarSize)
+        case .room: RoomAvatar(members: members, size: avatarSize)
         }
+    }
+
+    /// iPhone rows and the Mac's rail keep the larger avatar; the Mac's rows have the name to go by.
+    private var avatarSize: CGFloat {
+        #if os(macOS)
+            compact ? 44 : 36
+        #else
+            44
+        #endif
     }
 
     /// The rail's corner badge: the unread count, or a dot when the agent needs you.

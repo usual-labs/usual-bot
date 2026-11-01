@@ -116,7 +116,7 @@ Debug builds read these environment variables:
 
 | Variable | What it does |
 | --- | --- |
-| `USUALBOT_DEMO=1` | Shows made-up agents instead of signing in. Never connects. |
+| `USUALBOT_DEMO=1` | Shows made-up agents instead of signing in. Never connects; a message gets a scripted reply. |
 | `USUALBOT_SHOW_QUICK_PANEL=1` | Opens the ⌥Space panel shortly after launch (Mac). |
 | `USUALBOT_WINDOW_WIDTH=560` | Opens the main window at that width (Mac). |
 | `USUALBOT_RECORD_FRAMES=1` | Appends every socket frame to `usualbot-frames.jsonl` in the app's temporary directory, with answers to masked prompts and vault secrets blanked. |

@@ -171,14 +171,14 @@ enum MarkdownBlock: Equatable {
 /// Renders a Markdown reply, block by block.
 struct MarkdownView: View {
     let blocks: [MarkdownBlock]
-    @Environment(\.colorScheme) private var colorScheme
 
     init(_ markdown: String) {
         blocks = MarkdownBlock.parse(markdown)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        // As wide as its text, for a bubble around it.
+        VStack(alignment: .leading, spacing: 10) {
             ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
                 view(for: block)
             }
@@ -186,7 +186,6 @@ struct MarkdownView: View {
         .messageFont()
         .foregroundStyle(Theme.ink)
         .textSelection(.enabled)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder private func view(for block: MarkdownBlock) -> some View {
@@ -223,9 +222,8 @@ struct MarkdownView: View {
     /// Gives bold, italic and inline-code runs their own fonts. Text draws Markdown's bold and
     /// italic only while no explicit font is set, and the chat always sets one.
     private func styled(
-        _ text: AttributedString, size: CGFloat = Theme.messageSize, weight: Font.Weight? = nil
+        _ text: AttributedString, size: CGFloat = Theme.messageSize, weight: Font.Weight = .regular
     ) -> AttributedString {
-        let weight = weight ?? Theme.messageWeight(colorScheme)
         var text = text
         for (inline, range) in text.runs[\.inlinePresentationIntent] {
             guard let inline, !inline.isEmpty else { continue }

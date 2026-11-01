@@ -5,7 +5,7 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 ## macOS window and sidebar
 
 - **macOS 26's sidebar width can't be set.** Its floating sidebar keeps a 140 pt floor and ignores `navigationSplitViewColumnWidth`, `NSSplitView.setPosition` and pinned item thickness. Don't drive sidebar widths through NavigationSplitView or its AppKit split view; ContactsSplitView lays the Mac sidebar out itself. Dragging the edge wasn't verified by automation.
-- **Views under the toolbar strip don't show,** because the title bar container covers that strip. Search and New Room are a `.navigation` toolbar item after a spacer sized from the sidebar, with the toolbar's shared glass hidden and each button drawn by `GlassCircleButtonStyle` (`.buttonStyle(.glass)` looked flat). The toolbar also gives the window buttons their room.
+- **Views under the toolbar strip don't show,** because the title bar container covers that strip. Search and New Room are a `.navigation` toolbar item after a spacer sized from the sidebar, with the toolbar's shared glass hidden and each button drawn by `CircleButtonStyle`. The toolbar also gives the window buttons their room.
 - **Trailing toolbar items land on the leading side.** `.primaryAction` is the leading edge on macOS. On macOS 26, put `ToolbarSpacer(.flexible)` before a plain `ToolbarItem` (`profileCloseButton`).
 
 - **With no chat selected, the Mac sidebar sits about 200 pt in from the window's left edge,** leaving a blank strip. Seen right after sign-in and in the demo with an unknown `-selectedContact`; selecting a chat puts it back. Cause not looked into.

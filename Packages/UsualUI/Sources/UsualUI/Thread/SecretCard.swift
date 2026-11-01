@@ -67,13 +67,7 @@ struct SecretCard: View {
                     .opacity(value.isEmpty ? 0.4 : 1)
             }
         }
-        .padding(14)
-        .frame(maxWidth: 540)
-        .background(Theme.pane, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border))
-        .shadow(color: .black.opacity(0.04), radius: 3, y: 1)
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .contain)
+        .cardSurface()
         .onDisappear { value = "" }
     }
 

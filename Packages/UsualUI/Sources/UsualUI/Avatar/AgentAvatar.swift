@@ -9,7 +9,6 @@ struct AgentAvatar: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.botPictures) private var pictures
-    @State private var pulse = false
 
     var body: some View {
         let style = AvatarStyle(seed: contact.id, paletteCount: Theme.agentPalette.count)
@@ -35,19 +34,25 @@ struct AgentAvatar: View {
         }
         .clipShape(Circle())
         .frame(width: size, height: size)
-        .overlay {
-            if contact.activity == .working {
-                Circle()
-                    .stroke(contact.tintColor(style: style), lineWidth: 2)
-                    .padding(-4)
-                    .opacity(reduceMotion ? 1 : (pulse ? 1 : 0.35))
-                    .animation(
-                        reduceMotion ? nil : .easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulse
-                    )
-                    .onAppear { pulse = true }
-            }
-        }
+        .modifier(Breathing(isActive: contact.activity == .working && !reduceMotion))
         .accessibilityHidden(true)
+    }
+}
+
+/// A working agent squashes and stretches gently, wherever its avatar shows.
+private struct Breathing: ViewModifier {
+    let isActive: Bool
+
+    func body(content: Content) -> some View {
+        if isActive {
+            content.phaseAnimator([false, true]) { view, up in
+                view.scaleEffect(x: up ? 1.05 : 0.97, y: up ? 0.95 : 1.03, anchor: .bottom)
+            } animation: { _ in
+                .easeInOut(duration: 0.55)
+            }
+        } else {
+            content
+        }
     }
 }
 
@@ -76,6 +81,8 @@ struct RoomAvatar: View {
 extension EnvironmentValues {
     /// Agents' own pictures from the gateway; without them every agent shows its character.
     @Entry var botPictures: BotPictures?
+    /// The agent this conversation is with; `nil` in rooms, which have no one colour or face.
+    @Entry var chatContact: Contact?
 }
 
 extension Contact {
@@ -84,10 +91,19 @@ extension Contact {
         return Theme.agentPalette[style.paletteIndex]
     }
 
-    /// Member avatars inside a room never show their own activity ring.
-    fileprivate var settled: Contact {
+    /// The agent's colour on your bubbles and the message box's main button, under white text.
+    var accent: Color {
+        let style = AvatarStyle(seed: id, paletteCount: Theme.agentColors.count)
+        let rgb = tint.flatMap(RGB.init(css:)) ?? Theme.agentColors[style.paletteIndex]
+        return Color(rgb.readableUnderWhite)
+    }
+
+    /// Member avatars inside a room never show their own activity.
+    fileprivate var settled: Contact { with(activity: .idle) }
+
+    func with(activity: Activity) -> Contact {
         var copy = self
-        copy.activity = .idle
+        copy.activity = activity
         return copy
     }
 }

@@ -255,6 +255,13 @@ public final class ChatThread {
     /// Sends a message. While the agent works, the message steers the running turn instead.
     public func send(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        #if DEBUG
+            if playsDemoReplies, canSend, !text.isEmpty, !state.isRunning {
+                state.sendLocally(text)
+                playDemoReply()
+                return
+            }
+        #endif
         guard canSend, !text.isEmpty, let sessionID, let channel = channel() else { return }
         if let question = Self.sideQuestion(in: text) {
             askOnTheSide(question)
@@ -494,6 +501,9 @@ public final class ChatThread {
     }
 
     #if DEBUG
+        /// The demo: a sent message gets a scripted reply, as there's no gateway to answer it.
+        var playsDemoReplies = false
+
         /// Tests and previews: a chat already open and showing `state`.
         static func sample(_ contactID: Contact.ID, state: ThreadState) -> ChatThread {
             let thread = ChatThread(contactID: contactID, channel: { nil })

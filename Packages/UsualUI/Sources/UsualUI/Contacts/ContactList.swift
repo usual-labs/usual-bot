@@ -37,19 +37,20 @@ struct ContactList: View {
             // A plain stack instead of `List`, so the selected row gets the light grey pill from the
             // mockups rather than the system accent highlight. Arrow keys move the selection.
             ScrollView {
-                LazyVStack(spacing: 2) {
+                LazyVStack(spacing: 4) {
                     ForEach(ordered) { contact in
                         let isSelected = contact.id == selection
                         Button {
                             selection = contact.id
                         } label: {
                             ContactRow(contact: contact, members: Self.members(of: contact, in: byID), compact: compact)
-                                .padding(.horizontal, compact ? 6 : 12)
+                                .padding(.horizontal, compact ? 6 : 10)
                                 .padding(.vertical, 4)
                                 .background(
-                                    isSelected ? Theme.selection : .clear, in: RoundedRectangle(cornerRadius: 14)
+                                    isSelected ? Theme.selection : .clear, in: RoundedRectangle(cornerRadius: 12)
                                 )
-                                .contentShape(RoundedRectangle(cornerRadius: 14))
+                                .hoverHighlight(in: RoundedRectangle(cornerRadius: 12))
+                                .contentShape(RoundedRectangle(cornerRadius: 12))
                         }
                         .buttonStyle(.plain)
                         .accessibilityAddTraits(isSelected ? .isSelected : [])

@@ -16,6 +16,20 @@ All notable changes to Usual Bot are listed here. The format follows
   gateway. In a chat, cards ask for a master password, a login to save or a one-time code, and you
   can skip any of them. On a plain http gateway away from this device and outside Tailscale, nothing
   secret is sent until you tick "Send it anyway" for that send.
+- **Vault filters.** The Vault tab sorts what's saved into All, Logins, Payments and Addresses, with
+  a count on each, and New item asks what you're adding.
+
+### Changed
+
+- **A new look for chats.** Replies sit in bubbles, messages are grouped, and text is a little
+  larger on the Mac. Your messages take the Bot's colour, and so do its voice and send buttons. Cards
+  that ask for something share one shape, and a question's choices are lettered A, B, C. Colours are
+  plainer neutrals, with solid surfaces where there was glass.
+- **See what a Bot is doing.** While it works, a small avatar and a moving line of text say what
+  it's up to: "Reading", "Running a command". The same line shows in rooms and the ⌥Space panel. It
+  replaces the typing dots, and a working avatar moves gently instead of wearing a ring.
+- **Messages arrive with a small animation,** which Reduce Motion turns off. On the Mac, the message
+  box stays one line until your text wraps, and a message's actions sit right beside it.
 
 ### Fixed
 

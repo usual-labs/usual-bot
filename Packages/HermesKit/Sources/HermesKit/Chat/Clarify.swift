@@ -34,6 +34,15 @@ public struct ClarifyPrompt: Identifiable, Equatable, Sendable {
         self.questions = questions
     }
 
+    #if DEBUG
+        /// The demo's questions, which no gateway asked.
+        init(id: String, sessionID: String, questions: [Question]) {
+            self.id = id
+            self.sessionID = sessionID
+            self.questions = questions
+        }
+    #endif
+
     /// The wire form of one answer: the text itself, or a JSON list for multi-select questions.
     static func encode(_ picked: [String], for question: Question) -> String {
         guard question.allowsMultiple else { return picked.first ?? "" }

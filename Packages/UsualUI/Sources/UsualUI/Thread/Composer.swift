@@ -121,6 +121,9 @@ struct MessageBox: View {
     @State private var pickingLevel = false
     /// iPhone: the model sheet is open.
     @State private var choosingModel = false
+    /// Mac: the text has wrapped, so it gets the box's whole width until the box empties. Staying
+    /// open stops the wider field from unwrapping it and the box closing again.
+    @State private var hasWrapped = false
 
     #if os(iOS)
         /// Larger than the Mac's, for thumbs: 34 pt buttons in 6 pt of padding.
@@ -130,20 +133,20 @@ struct MessageBox: View {
         private static let fieldPadding: CGFloat = 6
     #else
         private static let buttonSize: CGFloat = 28
-        private static let inset: CGFloat = 4
+        private static let inset: CGFloat = 8
         private static let fontSize: CGFloat = 15
         private static let fieldPadding: CGFloat = 4
     #endif
     /// Round ends on one line.
     private static var cornerRadius: CGFloat { buttonSize / 2 + inset }
 
-    /// iPhone: while you type in a chat, the text gets the box's whole width and the buttons and
-    /// the chat's settings move to a row below it.
+    /// The text gets the box's whole width and the buttons move to a row below it: on iPhone while
+    /// you type in a chat, with the chat's settings, and on the Mac once your text wraps.
     private var expanded: Bool {
         #if os(iOS)
             focused && chat != nil
         #else
-            false
+            hasWrapped
         #endif
     }
 
@@ -185,30 +188,22 @@ struct MessageBox: View {
                             .padding(.horizontal, 8)
                     }
                 }
-                #if os(iOS)
-                    ComposerLayout(expanded: expanded) {
-                        if let attaching {
-                            AttachButton { attaching.attachments.append(contentsOf: $0) }
-                                .layoutValue(key: ComposerLayout.RoleKey.self, value: .leading)
-                        }
-                        field
-                        HStack(spacing: 6) {
+                ComposerLayout(expanded: expanded) {
+                    if let attaching {
+                        AttachButton { attaching.attachments.append(contentsOf: $0) }
+                            .layoutValue(key: ComposerLayout.RoleKey.self, value: .leading)
+                    }
+                    field
+                    HStack(spacing: 6) {
+                        #if os(iOS)
                             if expanded, let chat {
                                 ComposerControls(chat: chat, pickingLevel: $pickingLevel)
                             }
-                            sendButton
-                        }
-                        .layoutValue(key: ComposerLayout.RoleKey.self, value: .trailing)
-                    }
-                #else
-                    HStack(alignment: .bottom, spacing: 8) {
-                        if let attaching {
-                            AttachButton { attaching.attachments.append(contentsOf: $0) }
-                        }
-                        field
+                        #endif
                         sendButton
                     }
-                #endif
+                    .layoutValue(key: ComposerLayout.RoleKey.self, value: .trailing)
+                }
                 switch dictation.state {
                 case .denied(let message):
                     DictationProblem(message: message, showsSettings: true, dismiss: dictation.dismissProblem)
@@ -218,15 +213,16 @@ struct MessageBox: View {
                     EmptyView()
                 }
             }
-            // On the Mac 36 pt tall on one line, like the name pill above.
             .padding(Self.inset)
             .floatingSurface(in: RoundedRectangle(cornerRadius: Self.cornerRadius))
         }
         .environment(\.composerButtonSize, Self.buttonSize)
         .animation(.smooth(duration: 0.25), value: expanded)
         .animation(.smooth(duration: 0.2), value: pickingLevel)
+        .animation(.snappy(duration: 0.16), value: isEmpty)
         #if os(macOS)
             .onAppear { focused = true }
+            .onChange(of: text) { if text.isEmpty { hasWrapped = false } }
         #else
             // The level picker closes as you type on, put the keyboard away, or tap the chat.
             .onChange(of: text) { pickingLevel = false }
@@ -360,6 +356,15 @@ struct MessageBox: View {
         #endif
         .padding(.leading, expanded ? 8 : (attaching == nil ? 12 : 0))
         .padding(.vertical, Self.fieldPadding)
+        #if os(macOS)
+            // One line of text is 26 pt tall here. Before layout settles the placeholder can measure
+            // taller, so an empty box doesn't count.
+            .onGeometryChange(for: Bool.self) {
+                $0.size.height > 32
+            } action: { wrapped in
+                if wrapped, !text.isEmpty { hasWrapped = true }
+            }
+        #endif
     }
 
     @ViewBuilder private var sendButton: some View {
@@ -371,15 +376,15 @@ struct MessageBox: View {
         } else if isRunning, isEmpty, !hasAttachments, !dictation.isListening {
             RoundButton(systemImage: "stop.fill", label: stopLabel, action: stop)
         } else if !inCall, dictation.isListening || (isEmpty && !hasAttachments) {
-            // An empty box offers the mic, as Messages and Grok Bot do; Send takes over once
-            // there's something to send. In a chat, a call button sits beside it.
+            // An empty box offers the mic; in a chat, the call button beside it holds the spot
+            // Send takes over once there's something to send.
             HStack(spacing: 6) {
-                if let startCall, !dictation.isListening, !isRunning {
-                    CallStartButton(action: startCall)
-                }
                 MicButton(dictation: dictation) {
                     dictation.start(after: text) { text = $0 }
                     focused = true
+                }
+                if let startCall, !dictation.isListening, !isRunning {
+                    CallStartButton(action: startCall)
                 }
             }
         } else {
@@ -472,14 +477,15 @@ private struct RoundButton: View {
     let label: String
     let action: () -> Void
     @Environment(\.composerButtonSize) private var size
+    @Environment(\.chatContact) private var contact
 
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.system(size: size * 12 / 28, weight: .bold))
-                .foregroundStyle(Theme.primaryInk)
+                .foregroundStyle(contact == nil ? Theme.primaryInk : Theme.userBubbleInk)
                 .frame(width: size, height: size)
-                .background(Theme.primary, in: Circle())
+                .background(contact?.accent ?? Theme.primary, in: Circle())
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)

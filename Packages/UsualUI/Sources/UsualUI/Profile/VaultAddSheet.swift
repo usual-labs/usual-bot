@@ -28,10 +28,15 @@ struct VaultAddSheet: View {
     let list: VaultList
 
     @Environment(\.dismiss) private var dismiss
-    @State private var kind = VaultDraft.Kind.login
+    @State private var kind: VaultDraft.Kind
     @State private var form = Form()
     @State private var allowsUnencrypted = false
     @State private var isSaving = false
+
+    init(list: VaultList, kind: VaultDraft.Kind) {
+        self.list = list
+        _kind = State(initialValue: kind)
+    }
 
     var body: some View {
         ScrollView {
