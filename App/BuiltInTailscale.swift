@@ -83,7 +83,7 @@
         let tailscale: BuiltInTailscale
 
         var body: some View {
-            Toggle(isOn: Binding(get: { tailscale.isOn }, set: tailscale.setOn)) {
+            Toggle(isOn: Binding(get: { tailscale.isOn }, set: { tailscale.setOn($0) })) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Built-in Tailscale")
                         .font(.system(size: 15))
