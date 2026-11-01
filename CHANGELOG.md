@@ -6,6 +6,59 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+### Added
+
+- **Settings.** Choose appearance, chat text size, notification sounds and previews, and voice
+  preferences. See the gateway connection and sign out. On Mac, set launch at login and Return or
+  ⌘Return to send, and record, disable or restore the Quick Message keyboard shortcut. Open
+  Settings with ⌘, on Mac or the gear beside the connection indicator on either platform.
+
+- **Sections.** Group your Bots and rooms in the sidebar. Right-click a chat on the Mac, or touch and
+  hold it on iPhone, to move it to a section, or on the Mac drag it to one. Click a heading to fold
+  it; a folded section still shows anything that needs you. A Bot's section is saved on the Bot, so
+  the Hermes desktop app sees the same groups.
+- **Secret and sudo prompts.** When a skill needs a secret or a command needs your sudo password,
+  a card in the chat asks for it in a masked field. Send it or skip it. On a gateway using plain
+  http away from this device, the card warns you first and the button says Send Unencrypted.
+- **Credential vault.** A Bot's profile has a Vault tab: see what's saved (never the secrets), add
+  logins, cards and addresses, remove them, and switch on, unlock or lock password managers on the
+  gateway. In a chat, cards ask for a master password, a login to save or a one-time code, and you
+  can skip any of them. On a plain http gateway away from this device and outside Tailscale, nothing
+  secret is sent until you tick "Send it anyway" for that send.
+- **Vault filters.** The Vault tab sorts what's saved into All, Logins, Payments and Addresses, with
+  a count on each, and New item asks what you're adding.
+
+### Changed
+
+- **A new look for chats.** Replies sit in bubbles, messages are grouped, and text is a little
+  larger on the Mac. Your messages take the Bot's colour, and so do its voice and send buttons. Cards
+  that ask for something share one shape, and a question's choices are lettered A, B, C. Colours are
+  plainer neutrals, with solid surfaces where there was glass.
+- **See what a Bot is doing.** While it works, a small avatar and a moving line of text say what
+  it's up to: "Reading", "Running a command". The same line shows in rooms and the ⌥Space panel. It
+  replaces the typing dots, and a working avatar moves gently instead of wearing a ring.
+- **Messages arrive with a small animation,** which Reduce Motion turns off. On the Mac, the message
+  box stays one line until your text wraps, and a message's actions sit right beside it.
+
+### Fixed
+
+- **Background work no longer looks like your messages.** When a background process or subagent
+  finished, Hermes's note appeared as a long message from you, and in the sidebar. It's now one line
+  you can open for the details. Undo and Edit act on your own last message instead of that note.
+- **The sidebar stays at the window's edge.** On the Mac, with no chat open, the list sat away from
+  the left edge with an empty strip beside it.
+- **The end of a chat stays in view.** A new message, a card asking for something or the background
+  task bar could land under the message box until you scrolled. A chat now follows its end unless
+  you've scrolled away.
+- **Secret and sudo requests.** Usual Bot used to decline these. With no other app attached, Hermes
+  then took its error text for your answer: it saved that text as the secret, so the skill never
+  asked again, and passed it to `sudo` as the password. If a skill has misbehaved since, check its
+  variable in the profile's `.env` for a JSON error and remove it.
+- **Side questions after a reconnect.** A `/btw` question or `/bg` task sent right after a chat
+  reconnected could show as lost, even though the gateway had it.
+- **Mac tab bar.** Window tabs are off, so View no longer offers Show Tab Bar and the tab bar can't
+  cover the top of the window.
+
 ## 0.3.0 - 2026-10-26
 
 ### Added

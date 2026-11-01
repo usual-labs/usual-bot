@@ -36,6 +36,7 @@ public struct QuickMessageView: View {
                 if let sent, let contact = contacts.first(where: { $0.id == sent.contactID }) {
                     answerHeader(contact)
                     QuickAnswer(model: model, contact: contact, start: sent.start, agents: agentsByProfile)
+                        .environment(\.chatContact, contact.kind == .agent ? contact : nil)
                     messageField(placeholder: String(localized: "Reply to \(contact.name)"))
                 } else {
                     recipientRow
@@ -56,6 +57,7 @@ public struct QuickMessageView: View {
         .background(Color.clear.contentShape(Rectangle()).onTapGesture(perform: close))
         .onAppear(perform: appeared)
         .onChange(of: shownAt) { appeared() }
+        .appPreferences()
         .environment(\.botPictures, model.pictures)
         #if os(macOS)
             .onExitCommand(perform: close)
@@ -274,10 +276,13 @@ private struct QuickAnswer: View {
             ItemView(item: item, agentName: contact.name)
         }
         if !thread.state.draft.isEmpty {
-            MarkdownView(thread.state.draft)
-        } else if thread.state.isRunning, thread.approvals.isEmpty, thread.questions.isEmpty {
-            TypingIndicator()
+            AgentBubble { MarkdownView(thread.state.draft) }
+        } else if thread.state.isRunning, thread.approvals.isEmpty, thread.questions.isEmpty, thread.secrets.isEmpty,
+            thread.vaultPrompts.isEmpty
+        {
+            WorkingRow(text: String(localized: "Thinking…"))
         }
+        VaultCards(thread: thread, agentName: contact.name)
         ForEach(thread.approvals) { approval in
             ApprovalCard(approval: approval, agentName: contact.name) { thread.answer(approval, with: $0) }
         }
@@ -285,6 +290,11 @@ private struct QuickAnswer: View {
             QuestionCard(
                 prompt: prompt, agentName: contact.name, answer: { thread.answer(prompt, with: $0) },
                 skip: { thread.skip(prompt) })
+        }
+        ForEach(thread.secrets) { prompt in
+            SecretCard(
+                prompt: prompt, agentName: contact.name, isUnencrypted: thread.isLinkUnencrypted,
+                answer: { thread.answer(prompt, with: $0) }, skip: { thread.skip(prompt) })
         }
     }
 
@@ -296,12 +306,7 @@ private struct QuickAnswer: View {
             UserBubble(text: message.text).opacity(0.6)
         }
         if room.isBusy {
-            HStack(spacing: 10) {
-                TypingIndicator()
-                Text(replyingLine(room))
-                    .font(.system(size: 13))
-                    .foregroundStyle(Theme.secondaryInk)
-            }
+            ShimmerText(text: replyingLine(room))
         }
         ForEach(room.approvals) { approval in
             ApprovalCard(approval: approval.prompt, agentName: room.state.name(approval.memberID)) {
@@ -409,7 +414,18 @@ private struct WaitingOnYou: View {
                     id: prompt.id, contact: contact, title: String(localized: "\(contact.name) has a question"),
                     command: nil, answer: nil)
             }
-            return approvals + questions
+            let secrets = thread.secrets.map { prompt in
+                WaitingRow.Row(
+                    id: prompt.id, contact: contact, title: SecretCard.title(prompt, agentName: contact.name),
+                    command: nil, answer: nil)
+            }
+            let vault = thread.vaultPrompts.map { prompt in
+                WaitingRow.Row(
+                    id: prompt.id, contact: contact,
+                    title: String(localized: "\(contact.name) needs you for a sign-in"),
+                    command: nil, answer: nil)
+            }
+            return approvals + questions + secrets + vault
         }
     }
 }
@@ -419,7 +435,7 @@ private struct WaitingRow: View {
         let id: String
         let contact: Contact
         let title: String
-        /// The command an approval is for; `nil` for questions, which open the chat.
+        /// The command an approval is for; `nil` for questions and masked prompts, which open the chat.
         let command: String?
         let answer: ((ApprovalPrompt.Choice) -> Void)?
     }

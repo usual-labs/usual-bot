@@ -15,6 +15,9 @@ public struct TranscriptItem: Identifiable, Equatable, Sendable, Codable {
         case background(task: String, result: String)
         /// What a Hermes command printed, laid out for a terminal (tables, aligned columns).
         case output(String)
+        /// Work Hermes finished on its own, such as a background process: a title, and what it
+        /// reported for anyone who wants to look.
+        case result(title: String, detail: String)
     }
 
     public let id: Int
@@ -101,10 +104,15 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
     /// The message's row in the store; reactions address it.
     let rowId: Int?
     let reactions: [Reaction]
+    /// What kind of row this is, when it isn't an ordinary message.
+    let displayKind: String?
+    /// The short title Hermes gave a row of that kind.
+    let displayText: String?
 
     init(
         role: String, text: String? = nil, name: String? = nil, context: String? = nil, toolCallId: String? = nil,
-        timestamp: Double? = nil, rowId: Int? = nil, reactions: [Reaction] = []
+        timestamp: Double? = nil, rowId: Int? = nil, reactions: [Reaction] = [], displayKind: String? = nil,
+        displayText: String? = nil
     ) {
         self.role = role
         self.text = text
@@ -114,6 +122,8 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
         self.timestamp = timestamp
         self.rowId = rowId
         self.reactions = reactions
+        self.displayKind = displayKind
+        self.displayText = displayText
     }
 
     init(from decoder: any Decoder) throws {
@@ -127,10 +137,12 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
         rowId = try? container.decodeIfPresent(Int.self, forKey: .rowId)
         let metadata = try? container.decodeIfPresent(JSONValue.self, forKey: .displayMetadata)
         reactions = Reaction.list(metadata?["reactions"])
+        displayKind = try? container.decodeIfPresent(String.self, forKey: .displayKind)
+        displayText = metadata?["display_text"]?.stringValue
     }
 
     private enum CodingKeys: String, CodingKey {
-        case role, text, name, context, toolCallId, timestamp, rowId, displayMetadata
+        case role, text, name, context, toolCallId, timestamp, rowId, displayKind, displayMetadata
     }
 }
 
@@ -139,6 +151,8 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
 struct InflightTurn: Equatable, Sendable {
     let user: String
     let assistant: String
+    var displayKind: String? = nil
+    var displayText: String? = nil
 }
 
 /// Everything a chat shows, built from history and then advanced by live gateway events.
@@ -166,7 +180,9 @@ public struct ThreadState: Equatable, Sendable, Codable {
             switch message.role {
             case "user":
                 if let text = message.text?.nonBlank {
-                    append(.user(text), rowID: message.rowId, reactions: message.reactions)
+                    append(
+                        GatewayTurn.content(text: text, kind: message.displayKind, title: message.displayText),
+                        rowID: message.rowId, reactions: message.reactions)
                 }
             case "assistant":
                 if let text = message.text?.nonBlank {
@@ -186,9 +202,12 @@ public struct ThreadState: Equatable, Sendable, Codable {
         turnStart = items.count
         if running, let inflight {
             // The running turn's prompt may not be in the stored history yet.
-            if let user = inflight.user.nonBlank, items.last?.content != .user(user) {
-                append(.user(user))
-                turnStart = items.count
+            if let user = inflight.user.nonBlank {
+                let prompt = GatewayTurn.content(text: user, kind: inflight.displayKind, title: inflight.displayText)
+                if items.last?.content != prompt {
+                    append(prompt)
+                    turnStart = items.count
+                }
             }
             draft = inflight.assistant
         }
@@ -267,6 +286,14 @@ public struct ThreadState: Equatable, Sendable, Codable {
         let payload = event.payload
         switch event.type {
         case "message.start":
+            // A turn Hermes started itself may say why, for a viewer that didn't submit it.
+            if let kind = payload["display_kind"]?.stringValue,
+                let title = payload["display_text"]?.stringValue?.nonBlank,
+                let text = payload["text"]?.stringValue?.nonBlank
+            {
+                sealDraft()
+                append(GatewayTurn.content(text: text, kind: kind, title: title))
+            }
             if !isRunning { turnStart = items.count }
             isRunning = true
         case "message.delta":

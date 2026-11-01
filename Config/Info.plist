@@ -5,6 +5,21 @@
 	<!-- Keys Xcode can't generate from INFOPLIST_KEY_* build settings. -->
 	<!-- Dictation in the message box. In this file, not Shared.xcconfig: Xcode doesn't generate
 	     NSSpeechRecognitionUsageDescription for macOS, and macOS stops an app that asks without it. -->
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<!-- A chat dragged between sidebar sections. Its own type, so dropping one on the message box
+		     or in another app does nothing rather than pasting an ID. -->
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>dev.usualbot.sidebar-chat</string>
+			<key>UTTypeDescription</key>
+			<string>Usual Bot chat</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Dictate messages to your agents.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

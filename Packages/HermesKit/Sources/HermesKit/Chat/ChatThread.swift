@@ -18,10 +18,14 @@ public final class ChatThread {
     public private(set) var phase: Phase = .loading
     /// Shown above the transcript, e.g. when older history couldn't be loaded.
     public private(set) var banner: String?
+    /// Vault prompts waiting for you: unlock a password manager, save a login, enter a code.
+    public internal(set) var vaultPrompts: [VaultPrompt] = []
     /// Commands waiting for your decision, oldest first.
     public private(set) var approvals: [ApprovalPrompt] = []
     /// Questions the agent asked through its clarify tool, waiting for your answers.
     public private(set) var questions: [ClarifyPrompt] = []
+    /// Secrets and sudo passwords the gateway is waiting for. Never cached.
+    public internal(set) var secrets: [SecretPrompt] = []
     /// Agent replies since you last had this chat on screen.
     public internal(set) var unreadCount = 0
     /// Goes up each time the gateway's copy of the transcript replaces the one on screen. Item
@@ -50,6 +54,8 @@ public final class ChatThread {
     public internal(set) var usage: ChatUsage?
     /// `compress()` is running.
     public internal(set) var isCompressing = false
+    /// Set by the app: whether vault secrets would cross the network unencrypted. Assumes so until told.
+    var gatewayIsUnencrypted: @MainActor () -> Bool = { true }
     /// Set by the app: a background task finished, with its task and result (or failure).
     var backgroundTaskFinished: ((_ task: String, _ result: String) -> Void)?
     /// Background tasks' answers, also kept apart from the transcript: the gateway's copy of the
@@ -57,6 +63,8 @@ public final class ChatThread {
     var backgroundResults: [BackgroundResult] = []
     /// Set by the app: a background task's answer from its stored session, `nil` while it runs.
     var storedAnswer: ((_ taskID: String) async -> String?)?
+    /// Set by the app: the gateway this chat is on.
+    var gateway: (@MainActor () -> GatewayAddress?)?
     /// The gateway process's event numbering (`gateway.ready`'s `replay_epoch`); set by the app.
     var replayEpoch: String?
     /// The newest event seen from the live session, and the numbering it belongs to, so a short
@@ -101,7 +109,7 @@ public final class ChatThread {
 
     /// What the sidebar shows for this agent.
     public var activity: Contact.Activity {
-        if !approvals.isEmpty || !questions.isEmpty { return .needsYou }
+        if !approvals.isEmpty || !questions.isEmpty || !secrets.isEmpty || !vaultPrompts.isEmpty { return .needsYou }
         return state.isRunning ? .working : .idle
     }
 
@@ -144,8 +152,10 @@ public final class ChatThread {
         transcriptLoad += 1
         banner = opened.historyOmitted ? String(localized: "Earlier messages are too long to load here.") : nil
         // The gateway re-sends any question still waiting, so the list starts from its answer.
+        adoptVaultPrompts(from: opened.openRequests)
         approvals = opened.openRequests.compactMap(ApprovalPrompt.init)
         questions = opened.openRequests.compactMap(ClarifyPrompt.init)
+        secrets = opened.openRequests.compactMap(SecretPrompt.init)
         if isVisible {
             markViewed()
         } else if let lastViewed {
@@ -172,8 +182,10 @@ public final class ChatThread {
         openTask = nil
         recovery?.cancel()
         sessionID = nil
+        vaultPrompts = []
         approvals = []
         questions = []
+        secrets = []
     }
 
     // MARK: - Gateway traffic
@@ -222,6 +234,7 @@ public final class ChatThread {
     private func withdraw(_ payload: JSONValue) {
         guard let id = payload["id"]?.stringValue else { return }
         let timedOut = payload["reason"]?.stringValue == "timeout"
+        if withdrawVaultPrompt(id, timedOut: timedOut) { return }
         if let index = approvals.firstIndex(where: { $0.id == id }) {
             let approval = approvals.remove(at: index)
             if timedOut {
@@ -230,6 +243,8 @@ public final class ChatThread {
         } else if let index = questions.firstIndex(where: { $0.id == id }) {
             questions.remove(at: index)
             if timedOut { state.addNotice(String(localized: "The question timed out.")) }
+        } else {
+            _ = withdrawSecret(id, timedOut: timedOut)
         }
     }
 
@@ -240,6 +255,13 @@ public final class ChatThread {
     /// Sends a message. While the agent works, the message steers the running turn instead.
     public func send(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        #if DEBUG
+            if playsDemoReplies, canSend, !text.isEmpty, !state.isRunning {
+                state.sendLocally(text)
+                playDemoReply()
+                return
+            }
+        #endif
         guard canSend, !text.isEmpty, let sessionID, let channel = channel() else { return }
         if let question = Self.sideQuestion(in: text) {
             askOnTheSide(question)
@@ -479,11 +501,15 @@ public final class ChatThread {
     }
 
     #if DEBUG
+        /// The demo: a sent message gets a scripted reply, as there's no gateway to answer it.
+        var playsDemoReplies = false
+
         /// Tests and previews: a chat already open and showing `state`.
         static func sample(_ contactID: Contact.ID, state: ThreadState) -> ChatThread {
             let thread = ChatThread(contactID: contactID, channel: { nil })
             thread.state = state
             thread.sessionID = "sample"
+            thread.gatewayIsUnencrypted = { false }
             thread.phase = .ready
             return thread
         }

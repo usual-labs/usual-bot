@@ -30,10 +30,20 @@ enum ActivitySummary {
         }
     }
 
-    static func line(for steps: [ToolStep], agent: String) -> String {
-        if steps.contains(where: { $0.state == .running }) {
-            return String(localized: "\(agent) is working…")
+    /// What the agent is doing right now, while a step runs.
+    static func current(in steps: [ToolStep]) -> String? {
+        guard let step = steps.last(where: { $0.state == .running }) else { return nil }
+        switch category(of: step.name) {
+        case .read: return String(localized: "Reading")
+        case .edit: return String(localized: "Editing")
+        case .run: return String(localized: "Running a command")
+        case .search: return String(localized: "Searching")
+        case .web: return String(localized: "Browsing the web")
+        case .other: return String(localized: "Using \(step.name.replacingOccurrences(of: "_", with: " "))")
         }
+    }
+
+    static func line(for steps: [ToolStep], agent: String) -> String {
         var counts: [Category: Int] = [:]
         for step in steps { counts[category(of: step.name), default: 0] += 1 }
         let pieces = Category.allCases.compactMap { category -> String? in

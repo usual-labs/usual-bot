@@ -5,7 +5,7 @@
     /// app without asking for Accessibility access.
     @MainActor
     final class HotKey {
-        struct Combo: Equatable {
+        struct Combo: Codable, Equatable {
             let keyCode: UInt32
             let modifiers: UInt32
             /// How menus show it, e.g. "⌥Space".
@@ -19,6 +19,7 @@
         /// The shortcut the system accepted; `nil` when it took none.
         private(set) var combo: Combo?
         private var ref: EventHotKeyRef?
+        private var id: UInt32?
 
         private static var actions: [UInt32: () -> Void] = [:]
         private static var nextID: UInt32 = 1
@@ -26,8 +27,8 @@
         /// "UsBt": tags this app's hot keys.
         private static let signature: OSType = 0x5573_4274
 
-        /// Registers the first of `combos` the system accepts. macOS 15 and later refuse shortcuts
-        /// whose only modifier is Option, so ⌥Space can fall back to ⌃⌥Space.
+        /// Registers the first available combination. The default falls back to ⌃⌥Space when
+        /// macOS or another app reserves ⌥Space.
         init(_ combos: [Combo], action: @escaping () -> Void) {
             Self.installHandler()
             let id = Self.nextID
@@ -36,14 +37,25 @@
                 var ref: EventHotKeyRef?
                 let status = RegisterEventHotKey(
                     combo.keyCode, combo.modifiers, EventHotKeyID(signature: Self.signature, id: id),
-                    GetApplicationEventTarget(), 0, &ref)
+                    // The default allows other apps to share a shortcut and compete for presses.
+                    GetApplicationEventTarget(), OptionBits(kEventHotKeyExclusive), &ref)
                 if status == noErr, let ref {
                     self.ref = ref
+                    self.id = id
                     self.combo = combo
                     Self.actions[id] = action
                     break
                 }
             }
+        }
+
+        /// Release the old registration before changing or recording a shortcut.
+        func unregister() {
+            if let ref { UnregisterEventHotKey(ref) }
+            if let id { Self.actions.removeValue(forKey: id) }
+            ref = nil
+            id = nil
+            combo = nil
         }
 
         private static func installHandler() {

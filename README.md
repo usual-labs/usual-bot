@@ -130,7 +130,7 @@ The film and all screenshots come from the built-in demo, with made-up agents.
 **Staying in control**
 
 - **Approvals and questions inline.** When an agent wants to run a command, allow it once, for this
-  chat, always, or deny it, right in the conversation.
+  chat, always, or deny it, right in the conversation. Secrets and sudo passwords are asked for in a masked field.
 - **Stop and steer.** Stop a running reply, or send a message while it runs to change course.
 - **Model and thinking.** Pick each chat's model and how hard it thinks from the message box (on
   iPhone, a gauge while you type). A small meter shows how full the context is, with a button to

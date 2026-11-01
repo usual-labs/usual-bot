@@ -133,7 +133,9 @@ struct ActivitySummaryTests {
     }
 
     @Test func showsProgressAndFailures() {
-        #expect(ActivitySummary.line(for: [step("terminal", .running)], agent: "Hermes") == "Hermes is working…")
+        #expect(ActivitySummary.current(in: [step("read_file"), step("terminal", .running)]) == "Running a command")
+        #expect(ActivitySummary.current(in: [step("todo_list", .running)]) == "Using todo list")
+        #expect(ActivitySummary.current(in: [step("terminal")]) == nil)
         #expect(
             ActivitySummary.line(for: [step("terminal", .failed, duration: 75)], agent: "Hermes")
                 == "Hermes ran 1 command · 1m 15s · 1 failed")

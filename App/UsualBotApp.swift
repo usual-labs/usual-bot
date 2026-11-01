@@ -26,9 +26,12 @@ struct UsualBotApp: App {
             let live = { AppModel() }
         #endif
         #if DEBUG
-            // USUALBOT_DEMO=1 shows made-up agents instead of signing in, for screenshots and for
+            // USUALBOT_DEMO=1 (or --demo) shows made-up agents instead of signing in, for screenshots and for
             // trying the app without a Hermes gateway.
-            let model = ProcessInfo.processInfo.environment["USUALBOT_DEMO"] == "1" ? AppModel.demo() : live()
+            let demo =
+                ProcessInfo.processInfo.environment["USUALBOT_DEMO"] == "1"
+                || ProcessInfo.processInfo.arguments.contains("--demo")
+            let model = demo ? AppModel.demo() : live()
         #else
             let model = live()
         #endif
@@ -36,6 +39,8 @@ struct UsualBotApp: App {
         TaskNotifications.watch(model)
         #if os(macOS)
             _quickPanel = State(initialValue: QuickPanelController(model: model))
+            // The window has no title bar for tabs to sit under; this also removes the tab menu items.
+            NSWindow.allowsAutomaticWindowTabbing = false
         #endif
     }
 
@@ -63,6 +68,10 @@ struct UsualBotApp: App {
         #endif
 
         #if os(macOS)
+            Settings {
+                SettingsView(model: model, desktopControls: AnyView(DesktopSettings(controller: quickPanel)))
+            }
+
             // Keeps the quick panel and the app within reach after the window is closed.
             MenuBarExtra("Usual Bot", systemImage: "bubble.left.and.bubble.right") {
                 QuickPanelMenu(controller: quickPanel)

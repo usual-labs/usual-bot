@@ -2,7 +2,7 @@
 
 ## Implemented today
 
-UsualBotApp uses `WindowGroup(id: "main")` and async model.restore(). macOS has a hidden title bar, background dragging, a 1100x720 default window, the ⌥Space quick panel and a MenuBarExtra. iOS uses the same RootView with `WebAuthSignInPresenter` (an in-app `ASWebAuthenticationSession`; the gateway redirects to the app's 127.0.0.1 listener and the app closes the sheet) and calls `model.setForeground` from `scenePhase`, so the socket closes in the background and reconnects on return.
+UsualBotApp uses `WindowGroup(id: "main")` and async model.restore(). macOS has a hidden title bar, background dragging, a 1100x720 default window, the ⌥Space quick panel and a MenuBarExtra. Window tabbing is off (`NSWindow.allowsAutomaticWindowTabbing = false` in `UsualBotApp.init`): the tab bar doesn't fit the hidden title bar, so View and Window have no tab items; File > New Window still opens separate windows. iOS uses the same RootView with `WebAuthSignInPresenter` (an in-app `ASWebAuthenticationSession`; the gateway redirects to the app's 127.0.0.1 listener and the app closes the sheet) and calls `model.setForeground` from `scenePhase`, so the socket closes in the background and reconnects on return.
 
 The Mac entitlements include `files.user-selected.read-write`, to read the files you pick, drop or paste and to save files agents send; iPhone declares `NSCameraUsageDescription` (Shared.xcconfig). Config/Info.plist declares `NSMicrophoneUsageDescription` and `NSSpeechRecognitionUsageDescription` for dictation on both platforms (Xcode doesn't generate the speech key for macOS from a build setting), and the Mac has the `device.audio-input` entitlement. Photos come through the out-of-process picker, so no photo-library permission is needed.
 
@@ -18,6 +18,11 @@ the run number as `CURRENT_PROJECT_VERSION`, are signed with Developer ID plus t
 (no provisioning profile; the entitlements need none), and are notarized and stapled, as is the
 `.dmg`. Debug/dev builds keep `dev.usualbot.local` (or the `Local.xcconfig` prefix), so they don't
 share settings or the Keychain item's trust with the released app.
+
+Device preferences live in UsualUI’s Settings view. The native shell supplies the Mac-only launch
+at login and Quick Message shortcut controls. Shortcut recording suspends this app’s registration;
+cancelling or leaving the window restores it, and a refused replacement keeps the previous choice.
+The menu bar labels the shortcut macOS accepted, which may be ⌃⌥Space rather than ⌥Space.
 
 Source anchors: `App/UsualBotApp.swift`, `App/SignInPresenters.swift`.
 

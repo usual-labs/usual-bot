@@ -4,6 +4,15 @@ import Testing
 @testable import UsualUI
 
 struct RGBTests {
+    @Test func darkensOnlyTheColoursWhiteTextCantReadOn() {
+        let dark = RGB(0x3B4BC8)
+        #expect(dark.readableUnderWhite == dark)
+        for pale in [RGB(0xF2A30F), RGB(0xFFFF00), RGB(0xFFFFFF)] {
+            #expect(pale.contrastWithWhite < 4.5)
+            #expect(pale.readableUnderWhite.contrastWithWhite >= 4.5)
+        }
+    }
+
     @Test func parsesHexWithAndWithoutHash() {
         #expect(RGB(hex: "#FF8000") == RGB(0xFF8000))
         #expect(RGB(hex: "ff8000") == RGB(0xFF8000))

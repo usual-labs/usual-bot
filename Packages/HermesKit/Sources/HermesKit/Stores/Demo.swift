@@ -7,7 +7,8 @@
     extension AppModel {
         /// A made-up team of agents, their chats, a room and routines, shown as signed in to an
         /// example gateway. For screenshots, and for trying the app without Hermes: Debug builds
-        /// launched with `USUALBOT_DEMO=1` use it. It never connects, so nothing can be sent.
+        /// launched with `USUALBOT_DEMO=1` use it. It never connects: a chat answers what you send
+        /// with a scripted reply.
         public static func demo(now: Date = .now) -> AppModel {
             let model = AppModel(
                 tokenStore: KeychainTokenStore(), http: URLSession.shared,
@@ -21,9 +22,37 @@
             model.showDemo(
                 gateway: Demo.gateway, contacts: demo.agents + [demo.roomContact], threads: demo.threads,
                 rooms: [demo.roomContact.id: demo.room], routines: routines,
-                skills: Dictionary(uniqueKeysWithValues: demo.agents.map { ($0.id, SkillList.sample(Demo.skills)) }))
+                skills: Dictionary(uniqueKeysWithValues: demo.agents.map { ($0.id, SkillList.sample(Demo.skills)) }),
+                vaults: Dictionary(
+                    uniqueKeysWithValues: demo.agents.map {
+                        ($0.id, VaultList.sample(items: demo.vaultItems, sources: Demo.vaultSources))
+                    }))
             model.media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }
             return model
+        }
+    }
+
+    extension ChatThread {
+        /// A turn from a pretend gateway: thinking, two tool calls, then a reply as it streams.
+        func playDemoReply() {
+            let chunks = [
+                "I read the notes and ran the checks. ", "Everything you asked about still holds, ",
+                "and nothing else needs your attention.\n\n", "- The tests pass.\n", "- The logs are quiet.",
+            ]
+            let script: [(pause: Double, type: String, payload: [String: JSONValue])] =
+                [
+                    (0.9, "tool.start", ["tool_id": .string("demo-1"), "name": .string("read_file")]),
+                    (1.2, "tool.complete", ["tool_id": .string("demo-1")]),
+                    (0.1, "tool.start", ["tool_id": .string("demo-2"), "name": .string("terminal")]),
+                    (1.2, "tool.complete", ["tool_id": .string("demo-2")]),
+                ] + chunks.map { (0.35, "message.delta", ["text": .string($0)]) } + [(0.3, "message.complete", [:])]
+            Task {
+                for step in script {
+                    try? await Task.sleep(for: .seconds(step.pause))
+                    state.apply(
+                        GatewayEvent(type: step.type, sessionID: "sample", seq: nil, payload: .object(step.payload)))
+                }
+            }
         }
     }
 
@@ -39,28 +68,38 @@
             [
                 agent(
                     "forge", "Forge", preview: "Needs your OK to run the migration", minutesAgo: 2,
-                    about: "Writes and ships code across the web app and the API; opens pull requests."),
+                    about: "Writes and ships code across the web app and the API; opens pull requests.",
+                    section: Self.product),
                 agent(
                     "atlas", "Atlas", preview: "Turbopuffer fits best: cheapest at our size, and…", minutesAgo: 14,
-                    about: "Researches tools, papers and competitors, and writes short recommendations."),
+                    about: "Researches tools, papers and competitors, and writes short recommendations.",
+                    section: Self.product),
                 agent(
                     "scribe", "Scribe", preview: "Two headline options for the launch post", minutesAgo: 95,
                     about: "Drafts posts, release notes and emails in the house style."),
                 agent(
                     "ops", "Ops", preview: "All 3 servers healthy, backups verified", minutesAgo: 6 * 60,
-                    about: "Watches servers, backups and costs, and reports each morning."),
+                    about: "Watches servers, backups and costs, and reports each morning.",
+                    section: Self.backOffice),
                 agent(
                     "ledger", "Ledger", preview: "October invoices are drafted for review", minutesAgo: 26 * 60,
-                    about: "Keeps the books: invoices, receipts and the monthly close."),
+                    about: "Keeps the books: invoices, receipts and the monthly close.",
+                    section: Self.backOffice),
             ]
         }
 
-        private func agent(_ id: String, _ name: String, preview: String, minutesAgo: Double, about: String) -> Contact
-        {
+        private static let product = ContactSection(id: "demo-product", name: "Product")
+        private static let backOffice = ContactSection(id: "demo-back-office", name: "Back office")
+
+        private func agent(
+            _ id: String, _ name: String, preview: String, minutesAgo: Double, about: String,
+            section: ContactSection? = nil
+        ) -> Contact {
             Contact(
                 id: id, name: name, preview: preview, lastActive: ago(minutesAgo), chatID: "demo-\(id)",
                 details: AgentDetails(
-                    profile: id, description: about, model: "claude-sonnet-5-5", provider: "anthropic", skillCount: 12))
+                    profile: id, description: about, model: "claude-sonnet-5-5", provider: "anthropic", skillCount: 12),
+                sectionID: section?.id, sectionName: section?.name)
         }
 
         var threads: [Contact.ID: ChatThread] {
@@ -80,6 +119,11 @@
                         "About **40,000 pages**, re-indexed nightly. Turbopuffer stores them for ~$6 a month."))
             ]
             threads["ops"] = ChatThread.sample("ops", state: ThreadState(history: opsChat, running: false))
+            threads["ops"]?.receive(
+                SecretPrompt(
+                    id: "demo-secret", sessionID: "sample",
+                    kind: .secret(
+                        name: "STATUSPAGE_API_KEY", message: "The status-report skill needs a Statuspage API key.")))
             threads["ops"]?.state.addBackgroundResult(
                 task: "Check last night's backups on all three servers",
                 result: "All three backups finished between 02:10 and 02:40 and **restore-tested** clean.")
@@ -111,8 +155,61 @@
                 threads[id] = ChatThread.sample(
                     id, state: ThreadState(history: [HistoryMessage(role: "assistant", text: text)], running: false))
             }
+            threads["scribe"]?.receive(
+                ClarifyPrompt(
+                    id: "demo-question", sessionID: "sample",
+                    questions: [
+                        .init(
+                            id: "headline", text: "Which headline should lead the launch post?",
+                            choices: ["Search that keeps up", "Find anything in your docs", "Something else"],
+                            allowsMultiple: false)
+                    ]))
+            threads["ledger"]?.receive(
+                SecretPrompt(
+                    id: "demo-sudo", sessionID: "sample", kind: .sudo(command: "sudo systemctl restart invoice-worker"))
+            )
+            for prompt in Demo.vaultPrompts { threads["ledger"]?.receive(prompt) }
+            // Shows the warning a gateway on plain http gets.
+            threads["ledger"]?.gateway = { try? GatewayAddress(parsing: "http://192.168.1.20:9119") }
+            for thread in threads.values { thread.playsDemoReplies = true }
             return threads
         }
+
+        /// Made-up logins, a card and an address; there is no secret behind any of them.
+        var vaultItems: [VaultItem] {
+            let added = ISO8601DateFormatter().string(from: ago(9 * 24 * 60))
+            return [
+                VaultItem(
+                    id: "demo-login", kind: "login", label: "Example Mail", origin: "https://mail.example.com",
+                    createdAt: added, identifier: "demo-user@example.com", identifierType: "email", hasOtp: true),
+                VaultItem(
+                    id: "demo-team", kind: "login", label: "Example Docs", origin: "https://docs.example.com",
+                    createdAt: added, identifier: "demo-user", identifierType: "username", backend: "bitwarden"),
+                VaultItem(id: "demo-card", kind: "payment", label: "Demo test card", createdAt: added),
+                VaultItem(id: "demo-address", kind: "address", label: "1 Example Street", createdAt: added),
+            ]
+        }
+
+        static let vaultSources = [
+            VaultSource(
+                name: "local", displayName: "Hermes vault", enabled: true, needsUnlock: false, unlocked: true,
+                installed: true),
+            VaultSource(
+                name: "bitwarden", displayName: "Bitwarden", enabled: true, needsUnlock: true, unlocked: true,
+                installed: true),
+            VaultSource(
+                name: "onepassword", displayName: "1Password", enabled: true, needsUnlock: true, unlocked: false,
+                installed: false),
+        ]
+
+        static let vaultPrompts = [
+            VaultPrompt(
+                id: "demo-unlock", sessionID: "sample", kind: .unlock(backend: "bitwarden", displayName: "Bitwarden")),
+            VaultPrompt(
+                id: "demo-save", sessionID: "sample",
+                kind: .saveLogin(origin: "https://billing.example.com", site: "billing.example.com")),
+            VaultPrompt(id: "demo-code", sessionID: "sample", kind: .code(site: "billing.example.com", hint: nil)),
+        ]
 
         static let skills = [
             Skill(
@@ -163,6 +260,19 @@
                 HistoryMessage(role: "user", text: "How did the servers do overnight?"),
                 HistoryMessage(role: "tool", name: "terminal", context: "ssh web-1 uptime && df -h /"),
                 HistoryMessage(role: "tool", name: "image_generate", context: "CPU chart, last 12 hours"),
+                HistoryMessage(
+                    role: "user",
+                    text: """
+                        [IMPORTANT: Background process proc_demo completed normally (exit code 0).
+                        Command: ./verify-backups.sh --all
+                        Output:
+                        web-1: backup verified
+                        web-2: backup verified
+                        db-1: backup verified
+                        ]
+                        """,
+                    displayKind: "process_complete",
+                    displayText: "Background Process Finished: ./verify-backups.sh --all"),
                 HistoryMessage(
                     role: "assistant",
                     text: """

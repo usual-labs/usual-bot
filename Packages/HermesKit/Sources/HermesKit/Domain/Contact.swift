@@ -33,6 +33,11 @@ public struct Contact: Identifiable, Hashable, Sendable, Codable {
     /// The agent's own picture on the gateway, set in the official app, or `nil` when it has none
     /// and the client draws one of its own characters. `BotPictures` holds the image itself.
     public var picture: Picture?
+    /// The sidebar section this contact is filed under, if any. An agent's comes from the gateway;
+    /// a room's stays on this device (`SidebarSections`).
+    public var sectionID: String?
+    /// The section's name as last saved on the agent, for rebuilding it on another device.
+    public var sectionName: String?
 
     public init(
         id: String,
@@ -46,7 +51,9 @@ public struct Contact: Identifiable, Hashable, Sendable, Codable {
         isPinned: Bool = false,
         chatID: String? = nil,
         details: AgentDetails? = nil,
-        picture: Picture? = nil
+        picture: Picture? = nil,
+        sectionID: String? = nil,
+        sectionName: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -60,6 +67,8 @@ public struct Contact: Identifiable, Hashable, Sendable, Codable {
         self.chatID = chatID
         self.details = details
         self.picture = picture
+        self.sectionID = sectionID
+        self.sectionName = sectionName
     }
 
     /// An agent's own picture (uploaded or generated in the official app) as the roster reports it.

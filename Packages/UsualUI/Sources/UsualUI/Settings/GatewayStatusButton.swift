@@ -72,3 +72,8 @@ struct GatewayStatusButton<More: View>: View {
         }
     }
 }
+
+#Preview("Contacts") {
+    ContactsSplitView(contacts: SampleData.contacts()) { _ in EmptyView() }
+        .frame(width: 1000, height: 640)
+}

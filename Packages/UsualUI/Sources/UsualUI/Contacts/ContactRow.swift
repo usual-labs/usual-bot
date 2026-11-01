@@ -28,7 +28,7 @@ struct ContactRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(contact.name)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
                     Spacer(minLength: 0)
@@ -40,23 +40,32 @@ struct ContactRow: View {
                 }
                 HStack(spacing: 8) {
                     Text(previewText)
-                        .font(.system(size: 13.5))
+                        .font(.system(size: 13))
                         .foregroundStyle(Theme.secondaryInk)
                         .lineLimit(1)
                     Spacer(minLength: 0)
-                    indicator
+                    ContactIndicator(needsYou: contact.activity == .needsYou, unreadCount: contact.unreadCount)
                 }
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder private var avatar: some View {
         switch contact.kind {
-        case .agent: AgentAvatar(contact: contact)
-        case .room: RoomAvatar(members: members)
+        case .agent: AgentAvatar(contact: contact, size: avatarSize)
+        case .room: RoomAvatar(members: members, size: avatarSize)
         }
+    }
+
+    /// iPhone rows and the Mac's rail keep the larger avatar; the Mac's rows have the name to go by.
+    private var avatarSize: CGFloat {
+        #if os(macOS)
+            compact ? 44 : 36
+        #else
+            44
+        #endif
     }
 
     /// The rail's corner badge: the unread count, or a dot when the agent needs you.
@@ -88,25 +97,6 @@ struct ContactRow: View {
         return contact.preview ?? ""
     }
 
-    @ViewBuilder private var indicator: some View {
-        if contact.activity == .needsYou {
-            Text("Needs you")
-                .font(.system(size: 11.5, weight: .semibold))
-                .foregroundStyle(Theme.needsYouInk)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 1)
-                .background(Capsule().fill(Theme.needsYouFill))
-        } else if contact.unreadCount > 0 {
-            Text(contact.unreadCount, format: .number)
-                .font(.system(size: 11.5, weight: .semibold))
-                .foregroundStyle(Theme.primaryInk)
-                .padding(.horizontal, 6)
-                .frame(minWidth: 20, minHeight: 20)
-                .background(Capsule().fill(Theme.primary))
-                .accessibilityLabel(Text("\(contact.unreadCount) unread"))
-        }
-    }
-
     /// "10:44" today, the weekday within the last week, otherwise the date.
     static func stamp(for date: Date, now: Date = .now, calendar: Calendar = .current) -> String {
         if calendar.isDate(date, inSameDayAs: now) {
@@ -116,5 +106,30 @@ struct ContactRow: View {
             return date.formatted(.dateTime.weekday(.abbreviated))
         }
         return date.formatted(.dateTime.day().month(.abbreviated))
+    }
+}
+
+/// "Needs you", or else the unread count: on a row, and on a folded section for the rows it hides.
+struct ContactIndicator: View {
+    let needsYou: Bool
+    let unreadCount: Int
+
+    var body: some View {
+        if needsYou {
+            Text("Needs you")
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundStyle(Theme.needsYouInk)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 1)
+                .background(Capsule().fill(Theme.needsYouFill))
+        } else if unreadCount > 0 {
+            Text(unreadCount, format: .number)
+                .font(.system(size: 11.5, weight: .semibold))
+                .foregroundStyle(Theme.primaryInk)
+                .padding(.horizontal, 6)
+                .frame(minWidth: 20, minHeight: 20)
+                .background(Capsule().fill(Theme.primary))
+                .accessibilityLabel(Text("\(unreadCount) unread"))
+        }
     }
 }

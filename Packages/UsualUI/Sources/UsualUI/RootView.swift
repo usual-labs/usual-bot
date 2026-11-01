@@ -9,6 +9,11 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
     let connectOptions: () -> ConnectOptions
     /// More items for the gateway menu, after the gateway's status.
     let gatewayMenu: () -> GatewayMenu
+    #if os(macOS)
+        @Environment(\.openSettings) private var openSettings
+    #else
+        @State private var showsSettings = false
+    #endif
 
     public init(
         model: AppModel, presenter: any SignInPresenter,
@@ -22,6 +27,19 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
     }
 
     public var body: some View {
+        Group { content }
+            .appPreferences()
+            #if os(iOS)
+                .sheet(isPresented: $showsSettings) { SettingsView(model: model) }
+                .overlay(alignment: .topTrailing) {
+                    if case .signedOut = model.session, !model.isRestoring {
+                        settingsButton.padding(16)
+                    }
+                }
+            #endif
+    }
+
+    @ViewBuilder private var content: some View {
         switch model.session {
         case .signedOut where model.isRestoring:
             SplashView()
@@ -29,7 +47,7 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
             ConnectView(model: model, presenter: presenter, options: connectOptions)
         case .signedIn(let gateway):
             ContactsSplitView(
-                contacts: model.sidebarContacts, emptyText: emptyText,
+                contacts: model.sidebarContacts, sections: model.sections, emptyText: emptyText,
                 thread: { $0.kind == .agent ? model.thread(for: $0) : nil },
                 room: { model.room(for: $0) },
                 skills: { $0.kind == .agent ? model.skills(for: $0) : nil },
@@ -40,18 +58,45 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                     guard contact.kind == .agent else { return nil }
                     return ProfilePanel(
                         contact: contact, routines: model.routines(for: contact), skills: model.skills(for: contact),
-                        gateway: gateway, link: model.link,
+                        vault: model.vault(for: contact), gateway: gateway, link: model.link,
                         gatewayDetails: model.gatewayDetails, loadGatewayDetails: { await model.loadGatewayDetails() },
                         close: close)
                 }
             ) { compact in
-                GatewayStatusButton(
-                    gateway: gateway, link: model.link, compact: compact, signOut: model.signOut, more: gatewayMenu)
+                #if os(macOS)
+                    let layout = compact ? AnyLayout(VStackLayout(spacing: 4)) : AnyLayout(HStackLayout(spacing: 8))
+                #else
+                    let layout = AnyLayout(HStackLayout(spacing: 8))
+                #endif
+                layout {
+                    GatewayStatusButton(
+                        gateway: gateway, link: model.link, compact: compact, signOut: model.signOut, more: gatewayMenu)
+                    settingsButton
+                }
+                .fixedSize(horizontal: compact, vertical: false)
             }
             .environment(\.media, model.media)
             .environment(\.botPictures, model.pictures)
             .environment(\.voiceLive, model.voiceLive)
         }
+    }
+
+    private var settingsButton: some View {
+        Button {
+            #if os(macOS)
+                openSettings()
+            #else
+                showsSettings = true
+            #endif
+        } label: {
+            Image(systemName: "gearshape")
+                .frame(width: 32, height: 32)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(Theme.secondaryInk)
+        .accessibilityLabel(Text("Settings"))
+        .help("Settings")
     }
 
     private var emptyText: LocalizedStringKey {
@@ -70,6 +115,8 @@ extension RootView where ConnectOptions == EmptyView, GatewayMenu == EmptyView {
 /// into a list that pushes the thread.
 struct ContactsSplitView<Footer: View>: View {
     let contacts: [Contact]
+    /// How the sidebar is grouped; `nil` lists everything together.
+    var sections: SidebarSections?
     var emptyText: LocalizedStringKey = "No agents yet."
     var thread: (Contact) -> ChatThread? = { _ in nil }
     var room: (Contact) -> RoomThread? = { _ in nil }
@@ -172,7 +219,8 @@ struct ContactsSplitView<Footer: View>: View {
                     .foregroundStyle(Theme.secondaryInk)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ContactList(contacts: contacts, query: query, compact: compact, selection: $selection)
+                ContactList(
+                    contacts: contacts, sections: sections, query: query, compact: compact, selection: $selection)
             }
             #if os(macOS)
                 if compact {
@@ -284,7 +332,9 @@ struct ContactsSplitView<Footer: View>: View {
         } else {
             ContentUnavailableView(
                 "No chat selected", systemImage: "bubble.left.and.bubble.right",
-                description: Text("Pick an agent or a room from the list."))
+                description: Text("Pick an agent or a room from the list.")
+            )
+            .paneChrome()
         }
     }
 
@@ -345,11 +395,6 @@ struct ContactsSplitView<Footer: View>: View {
     }
 }
 
-#Preview("Contacts") {
-    ContactsSplitView(contacts: SampleData.contacts()) { _ in EmptyView() }
-        .frame(width: 1000, height: 640)
-}
-
 #if os(macOS)
     extension View {
         /// Search and New Room at the list's right edge, level with the window buttons: one toolbar
@@ -361,13 +406,13 @@ struct ContactsSplitView<Footer: View>: View {
             let row = HStack(spacing: 8) {
                 Color.clear.frame(width: shown ? leading : 0, height: 1)
                 if shown {
-                    search.sidebarGlassButton()
-                    newRoom.sidebarGlassButton()
+                    search.sidebarCircleButton()
+                    newRoom.sidebarCircleButton()
                 }
             }
             .labelStyle(.iconOnly)
             if #available(macOS 26, *) {
-                // The buttons bring their own glass; the toolbar shouldn't wrap them in more.
+                // The buttons bring their own surface; the toolbar shouldn't wrap them in glass.
                 toolbar { ToolbarItem(placement: .navigation) { row }.sharedBackgroundVisibility(.hidden) }
             } else {
                 toolbar { ToolbarItem(placement: .navigation) { row } }
@@ -375,7 +420,7 @@ struct ContactsSplitView<Footer: View>: View {
         }
 
         /// The open profile panel's close button, at the window's top right over the panel and level
-        /// with the window buttons; macOS 26 draws it as a Liquid Glass circle.
+        /// with the window buttons; macOS 26 draws it as a glass circle.
         @ViewBuilder fileprivate func profileCloseButton(shown: Bool, close: @escaping () -> Void) -> some View {
             let button = Button("Close Profile", systemImage: "xmark", action: close).help("Close Profile")
             if #available(macOS 26, *) {
@@ -392,21 +437,21 @@ struct ContactsSplitView<Footer: View>: View {
             }
         }
 
-        /// A round Liquid Glass button: glass from macOS 26, a solid circle before.
-        fileprivate func sidebarGlassButton() -> some View {
-            buttonStyle(GlassCircleButtonStyle())
+        /// A round button, on the surface the name pill beside it uses.
+        fileprivate func sidebarCircleButton() -> some View {
+            buttonStyle(CircleButtonStyle())
         }
     }
 #endif
 
 #if os(macOS)
-    /// The sidebar's Search and New Room: an icon on a glass circle that answers a press.
-    private struct GlassCircleButtonStyle: ButtonStyle {
+    /// The sidebar's Search and New Room: an icon on a circle that answers a press.
+    private struct CircleButtonStyle: ButtonStyle {
         func makeBody(configuration: Configuration) -> some View {
-            GlassCircle(configuration: configuration)
+            FloatingCircle(configuration: configuration)
         }
 
-        private struct GlassCircle: View {
+        private struct FloatingCircle: View {
             let configuration: Configuration
             @Environment(\.isEnabled) private var isEnabled
 
@@ -416,20 +461,10 @@ struct ContactsSplitView<Footer: View>: View {
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(Theme.ink)
                     .frame(width: 36, height: 36)
-                    .glassCircle()
+                    .floatingSurface(in: Circle())
                     .contentShape(Circle())
                     .scaleEffect(configuration.isPressed ? 0.94 : 1)
                     .opacity(isEnabled ? 1 : 0.45)
-            }
-        }
-    }
-
-    extension View {
-        @ViewBuilder fileprivate func glassCircle() -> some View {
-            if #available(macOS 26, *) {
-                glassEffect(.regular.interactive(), in: Circle())
-            } else {
-                floatingSurface(in: Circle())
             }
         }
     }

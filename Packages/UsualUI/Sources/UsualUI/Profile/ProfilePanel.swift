@@ -5,16 +5,17 @@ import SwiftUI
     import AppKit
 #endif
 
-/// The agent's card beside the chat: who it is, its routines and skills, and the machine it runs on.
+/// The agent's card beside the chat: who it is, its routines, skills and vault, and the machine it runs on.
 /// A trailing column on the Mac, a sheet on iPhone.
 struct ProfilePanel: View {
     enum Tab: Hashable {
-        case routines, skills, machine
+        case routines, skills, vault, machine
     }
 
     let contact: Contact
     let routines: RoutineList
     let skills: SkillList
+    let vault: VaultList
     let gateway: GatewayAddress
     let link: AppModel.Link
     let gatewayDetails: GatewayDetails?
@@ -30,17 +31,22 @@ struct ProfilePanel: View {
                 Picker("Show", selection: $tab) {
                     Text("Routines").tag(Tab.routines)
                     Text("Skills").tag(Tab.skills)
+                    Text("Vault").tag(Tab.vault)
                     Text("Machine").tag(Tab.machine)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(maxWidth: 300)
+                .frame(maxWidth: 340)
 
                 switch tab {
                 case .routines:
                     RoutinesView(list: routines, agentName: contact.name)
                 case .skills:
                     SkillsView(list: skills, agentName: contact.name)
+                case .vault:
+                    // Per Bot, so nothing typed for one agent can carry over to the next.
+                    VaultView(list: vault, agentName: contact.name, isOnline: isOnline)
+                        .id(vault.profile)
                 case .machine:
                     MachineView(
                         details: contact.details, gateway: gateway, link: link, gatewayDetails: gatewayDetails,
@@ -70,6 +76,11 @@ struct ProfilePanel: View {
                 .padding(12)
             }
         #endif
+    }
+
+    private var isOnline: Bool {
+        if case .online = link { return true }
+        return false
     }
 
     private var header: some View {

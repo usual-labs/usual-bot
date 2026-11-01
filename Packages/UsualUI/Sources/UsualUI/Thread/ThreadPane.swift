@@ -75,6 +75,7 @@ struct ThreadPane: View {
                         .allowsHitTesting(false)
                 }
             }
+            .environment(\.chatContact, contact)
             .task(id: contact.id) { open() }
             .onChange(of: contact.id) {
                 attachments = []
@@ -141,7 +142,9 @@ struct ThreadPane: View {
             }
         case .ready:
             if let thread {
-                TranscriptView(thread: thread, agentName: contact.name)
+                // Every chat numbers its items from 0, so without this a switch would animate one
+                // chat's messages into the next and carry over where you'd scrolled to.
+                TranscriptView(thread: thread, agentName: contact.name).id(contact.id)
             }
         }
     }
@@ -229,6 +232,13 @@ private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
             // 9 pt centres the name on the line of the window buttons and the sidebar's buttons;
             // the message box sits a little further from the bottom edge.
             conversation
+                // Text fades on its way under the name.
+                .overlay(alignment: .top) {
+                    LinearGradient(colors: [Theme.pane, Theme.pane.opacity(0)], startPoint: .top, endPoint: .bottom)
+                        .frame(height: 64)
+                        .ignoresSafeArea(.container, edges: .top)
+                        .allowsHitTesting(false)
+                }
                 .safeAreaInset(edge: .top, spacing: 0) { top.padding(.top, 9).padding(.bottom, 8) }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     bottom.padding(.top, 8).padding(.bottom, bottomPadding ?? 14)

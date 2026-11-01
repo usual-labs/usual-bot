@@ -106,6 +106,16 @@ its voice features, then try again. On-device calls work without it.
 
 ## Still stuck?
 
+If you use a coding agent, it can investigate with you. Paste this into a new session:
+
+```text
+Help me with a problem in Usual Bot. Follow this playbook:
+https://raw.githubusercontent.com/usual-labs/usual-bot/main/.github/triage/PLAYBOOK.md
+```
+
+It looks at the app's logs and source, keeps your tokens and conversations out of it, and shows you
+any issue before it posts one.
+
 Search the existing issues, or open a new one with the bug report form. Include the app version,
 your Hermes version, Mac or iPhone, and the exact message. Never paste tokens, real gateway
 addresses or private conversations into an issue.

@@ -6,51 +6,46 @@ import SwiftUI
     import UIKit
 #endif
 
-/// The app's colours. Light values match the mockups; dark values keep the same hierarchy.
+/// The app's colours: a near-black window in dark mode, with each surface a step lighter than the
+/// one behind it.
 public enum Theme {
     /// Window background behind the sidebar and the chat pane.
-    public static let window = Color(light: 0xF6F6F7, dark: 0x161618)
-    /// The chat pane and other raised surfaces.
-    public static let pane = Color(light: 0xFFFFFF, dark: 0x1E1E20)
-    /// Chat text: 14 pt on the Mac, 16 pt on iPhone, which is held further from the eye.
+    public static let window = Color(light: 0xF5F5F5, dark: 0x101010)
+    /// The chat pane.
+    public static let pane = Color(light: 0xFFFFFF, dark: 0x161616)
+    /// The agent's bubbles and the cards in a conversation.
+    static let bubble = Color(light: 0xF0F0F0, dark: 0x252525)
+    /// What floats over a conversation: the message box, the name pill and their kin.
+    static let surface = Color(light: 0xFFFFFF, dark: 0x1F1F1F)
+    /// Chat text: 15 pt on the Mac, 16 pt on iPhone, which is held further from the eye.
     #if os(macOS)
-        static let messageSize: CGFloat = 14
+        static let messageSize: CGFloat = 15
     #else
         static let messageSize: CGFloat = 16
     #endif
-
-    /// Chat text's weight: a step lighter in dark mode, where light text on a dark ground reads
-    /// heavier than the same weight in light mode.
-    static func messageWeight(_ scheme: ColorScheme) -> Font.Weight {
-        scheme == .dark ? .light : .regular
-    }
-    public static let border = Color(light: 0xE4E4E7, dark: 0x2E2E32)
-    public static let ink = Color(light: 0x18181B, dark: 0xF2F2F3)
-    public static let secondaryInk = Color(light: 0x66666E, dark: 0xA0A0A8)
+    /// The widest a message or card grows, so lines stay readable in a wide window.
+    static let bubbleWidth: CGFloat = 560
+    public static let border = Color(light: 0xE6E6E6, dark: 0x2E2E2E)
+    public static let ink = Color(light: 0x1C1C1C, dark: 0xF2F2F2)
+    public static let secondaryInk = Color(light: 0x6B6B6B, dark: 0x9E9E9E)
     /// The selected contact row in the sidebar.
-    public static let selection = Color(light: 0xEBEBEE, dark: 0x2A2A2E)
+    public static let selection = Color(light: 0xEBEBEB, dark: 0x2A2A2A)
     /// Primary buttons and unread badges.
-    public static let primary = Color(light: 0x18181B, dark: 0xF2F2F3)
-    public static let primaryInk = Color(light: 0xFFFFFF, dark: 0x18181B)
-    /// Your own message bubbles: black in light mode, a quiet grey in dark mode.
-    public static let userBubble = Color(light: 0x18181B, dark: 0x3A3A3F)
-    public static let userBubbleInk = Color(light: 0xFFFFFF, dark: 0xF2F2F3)
+    public static let primary = Color(light: 0x1C1C1C, dark: 0xF2F2F2)
+    public static let primaryInk = Color(light: 0xFFFFFF, dark: 0x1C1C1C)
+    /// Your bubbles where there's no one agent's colour to use, as in rooms.
+    public static let userBubble = Color(light: 0x1C1C1C, dark: 0x3A3A3A)
+    public static let userBubbleInk = Color(light: 0xFFFFFF, dark: 0xF2F2F2)
     public static let needsYouFill = Color(light: 0xFFF1D6, dark: 0x3A2A0A)
     public static let needsYouInk = Color(light: 0x8A5300, dark: 0xF5C36B)
     public static let danger = Color(light: 0xB42318, dark: 0xF97066)
-    /// Code blocks, inline code chips and the expanded tool-step list.
-    public static let codeFill = Color(light: 0xF4F4F5, dark: 0x26262A)
+    /// Code blocks, which sit on a bubble, and the expanded tool-step list.
+    public static let codeFill = Color(light: 0xFAFAFA, dark: 0x1A1A1A)
     public static let online = Color(hex: 0x1FA971)
 
     /// Avatar colours for agents whose profile doesn't set one.
-    public static let agentPalette: [Color] = [
-        Color(hex: 0x6E7BFF),
-        Color(hex: 0x1FA971),
-        Color(hex: 0xF2A30F),
-        Color(hex: 0xF0565E),
-        Color(hex: 0x8B5CF6),
-        Color(hex: 0x0EA5E9),
-    ]
+    static let agentColors: [RGB] = [0x6E7BFF, 0x1FA971, 0xF2A30F, 0xF0565E, 0x8B5CF6, 0x0EA5E9].map(RGB.init)
+    public static let agentPalette = agentColors.map(Color.init)
 }
 
 /// A parsed colour, kept separate from `Color` so it can be tested.
@@ -99,6 +94,25 @@ public struct RGB: Equatable, Sendable {
         self.init(hue: hue, saturation: saturation / 100, lightness: lightness / 100)
     }
 
+    /// The contrast of white text on this colour, from 1 to 21. Text wants at least 4.5.
+    var contrastWithWhite: Double {
+        func linear(_ channel: Double) -> Double {
+            channel <= 0.03928 ? channel / 12.92 : pow((channel + 0.055) / 1.055, 2.4)
+        }
+        let luminance = 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue)
+        return 1.05 / (luminance + 0.05)
+    }
+
+    /// This colour, darkened only as far as white text on it needs. Agents' colours can be anything,
+    /// yellow included.
+    var readableUnderWhite: RGB {
+        var rgb = self
+        while rgb.contrastWithWhite < 4.5 {
+            rgb = RGB(red: rgb.red * 0.96, green: rgb.green * 0.96, blue: rgb.blue * 0.96)
+        }
+        return rgb
+    }
+
     init(hue: Double, saturation: Double, lightness: Double) {
         let s = min(max(saturation, 0), 1)
         let l = min(max(lightness, 0), 1)
@@ -141,31 +155,12 @@ extension Color {
 }
 
 extension View {
-    /// The surface of what floats over a conversation, the name pill and the message box: Liquid
-    /// Glass where the system has it (macOS 26, iOS 26), else the pane colour with a hairline
-    /// border and a soft shadow.
-    @ViewBuilder func floatingSurface(in shape: some InsettableShape) -> some View {
-        if #available(macOS 26, iOS 26, *) {
-            glassEffect(.regular, in: shape)
-        } else {
-            background(Theme.pane, in: shape)
-                .overlay(shape.strokeBorder(Theme.border))
-                .shadow(color: .black.opacity(0.06), radius: 5, y: 2)
-        }
+    /// The surface of what floats over a conversation, the name pill and the message box: solid, so
+    /// text passing behind stays out of the way, with a hairline border and a soft shadow.
+    func floatingSurface(in shape: some InsettableShape) -> some View {
+        background(Theme.surface, in: shape)
+            .overlay(shape.strokeBorder(Theme.border))
+            .shadow(color: .black.opacity(0.06), radius: 5, y: 2)
     }
 
-    /// Message text: `Theme.messageSize` and `Theme.messageWeight` with airy line spacing.
-    func messageFont() -> some View {
-        modifier(MessageFont())
-    }
-}
-
-private struct MessageFont: ViewModifier {
-    @Environment(\.colorScheme) private var colorScheme
-
-    func body(content: Content) -> some View {
-        content
-            .font(.system(size: Theme.messageSize, weight: Theme.messageWeight(colorScheme)))
-            .lineSpacing(6)
-    }
 }

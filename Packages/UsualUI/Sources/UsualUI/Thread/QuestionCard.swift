@@ -8,19 +8,12 @@ struct QuestionCard: View {
     let answer: ([String: [String]]) -> Void
     let skip: () -> Void
 
+    @Environment(\.messageTextSize) private var messageSize
     @State private var picked: [String: [String]] = [:]
     @State private var typed: [String: String] = [:]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Label {
-                Text(prompt.questions.count == 1 ? "\(agentName) has a question" : "\(agentName) has some questions")
-                    .font(.system(size: 13.5, weight: .medium))
-                    .foregroundStyle(Theme.ink)
-            } icon: {
-                Image(systemName: "questionmark.bubble")
-                    .foregroundStyle(Theme.needsYouInk)
-            }
+        VStack(alignment: .leading, spacing: 16) {
             ForEach(prompt.questions) { question in
                 questionView(question)
             }
@@ -34,40 +27,35 @@ struct QuestionCard: View {
                     .opacity(isComplete ? 1 : 0.4)
             }
         }
-        .padding(14)
-        .frame(maxWidth: 540)
-        .background(Theme.pane, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border))
-        .shadow(color: .black.opacity(0.04), radius: 3, y: 1)
-        .frame(maxWidth: .infinity)
-        .accessibilityElement(children: .contain)
+        .cardSurface()
+        .accessibilityLabel(
+            Text(prompt.questions.count == 1 ? "\(agentName) has a question" : "\(agentName) has some questions"))
     }
 
     private func questionView(_ question: ClarifyPrompt.Question) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(question.text)
-                .font(.system(size: 14.5))
+                .font(.system(size: messageSize, weight: .semibold))
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
-            ForEach(question.choices, id: \.self) { choice in
+            ForEach(Array(question.choices.enumerated()), id: \.element) { index, choice in
                 let isPicked = picked[question.id, default: []].contains(choice)
                 Button {
                     toggle(choice, in: question)
                 } label: {
                     HStack(spacing: 10) {
-                        Image(systemName: indicator(isPicked, multiple: question.allowsMultiple))
-                            .foregroundStyle(isPicked ? Theme.ink : Theme.secondaryInk)
+                        letterChip(index, isPicked: isPicked)
                         Text(choice)
                             .foregroundStyle(Theme.ink)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .font(.system(size: 14))
-                    .padding(.horizontal, 12)
-                    .frame(minHeight: 40)
-                    .background(isPicked ? Theme.selection : Theme.codeFill, in: RoundedRectangle(cornerRadius: 10))
+                    .font(.system(size: messageSize))
+                    .padding(.horizontal, 4)
+                    .frame(minHeight: 34)
                     .contentShape(RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
+                .hoverHighlight(in: RoundedRectangle(cornerRadius: 10))
                 .accessibilityAddTraits(isPicked ? .isSelected : [])
             }
             TextField(
@@ -86,9 +74,17 @@ struct QuestionCard: View {
         }
     }
 
-    private func indicator(_ isPicked: Bool, multiple: Bool) -> String {
-        if multiple { return isPicked ? "checkmark.square.fill" : "square" }
-        return isPicked ? "largecircle.fill.circle" : "circle"
+    /// A, B, C… for a choice, filled when it's picked. Past Z, the number.
+    private func letterChip(_ index: Int, isPicked: Bool) -> some View {
+        Text(verbatim: index < 26 ? String(UnicodeScalar(UInt8(65 + index))) : "\(index + 1)")
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(isPicked ? Theme.primaryInk : Theme.secondaryInk)
+            .frame(width: 24, height: 24)
+            .background(isPicked ? Theme.primary : .clear, in: RoundedRectangle(cornerRadius: 7))
+            .overlay {
+                if !isPicked { RoundedRectangle(cornerRadius: 7).strokeBorder(Theme.border) }
+            }
+            .accessibilityHidden(true)
     }
 
     private func toggle(_ choice: String, in question: ClarifyPrompt.Question) {
@@ -122,7 +118,7 @@ struct QuestionCard: View {
     }
 }
 
-/// The pill buttons used on approval and question cards.
+/// The pill buttons used on approval, question and secret cards.
 struct CardButtonStyle: ButtonStyle {
     let primary: Bool
     /// Takes the full width, for buttons stacked in a narrow card.

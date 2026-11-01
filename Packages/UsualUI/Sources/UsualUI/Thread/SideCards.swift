@@ -40,7 +40,6 @@ struct SideQuestionCard: View {
             case .answered(let text):
                 ScrollView {
                     MarkdownView(text)
-                        .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .scrollBounceBehavior(.basedOnSize)

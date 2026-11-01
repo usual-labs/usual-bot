@@ -62,12 +62,15 @@ public final class AppModel {
     @ObservationIgnored private var threads: [Contact.ID: ChatThread] = [:]
     @ObservationIgnored private var routineLists: [Contact.ID: RoutineList] = [:]
     @ObservationIgnored private var skillLists: [Contact.ID: SkillList] = [:]
+    @ObservationIgnored private var vaultLists: [Contact.ID: VaultList] = [:]
     @ObservationIgnored private var rooms: [Contact.ID: RoomThread] = [:]
     /// Images and files agents name in chats, read from the gateway.
     @ObservationIgnored public private(set) lazy var media = MediaStore(auth: { [weak self] in self?.auth })
     @ObservationIgnored public private(set) lazy var voiceLive = VoiceLiveService(auth: { [weak self] in self?.auth })
     /// Agents' own pictures from the official app; agents without one keep the app's characters.
     @ObservationIgnored public let pictures = BotPictures()
+    /// How the sidebar is grouped.
+    @ObservationIgnored public let sections: SidebarSections
 
     private static let gatewayKey = "gatewayAddress"
     private static let rosterInterval: Duration = .seconds(5)
@@ -94,8 +97,13 @@ public final class AppModel {
         self.defaults = defaults
         self.cache = cache
         self.makeSocket = makeSocket
+        sections = SidebarSections(defaults: defaults)
         gatewayInput = defaults.string(forKey: Self.gatewayKey) ?? ""
         isRestoring = defaults.string(forKey: Self.gatewayKey) != nil
+        sections.save = { [weak self] profile, placement in
+            guard let channel = self?.channel else { throw GatewayError.disconnected }
+            try await BotMetaWrite.setSection(placement, profile: profile, on: channel)
+        }
     }
 
     /// Resumes the saved session, if this device has one.
@@ -170,8 +178,10 @@ public final class AppModel {
         threads = [:]
         routineLists = [:]
         skillLists = [:]
+        vaultLists = [:]
         media.clear()
         pictures.clear()
+        sections.clear()
         rooms = [:]
         gatewayDetails = nil
         lastSaved = nil
@@ -184,7 +194,8 @@ public final class AppModel {
         /// a gateway. Nothing connects, because there is no session to connect with.
         func showDemo(
             gateway: GatewayAddress, contacts: [Contact], threads: [Contact.ID: ChatThread],
-            rooms: [Contact.ID: RoomThread], routines: [Contact.ID: RoutineList], skills: [Contact.ID: SkillList]
+            rooms: [Contact.ID: RoomThread], routines: [Contact.ID: RoutineList], skills: [Contact.ID: SkillList],
+            vaults: [Contact.ID: VaultList]
         ) {
             session = .signedIn(gateway)
             link = .online(.legacy)
@@ -193,6 +204,9 @@ public final class AppModel {
             self.rooms = rooms
             routineLists = routines
             skillLists = skills
+            vaultLists = vaults
+            sections.save = { _, _ in }
+            sections.reconcile(contacts)
         }
     #endif
 
@@ -201,6 +215,8 @@ public final class AppModel {
     private func begin(_ auth: AuthSession) {
         self.auth = auth
         session = .signedIn(auth.gateway)
+        sections.load(for: auth.gateway)
+        sections.reconcile(contacts)
         connect(auth)
     }
 
@@ -268,7 +284,7 @@ public final class AppModel {
     /// Contacts as the sidebar shows them: the roster plus each chat's live activity and unread count.
     public var sidebarContacts: [Contact] {
         contacts.map { contact in
-            var contact = contact
+            var contact = sections.placed(contact)
             if let thread = threads[contact.id] {
                 contact.activity = thread.activity
                 contact.unreadCount = thread.unreadCount
@@ -302,7 +318,9 @@ public final class AppModel {
             backgroundTaskFinished?(contact, task, result)
         }
         thread.storedAnswer = { [weak self] taskID in await self?.storedAnswer(taskID: taskID, profile: id) }
+        thread.gateway = { [weak self] in self?.auth?.gateway }
         thread.replayEpoch = replayEpoch
+        thread.gatewayIsUnencrypted = { [weak self] in self?.auth?.gateway.isUnencrypted ?? true }
         return thread
     }
 
@@ -365,6 +383,16 @@ public final class AppModel {
         return list
     }
 
+    /// The vault of `contact`'s profile. Call `VaultList.refresh()` to load it.
+    public func vault(for contact: Contact) -> VaultList {
+        if let list = vaultLists[contact.id] { return list }
+        let list = VaultList(
+            profile: contact.details?.profile ?? contact.id, channel: { [weak self] in self?.channel },
+            gatewayIsUnencrypted: { [weak self] in self?.auth?.gateway.isUnencrypted ?? true })
+        vaultLists[contact.id] = list
+        return list
+    }
+
     /// Loads what the Machine tab shows. Parts the gateway doesn't answer stay empty.
     public func loadGatewayDetails() async {
         guard let auth else { return }
@@ -387,17 +415,38 @@ public final class AppModel {
         thread.apply(event)
     }
 
-    /// Answers the gateway's questions: approvals and clarify questions go to their chat. Anything else is declined as
-    /// "not shown here" (4404): the gateway then lets another attached app, such as the official
-    /// one, answer, and gives up at once when no app can, so the agent never waits on Usual Bot.
+    /// Answers the gateway's questions: approvals, clarify questions and masked prompts go to their
+    /// chat. Masked prompts with no chat to show them are skipped, never declined: the only app
+    /// declining settles the request with error text, which the gateway takes for the answer.
+    /// Anything else is declined as "not shown here" (4404): the gateway then lets another attached
+    /// app, such as the official one, answer, and gives up at once when no app can, so the agent
+    /// never waits on Usual Bot.
     private func handle(_ request: ServerRequest, on channel: JSONRPCChannel) async {
         let thread = threads.values.first { $0.sessionID != nil && $0.sessionID == request.sessionID }
+        if VaultPrompt.methods.contains(request.method) {
+            if let thread, let prompt = VaultPrompt(request) {
+                thread.receive(prompt)
+            } else {
+                await channel.respond(to: request.id, result: VaultPrompt.skipped)
+            }
+            return
+        }
         if let thread, let approval = ApprovalPrompt(request) {
             thread.receive(approval)
             return
         }
         if let thread, let prompt = ClarifyPrompt(request) {
             thread.receive(prompt)
+            return
+        }
+        if SecretPrompt.methods.contains(request.method) {
+            // Never 4404: when no other app is attached, the gateway answers a decline with a JSON
+            // error as the value, and would save that as the secret. An empty value is a skip.
+            if let thread, let prompt = SecretPrompt(request) {
+                thread.receive(prompt)
+            } else {
+                await channel.respond(to: request.id, result: ["value": ""])
+            }
             return
         }
         await channel.decline(
@@ -424,6 +473,7 @@ public final class AppModel {
         let agents = list.profiles.compactMap(Contact.init(profile:))
         pictures.refresh(agents, on: channel)
         contacts = agents + (await refreshRooms(on: channel) ?? contacts.filter { $0.kind != .agent })
+        sections.reconcile(contacts)
     }
 
     /// Lists the gateway's rooms and catches up any that have new events. Returns `nil` when the

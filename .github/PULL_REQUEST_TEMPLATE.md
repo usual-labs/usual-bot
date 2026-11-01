@@ -1,20 +1,27 @@
-## What this changes
+<!--
+Read CONTRIBUTING.md first. Solve one problem. Meeting these points makes a pull request ready
+for review; it doesn't guarantee a merge.
+-->
 
-<!-- What the change does and why. Link the issue it closes, e.g. "Closes #12". -->
+## Problem
 
-## How I checked it
+<!-- What's wrong or missing, in a sentence or two. Link the issue, e.g. "Closes #12". -->
 
-<!-- Tests you added or ran, and what you tried in the app (Mac, iPhone, demo or a real gateway). -->
+## Change
 
-## Screenshots
+<!-- How this fixes it. If it spans packages, say why they belong together. -->
 
-<!-- For UI changes: Mac and iPhone, light and dark if colours changed. The demo is fine. -->
+## Scope
 
-## Checklist
+<!-- For a feature or a change in behaviour: link where a maintainer agreed to it.
+For a small fix of an obvious bug: say why it needs no prior discussion. -->
 
-- [ ] `swift test` passes for HermesKit and UsualUI
-- [ ] `swift format lint --strict --recursive App Packages` is clean
-- [ ] The app builds for macOS and the iOS Simulator
-- [ ] New behaviour shows up in the demo (`AppModel.demo()`), where it makes sense
-- [ ] The package notes (`docs/agents/`) and guides are updated if behaviour changed
-- [ ] No tokens, real gateway addresses, recorded frames or real conversations
+## Verification
+
+<!-- What you ran and what you saw, for the behaviour you changed. "Tests pass" alone doesn't show
+that. State what you couldn't check: a device, a real gateway, a platform.
+
+For UI changes: before and after screenshots, Mac and iPhone, light and dark if colours changed.
+The demo is fine. Never use real chats, tokens or gateway addresses. -->
+
+<!-- If you used an agent, end with the model and harness that did the work. -->

@@ -1,8 +1,8 @@
 import HermesKit
 import SwiftUI
 
-/// The scrolling conversation: your messages as bubbles, the agent's replies as full-width text,
-/// tool calls folded into one line each, and system notices centred.
+/// The scrolling conversation: bubbles for you and the agent, tool calls folded into one line each,
+/// and system notices centred.
 struct TranscriptView: View {
     let thread: ChatThread
     let agentName: String
@@ -10,7 +10,7 @@ struct TranscriptView: View {
     var body: some View {
         // A reloaded transcript numbers its items afresh, so a position kept by item would now
         // point at an older message: start over at the newest one.
-        ConversationScroll(reload: thread.transcriptLoad) {
+        ConversationScroll(reload: thread.transcriptLoad, arrival: arrival) {
             if let banner = thread.banner {
                 NoticeLine(text: banner)
             }
@@ -18,25 +18,54 @@ struct TranscriptView: View {
                 NoticeLine(text: String(localized: "Say hello to \(agentName)."))
                     .padding(.top, 40)
             }
-            ForEach(thread.state.items) { item in
-                ItemView(item: item, agentName: agentName)
+            let items = thread.state.items
+            ForEach(Array(zip(items.indices, items)), id: \.1.id) { index, item in
+                ItemView(
+                    item: item, agentName: agentName,
+                    joinsAbove: item.isReply && index > 0 && items[index - 1].isReply,
+                    joinsBelow: item.isReply
+                        && (index + 1 < items.count ? items[index + 1].isReply : !thread.state.draft.isEmpty)
+                )
+                .transition(item.arrival)
             }
             if !thread.state.draft.isEmpty {
-                MarkdownView(thread.state.draft)
+                // Becomes a transcript item when it ends, so it leaves without a fade.
+                AgentBubble(joinsAbove: items.last?.isReply == true) { MarkdownView(thread.state.draft) }
+                    .joined(items.last?.isReply == true)
+                    .transition(.asymmetric(insertion: .settle, removal: .identity))
             } else if thread.state.isRunning, !lastItemIsLiveActivity, thread.approvals.isEmpty,
-                thread.questions.isEmpty
+                thread.questions.isEmpty, thread.secrets.isEmpty, thread.vaultPrompts.isEmpty
             {
-                TypingIndicator()
+                WorkingRow(text: String(localized: "Thinking…")).transition(.settle)
             }
+            VaultCards(thread: thread, agentName: agentName).transition(.settle)
             ForEach(thread.approvals) { approval in
                 ApprovalCard(approval: approval, agentName: agentName) { thread.answer(approval, with: $0) }
+                    .transition(.settle)
             }
             ForEach(thread.questions) { prompt in
                 QuestionCard(
                     prompt: prompt, agentName: agentName, answer: { thread.answer(prompt, with: $0) },
-                    skip: { thread.skip(prompt) })
+                    skip: { thread.skip(prompt) }
+                )
+                .transition(.settle)
+            }
+            ForEach(thread.secrets) { prompt in
+                SecretCard(
+                    prompt: prompt, agentName: agentName, isUnencrypted: thread.isLinkUnencrypted,
+                    answer: { thread.answer(prompt, with: $0) }, skip: { thread.skip(prompt) }
+                )
+                .transition(.settle)
             }
         }
+    }
+
+    /// Changes when something arrives at the end of the conversation.
+    private var arrival: [Int] {
+        [
+            thread.state.items.count, thread.state.draft.isEmpty ? 0 : 1, thread.state.isRunning ? 1 : 0,
+            thread.vaultPrompts.count, thread.approvals.count, thread.questions.count, thread.secrets.count,
+        ]
     }
 
     private var lastItemIsLiveActivity: Bool {
@@ -45,27 +74,36 @@ struct TranscriptView: View {
     }
 }
 
-/// A conversation's scrolling column, opened at its newest message and kept there as it grows.
+/// A conversation's scrolling column, opened at its newest message and kept there as it grows, until
+/// you scroll away from it.
 struct ConversationScroll<Content: View>: View {
     /// Changes when the conversation is reloaded; it then scrolls back to the newest message.
     var reload = 0
+    /// Changes when something arrives at the end, which animates in. A reload's rows don't.
+    var arrival: [Int] = []
     @ViewBuilder let content: Content
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var settledReload = 0
     @State private var position = ScrollPosition()
-
-    /// The column's last view. Scrolling to it places the newest message exactly; scrolling to the
-    /// bottom edge trusts the lazy stack's estimate of rows it hasn't measured, which on iPhone
-    /// left a long chat parked in blank space past its end.
-    private static var end: String { "end" }
+    /// Off once you've scrolled away from the end. Measuring alone can't tell: the lazy stack's
+    /// estimates move the end while nobody scrolls.
+    @State private var followsEnd = true
+    @State private var isNearEnd = true
+    /// Where the column ends, as last measured.
+    @State private var end: CGFloat = 0
+    /// Just after a chat opens or reloads, when the lazy stack is still measuring.
+    @State private var isSettling = true
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 14) {
+            LazyVStack(alignment: .leading, spacing: 12) {
                 content
-                Color.clear.frame(height: 0).id(Self.end)
             }
-            .padding(.horizontal, 24)
+            .animation(reduceMotion || reload != settledReload ? nil : Self.arrive, value: arrival)
             .padding(.vertical, 16)
+            // Edge to edge with the message box.
             .frame(maxWidth: 780)
+            .padding(.horizontal, ThreadPane.composerMargin)
             .frame(maxWidth: .infinity)
         }
         .scrollPosition($position)
@@ -73,13 +111,66 @@ struct ConversationScroll<Content: View>: View {
         .scrollDismissesKeyboard(.interactively)
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
-        .onAppear(perform: scrollToEnd)
-        .onChange(of: reload, scrollToEnd)
+        .onScrollPhaseChange { old, new in
+            if new.isByHand {
+                followsEnd = false
+            } else if old.isByHand {
+                followsEnd = isNearEnd
+            }
+        }
+        .onScrollGeometryChange(for: Bool.self, of: \.isNearEnd) { _, new in isNearEnd = new }
+        // The anchor can't hold a column that started shorter than its window. Following the
+        // measured end also settles a long chat: each move shows rows the lazy stack only estimated,
+        // and measuring them moves the end again until it stops. A scroll to a view can't do this.
+        // It lands on an estimate that may be out by hundreds of points, and if the column's height
+        // doesn't change afterwards, nothing puts it right.
+        .onScrollGeometryChange(for: CGFloat.self, of: \.endY) { _, new in
+            end = new
+            if followsEnd { position.scrollTo(y: new) }
+        }
+        // A move can be dropped when it meets the anchor's own, and no later change in the column's
+        // height would retry it. Only while settling: later this would fight a scrollbar drag.
+        .onScrollGeometryChange(for: CGFloat.self, of: \.distanceFromEnd) { _, distance in
+            if isSettling, followsEnd, abs(distance) > 1 { position.scrollTo(y: end) }
+        }
+        .task(id: reload) {
+            isSettling = true
+            try? await Task.sleep(for: .milliseconds(500))
+            if !Task.isCancelled { isSettling = false }
+        }
+        .onAppear {
+            // A chat that's already loaded has nothing to settle.
+            settledReload = reload
+        }
+        .onChange(of: reload) {
+            settledReload = reload
+            // When it's already following, a second scroll here would race it with an older end.
+            if !followsEnd {
+                followsEnd = true
+                position.scrollTo(y: end)
+            }
+        }
     }
 
-    private func scrollToEnd() {
-        position.scrollTo(id: Self.end, anchor: .bottom)
-    }
+    /// Quick, with the slightest overshoot.
+    private static var arrive: Animation { .spring(duration: 0.32, bounce: 0.12) }
+}
+
+extension ScrollPhase {
+    /// Moving under your finger, wheel or trackpad, not because the app scrolled.
+    fileprivate var isByHand: Bool { self == .tracking || self == .interacting || self == .decelerating }
+}
+
+extension ScrollGeometry {
+    /// Where the column's end is for `ScrollPosition`, which counts from the content's top.
+    /// `containerSize` leaves out the bars.
+    fileprivate var endY: CGFloat { max(contentSize.height - containerSize.height, 0) }
+
+    fileprivate var distanceFromEnd: CGFloat { contentOffset.y + contentInsets.top - endY }
+
+    /// With a little slack.
+    /// `contentOffset` counts from behind the top bar.
+    fileprivate var isNearEnd: Bool { contentOffset.y + contentInsets.top >= endY - 40 }
 }
 
 /// Who wrote a room reply: the name and the agent contact behind the avatar.
@@ -88,9 +179,34 @@ struct MemberAuthor {
     let contact: Contact
 }
 
+extension TranscriptItem {
+    /// An agent's message, which joins up with those beside it.
+    fileprivate var isReply: Bool {
+        if case .assistant = content { true } else { false }
+    }
+
+    /// How the item comes in. A reply was on screen as a draft, so it swaps in without a move.
+    fileprivate var arrival: AnyTransition {
+        switch content {
+        case .user: .rise
+        case .assistant: .identity
+        default: .settle
+        }
+    }
+}
+
+extension View {
+    /// Closes most of the gap to the message above, when it's from the same agent.
+    fileprivate func joined(_ isJoined: Bool) -> some View {
+        padding(.top, isJoined ? -8 : 0)
+    }
+}
+
 struct ItemView: View {
     let item: TranscriptItem
     let agentName: String
+    var joinsAbove = false
+    var joinsBelow = false
     /// Rooms only: resolves a member ID to its author.
     var author: (String) -> MemberAuthor? = { _ in nil }
 
@@ -101,7 +217,10 @@ struct ItemView: View {
                 UserBubbleContent(text: text)
             }
         case .assistant(let text):
-            MessageRow(item: item, text: text, isMine: false) { MarkdownView(text) }
+            MessageRow(item: item, text: text, isMine: false) {
+                AgentBubble(joinsAbove: joinsAbove, joinsBelow: joinsBelow) { MarkdownView(text) }
+            }
+            .joined(joinsAbove)
         case .member(let id, let text):
             let author = author(id)
             MessageRow(item: item, text: text, isMine: false) {
@@ -113,9 +232,12 @@ struct ItemView: View {
                         Text(author?.name ?? id)
                             .font(.system(size: 12.5, weight: .semibold))
                             .foregroundStyle(Theme.secondaryInk)
-                        MarkdownView(text)
-                            // Files a member names live in its own profile.
-                            .environment(\.mediaProfile, author.map { $0.contact.details?.profile ?? $0.contact.id })
+                        AgentBubble {
+                            MarkdownView(text)
+                                // Files a member names live in its own profile.
+                                .environment(
+                                    \.mediaProfile, author.map { $0.contact.details?.profile ?? $0.contact.id })
+                        }
                     }
                 }
             }
@@ -123,6 +245,8 @@ struct ItemView: View {
             ActivityLine(steps: steps, agentName: agentName)
         case .notice(let text):
             NoticeLine(text: text)
+        case .result(let title, let detail):
+            ResultLine(title: title, detail: detail)
         case .output(let text):
             MessageRow(item: item, text: text, isMine: false) { CommandOutput(text: text) }
         case .background(let task, let result):
@@ -135,14 +259,13 @@ struct ItemView: View {
                     }
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(Theme.secondaryInk)
-                    MarkdownView(result)
+                    AgentBubble { MarkdownView(result) }
                 }
             }
         }
     }
 }
 
-/// Your message: a dark bubble on the right.
 /// Your message on the right of the conversation.
 struct UserBubble: View {
     let text: String
@@ -159,6 +282,7 @@ struct UserBubble: View {
 struct UserBubbleContent: View {
     let text: String
     @Environment(\.sentImages) private var sentImages
+    @Environment(\.chatContact) private var contact
 
     var body: some View {
         // Attachments travel as `@image:`/`@file:` lines after the text; they show above it.
@@ -193,13 +317,9 @@ struct UserBubbleContent: View {
                 }
                 .foregroundStyle(Theme.userBubbleInk)
                 .textSelection(.enabled)
-                .padding(.horizontal, 15)
-                .padding(.vertical, 10)
-                .background(
-                    Theme.userBubble,
-                    in: UnevenRoundedRectangle(
-                        topLeadingRadius: 20, bottomLeadingRadius: 20, bottomTrailingRadius: 6,
-                        topTrailingRadius: 20))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .background(contact?.accent ?? Theme.userBubble, in: RoundedRectangle(cornerRadius: 18))
             }
         }
     }
@@ -217,22 +337,24 @@ struct NoticeLine: View {
     }
 }
 
-/// One centred line for a run of tool calls; click to see each step.
+/// One quiet line for a run of tool calls, or what's happening now; click to see each step.
 private struct ActivityLine: View {
     let steps: [ToolStep]
     let agentName: String
     @State private var expanded = false
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 8) {
             Button {
-                expanded.toggle()
+                withAnimation(.smooth(duration: 0.2)) { expanded.toggle() }
             } label: {
                 HStack(spacing: 6) {
-                    if steps.contains(where: { $0.state == .running }) {
-                        ProgressView().controlSize(.mini)
+                    if let now = ActivitySummary.current(in: steps) {
+                        WorkingRow(text: now)
+                    } else {
+                        Text(ActivitySummary.line(for: steps, agent: agentName))
+                            .padding(.leading, 12)
                     }
-                    Text(ActivitySummary.line(for: steps, agent: agentName))
                     Image(systemName: "chevron.right")
                         .font(.system(size: 10, weight: .semibold))
                         .rotationEffect(.degrees(expanded ? 90 : 0))
@@ -253,11 +375,12 @@ private struct ActivityLine: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .frame(maxWidth: 520, alignment: .leading)
+                .frame(maxWidth: Theme.bubbleWidth, alignment: .leading)
                 .background(Theme.codeFill, in: RoundedRectangle(cornerRadius: 12))
+                .transition(.opacity)
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -285,32 +408,6 @@ private struct StepRow: View {
             }
         }
         .font(.system(size: 12.5, design: .monospaced))
-    }
-}
-
-/// Three dots that pulse while the agent is thinking.
-struct TypingIndicator: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 0.15, paused: reduceMotion)) { context in
-            let phase = context.date.timeIntervalSinceReferenceDate * 2.5
-            HStack(spacing: 4) {
-                ForEach(0..<3) { index in
-                    Circle()
-                        .fill(Theme.secondaryInk)
-                        .frame(width: 7, height: 7)
-                        .opacity(reduceMotion ? 0.7 : 0.35 + 0.65 * max(0, sin(phase - Double(index) * 0.6)))
-                }
-            }
-            .padding(.horizontal, 15)
-            .padding(.vertical, 13)
-            .background(
-                Theme.codeFill,
-                in: UnevenRoundedRectangle(
-                    topLeadingRadius: 18, bottomLeadingRadius: 6, bottomTrailingRadius: 18, topTrailingRadius: 18))
-        }
-        .accessibilityLabel(Text("Working"))
     }
 }
 

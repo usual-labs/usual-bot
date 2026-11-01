@@ -14,6 +14,7 @@ iPhone unless a section says otherwise.
 - [An agent's profile: routines, skills and machine](#an-agents-profile-routines-skills-and-machine)
 - [Quick message (Mac)](#quick-message-mac)
 - [Offline and reconnecting](#offline-and-reconnecting)
+- [Settings](#settings)
 - [Keyboard shortcuts](#keyboard-shortcuts)
 
 ## Contacts and the sidebar
@@ -25,17 +26,36 @@ list. The most recent conversation is at the top.
 
 - A Bot shows the picture you gave it in the Hermes app. Without one, it gets one of Usual Bot's
   characters.
-- A ring around an avatar means the agent is working.
+- An avatar that gently moves means the agent is working.
 - **Needs you** means it's waiting for your approval or an answer.
 - Search (⌘F on the Mac) filters the list by name.
 - The dot at the bottom of the sidebar (top left on iPhone) shows the connection. Click it to see
   the gateway and to sign out.
 
-On the Mac, drag the sidebar narrower and it becomes a rail of avatars.
+On the Mac, drag the sidebar narrower and it becomes a rail of avatars, with a line between
+sections.
+
+### Sections
+
+Sections group the sidebar however you like. Until you make one, the list has no headings.
+
+- **Make one:** right-click a chat on the Mac, or touch and hold it on iPhone, and choose **Move to
+  New Section**. Type a name and press Return.
+- **Move a chat:** use **Move to Section** in the same menu, or on the Mac drag it to a section.
+  **Remove from Section** puts it back under Unassigned, which holds everything not in a section.
+- **Fold a section:** click its heading. A folded section still shows **Needs you** or an unread
+  count, so nothing waiting for you goes out of sight.
+- **Rename, reorder or delete one:** right-click its heading on the Mac, or tap **…** on iPhone.
+  Deleting a section keeps its chats: they move to Unassigned.
+
+A Bot's section is saved on the Bot, so it shows on your other devices and in the Hermes desktop
+app. Each device keeps its own order of sections, what's folded, and which section a room is in.
+Searching lists every match together, without headings.
 
 ## Chatting with an agent
 
-Type in the message box and press Return to send (Shift-Return for a new line). Replies stream in
+Type in the message box and press Return to send (Shift-Return for a new line). On Mac, Settings
+can change sending to ⌘Return, leaving Return for new lines. Replies stream in
 as the agent writes them, with Markdown, code blocks you can copy, and tables. While the agent uses
 tools, one line such as "Forge edited 1 file and ran 1 command" sums them up; click it to see each
 step.
@@ -66,6 +86,26 @@ in the chat with what it wants to run and why:
 When an agent asks you a question with choices, the same kind of card shows the options; pick one
 or type your own answer. Approvals also wait in the ⌥Space panel on the Mac, so you can answer
 without opening the chat.
+
+When a skill needs a secret, such as an API key, or a command needs your sudo password, a card asks
+for it in a masked field. **Send** gives it to your gateway, and **Skip** lets the agent carry on
+without it. A secret is saved on the gateway under the name the card shows; Usual Bot keeps no copy.
+If your gateway uses plain `http` away from this device and outside Tailscale, others on your
+network could read what you send, so the card warns you and the button says **Send Unencrypted**.
+
+Agents can sign in to sites for you without seeing your passwords. Open a Bot's profile and pick the
+**Vault** tab to see what's saved for it (labels, usernames and sites, never the secrets), add a
+login, card or address, remove one, or switch on, unlock or lock a password manager on the gateway.
+In a chat, cards ask for a master password, a login to save or a one-time code, and you can skip any
+of them. On that same kind of plain `http` gateway, nothing secret goes out until you tick **Send it
+anyway** for that send.
+
+<p align="center">
+  <img src="../screenshots/iphone-vault.png" width="240" alt="A Bot's Vault tab on iPhone, with saved logins, a card, an address and password managers">
+  <img src="../screenshots/iphone-secret.png" width="240" alt="A card in a chat on iPhone asking for a secret in a masked field">
+</p>
+
+![Cards on the Mac asking for a one-time code and a sudo password, with a warning about plain http](../screenshots/mac-masked-prompts.png)
 
 ## Skills and commands
 
@@ -150,15 +190,16 @@ iPhone).
 
 ## Quick message (Mac)
 
-Press **⌥Space** anywhere to open a small panel over whatever you're doing.
+Press **⌥Space**, or the shortcut you chose in Settings, to open a small panel over whatever
+you’re doing.
 
 - Pick the agent along the top (Tab moves to the next), type, and press Return to send. The answer
   shows in the panel.
 - ⌘Return opens the full chat; Esc closes the panel.
 - **Waiting on you** lists approvals from every agent, with Allow and Deny.
 
-Usual Bot keeps running in the menu bar after you close its window, so ⌥Space keeps working. Quit
-it from the menu bar item.
+Usual Bot keeps running in the menu bar after you close its window. Quick Message stays available
+there even if you disable its shortcut. Quit the app from the menu bar item.
 
 ## Offline and reconnecting
 
@@ -170,15 +211,41 @@ app goes to the background and reopens when you come back.
 If an answer couldn't be recovered (for example, the gateway restarted meanwhile), the chat says
 so instead of leaving you waiting.
 
+## Settings
+
+Open **Settings…** from the Usual Bot menu (⌘, on Mac), the menu bar item, or the gear beside the
+connection indicator. Preferences stay on this device.
+
+- **General:** follow the system appearance or choose light or dark, and change chat text size.
+  On Mac, choose Return or ⌘Return to send messages, and whether to launch at login.
+- **Quick Message (Mac):** in General, click the keyboard shortcut and press a new combination
+  including Control, Option or Command. Esc cancels. A shortcut macOS refuses leaves your previous
+  choice in place. **Disable Shortcut** keeps Quick Message available from the menu bar;
+  **Restore Default** tries ⌥Space, then ⌃⌥Space if needed. The menu bar shows the active shortcut.
+  Quick Message itself always uses Return to send and ⌘Return to open the full chat.
+- **Notifications:** control background task completion alerts, sounds and previews. When previews
+  are off, new alerts contain neither the task description nor the reply text. System notification
+  settings and Focus also apply. On iPhone the app disconnects in the background, so these aren’t
+  push notifications: an alert needs the app to still be running.
+- **Voice:** choose the call engine and the language, voice and speed for on-device speech. These
+  preferences are shared with the controls inside a call; GPT-Live’s voice stays on the gateway.
+- **Connection:** see the gateway address, status, version and identity when available, or sign out.
+  Signing out removes the saved sign-in and cached chats for that gateway from this device.
+
+The About section has the app version, guide, source and license links. Agent configuration,
+provider keys and gateway administration stay in Hermes.
+
 ## Keyboard shortcuts
 
 | Shortcut | Where | What it does |
 | --- | --- | --- |
-| ⌥Space | Anywhere (Mac) | Opens the quick message panel |
+| ⌥Space (configurable in Settings) | Anywhere (Mac) | Opens the quick message panel |
 | ⌘F | Sidebar | Search agents and rooms |
 | ↑ / ↓ | Sidebar | Move between chats |
+| ⌘, | Mac | Open Settings |
 | ⌘I | Chat or room | Show the profile or room details |
-| Return | Message box | Send, or pick from the open `/` or `@` menu |
+| Return | Message box | Send by default, or pick from the open `/` or `@` menu |
+| ⌘Return | Mac message box | Send when chosen in Settings |
 | Shift-Return | Message box | New line |
 | ↑ / ↓, Tab | `/` or `@` menu | Move, pick |
 | Esc | `/` or `@` menu, reply, edit | Close the menu or cancel |

@@ -4,11 +4,14 @@ Thanks for helping. Bugs, polish, accessibility, translations and Hermes protoco
 welcome, and so are good bug reports.
 
 Usual Bot aims to stay small: a messenger for your Hermes agents, not a second Hermes app.
-Settings, skill setup and gateway administration belong in the official app, so changes that add
+Agent configuration, skill setup and gateway administration belong in the official app, so changes that add
 them here are unlikely to be merged. If you're unsure whether an idea fits, open a feature request
 first and we'll talk it through before you write code.
 
 Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+Coding agents are welcome here. We judge a pull request by its problem, scope and evidence, not by
+who or what wrote it. Agents start from `AGENTS.md`.
 
 ## Ways to help
 
@@ -44,15 +47,30 @@ Before changing code, read the [architecture guide](docs/guides/architecture.md)
 Those notes describe how each part works, its conventions and its known issues. Platform quirks
 that have caught us before (the macOS 26 sidebar, the window toolbar, lazy scroll views, text
 selection) are in `Packages/UsualUI/docs/agents/07-known-issues.md`. When your change alters
-behaviour or you hit something non-obvious, update the notes in the same pull request.
+you hit something non-obvious, or a recorded decision changes, update the notes in the same pull
+request. Most changes don't need that: the notes hold what the code can't show.
+
+To lint Swift files before each commit, turn on the repository's hook once:
+
+```sh
+git config core.hooksPath .githooks
+```
 
 ## Making a change
 
 - **Work on a branch** from `main`, named for the change, for example `fix-reconnect-loop`.
-- **Keep it focused**: one change per pull request. Unrelated clean-ups go in their own.
+- **Agree on scope first.** A feature or a change in behaviour needs a maintainer's agreement on
+  an issue before you build it. A small fix for an obvious bug doesn't; say why in the pull request.
+- **Solve one problem per pull request.** Include the code, tests and docs that problem needs.
+  Unrelated clean-ups and second fixes go in their own.
 - **Test the logic.** HermesKit's tests drive a scripted fake socket and HTTP transport
   (`Tests/HermesKitTests/Fakes.swift`), so most gateway flows can be tested without a gateway.
-  Bug fixes should come with a test that failed before the fix.
+  - Logic, data and protocol bugs get a test that failed before the fix. Purely visual bugs get
+    before and after screenshots instead.
+  - Test behaviour that can break. Leave out what types guarantee, copy text and trivial wiring.
+  - Extend an existing test before adding one, and test at one layer: the lowest that fails.
+  - Wait for the event with `waitUntil`, not a fixed sleep. A sleep with a real reason needs a
+    `// sleep-ok: <why>` comment on the line above; CI rejects one without it.
 - **Show it in the demo.** New features should appear in `AppModel.demo()` so reviewers can see
   them without a gateway.
 - **Match the surrounding code.** `swift format` settles layout. Comments explain why, in plain
@@ -69,20 +87,23 @@ results after a reconnect", not "fix bug". Add a body when the reason isn't obvi
 
 ## Before you open a pull request
 
-Run the same checks as CI:
+Run the same checks as CI, including both app builds:
 
 ```sh
-swift test --package-path Packages/HermesKit
-swift test --package-path Packages/UsualUI
-swift format lint --strict --recursive App Packages
+scripts/check.sh
 ```
 
-and make sure the app builds for both platforms (Xcode, or the two `xcodebuild` lines in
-`.github/workflows/ci.yml`).
+`scripts/check.sh --fast` skips the builds while you work.
 
-In the pull request, describe the change and how you checked it. For UI changes, add screenshots
-of the Mac and the iPhone (the demo is fine), in light and dark mode if colours changed. The pull
-request template has a short checklist.
+In the pull request, explain the problem, the change, and what you ran and saw. "Tests pass" alone
+doesn't show that the change works. Say what you couldn't check, such as a device or a real gateway.
+For UI changes, add before and after screenshots of the Mac and the iPhone (the demo is fine), in
+light and dark mode if colours changed. Attach them to the pull request rather than committing them.
+
+Changes to workflows, signing, scripts, sign-in and tokens need a maintainer's approval
+(`.github/CODEOWNERS`). If we close a pull request, we'll name the reason, point to what supports
+it, and say how to address it. Meeting this guide makes a pull request ready for review; it doesn't
+guarantee a merge.
 
 ## Releases
 
@@ -95,10 +116,10 @@ Debug builds read these environment variables:
 
 | Variable | What it does |
 | --- | --- |
-| `USUALBOT_DEMO=1` | Shows made-up agents instead of signing in. Never connects. |
+| `USUALBOT_DEMO=1` or the `--demo` launch argument | Shows made-up agents instead of signing in. Never connects; a message gets a scripted reply. |
 | `USUALBOT_SHOW_QUICK_PANEL=1` | Opens the ⌥Space panel shortly after launch (Mac). |
 | `USUALBOT_WINDOW_WIDTH=560` | Opens the main window at that width (Mac). |
-| `USUALBOT_RECORD_FRAMES=1` | Appends every socket frame to `usualbot-frames.jsonl` in the app's temporary directory. |
+| `USUALBOT_RECORD_FRAMES=1` | Appends every socket frame to `usualbot-frames.jsonl` in the app's temporary directory, with answers to masked prompts and vault secrets blanked. |
 
 Launch arguments set the stored UI choices for one run, which helps for screenshots:
 `-selectedContact forge -showsProfile YES -sidebarWidth 300`.

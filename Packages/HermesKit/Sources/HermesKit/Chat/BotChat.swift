@@ -18,7 +18,7 @@ enum BotChat {
         let historyOmitted: Bool
         /// The turn still running when the app attached, if any.
         var inflight: InflightTurn? = nil
-        /// Questions (approvals) the gateway asked earlier and is still waiting on.
+        /// Questions (approvals, clarify, masked prompts) the gateway asked earlier and still waits on.
         var openRequests: [ServerRequest] = []
         /// The session's model and reasoning level, as `session.info` reports them.
         var info: JSONValue? = nil
@@ -62,7 +62,10 @@ enum BotChat {
         }
         let inflight = result["inflight"].flatMap { turn -> InflightTurn? in
             guard case .object = turn else { return nil }
-            return InflightTurn(user: turn["user"]?.stringValue ?? "", assistant: turn["assistant"]?.stringValue ?? "")
+            return InflightTurn(
+                user: turn["user"]?.stringValue ?? "", assistant: turn["assistant"]?.stringValue ?? "",
+                displayKind: turn["display_kind"]?.stringValue,
+                displayText: turn["display_metadata"]?["display_text"]?.stringValue)
         }
         return Opened(
             sessionID: live, history: history, running: result["running"]?.boolValue ?? false,
