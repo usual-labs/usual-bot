@@ -39,7 +39,7 @@ Child-local ideas stay in their package KBs.
   deployment target) it likely shows as a square. Unverified (no macOS 15 machine checked). An
   Icon Composer `.icon` file (Xcode 26) would give both the new rounded/glass look and correct
   older-system images.
-- **Built-in Tailscale on iPhone (working, branch `built-in-tailscale`, not merged).** Reaches a
+- **Built-in Tailscale on iPhone (working; draft PR #5, branch `built-in-tailscale`).** Reaches a
   tailnet gateway without the Tailscale VPN on. TailscaleKit (`swift/` in `tailscale/libtailscale`,
   BSD-3) runs a userspace node inside the app with a SOCKS5 loopback proxy. iPhone only on purpose:
   that costs one platform condition in `Packages/Tailnet` and an `#if os(iOS)` around the app's
@@ -65,7 +65,8 @@ Child-local ideas stay in their package KBs.
   no socket errors); gateway sign-in through the web view and the gateway menu reported working
   by the maintainer. Simulator checked for the header, menu and connect-screen switch. Builds:
   iPhone, Simulator, Mac (skips the iOS-only framework via a platform-conditional dependency);
-  HermesKit and UsualUI tests and lint pass. Before shipping: CI hasn't run on this branch (not pushed);
+  HermesKit and UsualUI tests and lint pass, also after merging main (2026-11-01). Before shipping:
+  CI on PR #5; the merged build hasn't run on a device;
   it adds 21 MB (36 MB Debug app); tsnet uploads node logs to Tailscale (logtail) like
   Tailscale's own clients; the Google hand-off is untested; if the iPhone app is ever
   distributed, its credits need TailscaleKit's BSD-3 notice. Framework (decided and published
