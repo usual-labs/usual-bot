@@ -206,7 +206,7 @@ Rooms are text only on the dashboard gateway: attachments in rooms need Hermes's
 ## An agent's profile: routines, skills, apps and machine
 
 Click the agent's name at the top of the chat (⌘I) to open its profile beside the chat. On iPhone,
-tap the name or **…** › **View Profile**: the profile is a sheet with a row for each part below,
+tap the name or **…** › **View Profile**: the profile opens as a page with a row for each part below,
 showing at a glance how many are on.
 
 - **Routines** are the agent's scheduled jobs. Each shows when it runs, whether it's on, and why the

@@ -72,8 +72,8 @@ struct SectionHeader<Actions: View>: View {
 
     private var chevron: some View {
         Image(systemName: "chevron.down")
-            .font(.system(size: Self.chevronSize, weight: .semibold))
-            .foregroundStyle(Theme.secondaryInk)
+            .font(.system(size: Self.chevronSize, weight: Self.chevronWeight))
+            .foregroundStyle(Theme.secondaryInk.opacity(Self.chevronOpacity))
             .rotationEffect(.degrees(isFolded ? -90 : 0))
             .opacity(showsChevron ? 1 : 0)
             .accessibilityHidden(true)
@@ -82,9 +82,14 @@ struct SectionHeader<Actions: View>: View {
     #if os(macOS)
         private static var titleFont: Font { .system(size: 13, weight: .medium) }
         private static var chevronSize: CGFloat { 10 }
+        private static var chevronWeight: Font.Weight { .semibold }
+        private static var chevronOpacity: Double { 1 }
     #else
-        private static var titleFont: Font { .system(size: 16) }
-        private static var chevronSize: CGFloat { 12 }
+        // Grok's phone headings: larger, with a thin, quieter arrow.
+        private static var titleFont: Font { .system(size: 17) }
+        private static var chevronSize: CGFloat { 13 }
+        private static var chevronWeight: Font.Weight { .regular }
+        private static var chevronOpacity: Double { 0.7 }
     #endif
 
     /// With no pointer to hover, iPhone always shows it. Folded, it's the sign there's more.

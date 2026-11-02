@@ -35,7 +35,7 @@ struct ConversationScroll<Content: View>: View {
                 )
                 .padding(.vertical, 16)
                 .frame(maxWidth: Theme.columnWidth)
-                .padding(.horizontal, ThreadPane.composerMargin)
+                .padding(.horizontal, ThreadPane.contentMargin)
                 .frame(maxWidth: .infinity)
             }
             .scrollPosition($position)

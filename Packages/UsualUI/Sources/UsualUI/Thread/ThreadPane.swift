@@ -15,12 +15,14 @@ struct ThreadPane: View {
     var jump: MessageJump? = nil
     var jumped: () -> Void = {}
 
-    /// The message box's distance from the window's sides, in chats and rooms. iPhone gives the
-    /// box more of its narrow width.
+    /// The message box's and the conversation's distances from the window's sides, in chats and
+    /// rooms. On iPhone the box floats further in than the messages, as in Grok's phone app.
     #if os(iOS)
-        static let composerMargin: CGFloat = 12
+        static let composerMargin: CGFloat = 30
+        static let contentMargin: CGFloat = 16
     #else
         static let composerMargin: CGFloat = 20
+        static let contentMargin: CGFloat = 20
     #endif
 
     /// Files waiting to go with the next message.
@@ -202,6 +204,16 @@ extension View {
     }
 
     #if os(iOS)
+        /// Content fades and blurs softly under the bars at the top and bottom, as in Grok's phone
+        /// app, on iOS 26 and later.
+        @ViewBuilder func softScrollEdges() -> some View {
+            if #available(iOS 26, *) {
+                scrollEdgeEffectStyle(.soft, for: .all)
+            } else {
+                self
+            }
+        }
+
         /// The pill keeps its own glass instead of sitting in the bar's shared background.
         @ViewBuilder func principalToolbarItem(_ item: some View) -> some View {
             if #available(iOS 26, *) {
@@ -218,20 +230,35 @@ struct NamePill: View {
     let contact: Contact
     let members: [Contact]
 
+    // On the Mac as tall as the sidebar's Search and New Room, on the same line as them; on iPhone
+    // as tall as the back and "…" buttons beside it, as in Grok's phone app.
+    #if os(iOS)
+        private static let height: CGFloat = 44
+        private static let avatar: CGFloat = 32
+        private static let nameSize: CGFloat = 17
+        private static let leading: CGFloat = 6
+        private static let trailing: CGFloat = 18
+    #else
+        private static let height: CGFloat = 36
+        private static let avatar: CGFloat = 26
+        private static let nameSize: CGFloat = 15
+        private static let leading: CGFloat = 5
+        private static let trailing: CGFloat = 16
+    #endif
+
     var body: some View {
         HStack(spacing: 8) {
             switch contact.kind {
-            case .agent: AgentAvatar(contact: contact, size: 26)
-            case .room: RoomAvatar(members: members, size: 26)
+            case .agent: AgentAvatar(contact: contact, size: Self.avatar)
+            case .room: RoomAvatar(members: members, size: Self.avatar)
             }
             Text(contact.name)
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: Self.nameSize, weight: .medium))
                 .foregroundStyle(Theme.ink)
         }
-        .padding(.leading, 5)
-        .padding(.trailing, 16)
-        // As tall as the sidebar's Search and New Room, on the same line as them.
-        .frame(height: 36)
+        .padding(.leading, Self.leading)
+        .padding(.trailing, Self.trailing)
+        .frame(height: Self.height)
         .floatingSurface(in: Capsule())
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
@@ -267,10 +294,7 @@ private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
                     bottom.padding(.top, 8).padding(.bottom, bottomPadding ?? 14)
                 }
         #else
-            conversation
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    bottom.padding(.top, 8).padding(.bottom, iPhoneBottomPadding)
-                }
+            iPhoneBottomBar(conversation, bottom.padding(.top, 8).padding(.bottom, iPhoneBottomPadding))
                 // A view that reaches past the safe area measures it.
                 .background {
                     Color.clear
@@ -287,6 +311,18 @@ private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
     }
 
     #if os(iOS)
+        /// On iOS 26 the box is a bar the conversation scrolls under, softly blurred and faded as in
+        /// Grok's phone app, and the top edge fades the same way under the name and buttons.
+        @ViewBuilder private func iPhoneBottomBar(_ conversation: some View, _ bar: some View) -> some View {
+            if #available(iOS 26, *) {
+                conversation
+                    .safeAreaBar(edge: .bottom, spacing: 0) { bar }
+                    .softScrollEdges()
+            } else {
+                conversation.safeAreaInset(edge: .bottom, spacing: 0) { bar }
+            }
+        }
+
         /// iPhone: with the keyboard down the box reaches a little into the home indicator's area, so
         /// it sits low like other messengers'; with the keyboard up it keeps clear of the keys. A home
         /// indicator takes 34 pt at most and a keyboard hundreds (see known issues); phones without a

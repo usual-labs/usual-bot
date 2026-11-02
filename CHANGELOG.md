@@ -83,8 +83,10 @@ All notable changes to Usual Bot are listed here. The format follows
   without lines between rows, and a section's arrow sits beside its
   name; touch and hold a heading for its options. The settings gear sits at the top with a
   connection dot, Settings leads with your gateway, and a chat's **…** button opens the profile or
-  starts a call. An agent's profile is a list of rows (Routines, Skills, Apps, Vault, Machine) with
-  what's in each.
+  starts a call. An agent's profile opens as a page from the chat, with a row for each of
+  Routines, Skills, Apps, Vault and Machine and what's in it. In a chat, messages fade and blur softly under the top
+  buttons and behind the message box (on iOS 26 and later), the box floats in from the sides, and
+  the agent's messages leave room on the right.
 - **Answer a question in the message box.** A question with one answer gets a lighter card: tap a
   choice, or type your answer below, where the box says "Answer" plus the agent's name. Elsewhere the
   box says "Ask" plus the agent's name.

@@ -2,29 +2,37 @@ import HermesKit
 import SwiftUI
 
 #if os(iOS)
+    extension Theme {
+        /// Grok's grouped look for the phone profile: a grey page with lighter cards, like Settings.
+        static let groupedPage = Color(light: 0xF2F2F2, dark: 0x1F1F1F)
+        static let groupedCard = Color(light: 0xFFFFFF, dark: 0x2A2A2A)
+        static let groupedBorder = Color(light: 0xE6E6E6, dark: 0x363636)
+    }
+
     /// The phone profile's card: a row for each page, with what's in it at a glance.
-    struct PhoneProfileRows: View {
+    struct PhoneProfileRows<Destination: View>: View {
         let contact: Contact
         let routines: RoutineList
         let skills: SkillList
         let apps: MCPServerList
         let vault: VaultList
-        let open: (ProfilePanel.Tab) -> Void
+        @ViewBuilder let destination: (ProfilePanel.Tab) -> Destination
 
         var body: some View {
             VStack(spacing: 0) {
                 ForEach(Array(ProfilePanel.Tab.allCases.enumerated()), id: \.element) { index, tab in
                     if index > 0 { Divider().padding(.leading, 56) }
-                    Button {
-                        open(tab)
+                    // A link to its view, not a value: no destination to register on the chat's stack.
+                    NavigationLink {
+                        destination(tab)
                     } label: {
                         row(tab)
                     }
                     .buttonStyle(.clickable)
                 }
             }
-            .background(Theme.pane, in: RoundedRectangle(cornerRadius: 22))
-            .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(Theme.border))
+            .background(Theme.groupedCard, in: RoundedRectangle(cornerRadius: 22))
+            .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(Theme.groupedBorder))
         }
 
         private func row(_ tab: ProfilePanel.Tab) -> some View {
@@ -49,7 +57,7 @@ import SwiftUI
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, 16)
-            .frame(minHeight: 56)
+            .frame(minHeight: 52)
             .contentShape(Rectangle())
         }
 

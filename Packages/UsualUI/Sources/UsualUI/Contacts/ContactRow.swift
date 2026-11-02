@@ -25,29 +25,29 @@ struct ContactRow: View {
     }
 
     private var row: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Self.gap) {
             avatar
                 .overlay(alignment: .topTrailing) {
                     if contact.activity == .needsYou { NeedsYouDot().offset(x: 3, y: -2) }
                 }
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Self.lineGap) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(contact.name)
-                        .font(.system(size: 15, weight: .medium))
+                        .font(Self.nameFont)
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
                     #if os(iOS)
                         Spacer(minLength: 0)
                         if let lastActive = contact.lastActive {
                             Text(Self.stamp(for: lastActive))
-                                .font(.system(size: 13))
-                                .foregroundStyle(Theme.secondaryInk)
+                                .font(.system(size: 14))
+                                .foregroundStyle(Theme.secondaryInk.opacity(0.75))
                         }
                     #endif
                 }
                 HStack(spacing: 8) {
                     Text(previewText)
-                        .font(.system(size: 13))
+                        .font(Self.previewFont)
                         .foregroundStyle(Theme.secondaryInk)
                         .lineLimit(1)
                     Spacer(minLength: 0)
@@ -58,6 +58,19 @@ struct ContactRow: View {
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
     }
+
+    // Grok's phone list is roomier than the Mac's sidebar: larger type, more space around the avatar.
+    #if os(iOS)
+        private static let gap: CGFloat = 16
+        private static let lineGap: CGFloat = 4
+        private static let nameFont = Font.system(size: 17)
+        private static let previewFont = Font.system(size: 15.5)
+    #else
+        private static let gap: CGFloat = 12
+        private static let lineGap: CGFloat = 2
+        private static let nameFont = Font.system(size: 15, weight: .medium)
+        private static let previewFont = Font.system(size: 13)
+    #endif
 
     @ViewBuilder private var avatar: some View {
         switch contact.kind {

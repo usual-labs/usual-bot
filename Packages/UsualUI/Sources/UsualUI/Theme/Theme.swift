@@ -25,6 +25,15 @@ public enum Theme {
     #endif
     /// The widest a message or card grows, so lines stay readable in a wide window.
     static let bubbleWidth: CGFloat = 560
+    /// On iPhone an agent's messages and cards stop short of the right edge, as in Grok's phone
+    /// app, so they read as the agent's side even when long.
+    #if os(iOS)
+        static let agentSideRoom: CGFloat = 44
+        static let bubblePadding: CGFloat = 14
+    #else
+        static let agentSideRoom: CGFloat = 0
+        static let bubblePadding: CGFloat = 12
+    #endif
     /// A conversation's column, and the message box under it.
     static let columnWidth: CGFloat = 960
     public static let border = Color(light: 0xE6E6E6, dark: 0x2E2E2E)

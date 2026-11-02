@@ -159,12 +159,13 @@ struct ContactList: View {
                                     // No lines between chats, as in Grok.
                                     .listRowSeparator(.hidden)
                                     .listRowBackground(Color.clear)
+                                    .listRowInsets(EdgeInsets(top: 14, leading: 22, bottom: 14, trailing: 22))
                                     .contextMenu { rowMenu(contact) }
                             }
                         }
                     } header: {
                         if showsHeadings {
-                            heading(block).listRowInsets(EdgeInsets(top: 6, leading: 6, bottom: 2, trailing: 6))
+                            heading(block).listRowInsets(EdgeInsets(top: 6, leading: 10, bottom: 2, trailing: 10))
                         }
                     }
                     .listSectionSeparator(.hidden)
@@ -177,6 +178,7 @@ struct ContactList: View {
             .environment(\.defaultMinListHeaderHeight, 0)
             .scrollContentBackground(.hidden)
             .background(Theme.pane)
+            .softScrollEdges()
         #endif
     }
 

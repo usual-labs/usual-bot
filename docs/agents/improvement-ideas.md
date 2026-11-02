@@ -5,12 +5,12 @@
 - **Hermes features the app doesn't surface yet.** From a Hermes source read (`bf0203a794`,
   22 October 2026); none confirmed against a live gateway. Check each call on the app's
   dashboard socket first.
-  - **Search across chats:** `GET /api/sessions/search`. The app's search matches the contact
-    list only.
+  - **Server-side search:** `GET /api/sessions/search`. `AppModel.searchMessages` only searches
+    what the device holds, so older messages in a chat whose history isn't loaded are missed.
   - **Playing audio and video:** a delivered non-image file shows as a file to save or share
     (`MediaView`), with no player.
-  - **Connected apps:** `connectors.*`, the `connection.request` event, and MCP servers
-    (`/api/mcp/*`).
+  - **Connect cards in chat:** `connectors.*` and the `connection.request` event. MCP servers
+    (`/api/mcp/*`) are in the profile's Apps page already.
   - **Managing Bots:** `profiles.create`, `PATCH /api/profiles/{name}`, `profiles.set_asset`. The
     roster only writes a Bot's section: no create, rename or picture change.
   - **Routine templates:** `/api/cron/blueprints` gives fill-in templates the New Routine form

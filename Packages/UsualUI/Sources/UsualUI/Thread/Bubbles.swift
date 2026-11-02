@@ -28,7 +28,7 @@ struct AgentBubble<Content: View>: View {
     var body: some View {
         UpToWidth {
             content
-                .padding(.horizontal, 12)
+                .padding(.horizontal, Theme.bubblePadding)
                 .padding(.vertical, 9)
                 .background(
                     Theme.bubble,
@@ -36,6 +36,7 @@ struct AgentBubble<Content: View>: View {
                         topLeadingRadius: joinsAbove ? 6 : 18, bottomLeadingRadius: joinsBelow ? 6 : 18,
                         bottomTrailingRadius: 18, topTrailingRadius: 18))
         }
+        .padding(.trailing, Theme.agentSideRoom)
     }
 }
 
@@ -46,6 +47,7 @@ extension View {
             // Leading, or a card with short lines floats towards its middle.
             .frame(maxWidth: Theme.bubbleWidth, alignment: .leading)
             .background(Theme.bubble, in: RoundedRectangle(cornerRadius: 24))
+            .padding(.trailing, Theme.agentSideRoom)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .contain)
     }

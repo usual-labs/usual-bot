@@ -246,7 +246,7 @@ struct UserBubbleContent: View {
                 }
                 .foregroundStyle(Theme.userBubbleInk)
                 .textSelection(.enabled)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, Theme.bubblePadding)
                 .padding(.vertical, 9)
                 .background(contact?.accent ?? Theme.userBubble, in: RoundedRectangle(cornerRadius: 18))
             }

@@ -118,18 +118,17 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
     #if os(iOS)
         private var phoneSettingsButton: some View {
             Button(action: showSettings) {
+                // Sized like the + beside it, so the bar draws both as the same circle.
                 Image(systemName: "gearshape")
                     .font(.system(size: 19, weight: .regular))
                     .foregroundStyle(Theme.ink)
-                    .frame(width: 44, height: 44)
                     .overlay(alignment: .bottomTrailing) {
                         Circle()
                             .fill(model.link.dotColor)
-                            .frame(width: 10, height: 10)
-                            .overlay(Circle().strokeBorder(Theme.pane, lineWidth: 2))
-                            .offset(x: -4, y: -4)
+                            .frame(width: 9, height: 9)
+                            .overlay(Circle().strokeBorder(Theme.pane, lineWidth: 1.5))
+                            .offset(x: 4, y: 4)
                     }
-                    .contentShape(Circle())
             }
             .buttonStyle(.clickable)
             .accessibilityLabel(Text("Settings"))
@@ -214,6 +213,10 @@ struct ContactsSplitView<Footer: View>: View {
             }
             .tracksLooking($isLooking)
             .onChange(of: selection, initial: true) { _, selected in
+                #if os(iOS)
+                    // A profile pushed over the last chat mustn't open over the next.
+                    showsProfile = false
+                #endif
                 select(isLooking ? selected : nil)
                 if jump?.contactID != selected { jump = nil }
             }
@@ -287,7 +290,8 @@ struct ContactsSplitView<Footer: View>: View {
                         ToolbarItem(placement: .primaryAction) { newRoomButton }
                     }
             } detail: {
-                detail
+                // A stack of its own, so a chat can push its agent's profile.
+                NavigationStack { detail }
             }
         #endif
     }
@@ -447,9 +451,11 @@ struct ContactsSplitView<Footer: View>: View {
                 }
                 .profileCloseButton(shown: showsProfile && panel != nil) { showsProfile = false }
             #else
-                // A sheet, not an inspector: an inspector's content sits in the chat's navigation
-                // stack, so its toolbar joins the chat's bar and its pages never open.
-                .sheet(isPresented: Binding(get: { showsProfile && panel != nil }, set: { showsProfile = $0 })) {
+                // Pushed from the chat, as in Grok's phone app. Not an inspector: its content sits
+                // in the chat's navigation stack, so its toolbar joins the chat's bar.
+                .navigationDestination(
+                    isPresented: Binding(get: { showsProfile && panel != nil }, set: { showsProfile = $0 })
+                ) {
                     panel
                 }
             #endif

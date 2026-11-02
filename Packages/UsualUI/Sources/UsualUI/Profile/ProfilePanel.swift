@@ -35,8 +35,12 @@ struct ProfilePanel: View {
     let close: () -> Void
 
     @State private var tab = Tab.routines
-    /// iPhone: the pages opened from the rows.
-    @State private var path: [Tab] = []
+
+    #if os(iOS)
+        private static let nameSize: CGFloat = 24
+    #else
+        private static let nameSize: CGFloat = 20
+    #endif
 
     var body: some View {
         #if os(macOS)
@@ -57,41 +61,35 @@ struct ProfilePanel: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.window)
         #else
-            // Grok's phone profile: who it is, then one card of rows, each opening its page.
-            NavigationStack(path: $path) {
-                ScrollView {
-                    VStack(spacing: 24) {
-                        header
-                        PhoneProfileRows(
-                            contact: contact, routines: routines, skills: skills, apps: apps, vault: vault
-                        ) { path.append($0) }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 20)
-                }
-                .background(Theme.window)
-                .navigationBarTitleDisplayMode(.inline)
-                .navigationDestination(for: Tab.self) { tab in
-                    ScrollView {
-                        page(tab).padding(20)
-                    }
-                    .background(Theme.window)
-                    .navigationTitle(tab.title)
-                }
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button("Close profile", systemImage: "xmark", action: close)
+            // Grok's phone profile: a page pushed from the chat, who it is, then one card of rows,
+            // each pushing its page.
+            ScrollView {
+                VStack(spacing: 24) {
+                    header
+                    PhoneProfileRows(
+                        contact: contact, routines: routines, skills: skills, apps: apps, vault: vault
+                    ) { tab in
+                        ScrollView {
+                            page(tab).padding(20)
+                        }
+                        .background(Theme.groupedPage)
+                        .navigationTitle(tab.title)
+                        .navigationBarTitleDisplayMode(.inline)
                     }
                 }
-                .task(id: contact.id) {
-                    // The rows' counts; each page reloads its own when opened.
-                    async let routinesLoad: Void = routines.refresh()
-                    async let skillsLoad: Void = skills.refresh()
-                    async let appsLoad: Void = apps.refresh()
-                    _ = await (routinesLoad, skillsLoad, appsLoad)
-                    if isOnline { await vault.refresh() }
-                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
+            }
+            .background(Theme.groupedPage)
+            .navigationBarTitleDisplayMode(.inline)
+            .task(id: contact.id) {
+                // The rows' counts; each page reloads its own when opened.
+                async let routinesLoad: Void = routines.refresh()
+                async let skillsLoad: Void = skills.refresh()
+                async let appsLoad: Void = apps.refresh()
+                _ = await (routinesLoad, skillsLoad, appsLoad)
+                if isOnline { await vault.refresh() }
             }
         #endif
     }
@@ -125,7 +123,7 @@ struct ProfilePanel: View {
         VStack(spacing: 6) {
             AgentAvatar(contact: contactWithoutActivity, size: 88)
             Text(contact.name)
-                .font(.system(size: 20, weight: .semibold))
+                .font(.system(size: Self.nameSize, weight: .semibold))
                 .foregroundStyle(Theme.ink)
                 .padding(.top, 6)
                 .accessibilityAddTraits(.isHeader)
