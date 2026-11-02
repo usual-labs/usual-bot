@@ -102,6 +102,8 @@ public final class ChatThread {
     }
 
     private var openTask: Task<Void, Never>?
+    /// The session of a chat moved here from another ID letting go of it, which opening waits for.
+    var released: Task<Void, Never>?
     let channel: @MainActor () -> JSONRPCChannel?
 
     private static let log = Logger(subsystem: "UsualBot", category: "chat")
@@ -147,6 +149,8 @@ public final class ChatThread {
         Self.log.notice("Opening chat \(self.contactID, privacy: .private)")
         openTask = Task {
             defer { openTask = nil }
+            await released?.value
+            released = nil
             do {
                 let opened = try await BotChat.open(profile: contactID, knownID: knownID, on: channel)
                 attach(opened)
@@ -201,6 +205,15 @@ public final class ChatThread {
     func replaceTranscript(with history: [HistoryMessage]) {
         state = ThreadState(history: history, running: false, kept: backgroundResults)
         transcriptLoad += 1
+    }
+
+    /// Ends this app's live session for a Bot renamed or deleted on the gateway, and forgets it.
+    /// Hermes lets one live session hold a chat, so the old one would refuse the chat to the new ID
+    /// ("open in another Hermes window"). `nil` when no session was attached.
+    func release() -> Task<Void, Never>? {
+        defer { detach() }
+        guard let sessionID, let channel = channel() else { return nil }
+        return Task { _ = try? await channel.call("session.close", params: ["session_id": .string(sessionID)]) }
     }
 
     /// Forgets the live session after the socket drops; the transcript stays on screen.

@@ -91,6 +91,8 @@ extension AppModel {
             pictures.show(png, for: contact.id)
         }
         rosterHolds.add(contact)
+        // Hermes lets a new profile take a renamed one's old ID; that ID is this Bot's now.
+        renamedAgents[contact.id] = nil
         contacts.removeAll { $0.id == contact.id }
         contacts.append(contact)
         sections.reconcile(contacts)
@@ -163,17 +165,33 @@ extension AppModel {
     /// it kept about a Bot that's gone.
     func followProfileChanges(_ rows: [ProfileRow]) {
         let listed = Set(rows.map(\.name))
+        // An old ID a Bot made since has taken stands for that Bot again.
+        for id in listed { renamedAgents[id] = nil }
         // A Bot just made here may not be listed yet.
         let known = Set(contacts.filter { $0.kind == .agent }.map(\.id)).union(threads.keys)
             .subtracting(rosterHolds.added)
         var moved: Set<Contact.ID> = []
-        for row in rows {
-            for old in row.previousNames where old != row.name && !listed.contains(old) && known.contains(old) {
-                moveAgent(from: old, to: row.name)
-                moved.insert(old)
-            }
+        for old in known.subtracting(listed) {
+            guard let heir = heir(of: old, among: rows) else { continue }
+            moveAgent(from: old, to: heir)
+            moved.insert(old)
         }
         for id in known.subtracting(listed).subtracting(moved) { forgetAgent(id) }
+    }
+
+    /// The Bot now under `old`'s profile. Hermes never forgets an old ID, so after a new Bot takes
+    /// one and is renamed in turn, two Bots list it: the one holding `old`'s chat is it, or the one
+    /// with its name. Moving a chat to the wrong Bot is worse than forgetting it, so a tie is `nil`.
+    private func heir(of old: Contact.ID, among rows: [ProfileRow]) -> Contact.ID? {
+        let claims = rows.filter { $0.name != old && $0.previousNames.contains(old) }
+        guard claims.count > 1 else { return claims.first?.name }
+        let contact = contacts.first { $0.id == old }
+        if let chat = contact?.chatID {
+            let holding = claims.filter { [$0.canonicalSession?.id, $0.canonicalSession?.resolvedId].contains(chat) }
+            if holding.count == 1 { return holding[0].name }
+        }
+        let named = claims.filter { Contact(profile: $0)?.name == contact?.name }
+        return named.count == 1 ? named[0].name : nil
     }
 
     /// What this app keeps about a Bot under `old` goes under `new`. Its open chat closes and opens
@@ -181,8 +199,12 @@ extension AppModel {
     func moveAgent(from old: Contact.ID, to new: Contact.ID) {
         renamedAgents[old] = new
         if let thread = threads.removeValue(forKey: old) {
-            thread.detach()
-            if threads[new] == nil, thread.phase == .ready { threads[new] = makeThread(new, cached: thread.cacheEntry) }
+            let released = thread.release()
+            if threads[new] == nil, thread.phase == .ready {
+                let moved = makeThread(new, cached: thread.cacheEntry)
+                moved.released = released
+                threads[new] = moved
+            }
         }
         dropLists(of: old)
         pictures.move(old, to: new)
@@ -197,7 +219,7 @@ extension AppModel {
     /// Forgets a Bot that's gone: its chat, lists, picture, unsaved section move and alerts. The
     /// offline cache follows at the next save, which writes only what's held here.
     func forgetAgent(_ id: Contact.ID) {
-        threads.removeValue(forKey: id)?.detach()
+        _ = threads.removeValue(forKey: id)?.release()
         dropLists(of: id)
         pictures.forget(id)
         sections.forget(id)

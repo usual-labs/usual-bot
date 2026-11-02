@@ -57,6 +57,13 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 
 ## Gateway
 
+- **A Bot renamed outside the app refuses its chat for up to 5 minutes** ("This chat is open in
+  another Hermes window/terminal"). A chat's lease is filed in the profile folder, and the session
+  that took it releases it at the path it had, which the rename moved. The dashboard's 5-minute sweep
+  then drops leases with no live session. So the app sends `session.close` for the old ID's session
+  (`ChatThread.release`); a session left by an earlier run of the app holds the lease until the
+  dashboard drops that session (seen holding for over 15 minutes). Hermes-side; seen on `bf0203a794`.
+
 - **MCP sign-in needs the gateway reachable from the browser** (source finding, unverified live).
   Hermes builds the OAuth redirect from the address the app used (`request.base_url`) unless
   `dashboard.public_url` is set, so the browser on the same device can usually reach it. A provider

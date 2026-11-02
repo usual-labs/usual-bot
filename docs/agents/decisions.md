@@ -186,7 +186,9 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   ID (`PATCH /api/profiles/{name}`) stops the Bot's gateway and moves its folder, and every piece of
   client state is keyed by it. An ID renamed elsewhere shows up in the roster's `previous_names`;
   `AppModel.followProfileChanges` moves the chat, cache, picture, section, lists and open selection
-  to the new ID (`renamedAgents` maps old IDs for views still holding one).
+  to the new ID (`renamedAgents` maps old IDs for views still holding one). Hermes never forgets an
+  old ID and lets a new profile take one, so several rows can list the same old ID: the chat goes to
+  the row holding its Bot Chat, else the one with its name, else nowhere.
 - **Delete is REST only** (`DELETE /api/profiles/{name}`; no socket method). It takes the whole
   profile folder, so the sheet lists what goes and asks for the name typed, as `hermes profile
   delete` does. The default profile can't be deleted. Rooms keep a deleted member: Hermes freezes a
@@ -387,11 +389,11 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   or changes a real agent. The iPhone layout of the routine sheets hasn't been looked at. Templates
   (`/api/cron/blueprints` and `/instantiate`) were run on a real gateway on the Mac: the catalog,
   creating from one, a bad time's message, Run Now and Delete.
-- Managing Bots against a real gateway: create, rename, picture, remove picture and delete have run
-  only against fakes shaped from the Hermes source (`bf0203a794`) and in the demo. Unknown: how long
-  `DELETE /api/profiles/{name}` takes when it stops a running gateway (it waits up to 10 s, so the
-  app allows 120 s), whether `share_auth` copies sign-ins the way the desktop expects, and a room
-  turn addressed to a deleted member.
+- Managing Bots ran on a real gateway (Hermes `bf0203a794`) on the Mac, with throwaway Bots: create
+  (it chats at once), rename, picture, remove picture, delete (about 2 s) and renames by `hermes
+  profile rename` with the chat open. Unknown: delete while that Bot is replying, whether
+  `share_auth` copies sign-ins the way the desktop expects, a room turn addressed to a deleted
+  member, the picture in the official app, and the iPhone sheets on a gateway.
 - The vault beyond a loopback client on the legacy dialect: `vault.unlock_prompt` and `vault.code`, a
   real password manager, a client on a remote address, and the authority path. Sign-in, secret cards
   and the background bar were run against a real gateway on the Mac and in the iPhone Simulator,

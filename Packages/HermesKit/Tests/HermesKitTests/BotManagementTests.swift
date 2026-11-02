@@ -235,6 +235,47 @@ struct BotStateTests {
         #expect(model.contacts.first?.id == "finder")
     }
 
+    @Test func aNewBotWithAnOldNameIsntSentToTheBotThatHadIt() async throws {
+        let model = model()
+        model.isDemo = true
+        model.contacts = [agent("scout")]
+        model.followProfileChanges(try rows(#"{"profiles":[{"name":"finder","previous_names":["scout"]}]}"#))
+        #expect(model.currentID(for: "scout") == "finder")
+
+        let made = try await model.createBot(BotName("Scout"), description: nil, picture: nil)
+        #expect(model.currentID(for: made.id) == "scout")
+        // Made elsewhere, it shows up in the roster beside the Bot that once had its name.
+        model.renamedAgents["scout"] = "finder"
+        model.followProfileChanges(
+            try rows(#"{"profiles":[{"name":"finder","previous_names":["scout"]},{"name":"scout"}]}"#))
+        #expect(model.currentID(for: "scout") == "scout")
+    }
+
+    @Test func whenTwoBotsOnceHadAnIDTheChatGoesToTheOneWithItsChat() throws {
+        let model = model()
+        var scout = agent("scout")
+        scout.chatID = "chat-new"
+        model.contacts = [scout, agent("finder")]
+        model.threads["scout"] = ChatThread.sample("scout", state: ThreadState(history: [], running: false))
+        // "finder" had the ID "scout" long ago; the Bot under it now was just renamed to "ranger".
+        model.followProfileChanges(
+            try rows(
+                #"{"profiles":[{"name":"finder","previous_names":["scout"],"canonical_session":{"id":"chat-old"}},"#
+                    + #"{"name":"ranger","previous_names":["scout"],"canonical_session":{"id":"chat-new"}}]}"#))
+        #expect(model.currentID(for: "scout") == "ranger")
+        #expect(model.threads["ranger"] != nil)
+    }
+
+    @Test func whenTwoBotsOnceHadAnIDAndNothingTellsThemApartTheChatIsntMoved() throws {
+        let model = model()
+        model.contacts = [agent("scout")]
+        model.followProfileChanges(
+            try rows(
+                #"{"profiles":[{"name":"finder","previous_names":["scout"]},"#
+                    + #"{"name":"ranger","previous_names":["scout"]}]}"#))
+        #expect(model.currentID(for: "scout") == "scout")
+    }
+
     @Test func aBotDeletedElsewhereIsForgotten() throws {
         let model = model()
         model.contacts = [agent("scout"), agent("ops")]
