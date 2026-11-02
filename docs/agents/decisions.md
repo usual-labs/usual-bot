@@ -210,6 +210,16 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   it accepts.
 - **Run Now on a paused routine turns it back on.** The trigger route passes `force`, which resumes
   the job as it claims the run. The detail says so before you press it.
+- **Templates create through `POST /api/cron/blueprints/instantiate`, not `/api/cron/jobs`.**
+  `GET /api/cron/blueprints` sends each template's fields and schedule template but not its prompt
+  or skills (`blueprint_catalog_entry` in `cron/blueprint_catalog.py`), so only Hermes can fill the
+  prompt. The form asks the fields, shows the schedule they make (worked out as `_resolve_schedule`
+  does) and the Results choice in place of the `deliver` field; the created routine then opens with
+  Edit for everything else. This is the official dashboard's and desktop app's path too.
+- **Skills a template can't load are named after it's created.** The job it returns lists them, and
+  `/api/skills` says which are missing or off. Hermes skips a skill it can't load and runs anyway
+  (`_load_cron_skill_parts`), so the routine stays, with a note saying how to fix it. Templates
+  declare no tools or connected apps; their prompts tell the agent what to do without them.
 
 ## Vault
 
@@ -281,7 +291,8 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   takes, and `reload.mcp` on either dialect.
 - Routines against a real gateway: create, edit, delete, Run Now and past runs have run only against
   fakes shaped from the Hermes source and in the demo, never on a gateway, because each costs money
-  or changes a real agent. The iPhone layout of the routine sheets hasn't been looked at.
+  or changes a real agent. The iPhone layout of the routine sheets hasn't been looked at. Templates
+  (`/api/cron/blueprints` and `/instantiate`) are the same: fakes and the demo only.
 - The vault beyond a loopback client on the legacy dialect: `vault.unlock_prompt` and `vault.code`, a
   real password manager, a client on a remote address, and the authority path. Sign-in, secret cards
   and the background bar were run against a real gateway on the Mac and in the iPhone Simulator,

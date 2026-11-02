@@ -65,7 +65,7 @@ recovery: after a short drop it replays missed events with `session.events.since
 `groups.log` every 2 seconds while a room is on screen.
 
 **Routines, skills and media.** Routines and skills come from REST routes (`/api/cron/jobs`,
-`/api/skills`), and images in replies through the gateway's file routes (`MediaStore`).
+`/api/cron/blueprints` for templates, `/api/skills`), and images in replies through the gateway's file routes (`MediaStore`).
 
 **Voice** (`Voice/`, `UsualUI/Call/`). On-device calls use Apple's speech recognition and voices.
 GPT-Live calls ask the gateway to open an OpenAI realtime session (the key stays on the gateway)

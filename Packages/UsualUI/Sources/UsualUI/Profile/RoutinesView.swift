@@ -69,17 +69,20 @@ struct RoutinesView: View {
         .task(id: list.profile) {
             while !Task.isCancelled {
                 await list.refresh()
+                // Ready before New Routine opens, so a gateway without templates goes straight to
+                // the blank form.
+                if list.phase == .ready { await list.loadTemplates() }
                 try? await Task.sleep(for: .seconds(30))
             }
         }
         #if DEBUG
-            .task(id: list.phase) { openFromLaunch() }
+            .task(id: "\(list.phase) \(list.templatePhase)") { openFromLaunch() }
         #endif
         .sheet(item: $sheet) { sheet in
             Group {
                 switch sheet {
                 case .new:
-                    RoutineEditor(list: list, routine: nil, agentName: agentName) { _ in self.sheet = nil }
+                    NewRoutineSheet(list: list, agentName: agentName) { self.sheet = nil }
                 case .routine(let id):
                     RoutineDetail(list: list, id: id, agentName: agentName)
                 }
@@ -91,15 +94,17 @@ struct RoutinesView: View {
 
 #if DEBUG
     extension RoutinesView {
-        /// `USUALBOT_OPEN_ROUTINE=new`, `=<id>`, `=<id>/edit`, `=<id>/run` (its latest run) or
-        /// `=<id>/start` (Run Now) opens that sheet once the
-        /// list loads, for screenshots without clicking.
+        /// `USUALBOT_OPEN_ROUTINE=new`, `=new/<template key>`, `=<id>`, `=<id>/edit`, `=<id>/run` (its
+        /// latest run) or `=<id>/start` (Run Now) opens that sheet once the list loads, for
+        /// screenshots without clicking.
         static let launchRoute = ProcessInfo.processInfo.environment["USUALBOT_OPEN_ROUTINE"]?
             .split(separator: "/").map(String.init)
 
         fileprivate func openFromLaunch() {
             guard let route = Self.launchRoute, list.phase == .ready, sheet == nil else { return }
             if route.first == "new" {
+                // A template's form waits for the templates.
+                guard route.count == 1 || list.templatePhase != .loading else { return }
                 sheet = .new
             } else if let id = route.first, list.routines.contains(where: { $0.id == id }) {
                 sheet = .routine(id)

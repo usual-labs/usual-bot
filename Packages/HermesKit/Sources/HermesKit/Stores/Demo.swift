@@ -16,7 +16,9 @@
                 cache: OfflineCache(directory: .temporaryDirectory.appending(path: "UsualBotDemo")))
             let demo = Demo(now: now, longConversations: longConversations)
             let routines = Dictionary(
-                uniqueKeysWithValues: demo.agents.map { ($0.id, DemoRoutines.list(for: $0.id, now: now)) })
+                uniqueKeysWithValues: demo.agents.map {
+                    ($0.id, DemoRoutines.list(for: $0.id, now: now, skills: Demo.skills))
+                })
             model.showDemo(
                 gateway: Demo.gateway, contacts: demo.agents + [demo.roomContact], threads: demo.threads,
                 rooms: [demo.roomContact.id: demo.room], routines: routines,

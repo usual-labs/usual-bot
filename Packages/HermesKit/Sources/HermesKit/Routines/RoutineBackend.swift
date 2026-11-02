@@ -12,6 +12,12 @@ protocol RoutineBackend: AnyObject {
     func trigger(id: String) async throws -> Routine?
     func runs(id: String) async throws -> [RoutineRun]
     func messages(runID: String) async throws -> [HistoryMessage]
+    /// The fill-in templates New Routine offers. Empty on a gateway without them.
+    func templates() async throws -> [RoutineTemplate]
+    /// Has the gateway fill in template `key` with `values` and create the routine. Answers the job.
+    func create(template key: String, values: [String: String]) async throws -> JSONValue
+    /// The agent's skills, to tell which ones a new routine can't load.
+    func skills() async throws -> [Skill]
 }
 
 /// The gateway's `/api/cron/jobs` routes for one profile.
@@ -66,6 +72,24 @@ final class GatewayRoutines: RoutineBackend {
         let page = try await call("/api/sessions/\(Self.escape(runID))/messages", query: "&inline_images=false")
         guard case .array(let rows) = page["messages"] else { throw GatewayError.invalidResponse }
         return rows.compactMap(HistoryMessage.init(storedRow:))
+    }
+
+    func templates() async throws -> [RoutineTemplate] {
+        do {
+            return try RoutineTemplate.catalog(try await call("/api/cron/blueprints"))
+        } catch GatewayError.http(status: 404, _), GatewayError.http(status: 405, _) {
+            return []  // Older than templates.
+        }
+    }
+
+    func create(template key: String, values: [String: String]) async throws -> JSONValue {
+        let body: JSONValue = ["blueprint": .string(key), "values": .object(values.mapValues(JSONValue.string))]
+        return try await call("/api/cron/blueprints/instantiate", method: "POST", body: body)
+    }
+
+    func skills() async throws -> [Skill] {
+        guard let auth = auth() else { throw GatewayError.disconnected }
+        return try await auth.json([Skill].self, path: "/api/skills?profile=\(Self.escape(profile))")
     }
 
     private func call(

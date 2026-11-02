@@ -13,6 +13,7 @@ All notable changes to Usual Bot are listed here. The format follows
   Choose one to open that chat at the message, highlighted for a moment.
 - **Dates in chats.** A date sits above the first message, and again after a new day or a quiet
   hour, in chats and rooms. Hover a message on the Mac for its time, or long-press it on iPhone.
+- **Routine templates.** New Routine offers the gateway's templates, like a morning briefing or a price watch: answer a few questions and it's set up, with a note if it needs a skill the agent lacks.
 - **Manage routines.** Create, edit, delete and run an agent's routines from its profile, and read
   each one's past runs. Schedules read in plain words, a failed run says why, and results can post
   in the chat or stay in past runs.

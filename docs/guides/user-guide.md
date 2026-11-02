@@ -215,6 +215,13 @@ showing at a glance how many are on.
     day, weekdays, every week, every month, every hour and every 15 minutes, or **Custom** for text
     like "every 2h", "every monday 9am", "0 9 * * 1-5" or "in 30m". If the gateway can't read it,
     it says which forms it accepts.
+  - **Templates:** New Routine also lists the gateway's templates, such as a morning briefing or a
+    price watch, each with a line about it. Pick one, answer its few questions and choose where
+    results go; it shows when it will run. Hermes writes the instructions from your answers, and
+    the new routine opens so you can read them and **Edit** anything. If it uses a skill the agent
+    doesn't have, or one that's turned off, it says so: add the skill in Hermes or turn it on under
+    **Skills**, or the routine runs without it. An older gateway without templates goes straight to
+    the blank form.
   - **Results:** **Post in this chat** sends each result to the agent here, and it replies, which
     uses a turn. **Keep in past runs only** posts nothing. A routine set up to send elsewhere, such
     as Telegram, keeps going there unless you change it.

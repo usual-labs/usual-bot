@@ -15,12 +15,18 @@
         private var runsByRoutine: [String: [DemoRun]]
         private let runTime: Duration
         private var nextID = 1
+        /// What New Routine offers, and the skills the agent has for them.
+        var templates = DemoTemplate.all
+        private let installedSkills: [Skill]
 
         /// `runTime`: how long Run Now takes.
-        init(_ routines: [Routine], runs: [String: [DemoRun]], runTime: Duration = .seconds(4)) {
+        init(
+            _ routines: [Routine], runs: [String: [DemoRun]], runTime: Duration = .seconds(4), skills: [Skill] = []
+        ) {
             self.routines = routines
             self.runsByRoutine = runs
             self.runTime = runTime
+            self.installedSkills = skills
         }
 
         func list() async throws -> [Routine] { routines }
@@ -86,6 +92,43 @@
             runsByRoutine.values.joined().first { $0.run.id == runID }?.messages ?? []
         }
 
+        func templates() async throws -> [RoutineTemplate] { templates.map(\.template) }
+
+        func create(template key: String, values: [String: String]) async throws -> JSONValue {
+            guard let demo = templates.first(where: { $0.template.key == key }) else {
+                throw GatewayError.http(status: 404, message: "Unknown blueprint: \(key)")
+            }
+            let template = demo.template
+            // What Hermes's fill_blueprint refuses, in its words.
+            for field in template.fields {
+                let value = values[field.name] ?? field.defaultValue
+                if value.isEmpty, !field.isOptional {
+                    throw GatewayError.http(
+                        status: 422, message: "missing required value: \(field.name) (\(field.label))")
+                }
+            }
+            var filled = template.defaults
+            filled.merge(values) { _, new in new }
+            guard let schedule = template.schedule(filled), let prompt = RoutineTemplate.fill(demo.prompt, with: filled)
+            else { throw GatewayError.http(status: 422, message: "a time is required") }
+            defer { nextID += 1 }
+            let deliver = filled["deliver"] ?? "origin"
+            routines.append(
+                Routine(
+                    id: "demo-\(nextID)", name: template.title, schedule: schedule, isOn: true,
+                    nextRun: .now.addingTimeInterval(3600), prompt: prompt, deliver: deliver,
+                    worksWithoutPrompt: !demo.skills.isEmpty))
+            return [
+                "id": .string("demo-\(nextID)"), "name": .string(template.title), "prompt": .string(prompt),
+                "schedule": ["kind": "cron", "expr": .string(schedule), "display": .string(schedule)],
+                "schedule_display": .string(schedule), "enabled": true, "state": "scheduled",
+                "next_run_at": .string(Date.now.addingTimeInterval(3600).formatted(.iso8601)),
+                "deliver": .string(deliver), "skills": .array(demo.skills.map(JSONValue.string)),
+            ]
+        }
+
+        func skills() async throws -> [Skill] { installedSkills }
+
         private func change(_ id: String, _ transform: (Routine) -> Routine) throws -> Routine {
             guard let index = routines.firstIndex(where: { $0.id == id }) else { throw Self.notFound }
             routines[index] = transform(routines[index])
@@ -117,7 +160,7 @@
 
     extension DemoRoutines {
         /// The routines each demo agent has: Ops and Atlas have some, with past runs.
-        static func list(for agent: String, now: Date) -> RoutineList {
+        static func list(for agent: String, now: Date, skills: [Skill] = []) -> RoutineList {
             let hours = { (count: Double) in now.addingTimeInterval(count * 3600) }
             switch agent {
             case "ops":
@@ -171,7 +214,7 @@
                         "Restored 2.3 GB in 4 minutes. All 48 tables open and the row counts match production."),
                 ]
                 return RoutineList.sample(
-                    routines, profile: "ops", runs: ["health": health, "backups": backups])
+                    routines, profile: "ops", runs: ["health": health, "backups": backups], skills: skills)
             case "atlas":
                 let routines = [
                     Routine(
@@ -209,9 +252,10 @@
                         messages: [])
                 ]
                 return RoutineList.sample(
-                    routines, profile: "atlas", runs: ["pricing": pricing, "papers": papers, "reading": reading])
+                    routines, profile: "atlas", runs: ["pricing": pricing, "papers": papers, "reading": reading],
+                    skills: skills)
             default:
-                return RoutineList.sample([], profile: agent)
+                return RoutineList.sample([], profile: agent, skills: skills)
             }
         }
 

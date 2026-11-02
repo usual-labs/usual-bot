@@ -26,9 +26,23 @@ public final class RoutineList {
     /// Routines Run Now is waiting on. The gateway answers only when the run ends.
     public private(set) var running: Set<Routine.ID> = []
     public private(set) var outcomes: [Routine.ID: RunOutcome] = [:]
+    /// The fill-in templates New Routine offers, once loaded.
+    public private(set) var templates: [RoutineTemplate] = []
+    public private(set) var templatePhase: TemplatePhase = .loading
+
+    /// Whether New Routine can offer templates yet.
+    public enum TemplatePhase: Equatable, Sendable {
+        case loading
+        case ready
+        /// None to offer: an older gateway, or it couldn't be reached. New Routine is a blank form.
+        case unavailable
+    }
 
     private let backend: any RoutineBackend
     private var refreshing = false
+    private var loadingTemplates = false
+    /// The gateway answered about templates, even with none: no need to ask again.
+    private var templatesSettled = false
 
     init(profile: String, auth: @escaping @MainActor () -> AuthSession?) {
         self.profile = profile
@@ -80,6 +94,40 @@ public final class RoutineList {
         if let created { routines.append(created) }
         await refresh()
         return created.flatMap { new in routines.first { $0.id == new.id } } ?? created
+    }
+
+    /// Loads the templates once. A gateway without them settles on none; one that can't be reached
+    /// is asked again on the next call.
+    public func loadTemplates() async {
+        guard !loadingTemplates, !templatesSettled else { return }
+        loadingTemplates = true
+        defer { loadingTemplates = false }
+        do {
+            templates = try await backend.templates()
+            templatePhase = templates.isEmpty ? .unavailable : .ready
+            templatesSettled = true
+        } catch {
+            templatePhase = .unavailable
+        }
+    }
+
+    /// Creates a routine from `template`: Hermes fills in its prompt and schedule from `values` and
+    /// adds the skills it uses. Says which of those skills the agent can't load, so the form can
+    /// tell the user now rather than leave the first run without them.
+    public func create(
+        from template: RoutineTemplate, values: [String: String], delivery: RoutineDelivery
+    ) async throws -> TemplateRoutine {
+        let job = try await backend.create(
+            template: template.key, values: template.filled(values, delivery: delivery, profile: profile))
+        guard let created = Routine(job: job) else { throw GatewayError.invalidResponse }
+        routines.append(created)
+        var missing: [TemplateRoutine.MissingSkill] = []
+        // Against no skills, every skill it uses is missing: ask for the agent's only if it uses any.
+        if !TemplateRoutine.missing(in: job, installed: []).isEmpty, let installed = try? await backend.skills() {
+            missing = TemplateRoutine.missing(in: job, installed: installed)
+        }
+        await refresh()
+        return TemplateRoutine(routine: routines.first { $0.id == created.id } ?? created, missingSkills: missing)
     }
 
     /// Saves what changed in `draft`. Nothing changed sends nothing.
@@ -162,9 +210,10 @@ public final class RoutineList {
         /// Tests and previews: a list already showing `routines`.
         static func sample(
             _ routines: [Routine], profile: String = "sample", runs: [String: [DemoRun]] = [:],
-            runTime: Duration = .seconds(4)
+            runTime: Duration = .seconds(4), skills: [Skill] = []
         ) -> RoutineList {
-            let list = RoutineList(profile: profile, backend: DemoRoutines(routines, runs: runs, runTime: runTime))
+            let list = RoutineList(
+                profile: profile, backend: DemoRoutines(routines, runs: runs, runTime: runTime, skills: skills))
             list.routines = routines
             list.phase = .ready
             return list
