@@ -104,6 +104,15 @@ struct RoutineDetail: View {
                 .foregroundStyle(Theme.danger)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityElement(children: .combine)
+            } else if let error = routine.deliveryError {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("The last run worked, but its result wasn't posted")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text(error).font(.system(size: 13)).textSelection(.enabled)
+                }
+                .foregroundStyle(Theme.danger)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityElement(children: .combine)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

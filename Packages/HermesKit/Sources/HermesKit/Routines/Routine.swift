@@ -24,11 +24,15 @@ public struct Routine: Identifiable, Equatable, Sendable {
     public let lastError: String?
     /// Runs a script or skills, so it needs no prompt of its own.
     public let worksWithoutPrompt: Bool
+    /// Why the last run's result couldn't be posted where it goes, in the gateway's words. The run
+    /// itself may have worked.
+    public let deliveryError: String?
 
     public init(
         id: String, name: String, schedule: String, isOn: Bool, isFinished: Bool = false, nextRun: Date? = nil,
         lastRun: Date? = nil, lastRunFailed: Bool = false, prompt: String = "", deliver: String = "local",
-        scheduleText: String? = nil, lastError: String? = nil, worksWithoutPrompt: Bool = false
+        scheduleText: String? = nil, lastError: String? = nil, worksWithoutPrompt: Bool = false,
+        deliveryError: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -43,6 +47,7 @@ public struct Routine: Identifiable, Equatable, Sendable {
         self.scheduleText = scheduleText ?? schedule
         self.lastError = lastError
         self.worksWithoutPrompt = worksWithoutPrompt
+        self.deliveryError = deliveryError
     }
 
     /// Reads one job from `/api/cron/jobs`. Returns `nil` for anything without an ID.
@@ -74,7 +79,8 @@ public struct Routine: Identifiable, Equatable, Sendable {
             deliver: Self.deliverText(job["deliver"]),
             scheduleText: editable,
             lastError: failed ? job["last_error"]?.stringValue?.nonBlank : nil,
-            worksWithoutPrompt: hasSkills || job["script"]?.stringValue?.nonBlank != nil)
+            worksWithoutPrompt: hasSkills || job["script"]?.stringValue?.nonBlank != nil,
+            deliveryError: job["last_delivery_error"]?.stringValue?.nonBlank)
     }
 
     /// Python's `isoformat()`: an offset is always present here, microseconds sometimes.

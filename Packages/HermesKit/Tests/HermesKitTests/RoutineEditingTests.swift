@@ -41,6 +41,19 @@ struct RoutineFieldTests {
         #expect(listed.deliver == "telegram,local")
     }
 
+    @Test func aResultThatWasntPostedIsKeptApartFromAFailedRun() throws {
+        // Seen on a real gateway: the run worked, posting it into the Bot Chat didn't.
+        var record = job()
+        if case .object(var fields) = record {
+            fields["last_delivery_error"] = "bot-chat delivery to profile 'job-scout' unverified: not_found"
+            record = .object(fields)
+        }
+        let routine = try #require(Routine(job: record))
+        #expect(!routine.lastRunFailed)
+        #expect(routine.deliveryError == "bot-chat delivery to profile 'job-scout' unverified: not_found")
+        #expect(try #require(Routine(job: job())).deliveryError == nil)
+    }
+
     @Test func aOneOffIsEditedByItsTime() throws {
         let once: JSONValue = [
             "id": "x", "schedule": ["kind": "once", "run_at": "2026-11-03T09:00:00+01:00"],
@@ -221,6 +234,16 @@ struct RoutineChangeTests {
         routines.runNow(routines.routines[0])
         try await waitUntilOnMain { routines.outcomes["a1b2c3d4e5f6"] != nil }
         #expect(routines.outcomes["a1b2c3d4e5f6"]?.message == "It's already running. Check Past Runs soon.")
+    }
+
+    @Test func aRunsPreviewIsntHermessCronInstructions() throws {
+        // Seen on a real gateway: an agent run's preview is the first message Hermes sent it.
+        let row: JSONValue = [
+            "id": "cron_a1_20261102_233200", "source": "cron", "started_at": 1_792_735_203.0,
+            "ended_at": 1_792_735_260.0, "end_reason": "cron_complete",
+            "preview": "[IMPORTANT: You are running as a scheduled cron job. DELIVERY: your final response will be",
+        ]
+        #expect(try #require(RoutineRun(row: row)).preview == nil)
     }
 
     @Test func pastRunsAndWhatTheySaid() async throws {

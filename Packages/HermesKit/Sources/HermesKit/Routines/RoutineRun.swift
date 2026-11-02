@@ -32,7 +32,9 @@ public struct RoutineRun: Identifiable, Equatable, Sendable {
     /// Reads one row. Session rows and `cron_output` rows share the session list's shape.
     init?(row: JSONValue) {
         guard let id = row["id"]?.stringValue, let started = Self.seconds(row["started_at"]) else { return nil }
-        let preview = row["preview"]?.stringValue?.nonBlank
+        // An agent run's session preview is its first message, which is Hermes's own cron
+        // instructions ("[IMPORTANT: You are running as a scheduled cron job…"), not what it said.
+        let preview = row["preview"]?.stringValue?.nonBlank.flatMap { $0.hasPrefix("[IMPORTANT:") ? nil : $0 }
         if id.hasPrefix("cron_output:") || row["source"]?.stringValue == "cron_output" {
             // The title leads with the ledger's status: "FAILED · error", "COMPLETED · preview".
             let title = row["title"]?.stringValue ?? ""

@@ -180,6 +180,9 @@ enum RoutineStatus {
             let failed = routine.lastError.map { String(localized: "Last run failed: \($0)") }
             return [failed ?? String(localized: "Last run failed"), next].compactMap { $0 }.joined(separator: " · ")
         }
+        if failure, routine.deliveryError != nil {
+            return [String(localized: "Last result wasn't posted"), next].compactMap { $0 }.joined(separator: " · ")
+        }
         return next ?? ""
     }
 }
