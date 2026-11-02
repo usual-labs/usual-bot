@@ -46,7 +46,10 @@ public struct SettingsView: View {
                         .padding(.vertical, 5)
                 }
                 .listStyle(.sidebar)
+                .scrollContentBackground(.hidden)
+                .padding(.top, 44)
                 .frame(width: 190)
+                .background(Theme.window)
                 Divider()
                 VStack(alignment: .leading, spacing: 0) {
                     Text((page ?? .general).title)
@@ -56,9 +59,13 @@ public struct SettingsView: View {
                     content(page ?? .general)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.pane)
             }
+            // The panes run up behind the window buttons, with no title across them.
+            .ignoresSafeArea(.container, edges: .top)
             .frame(width: 760, height: 600)
-            .background(Theme.window)
+            .toolbar(removing: .title)
+            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .appPreferences()
         #else
             NavigationStack {
@@ -88,7 +95,9 @@ public struct SettingsView: View {
                     about
                 #endif
             case .notifications:
-                NotificationSettings()
+                NotificationSettings(
+                    push: model.push, gatewayIsUnencrypted: model.gatewayIsUnencrypted,
+                    isSignedIn: model.isSignedIn)
             case .voice:
                 VoiceSettings()
             case .connection:
@@ -96,6 +105,7 @@ public struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
     }
 
     @ViewBuilder private var connection: some View {

@@ -1,8 +1,9 @@
 import HermesKit
 import SwiftUI
 
-/// One sidebar row: avatar, name, time of last activity, preview and an indicator. Compact, in the
-/// narrow window's rail, it is the avatar alone with the indicator as a badge.
+/// One sidebar row: avatar, name, time of last activity, preview and an unread count, with a dot on
+/// the avatar when the agent needs you. Compact, in the narrow window's rail, it's the avatar alone
+/// with the count as a badge too.
 struct ContactRow: View {
     let contact: Contact
     /// Resolved members when `contact` is a room; empty for agents.
@@ -25,6 +26,9 @@ struct ContactRow: View {
     private var row: some View {
         HStack(spacing: 12) {
             avatar
+                .overlay(alignment: .topTrailing) {
+                    if contact.activity == .needsYou { NeedsYouDot().offset(x: 3, y: -2) }
+                }
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(contact.name)
@@ -44,7 +48,7 @@ struct ContactRow: View {
                         .foregroundStyle(Theme.secondaryInk)
                         .lineLimit(1)
                     Spacer(minLength: 0)
-                    ContactIndicator(needsYou: contact.activity == .needsYou, unreadCount: contact.unreadCount)
+                    ContactIndicator(needsYou: false, unreadCount: contact.unreadCount)
                 }
             }
         }
@@ -71,10 +75,7 @@ struct ContactRow: View {
     /// The rail's corner badge: the unread count, or a dot when the agent needs you.
     @ViewBuilder private var badge: some View {
         if contact.activity == .needsYou {
-            Circle()
-                .fill(Theme.needsYouInk)
-                .frame(width: 12, height: 12)
-                .overlay(Circle().strokeBorder(Theme.window, lineWidth: 2))
+            NeedsYouDot()
         } else if contact.unreadCount > 0 {
             Text(contact.unreadCount, format: .number)
                 .font(.system(size: 10.5, weight: .semibold))
@@ -109,19 +110,27 @@ struct ContactRow: View {
     }
 }
 
-/// "Needs you", or else the unread count: on a row, and on a folded section for the rows it hides.
+/// An agent is waiting on you. A dot, so the preview keeps its room.
+struct NeedsYouDot: View {
+    var body: some View {
+        Circle()
+            .fill(Theme.needsYouInk)
+            .frame(width: 12, height: 12)
+            .overlay(Circle().strokeBorder(Theme.window, lineWidth: 2))
+            .accessibilityElement()
+            .accessibilityLabel(Text("Needs you"))
+    }
+}
+
+/// A dot for "needs you", or else the unread count: on a row, and on a folded section for the rows
+/// it hides.
 struct ContactIndicator: View {
     let needsYou: Bool
     let unreadCount: Int
 
     var body: some View {
         if needsYou {
-            Text("Needs you")
-                .font(.system(size: 11.5, weight: .semibold))
-                .foregroundStyle(Theme.needsYouInk)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 1)
-                .background(Capsule().fill(Theme.needsYouFill))
+            NeedsYouDot()
         } else if unreadCount > 0 {
             Text(unreadCount, format: .number)
                 .font(.system(size: 11.5, weight: .semibold))

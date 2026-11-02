@@ -16,6 +16,13 @@ struct RoomPane: View {
     /// The message you're replying to; a reply to an agent goes to that agent only.
     @State private var replyTo: QuotedMessage?
     @State private var showsInfo = false
+    /// Waiting for the panel to close, to delete the room.
+    @State private var deleting = false
+    @State private var deleteProblem: String?
+    @Environment(\.roomEditing) private var editing
+    #if os(iOS)
+        @Environment(\.horizontalSizeClass) private var sizeClass
+    #endif
 
     var body: some View {
         content
@@ -36,7 +43,7 @@ struct RoomPane: View {
                         stopLabel: String(localized: "Stop everyone in \(contact.name)"), mentions: mentions,
                         replyTo: $replyTo, commands: roomSkills, send: room.send, stop: room.stop
                     )
-                    .frame(maxWidth: 780)
+                    .frame(maxWidth: Theme.columnWidth)
                     .padding(.horizontal, ThreadPane.composerMargin)
                 }
             }
@@ -47,7 +54,19 @@ struct RoomPane: View {
             // Inside the inspector: outside, the name drops below the window buttons' line.
             .paneChrome()
             .inspector(isPresented: $showsInfo) {
-                RoomPanel(room: contact, members: members).inspectorColumnWidth(min: 260, ideal: 300, max: 400)
+                RoomPanel(room: contact, members: members, delete: confirmDelete)
+                    .inspectorColumnWidth(min: 260, ideal: 300, max: 400)
+                    .onDisappear {
+                        if deleting { delete() }
+                    }
+            }
+            .alert(
+                "That didn't work",
+                isPresented: Binding(get: { deleteProblem != nil }, set: { if !$0 { deleteProblem = nil } })
+            ) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(deleteProblem ?? "")
             }
             // Rooms push nothing: read new events while the room is on screen.
             .task(id: room.roomID) {
@@ -56,6 +75,31 @@ struct RoomPane: View {
                     try? await Task.sleep(for: .seconds(2))
                 }
             }
+    }
+
+    /// Deleted with its panel open, a room leaves that panel's iPhone sheet behind, blank and
+    /// impossible to close. A panel that's a column on the Mac or iPad never disappears.
+    private func confirmDelete() {
+        #if os(iOS)
+            if sizeClass == .compact {
+                deleting = true
+                showsInfo = false
+                return
+            }
+        #endif
+        delete()
+    }
+
+    private func delete() {
+        deleting = false
+        guard let editing else { return }
+        Task {
+            do {
+                try await editing.delete(contact)
+            } catch {
+                deleteProblem = String(localized: "“\(contact.name)” wasn't deleted. \(AppModel.describe(error))")
+            }
+        }
     }
 
     @ViewBuilder private var content: some View {
@@ -82,7 +126,9 @@ struct RoomPane: View {
     }
 
     private var transcript: some View {
-        ConversationScroll(arrival: [room.state.items.count, room.pending.count, room.working.count]) {
+        ConversationScroll(
+            arrival: [room.state.items.count, room.pending.count, room.working.count, room.retries.count]
+        ) {
             if !room.driverRunning {
                 NoticeLine(
                     text: String(localized: "The gateway's room service isn't running, so agents won't answer."))
@@ -94,6 +140,7 @@ struct RoomPane: View {
             ForEach(room.state.items) { item in
                 ItemView(item: item, agentName: contact.name, author: author)
                     .transition(.settle)
+                    .accessibilityElement(children: .contain)
             }
             ForEach(room.pending) { message in
                 UserBubble(text: message.text)
@@ -116,6 +163,9 @@ struct RoomPane: View {
                 ApprovalCard(
                     approval: approval.prompt, agentName: author(approval.memberID)?.name ?? approval.memberID
                 ) { room.answer(approval, with: $0) }
+            }
+            ForEach(room.retries, id: \.self) { taskID in
+                RetryCard { room.retry(taskID) }
             }
         }
     }

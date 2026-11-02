@@ -9,12 +9,12 @@
         /// example gateway. For screenshots, and for trying the app without Hermes: Debug builds
         /// launched with `USUALBOT_DEMO=1` use it. It never connects: a chat answers what you send
         /// with a scripted reply.
-        public static func demo(now: Date = .now) -> AppModel {
+        public static func demo(now: Date = .now, longConversations: Bool = false) -> AppModel {
             let model = AppModel(
                 tokenStore: KeychainTokenStore(), http: URLSession.shared,
                 defaults: UserDefaults(suiteName: "UsualBotDemo") ?? .standard,
                 cache: OfflineCache(directory: .temporaryDirectory.appending(path: "UsualBotDemo")))
-            let demo = Demo(now: now)
+            let demo = Demo(now: now, longConversations: longConversations)
             let routines = Dictionary(
                 uniqueKeysWithValues: demo.agents.map {
                     ($0.id, RoutineList.sample($0.id == "ops" ? demo.opsRoutines : []))
@@ -39,18 +39,38 @@
                 "I read the notes and ran the checks. ", "Everything you asked about still holds, ",
                 "and nothing else needs your attention.\n\n", "- The tests pass.\n", "- The logs are quiet.",
             ]
-            let script: [(pause: Double, type: String, payload: [String: JSONValue])] =
-                [
-                    (0.9, "tool.start", ["tool_id": .string("demo-1"), "name": .string("read_file")]),
-                    (1.2, "tool.complete", ["tool_id": .string("demo-1")]),
-                    (0.1, "tool.start", ["tool_id": .string("demo-2"), "name": .string("terminal")]),
-                    (1.2, "tool.complete", ["tool_id": .string("demo-2")]),
-                ] + chunks.map { (0.35, "message.delta", ["text": .string($0)]) } + [(0.3, "message.complete", [:])]
+            func todos(_ read: String, _ check: String) -> JSONValue {
+                let list: JSONValue = [
+                    ["id": "read", "content": "Read the notes", "status": .string(read)],
+                    ["id": "check", "content": "Run the checks", "status": .string(check)],
+                ]
+                return ["todos": list, "revision": 1]
+            }
+            let helper: JSONValue = ["subagent_id": "demo-helper", "goal": "Look through the logs"]
+            var script: [(pause: Double, type: String, payload: JSONValue)] = [
+                (0.5, "todo.updated", todos("in_progress", "pending")),
+                (0.4, "tool.start", ["tool_id": "demo-1", "name": "read_file"]),
+                (1.2, "tool.complete", ["tool_id": "demo-1"]),
+                (0.1, "todo.updated", todos("completed", "in_progress")),
+                (0.1, "subagent.start", helper),
+                (0.1, "tool.start", ["tool_id": "demo-2", "name": "terminal"]),
+                (
+                    0.5, "subagent.tool",
+                    ["subagent_id": "demo-helper", "tool_name": "read_file", "tool_preview": "app.log"]
+                ),
+                (0.6, "tool.progress", ["tool_id": "demo-2", "percent": 60]),
+                (0.8, "subagent.complete", ["subagent_id": "demo-helper", "status": "completed"]),
+                (0.4, "tool.complete", ["tool_id": "demo-2"]),
+                (0.1, "todo.updated", todos("completed", "completed")),
+                (0.1, "status.update", ["kind": "compacting"]),
+                (1.2, "status.update", ["kind": "compacted"]),
+            ]
+            script += chunks.map { (0.35, "message.delta", ["text": .string($0)]) }
+            script.append((0.3, "message.complete", [:]))
             Task {
                 for step in script {
                     try? await Task.sleep(for: .seconds(step.pause))
-                    state.apply(
-                        GatewayEvent(type: step.type, sessionID: "sample", seq: nil, payload: .object(step.payload)))
+                    apply(GatewayEvent(type: step.type, sessionID: "sample", seq: nil, payload: step.payload))
                 }
             }
         }
@@ -61,6 +81,7 @@
         static let gateway = try! GatewayAddress(parsing: "https://hermes.example.com")
 
         let now: Date
+        let longConversations: Bool
 
         func ago(_ minutes: Double) -> Date { now.addingTimeInterval(-minutes * 60) }
 
@@ -104,8 +125,10 @@
 
         var threads: [Contact.ID: ChatThread] {
             var threads = [
-                "atlas": ChatThread.sample("atlas", state: ThreadState(history: atlasChat, running: false)),
-                "forge": ChatThread.sample("forge", state: ThreadState(history: forgeChat, running: false)),
+                "atlas": ChatThread.sample(
+                    "atlas", state: ThreadState(history: olderHistory + atlasChat, running: false)),
+                "forge": ChatThread.sample(
+                    "forge", state: ThreadState(history: olderHistory + forgeChat, running: false)),
             ]
             threads["forge"]?.receive(
                 ApprovalPrompt(
@@ -314,6 +337,21 @@
             return CGImageDestinationFinalize(destination) ? output as Data : nil
         }
 
+        /// Uneven rows exercise scrolling without copying anyone’s actual conversations.
+        private var olderHistory: [HistoryMessage] {
+            guard longConversations else { return [] }
+            return (1...80).flatMap { index in
+                let paragraph =
+                    "Archive item \(index). This is a made-up review of a change to the search service. "
+                    + "The checks cover indexing, fallbacks and a staged rollout."
+                let reply = Array(repeating: paragraph, count: index % 9 + 1).joined(separator: "\n\n")
+                return [
+                    HistoryMessage(role: "user", text: "Review archive item \(index)."),
+                    HistoryMessage(role: "assistant", text: "## Review \(index)\n\n" + reply),
+                ]
+            }
+        }
+
         private var atlasChat: [HistoryMessage] {
             [
                 HistoryMessage(
@@ -389,7 +427,12 @@
             }
             let you: JSONValue = ["kind": "user", "id": "you"]
             func member(_ id: String) -> JSONValue { ["kind": "member", "id": .string(id)] }
-            let events = [
+            var events = olderHistory.map { message in
+                event(
+                    message.role == "user" ? "message.user" : "message.member",
+                    from: message.role == "user" ? you : member("atlas"), message.text ?? "", minutesAgo: 60)
+            }
+            events += [
                 event("message.user", from: you, "Launch is Thursday. What's left?", minutesAgo: 42),
                 event(
                     "message.member", from: member("forge"),
@@ -404,7 +447,7 @@
                     "The post is ready for a final read. I kept it under 600 words and led with the search demo.",
                     minutesAgo: 30),
             ]
-            return RoomThread.sample(roomSummary, events: events)
+            return RoomThread.sample(roomSummary, events: events, retries: ["demo-retry"])
         }
 
         private var roomSummary: RoomSummary {

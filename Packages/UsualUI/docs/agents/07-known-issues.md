@@ -4,11 +4,16 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 
 ## Conversation scrolling
 
-- **A blank stretch below a chat's last message came back once after the settling fix,** on the Mac
-  in a chat about 5,000 pt tall ending in a result line, then went away; cause unknown, never
-  reproduced. `ConversationScroll` only corrects its position in the 500 ms after a chat opens or
-  reloads, so a height change after that (a profile panel, a resize, a result line folding) is the
-  first suspect. Note what happened just before it, and read `distanceFromEnd` while it shows.
+- **Lazy transcript heights and competing scroll owners can leave blank space.** The old
+  `LazyVStack`, size-change bottom anchor and geometry callbacks could disagree after a rewrap,
+  scroll or app switch; a 500 ms settling timer only hid some occurrences. A long fake transcript
+  also triggered a SwiftUI `ForEachState` / `LazyScrollable` assertion through accessibility.
+  Chats and rooms now measure loaded messages in a `VStack`. One policy follows the end, leaves
+  hand scrolling alone and clamps out-of-bounds positions once the gesture ends or the app returns.
+  Do not restore estimated bounds or a second size-change anchor without testing long, uneven
+  histories, a running reply and reading older messages. `--demo-long-chat` supplies that fixture.
+  Group accessibility per message, not around the whole transcript, so Mac accessibility can
+  expose the messages without traversing one enormous group.
 
 ## macOS window and sidebar
 
@@ -20,12 +25,10 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 
 ## Lists and text
 
-- **Don't scroll a long lazy list to its bottom edge or to a view in it.** `defaultScrollAnchor(.bottom)` and `ScrollPosition(edge: .bottom)` use the `LazyVStack`'s estimate, which opened long iPhone chats blank. A scroll to an end marker lands on an estimate too, out by 150 pt or more once a reload changed the rows, and because the column's height then stays put, nothing corrects it: chats opened short of their end or parked in blank space past it. `ConversationScroll` has no marker; it follows the measured end.
 - **Style inline runs explicitly when the view sets a font.** `Text` draws an `AttributedString`'s strong and emphasized intents only with no explicit font, so `MarkdownView.styled` sets one per run.
 - **Don't overlay transcript rows.** Replies run the full column width, so an overlay covers text; `MessageRow` puts the bar in a fixed slot beside the message.
 - **Size reply images from their own pixels, and let them shrink.** A `maxWidth`/`maxHeight` frame around `scaledToFit` takes the whole width, so the border runs past the picture. A fixed size pushes the iPhone column off-screen. `ReplyImage` uses `.aspectRatio(size, contentMode: .fit)` with `.frame(maxWidth: size.width)`.
 
-- **Keep a conversation at its end with `ScrollPosition.scrollTo(y:)`.** `defaultScrollAnchor(.bottom)` can't hold a column that started shorter than its window. `ConversationScroll` follows the measured end until you scroll by hand. Whether you left the end comes from scroll phases, since lazy estimates move it while nobody scrolls. A `scrollTo(y:)` can be dropped when it meets the anchor's own move (seen on iPhone, the same every time, 99 pt short), and no later height change retries it, so for 500 ms after a chat opens or reloads any distance from the end is corrected too. Don't do that all the time: it would fight a scrollbar drag. `scrollTo(y:)` counts from the content's top, `contentOffset` from behind the top bar, and `containerSize` leaves the bars out. The demo can't show this: its chats are short and never reload, so check a long chat that reloads.
 - **`ImageRenderer` draws `SecureField` and `Toggle` as yellow blocks,** because it can't draw controls backed by AppKit. Sizes are right, but those controls need a run of the app to be seen.
 
 ## Message box
@@ -45,3 +48,6 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **The iOS Simulator has no speech model,** so dictation fails there. Test recognition on a device or the Mac.
 - **Echo cancellation can fail to start on the Mac** (`AUVoiceProcessor` -10875, dependent on audio devices). `CallAudio.start()` retries without voice processing and the call takes turns. The `call` log category says which mode a call got.
 - **WebRTC runs through WebKit, by design,** because Apple ships no public WebRTC API. The web view must be in the hierarchy (`LiveCallHost`), the page needs a secure origin for `getUserMedia` (an `https://…invalid/` base URL, nothing fetched), autoplay needs `mediaTypesRequiringUserActionForPlayback = []` plus inline playback on iPhone, and the microphone needs TCC plus the `WKUIDelegate` grant.
+- **macOS refuses notifications from ad-hoc signed builds.** `requestAuthorization` fails at once for a `CODE_SIGNING_ALLOWED=NO` build. To test them, copy the app out of DerivedData and `codesign --force --deep --sign "Apple Development: …"` it, with no entitlements so it keeps the same defaults and sign-in. That copy reads the Keychain as a new app, so macOS may ask.
+- **A launch argument pins its default.** `-selectedContact forge` overrides `@AppStorage` for the whole run, so selecting another chat appears to do nothing. Leave it out to test anything that changes the selection.
+- **`usualbot://` links need `handlesExternalEvents` on the view as well as the scene.** With only the scene's, every link opens another window. With several builds registered, `open` may launch any of them: name the app.

@@ -27,6 +27,8 @@ public final class RoomThread {
     public private(set) var isBusy = false
     /// Commands the room's agents wait on, with who asked.
     public private(set) var approvals: [RoomApproval] = []
+    /// Turns that stopped partway and can be run again, by task ID.
+    public private(set) var retries: [String] = []
     /// Your messages sent but not yet back in the log.
     public private(set) var pending: [PendingMessage] = []
     /// Member replies since you last had the room on screen.
@@ -37,9 +39,14 @@ public final class RoomThread {
     var isVisible = false {
         didSet { if isVisible { markViewed() } }
     }
+    /// Set by the app: a reply or a request you aren't looking at.
+    var alert: ((AgentAlert) -> Void)?
+    /// Set by the app: a request alerted about is over, by its alert's ID.
+    var alertWithdrawn: ((String) -> Void)?
 
     private var lastViewed: Date?
     private var syncing = false
+    private var announcedRequests: Set<String> = []
     private let channel: @MainActor () -> JSONRPCChannel?
 
     private static let log = Logger(subsystem: "UsualBot", category: "rooms")
@@ -62,7 +69,7 @@ public final class RoomThread {
     var cursor: Int { state.cursor }
 
     public var activity: Contact.Activity {
-        if !approvals.isEmpty { return .needsYou }
+        if !approvals.isEmpty || !retries.isEmpty { return .needsYou }
         return isBusy || !pending.isEmpty ? .working : .idle
     }
 
@@ -80,6 +87,10 @@ public final class RoomThread {
 
     func update(_ summary: RoomSummary) {
         name = summary.name
+    }
+
+    func adoptName(_ name: String) {
+        self.name = name
     }
 
     // MARK: - Reading
@@ -103,10 +114,14 @@ public final class RoomThread {
                 hasMore = page["has_more"]?.boolValue == true && !events.isEmpty
             }
             pending.removeAll { state.seenEventIDs.contains($0.eventID) }
-            if phase == .ready, !isVisible { unreadCount += newReplies }
+            if phase == .ready, !isVisible, newReplies > 0 {
+                unreadCount += newReplies
+                announceNewestReply()
+            }
             // The first load sets the baseline: replies from before this device saw the room aren't new.
             if isVisible || lastViewed == nil { markViewed() }
             try await readStatus(on: channel)
+            announceRequests()
             phase = .ready
         } catch {
             if phase != .ready { phase = .failed(AppModel.describe(error)) }
@@ -121,6 +136,33 @@ public final class RoomThread {
         return event.createdAt > lastViewed
     }
 
+    private func announceNewestReply() {
+        for item in state.items.reversed() {
+            guard case .member(let id, let text) = item.content else { continue }
+            alert?(AgentAlert(id: UUID().uuidString, kind: .message, subtitle: state.name(id), preview: text))
+            return
+        }
+    }
+
+    /// Alerts about what's newly waiting on you, and takes back what no longer is.
+    private func announceRequests() {
+        let waiting =
+            approvals.map { approval in
+                (
+                    id: approval.id,
+                    text: String(
+                        localized: "\(state.name(approval.memberID)) wants to run “\(approval.prompt.shortCommand)”")
+                )
+            }
+            + retries.map { (id: $0, text: String(localized: "A reply stopped partway. Open the room to try again.")) }
+        for request in waiting where !announcedRequests.contains(request.id) && !isVisible {
+            alert?(AgentAlert(id: request.id, kind: .needsYou, subtitle: nil, preview: request.text))
+        }
+        let ids = Set(waiting.map(\.id))
+        for id in announcedRequests.subtracting(ids) { alertWithdrawn?(id) }
+        announcedRequests = ids
+    }
+
     private func readStatus(on channel: JSONRPCChannel) async throws {
         let result = try await channel.call("groups.state", params: ["room_id": .string(roomID)])
         if let room = result["room"], case .array(let raw) = room["members"] {
@@ -133,6 +175,7 @@ public final class RoomThread {
             working = []
             isBusy = false
             approvals = []
+            retries = []
             return
         }
         driverRunning = status["running"]?.boolValue ?? true
@@ -146,8 +189,10 @@ public final class RoomThread {
         isBusy = !working.isEmpty || status["working"]?.boolValue == true
         if case .array(let actions) = status["pending_actions"] {
             approvals = actions.compactMap(RoomApproval.init)
+            retries = actions.filter { $0["kind"]?.stringValue == "retry" }.compactMap { $0["task_id"]?.stringValue }
         } else {
             approvals = []
+            retries = []
         }
     }
 
@@ -217,6 +262,35 @@ public final class RoomThread {
         }
     }
 
+    /// Runs a turn that stopped partway again.
+    public func retry(_ taskID: String) {
+        retries.removeAll { $0 == taskID }
+        guard let channel = channel() else { return }
+        Task {
+            do {
+                _ = try await channel.call(
+                    "groups.retry", params: ["room_id": .string(roomID), "task_id": .string(taskID)])
+            } catch {
+                state.addNotice(String(localized: "The reply wasn't tried again: \(AppModel.describe(error))"))
+            }
+            await sync()
+        }
+    }
+
+    func rename(to name: String, on channel: JSONRPCChannel) async throws {
+        _ = try await channel.call(
+            "groups.rename",
+            params: [
+                "room_id": .string(roomID), "event_id": .string(UUID().uuidString.lowercased()), "name": .string(name),
+            ])
+    }
+
+    func disband(on channel: JSONRPCChannel) async throws {
+        _ = try await channel.call(
+            "groups.disband",
+            params: ["room_id": .string(roomID), "cancel_id": .string("usualbot-\(UUID().uuidString)")])
+    }
+
     /// Creates a room seating `profiles`, two to six agents on this gateway, and returns it as
     /// the room list would show it.
     static func create(named name: String, profiles: [String], on channel: JSONRPCChannel) async throws -> RoomSummary {
@@ -251,9 +325,10 @@ public final class RoomThread {
 
     #if DEBUG
         /// Tests and previews: a room already showing `events`.
-        static func sample(_ summary: RoomSummary, events: [JSONValue]) -> RoomThread {
+        static func sample(_ summary: RoomSummary, events: [JSONValue], retries: [String] = []) -> RoomThread {
             let room = RoomThread(summary: summary, channel: { nil })
             room.state.apply(events.compactMap(RoomEvent.init))
+            room.retries = retries
             room.phase = .ready
             return room
         }

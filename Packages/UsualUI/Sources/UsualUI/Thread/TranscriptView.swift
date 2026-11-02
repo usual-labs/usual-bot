@@ -27,16 +27,20 @@ struct TranscriptView: View {
                         && (index + 1 < items.count ? items[index + 1].isReply : !thread.state.draft.isEmpty)
                 )
                 .transition(item.arrival)
+                .accessibilityElement(children: .contain)
             }
             if !thread.state.draft.isEmpty {
                 // Becomes a transcript item when it ends, so it leaves without a fade.
                 AgentBubble(joinsAbove: items.last?.isReply == true) { MarkdownView(thread.state.draft) }
                     .joined(items.last?.isReply == true)
                     .transition(.asymmetric(insertion: .settle, removal: .identity))
-            } else if thread.state.isRunning, !lastItemIsLiveActivity, thread.approvals.isEmpty,
+            }
+            LiveCards(live: thread.state.live)
+            if thread.state.draft.isEmpty, thread.state.isRunning, !lastItemIsLiveActivity, thread.approvals.isEmpty,
                 thread.questions.isEmpty, thread.secrets.isEmpty, thread.vaultPrompts.isEmpty
             {
-                WorkingRow(text: String(localized: "Thinking…")).transition(.settle)
+                let live = thread.state.live
+                WorkingRow(text: live.status ?? live.thought ?? String(localized: "Thinking…")).transition(.settle)
             }
             VaultCards(thread: thread, agentName: agentName).transition(.settle)
             ForEach(thread.approvals) { approval in
@@ -65,6 +69,7 @@ struct TranscriptView: View {
         [
             thread.state.items.count, thread.state.draft.isEmpty ? 0 : 1, thread.state.isRunning ? 1 : 0,
             thread.vaultPrompts.count, thread.approvals.count, thread.questions.count, thread.secrets.count,
+            thread.state.live.todos.isEmpty ? 0 : 1, thread.state.live.helpers.isEmpty ? 0 : 1,
         ]
     }
 
@@ -72,105 +77,6 @@ struct TranscriptView: View {
         guard case .activity(let steps) = thread.state.items.last?.content else { return false }
         return steps.contains { $0.state == .running }
     }
-}
-
-/// A conversation's scrolling column, opened at its newest message and kept there as it grows, until
-/// you scroll away from it.
-struct ConversationScroll<Content: View>: View {
-    /// Changes when the conversation is reloaded; it then scrolls back to the newest message.
-    var reload = 0
-    /// Changes when something arrives at the end, which animates in. A reload's rows don't.
-    var arrival: [Int] = []
-    @ViewBuilder let content: Content
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var settledReload = 0
-    @State private var position = ScrollPosition()
-    /// Off once you've scrolled away from the end. Measuring alone can't tell: the lazy stack's
-    /// estimates move the end while nobody scrolls.
-    @State private var followsEnd = true
-    @State private var isNearEnd = true
-    /// Where the column ends, as last measured.
-    @State private var end: CGFloat = 0
-    /// Just after a chat opens or reloads, when the lazy stack is still measuring.
-    @State private var isSettling = true
-
-    var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 12) {
-                content
-            }
-            .animation(reduceMotion || reload != settledReload ? nil : Self.arrive, value: arrival)
-            .padding(.vertical, 16)
-            // Edge to edge with the message box.
-            .frame(maxWidth: 780)
-            .padding(.horizontal, ThreadPane.composerMargin)
-            .frame(maxWidth: .infinity)
-        }
-        .scrollPosition($position)
-        // iPhone: scrolling the conversation puts the keyboard away, as in Messages.
-        .scrollDismissesKeyboard(.interactively)
-        .defaultScrollAnchor(.bottom, for: .initialOffset)
-        .defaultScrollAnchor(.bottom, for: .sizeChanges)
-        .onScrollPhaseChange { old, new in
-            if new.isByHand {
-                followsEnd = false
-            } else if old.isByHand {
-                followsEnd = isNearEnd
-            }
-        }
-        .onScrollGeometryChange(for: Bool.self, of: \.isNearEnd) { _, new in isNearEnd = new }
-        // The anchor can't hold a column that started shorter than its window. Following the
-        // measured end also settles a long chat: each move shows rows the lazy stack only estimated,
-        // and measuring them moves the end again until it stops. A scroll to a view can't do this.
-        // It lands on an estimate that may be out by hundreds of points, and if the column's height
-        // doesn't change afterwards, nothing puts it right.
-        .onScrollGeometryChange(for: CGFloat.self, of: \.endY) { _, new in
-            end = new
-            if followsEnd { position.scrollTo(y: new) }
-        }
-        // A move can be dropped when it meets the anchor's own, and no later change in the column's
-        // height would retry it. Only while settling: later this would fight a scrollbar drag.
-        .onScrollGeometryChange(for: CGFloat.self, of: \.distanceFromEnd) { _, distance in
-            if isSettling, followsEnd, abs(distance) > 1 { position.scrollTo(y: end) }
-        }
-        .task(id: reload) {
-            isSettling = true
-            try? await Task.sleep(for: .milliseconds(500))
-            if !Task.isCancelled { isSettling = false }
-        }
-        .onAppear {
-            // A chat that's already loaded has nothing to settle.
-            settledReload = reload
-        }
-        .onChange(of: reload) {
-            settledReload = reload
-            // When it's already following, a second scroll here would race it with an older end.
-            if !followsEnd {
-                followsEnd = true
-                position.scrollTo(y: end)
-            }
-        }
-    }
-
-    /// Quick, with the slightest overshoot.
-    private static var arrive: Animation { .spring(duration: 0.32, bounce: 0.12) }
-}
-
-extension ScrollPhase {
-    /// Moving under your finger, wheel or trackpad, not because the app scrolled.
-    fileprivate var isByHand: Bool { self == .tracking || self == .interacting || self == .decelerating }
-}
-
-extension ScrollGeometry {
-    /// Where the column's end is for `ScrollPosition`, which counts from the content's top.
-    /// `containerSize` leaves out the bars.
-    fileprivate var endY: CGFloat { max(contentSize.height - containerSize.height, 0) }
-
-    fileprivate var distanceFromEnd: CGFloat { contentOffset.y + contentInsets.top - endY }
-
-    /// With a little slack.
-    /// `contentOffset` counts from behind the top bar.
-    fileprivate var isNearEnd: Bool { contentOffset.y + contentInsets.top >= endY - 40 }
 }
 
 /// Who wrote a room reply: the name and the agent contact behind the avatar.
@@ -341,46 +247,20 @@ struct NoticeLine: View {
 private struct ActivityLine: View {
     let steps: [ToolStep]
     let agentName: String
-    @State private var expanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button {
-                withAnimation(.smooth(duration: 0.2)) { expanded.toggle() }
-            } label: {
-                HStack(spacing: 6) {
-                    if let now = ActivitySummary.current(in: steps) {
-                        WorkingRow(text: now)
-                    } else {
-                        Text(ActivitySummary.line(for: steps, agent: agentName))
-                            .padding(.leading, 12)
-                    }
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
-                        .rotationEffect(.degrees(expanded ? 90 : 0))
-                }
-                .font(.system(size: 13))
-                .foregroundStyle(Theme.secondaryInk)
-                .frame(minHeight: 28)
-                .contentShape(Rectangle())
+        FoldedRow {
+            if let now = ActivitySummary.current(in: steps) {
+                WorkingRow(text: now)
+            } else {
+                Text(ActivitySummary.line(for: steps, agent: agentName))
+                    .padding(.leading, 12)
             }
-            .buttonStyle(.plain)
-            .accessibilityValue(expanded ? Text("Expanded") : Text("Collapsed"))
-
-            if expanded {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(steps) { step in
-                        StepRow(step: step)
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .frame(maxWidth: Theme.bubbleWidth, alignment: .leading)
-                .background(Theme.codeFill, in: RoundedRectangle(cornerRadius: 12))
-                .transition(.opacity)
+        } rows: {
+            ForEach(steps) { step in
+                StepRow(step: step)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

@@ -1,3 +1,4 @@
+import HermesKit
 import SwiftUI
 import UserNotifications
 
@@ -8,7 +9,13 @@ import UserNotifications
 #endif
 
 struct NotificationSettings: View {
-    @AppStorage(AppPreferences.notificationsKey) private var enabled = true
+    let push: PushSettings
+    let gatewayIsUnencrypted: Bool
+    let isSignedIn: Bool
+
+    @AppStorage(AppPreferences.messageNotificationsKey) private var messages = true
+    @AppStorage(AppPreferences.needsYouNotificationsKey) private var needsYou = true
+    @AppStorage(AppPreferences.notificationsKey) private var tasks = true
     @AppStorage(AppPreferences.notificationSoundKey) private var sound = true
     @AppStorage(AppPreferences.notificationPreviewsKey) private var previews = true
     @State private var status: UNAuthorizationStatus?
@@ -17,15 +24,22 @@ struct NotificationSettings: View {
 
     var body: some View {
         Section {
-            Toggle("Background task completions", isOn: $enabled)
-            Toggle("Play a sound", isOn: $sound).disabled(!enabled)
-            Toggle("Show task and reply previews", isOn: $previews).disabled(!enabled)
+            Toggle("Messages and replies", isOn: $messages)
+            Toggle("When an agent needs you", isOn: $needsYou)
+            Toggle("Background task completions", isOn: $tasks)
+            Toggle("Play a sound", isOn: $sound).disabled(!anyEnabled)
+            Toggle("Show previews", isOn: $previews).disabled(!anyEnabled)
         } header: {
             Text("Alerts")
         } footer: {
             Text(
-                "Alerts appear when a background task finishes while Usual Bot isn’t in front. Hiding previews keeps task descriptions and reply text out of new notifications."
+                "Alerts appear when you’re not using Usual Bot. Hiding previews keeps what agents say and ask for out of new notifications."
             )
+        }
+        if isSignedIn {
+            PushSection(
+                push: push, gatewayIsUnencrypted: gatewayIsUnencrypted, messages: messages, needsYou: needsYou,
+                previews: previews)
         }
         Section("System permission") {
             LabeledContent("Notifications", value: permissionLabel)
@@ -50,7 +64,7 @@ struct NotificationSettings: View {
         #if os(iOS)
             Section {
                 Text(
-                    "On iPhone, the connection closes when the app goes into the background. Alerts can arrive only while the app is still running; push notifications aren’t supported."
+                    "Without push, iPhone alerts aren’t instant: the connection closes soon after you leave the app, and iOS decides when Usual Bot can check for new messages, which can take hours."
                 )
                 .foregroundStyle(.secondary)
             }
@@ -64,6 +78,8 @@ struct NotificationSettings: View {
             if phase == .active { Task { await refresh() } }
         }
     }
+
+    private var anyEnabled: Bool { messages || needsYou || tasks }
 
     private var permissionLabel: String {
         switch status {

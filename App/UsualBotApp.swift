@@ -13,6 +13,7 @@ struct UsualBotApp: App {
         @State private var tailscale: BuiltInTailscale
         @State private var systemSignIn = WebAuthSignInPresenter()
         @State private var tailnetSignIn: TailnetSignInPresenter
+        @State private var backgroundLink: BackgroundLink
         @Environment(\.scenePhase) private var scenePhase
     #endif
 
@@ -31,38 +32,52 @@ struct UsualBotApp: App {
             let demo =
                 ProcessInfo.processInfo.environment["USUALBOT_DEMO"] == "1"
                 || ProcessInfo.processInfo.arguments.contains("--demo")
-            let model = demo ? AppModel.demo() : live()
+                || ProcessInfo.processInfo.arguments.contains("--demo-long-chat")
+            let model =
+                demo
+                ? AppModel.demo(longConversations: ProcessInfo.processInfo.arguments.contains("--demo-long-chat"))
+                : live()
         #else
             let model = live()
         #endif
         _model = State(initialValue: model)
-        TaskNotifications.watch(model)
         #if os(macOS)
-            _quickPanel = State(initialValue: QuickPanelController(model: model))
+            let quickPanel = QuickPanelController(model: model)
+            _quickPanel = State(initialValue: quickPanel)
+            AgentNotifications.shared.watch(model, showApp: { quickPanel.showMainWindow() })
             // The window has no title bar for tabs to sit under; this also removes the tab menu items.
             NSWindow.allowsAutomaticWindowTabbing = false
+        #else
+            AgentNotifications.shared.watch(model, showApp: {})
+            _backgroundLink = State(initialValue: BackgroundLink(model: model, suspend: { tailscale.suspend() }))
         #endif
     }
 
     var body: some Scene {
         WindowGroup(id: "main") {
-            #if os(macOS)
-                RootView(model: model, presenter: presenter)
-                    .task { await model.restore() }
-                    .providesMainWindow(to: quickPanel)
-            #else
-                RootView(model: model, presenter: signInPresenter) {
-                    TailscaleConnectOption(tailscale: tailscale)
-                } gatewayMenu: {
-                    TailscaleMenu(tailscale: tailscale, reconnect: model.reconnect)
-                }
+            rootView
                 .task { await model.restore() }
-                .onChange(of: scenePhase) { _, phase in setForeground(phase != .background) }
-            #endif
+                .onOpenURL { model.open($0) }
+                // Asked once you're in, not from the background, where iOS can't show the question.
+                .onChange(of: model.session, initial: true) { _, session in
+                    if case .signedIn = session { Task { await AgentNotifications.shared.askForPermission() } }
+                }
+                #if os(macOS)
+                    .providesMainWindow(to: quickPanel)
+                    // A link opens its chat in this window, not a new one.
+                    .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
+                #else
+                    // iOS suspends a backgrounded app's sockets; reconnect on return instead.
+                    .onChange(of: scenePhase) { _, phase in backgroundLink.sceneChanged(to: phase) }
+                #endif
         }
+        #if os(iOS)
+            .backgroundTask(.appRefresh(BackgroundLink.checkInID)) { await backgroundLink.checkIn() }
+        #endif
         #if os(macOS)
             // No title bar: the panes reach the top of the window, which drags by its background.
             .windowStyle(.hiddenTitleBar)
+            .handlesExternalEvents(matching: ["*"])
             .windowBackgroundDragBehavior(.enabled)
             .defaultSize(width: 1100, height: 720)
         #endif
@@ -79,18 +94,23 @@ struct UsualBotApp: App {
         #endif
     }
 
-    #if os(iOS)
+    #if os(macOS)
+        private var rootView: some View {
+            RootView(model: model, presenter: presenter)
+        }
+    #else
+        private var rootView: some View {
+            RootView(model: model, presenter: signInPresenter) {
+                TailscaleConnectOption(tailscale: tailscale)
+            } gatewayMenu: {
+                TailscaleMenu(tailscale: tailscale, reconnect: model.reconnect)
+            }
+        }
+
         /// The system sheet can't reach a tailnet, so sign-in goes through the built-in device
         /// while it's on.
         private var signInPresenter: any SignInPresenter {
             tailscale.isOn ? tailnetSignIn : systemSignIn
-        }
-
-        /// iOS suspends a backgrounded app's sockets, so the app closes its gateway socket and stops
-        /// the built-in Tailscale device, and reconnects on return, which starts the device again.
-        private func setForeground(_ foreground: Bool) {
-            model.setForeground(foreground)
-            if !foreground { tailscale.suspend() }
         }
     #endif
 }

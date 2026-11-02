@@ -62,6 +62,11 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   as user rows so the model reads them. `GatewayTurn` shows them by `display_kind`, and by wording
   for untyped rows. An unknown kind stays a message, so nothing you wrote can disappear. A live card
   on `message.start` is handled but hasn't been seen on a real gateway.
+- **A turn started on another device gets its message when it ends.** `message.start` doesn't carry
+  the prompt, so a watching device has only the reply until then. Hermes's Desktop also reads it back
+  (`owner_forward.py`), and the turn is stored before `message.complete`. Only the message is put in,
+  as a reload would scroll you to the end. A turn that failed or stopped isn't looked up, and a steer
+  from another device still isn't shown.
 - Background results aren't in the gateway's history, so the app keeps them apart and puts them back
   by time whenever the transcript is rebuilt. There's no cancel, because the gateway has no call for it.
 
@@ -80,6 +85,56 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   on one agent's own chat.
 - Room members follow their agent's default model (`follow_profile_config`).
 - Legacy gateways have no room attachments and no per-member usage.
+- **No live activity in rooms.** Members run on hidden sessions, so no tool or helper events reach a
+  client; rooms keep "X is replying…" from `driver_status.member_activity`.
+- **Retry, no discard.** `groups.discard` isn't on the dashboard socket's method table. A retryable
+  task blocks the room (`driver_status.blocked`), so Try Again is the only way out here, and the room
+  shows Needs you.
+- **"Delete" is `groups.disband`,** which stops the room and then tombstones it. A room list read
+  before an edit landed is thrown away (`roomEdits`), or it would bring the room or its old name back.
+
+## Live activity
+
+- **Nothing here is cached.** `ThreadState` leaves `live` and its keyed notices out of `CodingKeys`.
+- **A to-do list lasts as long as its turn.** Resume sends `todo_state` for a finished chat too, and an
+  unfinished list from a turn that's over is stale, so it's only restored while running. The revision
+  survives the turn: snapshots can arrive out of order.
+- **Helpers can outlive a turn.** `delegate_task` may run in the background: the turn completes while
+  `subagent.*` keeps coming, and Hermes starts a follow-up turn when it ends. So helpers are followed
+  with no turn running. A turn that's stopped or fails takes its helpers with it, or a helper whose
+  `subagent.complete` never comes would stay listed.
+- **`reasoning.available` is ignored.** With no reasoning, Hermes sends the reply's own text through
+  it. Only `reasoning.delta` counts, and that needs `show_reasoning` on.
+- **`thinking.delta` is mostly spinner frames.** Only the explained waits Hermes's own app shows pass
+  `LiveActivity.waitText`. `tool.generating` and `tool.output_risk` are ignored.
+
+## Notifications
+
+- **Push goes through the user's own ntfy or Pushover, sent by a gateway plugin.** Apple's push needs a
+  key held by whoever signs the app, so a signed public release could only offer it through a relay
+  we'd run, which breaks "Private" and "Small". The app stays a client: Hermes has no push of its own,
+  and its ntfy platform is a separate two-way chat that doesn't mirror Bot Chats.
+- **A Pushover link takes two taps.** Its `url` only shows inside the expanded message; ntfy's `click`
+  runs on the first tap. Pushover has no way to open another app directly.
+- **The plugin's settings are the one piece of gateway setup in the app,** because they only serve
+  this app. `Integrations/hermes-push` holds them in `~/.hermes/usual-push/`, shared by all profiles.
+- **`post_llm_call` is the reply signal.** `platform` tells a person's chat (`tui`) from helpers
+  (`subagent`) and rooms (`bot_room`). It doesn't name the room, and the member session's title
+  doesn't either: Hermes retitles it after the first message. So the plugin takes the room from that
+  member's `on_room_member_activity`, which can land just after the reply, hence a short wait.
+- **Nothing notifies while you're at the app, on any device.** A window in front or the quick panel
+  counts; a Mac with its screen asleep doesn't, or leaving it in front would silence your phone. The
+  developer asked for this over per-chat alerts, which were too noisy, so on iPhone another chat's
+  request waits until you see the list.
+- **The app reports focus every roster tick, and once when it's lost,** and the plugin forgets it
+  after 15 s, so a crash can't silence pushes. Repeating "not focused" would let a Mac in the
+  background overrule the iPhone in your hand.
+- **Mac alerts stay local, iPhone leaves them to push once it's set up.** Otherwise an iPhone hears
+  each one twice. A Mac can get both when the service's Mac app is installed too.
+- **"Needs you" for an iPhone-only user may be short-lived.** With no client attached the gateway
+  doesn't wait on a prompt, so answering often means having the app, on any device, connected.
+- A catch-up alert is the rise in `unreadCount` on attach, so no new state is cached. A running turn
+  waits for `message.complete`.
 
 ## Bot pictures
 
@@ -133,13 +188,27 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 
 ## Not verified
 
+- These live activity cases have only run from fakes, never from a real turn: provider waits,
+  compression status, `tool.progress` (MCP tools only), `notification.show`, `reasoning.delta`, and a
+  helper still running when its turn ends (in live runs it finished first). To-do lists, helpers and
+  all three room actions have run through `AppModel` on a live dashboard socket, but not in the real
+  app window: its UI was checked in the demo.
 - Sections against a live gateway: `profiles.configure` is confirmed from the Hermes source only,
   never run on the app's dashboard socket. Dragging between sections and Esc in the name field
   haven't been run, because both need the real pointer or keyboard on the Mac.
 - Agent defaults against a live gateway; they're left out of shakedowns because they change an
   agent's default model everywhere.
 - iPhone on a real device beyond sign-in: calls, dictation and GPT-Live audio routing.
-- The background task notification firing.
+- Notifications on a real gateway. A reply, a question and a room reply ran through the plugin on a
+  live throwaway dashboard, with a fake ntfy service and the session token, not the app's own
+  sign-in. Send Test from the app has reached an iPhone through real Pushover and real ntfy; ntfy's
+  arrived late, though its server had the message at once, so the delay is between ntfy and the
+  phone. Tapping an ntfy alert opened its chat on iPhone. Not yet seen on real devices: pushes held
+  while focused, released when a Mac's screen sleeps, or held by the quick panel. Not yet run: a
+  real approval (Hermes didn't flag the commands tried), a room approval, a
+  `/bg` task (it may notify twice on the Mac), and a routine's message. iOS background check-ins
+  can't be forced in the Simulator, so `BackgroundLink` has only run through unit tests of
+  `AppModel.checkIn`.
 - The vault beyond a loopback client on the legacy dialect: `vault.unlock_prompt` and `vault.code`, a
   real password manager, a client on a remote address, and the authority path. Sign-in, secret cards
   and the background bar were run against a real gateway on the Mac and in the iPhone Simulator,

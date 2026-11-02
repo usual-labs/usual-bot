@@ -33,13 +33,18 @@ enum ActivitySummary {
     /// What the agent is doing right now, while a step runs.
     static func current(in steps: [ToolStep]) -> String? {
         guard let step = steps.last(where: { $0.state == .running }) else { return nil }
-        switch category(of: step.name) {
+        return [doing(step.name), step.progress].compactMap(\.self).joined(separator: " · ")
+    }
+
+    /// What using a tool looks like while it runs.
+    static func doing(_ tool: String) -> String {
+        switch category(of: tool) {
         case .read: return String(localized: "Reading")
         case .edit: return String(localized: "Editing")
         case .run: return String(localized: "Running a command")
         case .search: return String(localized: "Searching")
         case .web: return String(localized: "Browsing the web")
-        case .other: return String(localized: "Using \(step.name.replacingOccurrences(of: "_", with: " "))")
+        case .other: return String(localized: "Using \(tool.replacingOccurrences(of: "_", with: " "))")
         }
     }
 

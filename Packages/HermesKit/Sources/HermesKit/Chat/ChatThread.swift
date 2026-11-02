@@ -58,6 +58,12 @@ public final class ChatThread {
     var gatewayIsUnencrypted: @MainActor () -> Bool = { true }
     /// Set by the app: a background task finished, with its task and result (or failure).
     var backgroundTaskFinished: ((_ task: String, _ result: String) -> Void)?
+    /// Set by the app: a reply or a request you aren't looking at.
+    var alert: ((AgentAlert) -> Void)?
+    /// Set by the app: a request alerted about is over, by its alert's ID.
+    var alertWithdrawn: ((String) -> Void)?
+    /// The requests already alerted about. The gateway sends waiting ones again on every attach.
+    var announcedRequests: Set<String> = []
     /// Background tasks' answers, also kept apart from the transcript: the gateway's copy of the
     /// chat doesn't have them, so they're put back whenever it reloads. Newest last.
     var backgroundResults: [BackgroundResult] = []
@@ -74,6 +80,9 @@ public final class ChatThread {
     /// The live session before the last drop.
     var lastSessionID: String?
     var recovery: Task<Void, Never>?
+    /// Where the running turn began, when another device started it and this one hasn't seen
+    /// what was asked.
+    var elsewhereTurnStart: Int?
 
     /// The live session the gateway routes this chat's events to; `nil` while offline.
     private(set) var sessionID: String?
@@ -143,12 +152,14 @@ public final class ChatThread {
         // The same live session in the same gateway process: what a short drop missed can be replayed.
         let rejoined = opened.sessionID == lastSessionID && seqEpoch == replayEpoch && lastSeq > 0
         if !rejoined { lastSeq = 0 }
+        elsewhereTurnStart = nil
         sessionID = opened.sessionID
         lastSessionID = opened.sessionID
         seqEpoch = replayEpoch
         model = ChatModel(info: opened.info) ?? model
         state = ThreadState(
-            history: opened.history, running: opened.running, inflight: opened.inflight, kept: backgroundResults)
+            history: opened.history, running: opened.running, inflight: opened.inflight, kept: backgroundResults,
+            todoState: opened.todoState)
         transcriptLoad += 1
         banner = opened.historyOmitted ? String(localized: "Earlier messages are too long to load here.") : nil
         // The gateway re-sends any question still waiting, so the list starts from its answer.
@@ -156,11 +167,15 @@ public final class ChatThread {
         approvals = opened.openRequests.compactMap(ApprovalPrompt.init)
         questions = opened.openRequests.compactMap(ClarifyPrompt.init)
         secrets = opened.openRequests.compactMap(SecretPrompt.init)
+        announceRequests()
         if isVisible {
             markViewed()
         } else if let lastViewed {
             let since = lastViewed.timeIntervalSince1970
+            let unreadBefore = unreadCount
             unreadCount = opened.history.filter { $0.role == "assistant" && ($0.timestamp ?? 0) > since }.count
+            // A running turn alerts when it ends; its rows so far may not be the reply.
+            if unreadCount > unreadBefore, !opened.running { announceReply(in: opened.history) }
         } else {
             // First time this device sees the chat: nothing is new yet.
             markViewed()
@@ -194,6 +209,7 @@ public final class ChatThread {
         if let seq = event.seq { lastSeq = max(lastSeq, seq) }
         if event.type == "request.cancel" {
             withdraw(event.payload)
+            announceRequests()
             return
         }
         if event.type == "session.info" {
@@ -209,14 +225,21 @@ public final class ChatThread {
             return
         }
         if event.type == "message.complete", let usage = ChatUsage(event.payload["usage"]) { self.usage = usage }
+        // Sending from here marks the turn running before the gateway says it started. A turn
+        // Hermes began itself brings its own line.
+        if event.type == "message.start", !state.isRunning, event.payload["display_kind"] == nil {
+            elsewhereTurnStart = state.items.count
+        }
         let wasRunning = state.isRunning
         let itemsBefore = state.items.count
         state.apply(event)
         if event.type == "message.complete", wasRunning, !isVisible,
-            state.items[min(itemsBefore, state.items.count)...].contains(where: \.isReply)
+            let reply = state.items[min(itemsBefore, state.items.count)...].last(where: \.isReply)
         {
             unreadCount += 1
+            announce(reply)
         }
+        if event.type == "message.complete" { finishTurnElsewhere(event.payload) }
         if isVisible { lastViewed = Date() }
     }
 

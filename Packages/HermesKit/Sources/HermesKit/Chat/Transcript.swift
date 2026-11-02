@@ -89,6 +89,8 @@ public struct ToolStep: Identifiable, Equatable, Sendable, Codable {
     public var summary: String?
     public var duration: TimeInterval?
     public var state: State
+    /// How far a long step has got, when the tool says.
+    public var progress: String? = nil
 }
 
 /// A message from `session.resume`: the gateway's display projection of the stored history.
@@ -164,11 +166,22 @@ public struct ThreadState: Equatable, Sendable, Codable {
     private var nextID = 0
     /// `items.count` when the current turn started, to tell whether the turn has replied yet.
     private var turnStart = 0
+    /// What the running turn is doing between messages.
+    public private(set) var live = LiveActivity()
+    /// Notices Hermes can replace or take back, by its key.
+    private var keyedNotices: [String: Int] = [:]
+
+    private enum CodingKeys: String, CodingKey { case items, draft, isRunning, nextID, turnStart }
 
     public init() {}
 
     /// `kept`: background tasks' answers, which the gateway's history lacks, put back in time order.
-    init(history: [HistoryMessage], running: Bool, inflight: InflightTurn? = nil, kept: [BackgroundResult] = []) {
+    /// `todoState`: the to-do list Hermes kept for this chat; it means something only while the
+    /// turn that made it runs.
+    init(
+        history: [HistoryMessage], running: Bool, inflight: InflightTurn? = nil, kept: [BackgroundResult] = [],
+        todoState: JSONValue? = nil
+    ) {
         var pending = kept.sorted { $0.date < $1.date }[...]
         for message in history {
             if let time = message.timestamp {
@@ -211,6 +224,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
             }
             draft = inflight.assistant
         }
+        if running, let todoState { live.restoreTodos(todoState) }
     }
 
     /// Keeps only the last `limit` items, for the offline cache. A running turn is cut off.
@@ -220,6 +234,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
         copy.draft = ""
         copy.isRunning = false
         copy.turnStart = copy.items.count
+        copy.live = LiveActivity()
         return copy
     }
 
@@ -243,6 +258,16 @@ public struct ThreadState: Equatable, Sendable, Codable {
         turnStart = items.count
     }
 
+    /// Puts a turn's message where the turn began, for one sent from another device.
+    mutating func insertPrompt(_ message: HistoryMessage, at index: Int) {
+        guard index <= items.count, let text = message.text?.nonBlank else { return }
+        append(
+            GatewayTurn.content(text: text, kind: message.displayKind, title: message.displayText),
+            rowID: message.rowId, reactions: message.reactions)
+        items.insert(items.removeLast(), at: index)
+        if index <= turnStart { turnStart += 1 }
+    }
+
     /// Shows a command you ran that answers with output instead of a turn.
     mutating func showCommand(_ text: String) {
         sealDraft()
@@ -256,6 +281,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
         items.removeSubrange(index...)
         draft = ""
         isRunning = false
+        live.endTurn()
         turnStart = items.count
     }
 
@@ -279,6 +305,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
         sealDraft()
         finishSteps(as: .failed)
         isRunning = false
+        live.endTurn()
     }
 
     /// Applies one gateway event for this chat's session. Unknown events are ignored.
@@ -298,6 +325,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
             isRunning = true
         case "message.delta":
             if let text = payload["text"]?.stringValue { draft += text }
+            live.moveOn()
         case "message.interim":
             sealDraft()
             if payload["already_streamed"]?.boolValue != true, let text = payload["text"]?.stringValue?.nonBlank {
@@ -305,21 +333,66 @@ public struct ThreadState: Equatable, Sendable, Codable {
             }
         case "tool.start":
             sealDraft()
+            live.moveOn()
             addStep(
                 ToolStep(
                     id: payload["tool_id"]?.stringValue ?? "tool-\(nextID)",
                     name: payload["name"]?.stringValue ?? "tool",
                     context: payload["context"]?.stringValue ?? "",
                     state: .running))
+        case "tool.progress":
+            updateStep(payload)
         case "tool.complete":
             completeStep(payload)
         case "message.complete":
             complete(payload)
         case "error":
             if let message = payload["message"]?.stringValue?.nonBlank { addNotice(message) }
+        case "notification.show":
+            show(payload)
+        case "notification.clear":
+            clearNotice(payload)
         default:
-            break
+            if event.type == "status.update", LiveActivity.isFallback(payload),
+                let text = payload["text"]?.stringValue?.nonBlank
+            {
+                append(.notice(text))
+            }
+            applyLive(event)
         }
+    }
+
+    /// Hermes can send a helper to the background and end the turn, so helpers are followed with
+    /// no turn running; then one that finishes has nothing left to show. All else needs a turn.
+    private mutating func applyLive(_ event: GatewayEvent) {
+        if event.type.hasPrefix("subagent.") {
+            live.apply(event)
+            if !isRunning { live.dropFinishedHelpers() }
+        } else if isRunning {
+            live.apply(event)
+        }
+    }
+
+    // MARK: - Notices from Hermes
+
+    /// Hermes's own notices sit above a streaming reply, so they don't split it in two.
+    private mutating func show(_ payload: JSONValue) {
+        guard let text = payload["text"]?.stringValue?.nonBlank else { return }
+        let key = payload["key"]?.stringValue
+        if let key, let id = keyedNotices[key], let index = items.firstIndex(where: { $0.id == id }) {
+            items[index].content = .notice(text)
+            return
+        }
+        append(.notice(text))
+        if let key { keyedNotices[key] = nextID - 1 }
+    }
+
+    private mutating func clearNotice(_ payload: JSONValue) {
+        guard let key = payload["key"]?.stringValue, let id = keyedNotices.removeValue(forKey: key),
+            let index = items.firstIndex(where: { $0.id == id })
+        else { return }
+        items.remove(at: index)
+        if index < turnStart { turnStart -= 1 }
     }
 
     // MARK: - Turn handling
@@ -347,6 +420,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
         }
         finishSteps(as: status == "complete" ? .done : .failed)
         isRunning = false
+        live.endTurn(finished: status == "complete")
         turnStart = items.count
     }
 
@@ -386,16 +460,29 @@ public struct ThreadState: Equatable, Sendable, Codable {
         }
     }
 
+    private mutating func updateStep(_ payload: JSONValue) {
+        var progress = payload["message"]?.stringValue?.nonBlank
+        if progress == nil, case .number(let percent) = payload["percent"] { progress = "\(Int(percent))%" }
+        withStep(payload) { $0.progress = progress }
+    }
+
     private mutating func completeStep(_ payload: JSONValue) {
+        withStep(payload) { step in
+            let failed = payload["result"]?["error"].map { $0 != .null } ?? false
+            step.state = failed ? .failed : .done
+            step.summary = payload["summary"]?.stringValue?.nonBlank
+            step.progress = nil
+            if case .number(let seconds) = payload["duration_s"] { step.duration = seconds }
+        }
+    }
+
+    private mutating func withStep(_ payload: JSONValue, _ change: (inout ToolStep) -> Void) {
         guard let id = payload["tool_id"]?.stringValue else { return }
         for index in items.indices.reversed() {
             guard case .activity(var steps) = items[index].content,
                 let stepIndex = steps.firstIndex(where: { $0.id == id })
             else { continue }
-            let failed = payload["result"]?["error"].map { $0 != .null } ?? false
-            steps[stepIndex].state = failed ? .failed : .done
-            steps[stepIndex].summary = payload["summary"]?.stringValue?.nonBlank
-            if case .number(let seconds) = payload["duration_s"] { steps[stepIndex].duration = seconds }
+            change(&steps[stepIndex])
             items[index].content = .activity(steps)
             return
         }
@@ -406,7 +493,10 @@ public struct ThreadState: Equatable, Sendable, Codable {
         for index in items.indices {
             guard case .activity(var steps) = items[index].content, steps.contains(where: { $0.state == .running })
             else { continue }
-            for step in steps.indices where steps[step].state == .running { steps[step].state = state }
+            for step in steps.indices where steps[step].state == .running {
+                steps[step].state = state
+                steps[step].progress = nil
+            }
             items[index].content = .activity(steps)
         }
     }

@@ -23,14 +23,17 @@ public final class AppModel {
     public private(set) var session: Session = .signedOut
     public private(set) var link: Link = .connecting
     /// The agents and rooms the gateway reports, in its own terms. Show `sidebarContacts` instead.
-    public private(set) var contacts: [Contact] = []
+    public internal(set) var contacts: [Contact] = []
     /// The chat on screen, if any. Its replies don't count as unread.
     public var visibleContactID: Contact.ID? {
         didSet {
             for (id, thread) in threads { thread.isVisible = id == visibleContactID }
             for (id, room) in rooms { room.isVisible = id == visibleContactID }
+            if let visibleContactID { alertsCleared?(visibleContactID) }
         }
     }
+    /// A chat to open, say because you tapped its notification. The window clears it.
+    public var requestedContactID: Contact.ID?
     /// Version, health and account, once the Machine tab asked for them.
     public private(set) var gatewayDetails: GatewayDetails?
     /// The last sign-in or connection problem, for the connect screen.
@@ -40,9 +43,12 @@ public final class AppModel {
     /// Reading the saved sign-in at launch (the Keychain may ask first): a splash, not the connect
     /// screen, shows meanwhile.
     public private(set) var isRestoring: Bool
-    /// Set by the app to hear when a chat's background task (`/bg`) finishes, e.g. to notify you
-    /// when the app isn't in front. Gets the agent, the task and its result or failure.
-    @ObservationIgnored public var backgroundTaskFinished: ((Contact, String, String) -> Void)?
+    /// Set by the app to hear what you aren't looking at, e.g. to notify you. Rooms are contacts too.
+    @ObservationIgnored public var agentAlerted: ((Contact, AgentAlert) -> Void)?
+    /// A request alerted about is over: answered elsewhere, or withdrawn. Gets the alert's ID.
+    @ObservationIgnored public var alertWithdrawn: ((String) -> Void)?
+    /// You've seen a chat, or signed out (`nil`), so what was said about it can go.
+    @ObservationIgnored public var alertsCleared: ((Contact.ID?) -> Void)?
 
     private let tokenStore: any TokenStore
     private let http: any HTTPTransport
@@ -50,23 +56,33 @@ public final class AppModel {
     private let defaults: UserDefaults
     private let cache: OfflineCache
     @ObservationIgnored private var lastSaved: OfflineCache.Snapshot?
-    private var auth: AuthSession?
+    var auth: AuthSession?
     private var signInTask: Task<Void, Never>?
-    private var linkTask: Task<Void, Never>?
+    var linkTask: Task<Void, Never>?
     /// Whether the app is on screen; the socket stays closed while it isn't.
-    private var isForeground = true
+    var isForeground = true
+    /// iOS gave the app a moment in the background (`checkIn()`).
+    var isCheckingIn = false
+    /// Counts roster reads, so `checkIn()` knows when this link has read the gateway.
+    @ObservationIgnored var rosterReads = 0
     /// The socket while the link is online.
-    @ObservationIgnored private var channel: JSONRPCChannel?
+    @ObservationIgnored var channel: JSONRPCChannel?
     /// The gateway process's event numbering, for replaying what a short drop missed.
     @ObservationIgnored private var replayEpoch: String?
-    @ObservationIgnored private var threads: [Contact.ID: ChatThread] = [:]
+    @ObservationIgnored var threads: [Contact.ID: ChatThread] = [:]
     @ObservationIgnored private var routineLists: [Contact.ID: RoutineList] = [:]
     @ObservationIgnored private var skillLists: [Contact.ID: SkillList] = [:]
     @ObservationIgnored private var vaultLists: [Contact.ID: VaultList] = [:]
-    @ObservationIgnored private var rooms: [Contact.ID: RoomThread] = [:]
+    @ObservationIgnored var rooms: [Contact.ID: RoomThread] = [:]
+    /// Counts finished room edits, so a room list read before one can't undo it.
+    @ObservationIgnored var roomEdits = 0
+    /// The demo has no gateway, so room edits happen here alone.
+    @ObservationIgnored var isDemo = false
     /// Images and files agents name in chats, read from the gateway.
     @ObservationIgnored public private(set) lazy var media = MediaStore(auth: { [weak self] in self?.auth })
     @ObservationIgnored public private(set) lazy var voiceLive = VoiceLiveService(auth: { [weak self] in self?.auth })
+    /// How the gateway reaches you when this app can't.
+    @ObservationIgnored public private(set) lazy var push = PushSettings(auth: { [weak self] in self?.auth })
     /// Agents' own pictures from the official app; agents without one keep the app's characters.
     @ObservationIgnored public let pictures = BotPictures()
     /// How the sidebar is grouped.
@@ -169,6 +185,7 @@ public final class AppModel {
     public func signOut() {
         linkTask?.cancel()
         signInTask?.cancel()
+        alertsCleared?(nil)
         if let auth {
             cache.delete(for: auth.gateway)
             Task { await auth.signOut() }
@@ -182,6 +199,7 @@ public final class AppModel {
         media.clear()
         pictures.clear()
         sections.clear()
+        push.clear()
         rooms = [:]
         gatewayDetails = nil
         lastSaved = nil
@@ -197,16 +215,20 @@ public final class AppModel {
             rooms: [Contact.ID: RoomThread], routines: [Contact.ID: RoutineList], skills: [Contact.ID: SkillList],
             vaults: [Contact.ID: VaultList]
         ) {
+            isDemo = true
             session = .signedIn(gateway)
             link = .online(.legacy)
             self.contacts = contacts
             self.threads = threads
             self.rooms = rooms
+            for (id, thread) in threads { wireAlerts(of: thread, id: id) }
+            for (id, room) in rooms { wireAlerts(of: room, id: id) }
             routineLists = routines
             skillLists = skills
             vaultLists = vaults
             sections.save = { _, _ in }
             sections.reconcile(contacts)
+            push.showDemo()
         }
     #endif
 
@@ -220,10 +242,10 @@ public final class AppModel {
         connect(auth)
     }
 
-    private func connect(_ auth: AuthSession) {
+    func connect(_ auth: AuthSession) {
         link = .connecting
         linkTask?.cancel()
-        linkTask = isForeground ? Task { await stayConnected(auth) } : nil
+        linkTask = isForeground || isCheckingIn ? Task { await stayConnected(auth) } : nil
     }
 
     /// On iPhone the app closes the socket when it goes to the background, where iOS would cut it
@@ -249,6 +271,7 @@ public final class AppModel {
                 replayEpoch = ready.replayEpoch?.stringValue
                 for thread in threads.values { thread.replayEpoch = replayEpoch }
                 link = .online(ready.dialect)
+                await push.refresh()
                 let events = Task { for await event in channel.events { route(event) } }
                 let requests = Task { for await request in channel.requests { await handle(request, on: channel) } }
                 defer {
@@ -262,6 +285,7 @@ public final class AppModel {
                     try await refreshRoster(on: channel)
                     attachChats()
                     saveCache(for: auth.gateway)
+                    reportFocus()
                     try await Task.sleep(for: Self.rosterInterval)
                 }
             } catch GatewayError.signInRequired {
@@ -313,15 +337,30 @@ public final class AppModel {
     private func makeThread(_ id: Contact.ID, cached: CachedThread?) -> ChatThread {
         let thread = ChatThread(contactID: id, cached: cached, channel: { [weak self] in self?.channel })
         thread.isVisible = id == visibleContactID
-        thread.backgroundTaskFinished = { [weak self] task, result in
-            guard let self, let contact = contacts.first(where: { $0.id == id }) else { return }
-            backgroundTaskFinished?(contact, task, result)
-        }
+        wireAlerts(of: thread, id: id)
         thread.storedAnswer = { [weak self] taskID in await self?.storedAnswer(taskID: taskID, profile: id) }
         thread.gateway = { [weak self] in self?.auth?.gateway }
         thread.replayEpoch = replayEpoch
         thread.gatewayIsUnencrypted = { [weak self] in self?.auth?.gateway.isUnencrypted ?? true }
         return thread
+    }
+
+    private func wireAlerts(of thread: ChatThread, id: Contact.ID) {
+        thread.alert = { [weak self] in self?.heard($0, from: id) }
+        thread.alertWithdrawn = { [weak self] in self?.alertWithdrawn?($0) }
+        thread.backgroundTaskFinished = { [weak self] task, result in
+            self?.heard(.init(id: UUID().uuidString, kind: .taskFinished, subtitle: task, preview: result), from: id)
+        }
+    }
+
+    func wireAlerts(of room: RoomThread, id: Contact.ID) {
+        room.alert = { [weak self] in self?.heard($0, from: id) }
+        room.alertWithdrawn = { [weak self] in self?.alertWithdrawn?($0) }
+    }
+
+    private func heard(_ alert: AgentAlert, from id: Contact.ID) {
+        guard let contact = contacts.first(where: { $0.id == id }) else { return }
+        agentAlerted?(contact, alert)
     }
 
     /// Keeps every agent's existing Bot Chat attached, so its approvals reach this app and the
@@ -423,6 +462,7 @@ public final class AppModel {
     /// never waits on Usual Bot.
     private func handle(_ request: ServerRequest, on channel: JSONRPCChannel) async {
         let thread = threads.values.first { $0.sessionID != nil && $0.sessionID == request.sessionID }
+        defer { thread?.announceRequests() }
         if VaultPrompt.methods.contains(request.method) {
             if let thread, let prompt = VaultPrompt(request) {
                 thread.receive(prompt)
@@ -454,7 +494,7 @@ public final class AppModel {
     }
 
     /// Writes the roster and recent messages for next launch, when they changed.
-    private func saveCache(for gateway: GatewayAddress) {
+    func saveCache(for gateway: GatewayAddress) {
         let snapshot = OfflineCache.Snapshot(
             contacts: contacts, threads: threads.filter { $0.value.phase == .ready }.mapValues(\.cacheEntry),
             pictures: pictures.stored)
@@ -474,76 +514,6 @@ public final class AppModel {
         pictures.refresh(agents, on: channel)
         contacts = agents + (await refreshRooms(on: channel) ?? contacts.filter { $0.kind != .agent })
         sections.reconcile(contacts)
-    }
-
-    /// Lists the gateway's rooms and catches up any that have new events. Returns `nil` when the
-    /// gateway couldn't list them, so the sidebar keeps the rooms it had.
-    private func refreshRooms(on channel: JSONRPCChannel) async -> [Contact]? {
-        guard let result = try? await channel.call("groups.list", params: ["limit": 200]),
-            case .array(let rows) = result["rooms"]
-        else { return nil }
-        let summaries = rows.compactMap(RoomSummary.init)
-        var listed: [Contact.ID: RoomThread] = [:]
-        for summary in summaries {
-            let room = roomThread(for: summary)
-            listed[RoomSummary.contactID(summary.id)] = room
-            if summary.latestSeq > room.cursor || room.phase != .ready { Task { await room.sync() } }
-        }
-        rooms = listed
-        return summaries.map(Contact.init(room:))
-    }
-
-    /// The room behind `summary`, kept across refreshes so its transcript stays loaded.
-    private func roomThread(for summary: RoomSummary) -> RoomThread {
-        let id = RoomSummary.contactID(summary.id)
-        let room = rooms[id] ?? RoomThread(summary: summary, channel: { [weak self] in self?.channel })
-        room.update(summary)
-        room.isVisible = id == visibleContactID
-        return room
-    }
-
-    /// Creates a room with `agents`, two to six of this gateway's agents, and lists it at once.
-    /// Returns the room's contact ID, to open it.
-    public func createRoom(named name: String, agents: [Contact]) async throws -> Contact.ID {
-        guard let channel else { throw GatewayError.disconnected }
-        let summary = try await RoomThread.create(
-            named: name, profiles: agents.map { $0.details?.profile ?? $0.id }, on: channel)
-        let contact = Contact(room: summary)
-        let room = roomThread(for: summary)
-        rooms[contact.id] = room
-        contacts.removeAll { $0.id == contact.id }
-        contacts.append(contact)
-        Task { await room.sync() }
-        return contact.id
-    }
-
-    /// Like `describe(_:)`, but says what to check when a tailnet gateway can't be reached: the
-    /// device usually isn't on the tailnet.
-    static func describe(_ error: any Error, for gateway: GatewayAddress) -> String {
-        if case .unreachable = error as? GatewayError, gateway.isTailnet {
-            return String(
-                localized:
-                    "Can't reach \(gateway.displayName). It's a Tailscale address, so check that Tailscale is on and signed in on this device."
-            )
-        }
-        return describe(error)
-    }
-
-    /// An error in words for the UI.
-    public static func describe(_ error: any Error) -> String {
-        switch error {
-        case let error as GatewayAddress.ParseError:
-            switch error {
-            case .empty: return String(localized: "Enter your gateway's address.")
-            case .invalid: return String(localized: "That doesn't look like a gateway address.")
-            case .insecureHTTP(let host):
-                return String(
-                    localized: "\(host) is on the public internet, so use https:// to keep your sign-in private.")
-            }
-        case let error as GatewayError:
-            return error.errorDescription ?? String(describing: error)
-        default:
-            return error.localizedDescription
-        }
+        rosterReads += 1
     }
 }

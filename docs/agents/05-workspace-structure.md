@@ -20,6 +20,8 @@
   user runs in their own agent; linked from `docs/guides/troubleshooting.md`
 - `CLAUDE.md` imports `AGENTS.md`; shared agent skills live in `.agents/skills`, linked from
   `.claude/skills`
+- `Integrations/hermes-push/` — the Hermes plugin behind ntfy and Pushover notifications (Python,
+  standard library plus Hermes itself; installed on the gateway, not built with the app)
 - `.github/workflows/zizmor.yml` — zizmor security lint of the workflows (pushes/PRs touching
   `.github/`), findings in code scanning; `.github/workflows/scorecard.yml` — OpenSSF Scorecard
   weekly and on pushes to main, publishes the README badge; `.github/dependabot.yml` — weekly grouped

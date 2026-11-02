@@ -15,9 +15,6 @@
     roster only writes a Bot's section: no create, rename or picture change.
   - **Routines:** the Routines tab only switches a job on or off. `/api/cron/jobs` also creates,
     edits, runs and deletes, `/{id}/runs` gives history and `/api/cron/blueprints` gives templates.
-  - **Live activity:** `status.update`, `todo.updated`, `reasoning.delta`, `tool.progress`,
-    `notification.show` and `subagent.*` are ignored.
-  - **Rooms:** `groups.rename`, `groups.disband` and `groups.retry`.
   - **Usage across chats:** `usage.bars`, `insights.get`, `/api/analytics/usage`.
   - **Bot desktop:** `display.*` with a ticket for `/api/display/ws` (raw RFB), Take over through
     `display.lease.*`. Largest of these: it needs a VNC viewer in the app.
@@ -57,16 +54,18 @@ Child-local ideas stay in their package KBs.
   with an alert and the gateway's later sign-ins use the system sheet, which needs the Tailscale
   VPN for that sign-in; tokens then refresh through the built-in device. Fully VPN-free Google
   sign-in would mean posing as Safari, which Google's policy forbids. The Google hand-off is
-  untested (no Google-backed gateway). The node stops in the background and starts on return:
-  iOS cut a suspended node's sockets and its UDP receivers and link monitor never recovered
-  (DERP-only, errors in a loop). Evidence on an iPhone 15 Pro Max (iOS 27.0.1) with the VPN off:
+  untested (no Google-backed gateway). The node stops once the app lets go of the gateway in the background
+  (after `BackgroundLink`'s grace period for a running reply, and after a background check-in)
+  and starts on the next gateway request: iOS cut a suspended node's sockets and its UDP receivers
+  and link monitor never recovered (DERP-only, errors in a loop). Evidence on an iPhone 15 Pro Max (iOS 27.0.1) with the VPN off:
   Tailscale sign-in in the system sheet; gateway traffic from the app's own tailnet address;
   with saved keys the node runs about 1 s after launch or return (two background cycles logged,
   no socket errors); gateway sign-in through the web view and the gateway menu reported working
   by the maintainer. Simulator checked for the header, menu and connect-screen switch. Builds:
   iPhone, Simulator, Mac (skips the iOS-only framework via a platform-conditional dependency);
-  HermesKit and UsualUI tests and lint pass, also after merging main (2026-11-01). Before shipping:
-  CI on PR #5; the merged build hasn't run on a device;
+  HermesKit and UsualUI tests and lint pass, also after merging main (2026-11-01, and again
+  2026-11-02 with push notifications). Before shipping: the merged builds haven't run on a device,
+  and the grace period and background check-in haven't been tried with the built-in device on;
   it adds 21 MB (36 MB Debug app); tsnet uploads node logs to Tailscale (logtail) like
   Tailscale's own clients; the Google hand-off is untested; if the iPhone app is ever
   distributed, its credits need TailscaleKit's BSD-3 notice. Framework (decided and published
@@ -83,3 +82,6 @@ Child-local ideas stay in their package KBs.
   a patched fork without attestation) says not to depend on it. Committing the framework (69 MB
   per version) and building from source in every build (Go 1.27) were rejected. Zero-code
   alternative: Tailscale's VPN On Demand can start the VPN when a `*.ts.net` name is resolved.
+- **Apple push through a relay.** Notifications under Usual Bot's own icon, for everyone, would need a
+  small hosted relay holding the push key, with payloads encrypted to the device and a notification
+  service extension to read them.

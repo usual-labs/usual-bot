@@ -41,8 +41,10 @@
 
         private static let log = Logger(subsystem: "UsualBot", category: "quick-message")
 
+        var isVisible: Bool { panel?.isVisible == true }
+
         func toggle() {
-            if panel?.isVisible == true { close() } else { show() }
+            if isVisible { close() } else { show() }
         }
 
         func show() {
@@ -53,10 +55,12 @@
             // then take the keyboard without activating Usual Bot.
             panel.orderFrontRegardless()
             panel.makeKey()
+            model.setPanelOpen(true)
         }
 
         func close() {
             panel?.orderOut(nil)
+            model.setPanelOpen(false)
         }
 
         /// Brings the main window forward, opening it again if it was closed.

@@ -53,7 +53,13 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                 skills: { $0.kind == .agent ? model.skills(for: $0) : nil },
                 open: { model.openThread(for: $0) },
                 select: { model.visibleContactID = $0 },
+                focused: { model.setWindowFocused($0) },
+                settings: showSettings,
+                requested: model.requestedContactID,
+                openedRequested: { model.requestedContactID = nil },
                 createRoom: { try await model.createRoom(named: $0, agents: $1) },
+                renameRoom: { try await model.renameRoom($0, to: $1) },
+                deleteRoom: { try await model.deleteRoom($0) },
                 profile: { contact, close in
                     guard contact.kind == .agent else { return nil }
                     return ProfilePanel(
@@ -81,14 +87,16 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
         }
     }
 
+    private func showSettings() {
+        #if os(macOS)
+            openSettings()
+        #else
+            showsSettings = true
+        #endif
+    }
+
     private var settingsButton: some View {
-        Button {
-            #if os(macOS)
-                openSettings()
-            #else
-                showsSettings = true
-            #endif
-        } label: {
+        Button(action: showSettings) {
             Image(systemName: "gearshape")
                 .frame(width: 32, height: 32)
                 .contentShape(Rectangle())
@@ -125,8 +133,17 @@ struct ContactsSplitView<Footer: View>: View {
     var open: (Contact) -> Void = { _ in }
     /// Told which contact is on screen, so its replies don't count as unread.
     var select: (Contact.ID?) -> Void = { _ in }
+    /// Told whether you're at this window. A chat in one you aren't at isn't being read.
+    var focused: (Bool) -> Void = { _ in }
+    var settings: () -> Void = {}
+    /// A chat to open from outside the list, such as a tapped notification.
+    var requested: Contact.ID?
+    var openedRequested: () -> Void = {}
     /// Creates a room from a name and its agents and returns the room's ID; `nil` hides New Room.
     var createRoom: ((String, [Contact]) async throws -> Contact.ID)?
+    /// `nil` hides renaming and deleting rooms.
+    var renameRoom: ((Contact, String) async throws -> Void)?
+    var deleteRoom: ((Contact) async throws -> Void)?
     /// The profile panel for a contact, given a way to close it; `nil` when it has none.
     var profile: (Contact, @escaping () -> Void) -> ProfilePanel? = { _, _ in nil }
     /// Below the list; told whether the sidebar is the narrow window's rail.
@@ -142,8 +159,7 @@ struct ContactsSplitView<Footer: View>: View {
         @State private var dragWidth: Double?
         @State private var dragStart: Double?
         @State private var windowWidth: CGFloat = 0
-        @State private var isSearching = false
-        @FocusState private var searchFocused: Bool
+        @State private var showsPalette = false
         /// The open chat, reopened at the next launch.
         @AppStorage("selectedContact") private var selection: Contact.ID?
         @AppStorage("showsProfile") private var showsProfile = false
@@ -151,19 +167,41 @@ struct ContactsSplitView<Footer: View>: View {
         @State private var selection: Contact.ID?
         @State private var showsProfile = false
     #endif
-    @Environment(\.scenePhase) private var scenePhase
+    @State private var isLooking = false
 
     var body: some View {
         content
             .tint(Theme.ink)
+            .environment(\.roomEditing, roomEditing)
             .sheet(isPresented: $showsNewRoom) {
                 if let createRoom {
                     NewRoomSheet(agents: agents, create: createRoom) { selection = $0 }
                 }
             }
-            .onChange(of: selection, initial: true) { _, selected in select(scenePhase == .active ? selected : nil) }
-            // A chat in a window you aren't looking at isn't being read.
-            .onChange(of: scenePhase) { _, phase in select(phase == .active ? selection : nil) }
+            .tracksLooking($isLooking)
+            .onChange(of: selection, initial: true) { _, selected in select(isLooking ? selected : nil) }
+            .onChange(of: isLooking) { _, looking in
+                select(looking ? selection : nil)
+                focused(looking)
+            }
+            .onChange(of: requested, initial: true) { _, requested in
+                guard let requested else { return }
+                selection = requested
+                openedRequested()
+            }
+            // A closed window shows nothing, and it may not get a last scene phase.
+            .onDisappear {
+                select(nil)
+                focused(false)
+            }
+    }
+
+    private var roomEditing: RoomEditing? {
+        guard let renameRoom, let deleteRoom else { return nil }
+        return RoomEditing(rename: renameRoom) { contact in
+            try await deleteRoom(contact)
+            if selection == contact.id { selection = nil }
+        }
     }
 
     @ViewBuilder private var content: some View {
@@ -180,8 +218,8 @@ struct ContactsSplitView<Footer: View>: View {
             // Search and New Room ride in the window's toolbar, beside the window buttons; the
             // toolbar also gives the title area its height. Anything drawn under it is hidden.
             .sidebarToolbar(
-                leading: max(0, sidebarWidth - 197), search: searchButton, newRoom: newRoomButton,
-                shown: !showsRail
+                leading: max(0, sidebarWidth - (showsToggleInToolbar ? 229 : 197)), search: searchButton,
+                newRoom: newRoomButton, toggle: showsToggleInToolbar ? sidebarToggle : nil, shown: !showsRail
             )
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .frame(minWidth: Self.railWidth + Self.chatMinWidth)
@@ -189,6 +227,16 @@ struct ContactsSplitView<Footer: View>: View {
                 $0.size.width
             } action: {
                 windowWidth = $0
+            }
+            .background { paletteShortcuts }
+            .overlay {
+                if showsPalette {
+                    CommandPalette(
+                        contacts: contacts, members: members(of:),
+                        canCreateRoom: createRoom != nil && agents.count >= NewRoomSheet.seats.lowerBound,
+                        open: { selection = $0 }, newRoom: { showsNewRoom = true }, settings: settings,
+                        close: { showsPalette = false })
+                }
             }
         #else
             NavigationSplitView {
@@ -210,9 +258,6 @@ struct ContactsSplitView<Footer: View>: View {
     /// The list, or in the rail (`compact`) avatars only.
     private func sidebar(compact: Bool) -> some View {
         VStack(spacing: 0) {
-            #if os(macOS)
-                if isSearching, !compact { searchField }
-            #endif
             if contacts.isEmpty {
                 Text(emptyText)
                     .font(.system(size: 13))
@@ -224,6 +269,10 @@ struct ContactsSplitView<Footer: View>: View {
             }
             #if os(macOS)
                 if compact {
+                    if canLeaveRail {
+                        sidebarToggle
+                            .frame(width: 44, height: 44)
+                    }
                     newRoomButton
                         .labelStyle(.iconOnly)
                         .buttonStyle(.plain)
@@ -257,10 +306,40 @@ struct ContactsSplitView<Footer: View>: View {
         private var showsRail: Bool { sidebarWidth < Self.minListWidth }
 
         private var searchButton: some View {
-            Button("Search", systemImage: "magnifyingglass", action: toggleSearch)
-                .keyboardShortcut("f")
+            Button("Search", systemImage: "magnifyingglass") { showsPalette = true }
                 .help("Search")
         }
+
+        /// Here rather than on the button, which the rail doesn't have.
+        private var paletteShortcuts: some View {
+            Group {
+                Button("Search") { showsPalette.toggle() }.keyboardShortcut("k")
+                Button("Search") { showsPalette.toggle() }.keyboardShortcut("f")
+            }
+            .opacity(0)
+            .accessibilityHidden(true)
+        }
+
+        private var sidebarToggle: some View {
+            Button {
+                withAnimation(.smooth(duration: 0.25)) { listWidth = showsRail ? Self.fullWidth : Self.railWidth }
+            } label: {
+                Image(systemName: "sidebar.left")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Theme.secondaryInk)
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(showsRail ? "Expand Sidebar" : "Collapse Sidebar")
+            .accessibilityLabel(showsRail ? Text("Expand Sidebar") : Text("Collapse Sidebar"))
+        }
+
+        /// A window too narrow for the list keeps the rail, so a button there would do nothing.
+        private var canLeaveRail: Bool { windowWidth - Self.fullWidth >= Self.chatMinWidth }
+
+        /// The toolbar's row doesn't fit it in the narrowest list.
+        private var showsToggleInToolbar: Bool { sidebarWidth >= 229 }
 
         /// The sidebar's edge: drag it to resize. Let go narrower than a list fits and it settles
         /// on the rail; pull the rail out far enough and it opens to the full list.
@@ -297,11 +376,11 @@ struct ContactsSplitView<Footer: View>: View {
                 .accessibilityHidden(true)
         }
 
-        /// The rail: as wide as the window's three buttons with their margins.
-        private static var railWidth: Double { 78 }
+        /// The rail: the window's three buttons with their margins, and room around its avatars.
+        private static var railWidth: Double { 88 }
         /// Narrower than this, the list's names and previews don't fit.
         private static var minListWidth: Double { 220 }
-        private static var fullWidth: Double { 300 }
+        private static var fullWidth: Double { 280 }
         private static var maxWidth: Double { 380 }
         /// The chat keeps at least this much; a narrower window folds the list to the rail.
         private static var chatMinWidth: Double { 360 }
@@ -354,41 +433,6 @@ struct ContactsSplitView<Footer: View>: View {
         }
     }
 
-    #if os(macOS)
-        private var searchField: some View {
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(Theme.secondaryInk)
-                    .accessibilityHidden(true)
-                TextField("Search", text: $query)
-                    .textFieldStyle(.plain)
-                    .focused($searchFocused)
-                    .onExitCommand(perform: closeSearch)
-            }
-            .font(.system(size: 13.5))
-            .padding(.horizontal, 12)
-            .frame(height: 34)
-            .floatingSurface(in: Capsule())
-            .padding(.horizontal, 12)
-            .padding(.top, 4)
-            .padding(.bottom, 6)
-            .onAppear { searchFocused = true }
-        }
-
-        private func toggleSearch() {
-            if isSearching {
-                closeSearch()
-            } else {
-                isSearching = true
-            }
-        }
-
-        private func closeSearch() {
-            isSearching = false
-            query = ""
-        }
-    #endif
-
     private func members(of contact: Contact) -> [Contact] {
         let byID = Dictionary(contacts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         return ContactList.members(of: contact, in: byID)
@@ -401,11 +445,12 @@ struct ContactsSplitView<Footer: View>: View {
         /// item that starts with a clear stretch as wide as the list leaves. In the rail only the
         /// item stays, empty, keeping the title area's height.
         @ViewBuilder fileprivate func sidebarToolbar(
-            leading: CGFloat, search: some View, newRoom: some View, shown: Bool
+            leading: CGFloat, search: some View, newRoom: some View, toggle: (some View)?, shown: Bool
         ) -> some View {
             let row = HStack(spacing: 8) {
                 Color.clear.frame(width: shown ? leading : 0, height: 1)
                 if shown {
+                    if let toggle { toggle }
                     search.sidebarCircleButton()
                     newRoom.sidebarCircleButton()
                 }
@@ -422,12 +467,14 @@ struct ContactsSplitView<Footer: View>: View {
         /// The open profile panel's close button, at the window's top right over the panel and level
         /// with the window buttons; macOS 26 draws it as a glass circle.
         @ViewBuilder fileprivate func profileCloseButton(shown: Bool, close: @escaping () -> Void) -> some View {
-            let button = Button("Close Profile", systemImage: "xmark", action: close).help("Close Profile")
+            let button = Button("Close Profile", systemImage: "xmark", action: close)
+                .help("Close Profile")
+                .sidebarCircleButton()
             if #available(macOS 26, *) {
                 toolbar {
                     if shown {
                         ToolbarSpacer(.flexible)
-                        ToolbarItem { button }
+                        ToolbarItem { button }.sharedBackgroundVisibility(.hidden)
                     }
                 }
             } else {

@@ -25,6 +25,8 @@ public enum Theme {
     #endif
     /// The widest a message or card grows, so lines stay readable in a wide window.
     static let bubbleWidth: CGFloat = 560
+    /// A conversation's column, and the message box under it.
+    static let columnWidth: CGFloat = 960
     public static let border = Color(light: 0xE6E6E6, dark: 0x2E2E2E)
     public static let ink = Color(light: 0x1C1C1C, dark: 0xF2F2F2)
     public static let secondaryInk = Color(light: 0x6B6B6B, dark: 0x9E9E9E)

@@ -30,6 +30,11 @@ enum RoomSkills {
 struct RoomPanel: View {
     let room: Contact
     let members: [Contact]
+    /// You confirmed deleting the room.
+    var delete: () -> Void = {}
+
+    @Environment(\.roomEditing) private var editing
+    @State private var edit: RoomEdit?
 
     var body: some View {
         ScrollView {
@@ -60,12 +65,34 @@ struct RoomPanel: View {
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
+
+                if editing != nil {
+                    VStack(spacing: 0) {
+                        action("Rename Room…", tint: Theme.ink) { edit = .rename(room) }
+                        Divider().overlay(Theme.border)
+                        action("Delete Room…", tint: Theme.danger) { edit = .delete(room) }
+                    }
+                    .padding(.horizontal, 12)
+                    .background(Theme.pane, in: RoundedRectangle(cornerRadius: 14))
+                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 28)
             .padding(.bottom, 20)
         }
         .background(Theme.window)
+        .roomEditor($edit, confirmDelete: delete)
+    }
+
+    private func action(_ title: LocalizedStringKey, tint: Color, perform: @escaping () -> Void) -> some View {
+        Button(action: perform) {
+            Text(title)
+                .font(.system(size: 14))
+                .foregroundStyle(tint)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private func row(_ member: Contact) -> some View {
