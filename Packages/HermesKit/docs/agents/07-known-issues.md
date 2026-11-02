@@ -64,3 +64,12 @@ there through the legacy fallback, which hasn't been tried live.
 `FrameRecorder.observer` is a global test seam, so parallel tests saw each other's frames and
 `secretsAreNeverRecorded` failed at random. Those tests live in the `.serialized`
 `VaultRecordingTests` suite.
+
+## Usage is filed under the day a session began (source finding, 2026-11-02)
+
+`/api/analytics/usage` selects sessions with `started_at` in the period and groups by that day;
+`state.db` keeps no per-day token history. A Bot Chat is one long session, so its tokens all land on
+the day it began (or the day compression rolled it onto a new session), and one that began before
+the period is left out entirely. Settings › Usage says so under the chart. Don't try to fix it here
+by spreading tokens over days: the data to do it doesn't exist on the gateway.
+

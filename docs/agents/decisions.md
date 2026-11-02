@@ -47,8 +47,19 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   nothing ticked.
 - **Agent defaults use `profiles.configure` and `config.set … scope: global`.** `config.set` is scoped
   by `profile`, not by session: without `profile` it changes the gateway's main profile.
-- Usage shows tokens, never cost. Hermes keeps no cost for a chat, and working one out from price
-  lists would guess at cache reads and model switches.
+- A chat's usage meter shows tokens, never cost: Hermes keeps no cost for a chat, and working one
+  out from price lists would guess at cache reads and model switches.
+- **Settings › Usage shows only what Hermes reports,** from `GET /api/analytics/usage?days&profile`,
+  one call per Bot, since each profile keeps its own store. Cost appears when Hermes has one: the
+  provider's `actual_cost`, else Hermes's `estimated_cost`, labelled as an estimate. Background work
+  (`by_task`) adds to the sessions' counts (Hermes never writes it into them) but has no days, so
+  the chart leaves it out. Periods are the official app's 7, 30 and 90 days.
+- **Not used for usage:** `usage.bars` is the Nous subscription's dollar meter (`agent.billing_usage`),
+  and `insights.get` counts sessions and messages only.
+- **Rooms have no row of their own.** A member's room turns run in a `bot_room` session in that
+  member's profile, so they're in its Bot's numbers and can't be told apart in the report.
+- **No per-chat split.** The report has none; `/api/sessions` rows carry lifetime totals per session
+  but not by day, so a "by chat" list would disagree with the period. The chat keeps its own meter.
 
 ## Side questions and background tasks
 

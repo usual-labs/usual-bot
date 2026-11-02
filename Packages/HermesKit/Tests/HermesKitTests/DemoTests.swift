@@ -24,6 +24,17 @@ struct DemoTests {
         #expect(ledger.isLinkUnencrypted)
     }
 
+    @Test func demoShowsUsageForEveryBotThatAgreesAcrossPeriods() async {
+        let model = AppModel.demo()
+        await model.usage.refresh()
+        #expect(model.usage.bots.map(\.id) == ["forge", "atlas", "ops", "scribe", "ledger"])
+        let week = model.usage.combined.totalTokens
+        #expect(model.usage.combined.cost != nil)
+        model.usage.period = .month
+        await model.usage.refresh()
+        #expect(model.usage.combined.totalTokens > week)
+    }
+
     @Test func demoShowsTheVaultAndItsPromptsWithFakeData() throws {
         let model = AppModel.demo()
         let ledger = try #require(model.sidebarContacts.first { $0.id == "ledger" })

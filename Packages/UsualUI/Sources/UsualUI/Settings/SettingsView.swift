@@ -8,7 +8,7 @@ import SwiftUI
 /// Preferences for this device; agent and gateway administration stay in Hermes.
 public struct SettingsView: View {
     private enum Page: String, CaseIterable, Identifiable {
-        case general, notifications, voice, connection
+        case general, notifications, voice, connection, usage
         var id: Self { self }
         var title: LocalizedStringKey {
             switch self {
@@ -16,6 +16,7 @@ public struct SettingsView: View {
             case .notifications: "Notifications"
             case .voice: "Voice"
             case .connection: "Connection"
+            case .usage: "Usage"
             }
         }
         var icon: String {
@@ -24,6 +25,7 @@ public struct SettingsView: View {
             case .notifications: "bell"
             case .voice: "waveform"
             case .connection: "network"
+            case .usage: "chart.bar"
             }
         }
     }
@@ -77,6 +79,10 @@ public struct SettingsView: View {
                 List {
                     Section {
                         NavigationLink(value: Page.connection) { gatewayCard }
+                        // Grok keeps usage with the account; here the gateway is the account.
+                        NavigationLink(value: Page.usage) {
+                            Label("Usage", systemImage: Page.usage.icon).foregroundStyle(Theme.ink)
+                        }
                     }
                     Section {
                         ForEach([Page.general, .notifications, .voice]) { page in
@@ -141,7 +147,16 @@ public struct SettingsView: View {
         }
     #endif
 
-    private func content(_ page: Page) -> some View {
+    @ViewBuilder private func content(_ page: Page) -> some View {
+        if page == .usage {
+            // Its own form: a Bot's numbers open inside it.
+            UsageSettings(model: model)
+        } else {
+            form(page)
+        }
+    }
+
+    private func form(_ page: Page) -> some View {
         Form {
             switch page {
             case .general:
@@ -158,6 +173,8 @@ public struct SettingsView: View {
                 VoiceSettings()
             case .connection:
                 connection
+            case .usage:
+                EmptyView()
             }
         }
         .formStyle(.grouped)

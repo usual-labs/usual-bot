@@ -86,6 +86,10 @@ public final class AppModel {
     @ObservationIgnored public private(set) lazy var voiceLive = VoiceLiveService(auth: { [weak self] in self?.auth })
     /// How the gateway reaches you when this app can't.
     @ObservationIgnored public private(set) lazy var push = PushSettings(auth: { [weak self] in self?.auth })
+    /// Token use across Bots, for Settings › Usage.
+    @ObservationIgnored public internal(set) lazy var usage = UsageOverview(
+        auth: { [weak self] in self?.auth },
+        agents: { [weak self] in self?.contacts.filter { $0.kind == .agent } ?? [] })
     /// Agents' own pictures from the official app; agents without one keep the app's characters.
     @ObservationIgnored public let pictures = BotPictures()
     /// How the sidebar is grouped.
@@ -204,6 +208,7 @@ public final class AppModel {
         pictures.clear()
         sections.clear()
         push.clear()
+        usage.clear()
         rooms = [:]
         gatewayDetails = nil
         lastSaved = nil

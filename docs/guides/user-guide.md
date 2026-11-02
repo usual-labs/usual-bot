@@ -310,6 +310,17 @@ and Settings opens with your gateway at the top. Preferences stay on this device
   preferences are shared with the controls inside a call; GPT-Live’s voice stays on the gateway.
 - **Connection:** see the gateway address, status, version and identity when available, or sign out.
   Signing out removes the saved sign-in and cached chats for that gateway from this device.
+- **Usage:** see where your Bots' tokens went over the last 7, 30 or 90 days: a chart per day,
+  the total, the cost when Hermes knows it, and the share each Bot used. On iPhone it's the row
+  under your gateway. **Where the tokens went** splits them into what the model wrote, what was
+  sent to it new, and what was sent again (the chat so far and the Bot's instructions, resent with
+  every step, which providers charge less for), then the background work Hermes does beside your
+  chats, such as shortening long chats or naming them. Choose a Bot for its own numbers. A Bot's
+  usage includes its routines and any other apps it talks in; room replies count toward the Bot that
+  wrote them. Hermes files a conversation under the day it began, so a long chat's tokens show on
+  its first day, and one that began before the period isn't counted. Costs are Hermes's estimate
+  from its price list unless your provider reports them, and models without a price count as
+  nothing. An older Hermes doesn't report usage; updating it on the gateway adds it.
 
 The About section has the app version, guide, source and license links. Agent configuration,
 provider keys and gateway administration stay in Hermes.

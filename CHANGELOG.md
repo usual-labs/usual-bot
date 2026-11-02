@@ -8,6 +8,7 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Added
 
+- **See where tokens go.** Settings › Usage shows your Bots' tokens over the last 7, 30 or 90 days by day and by Bot, what was written, sent new or sent again, the background work beside your chats, and the cost when Hermes knows it.
 - **Search your messages.** Type two or more letters in search (⌘K on the Mac, the list's search
   field on iPhone) to find messages from every chat and room, with the words you typed in bold.
   Choose one to open that chat at the message, highlighted for a moment.

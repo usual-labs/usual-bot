@@ -16,7 +16,6 @@
   - **A template's prompt before saving:** `/api/cron/blueprints` leaves out each template's prompt
     and skills, so New Routine shows them only once Hermes has created the routine. Seeing and
     editing them first needs Hermes to send them in the catalog.
-  - **Usage across chats:** `usage.bars`, `insights.get`, `/api/analytics/usage`.
   - **Bot desktop:** `display.*` with a ticket for `/api/display/ws` (raw RFB), Take over through
     `display.lease.*`. Largest of these: it needs a VNC viewer in the app.
 

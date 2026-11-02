@@ -30,6 +30,8 @@
                 apps: Dictionary(
                     uniqueKeysWithValues: demo.agents.map { ($0.id, MCPServerList.demo(gateway: Demo.gateway)) }))
             model.media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }
+            model.usage = .demo(
+                agents: { [weak model] in model?.contacts.filter { $0.kind == .agent } ?? [] }, now: now)
             return model
         }
     }
