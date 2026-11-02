@@ -206,6 +206,31 @@ text:
   - **GPT-Live** uses OpenAI's realtime voice through your gateway, for a more natural
     conversation. It's offered when the gateway has an OpenAI key, and OpenAI bills the minutes.
 
+## The agent's computer
+
+Some agents have a computer of their own: a Linux desktop Hermes runs for the agent's profile,
+where it browses and uses apps. When an agent has one, its chat shows a **Computer** button (a
+display, at the top right on the Mac; in the chat's **…** menu on iPhone). A green dot on it means
+the agent is using the computer right now, and on iPhone the button then sits beside **…**.
+
+- **Watch.** The Mac opens the screen in a window of its own, so you can keep chatting; iPhone shows
+  it full screen, and you pinch to zoom. The bar at the top says who's in control.
+- **Take over** gives you the mouse and keyboard; the agent waits until you hand it back. On the
+  Mac, ⌘ works as Control on the agent's computer (⌘C copies there), while ⌘Q and ⌘W stay with
+  Usual Bot. On iPhone, tap to click, touch and hold to right-click, drag to drag, use two fingers
+  to scroll, and the keyboard button to type.
+- **Hand Back** returns control. Closing the window hands it back too. If the connection drops while
+  you're in control, you keep it until you hand it back, so the agent can't carry on behind you, say
+  in the middle of a sign-in.
+- If someone else takes over from another app, you go back to watching, and the bar says so.
+- A computer that's off shows **Turn On**. Hermes turns it off again after a while unused.
+- On a gateway reached over plain `http` outside Tailscale, the bar warns that what you type could be
+  read on your network.
+
+Hermes gives an agent a computer when its gateway runs on Linux with the desktop packages installed,
+or when the agent's terminal runs in a Docker or SSH sandbox whose image has them. Set that up in
+Hermes; Usual Bot only shows it. Rooms have no Computer button: open the agent's own chat.
+
 ## Rooms
 
 Rooms are group chats with several agents. Create one with **+** at the top of the sidebar, name it

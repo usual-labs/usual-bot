@@ -83,6 +83,12 @@ struct UsualBotApp: App {
         #endif
 
         #if os(macOS)
+            // An agent's computer, live, from the chat's Computer button.
+            WindowGroup("Computer", id: "bot-screen", for: String.self) { $contactID in
+                if let contactID { BotScreenWindow(model: model, contactID: contactID) }
+            }
+            .defaultSize(width: 1000, height: 680)
+
             Settings {
                 SettingsView(model: model, desktopControls: AnyView(DesktopSettings(controller: quickPanel)))
             }

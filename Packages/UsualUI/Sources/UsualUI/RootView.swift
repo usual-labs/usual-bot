@@ -95,6 +95,8 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
             .environment(\.media, model.media)
             .environment(\.botPictures, model.pictures)
             .environment(\.voiceLive, model.voiceLive)
+            .environment(\.screens, model)
+            .environment(\.gatewayOnline, model.isOnline)
         }
     }
 

@@ -17,8 +17,9 @@
   - **A template's prompt before saving:** `/api/cron/blueprints` leaves out each template's prompt
     and skills, so New Routine shows them only once Hermes has created the routine. Seeing and
     editing them first needs Hermes to send them in the catalog.
-  - **Bot desktop:** `display.*` with a ticket for `/api/display/ws` (raw RFB), Take over through
-    `display.lease.*`. Largest of these: it needs a VNC viewer in the app.
+  - **Agent's computer, what's left:** the package install (`display.install`, with its masked sudo
+    prompt), the sandbox image switch (`display.switchSandboxImage`), Stop, the clipboard (Hermes
+    turns the server's off; sending ours isn't wired) and Tight encoding. The viewer is in.
 
 Child-local ideas stay in their package KBs.
 

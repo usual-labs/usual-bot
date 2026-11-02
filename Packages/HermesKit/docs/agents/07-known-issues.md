@@ -83,3 +83,19 @@ date. Without `profile=` it searches the serving process's own profile, whatever
 gateway without the route, `GET /api/sessions/{id}` answers 404 "Session not found", which turns
 gateway search off until sign-out; an unknown profile's 404 ("Profile '…' does not exist.")
 doesn't. Not yet checked on a live gateway.
+## The agent's computer: traps (source finding, 2026-11-02; not run against a real screen)
+
+- **A viewer ID only counts on the socket that minted it.** `display.observe` mints it per JSON-RPC
+  connection, and `display.lease.acquire`/`release` refuse one from another connection. After the
+  app's socket reconnects, `BotScreen.linkChanged()` observes again and, if the lease still names the
+  old viewer's hash, acquires with the new one. Hand Back falls back to `force` only when the lease
+  is ours by hash.
+- **Only a clean close hands control back.** The gateway releases the lease on close code 1000/1001
+  and keeps it on a dropped link, by design. An iPhone sent to the background drops the socket, so
+  you stay in control until you come back and hand back.
+- **`COMPRESSION_ZLIB` is raw deflate.** ZRLE's one zlib stream starts with a 2-byte header that
+  `Inflater` skips; the stream never ends, so there's no checksum. Tests cover sync-flushed data from
+  Python's zlib.
+- **Unverified: custom close codes through `URLSessionWebSocketTask`.** `BotScreen` tells 4000
+  (someone else took control), 4001 (screen stopped) and 4401 (ticket spent) apart by
+  `closeCode`; that it reports codes outside the enum hasn't been seen on a real gateway.

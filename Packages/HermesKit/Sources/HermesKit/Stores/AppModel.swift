@@ -76,6 +76,9 @@ public final class AppModel {
     @ObservationIgnored private var appLists: [Contact.ID: MCPServerList] = [:]
     @ObservationIgnored private var connectorLists: [Contact.ID: ConnectorList] = [:]
     @ObservationIgnored var rooms: [Contact.ID: RoomThread] = [:]
+    /// Agents' computers, once a chat asked about one.
+    @ObservationIgnored var screens: [Contact.ID: BotScreen] = [:]
+    let makeScreenSocket: ScreenSocketFactory
     /// Chats' messages ready to search (`searchMessages`).
     @ObservationIgnored let messageIndex = MessageIndex()
     /// Messages the gateway found in history this device hasn't loaded (`lookUpMessages`).
@@ -111,13 +114,16 @@ public final class AppModel {
     public convenience init(session: @escaping @Sendable () async throws -> URLSession) {
         self.init(
             tokenStore: KeychainTokenStore(), http: SessionTransport(session: session), defaults: .standard,
-            cache: OfflineCache(), makeSocket: { URLSessionWebSocket(url: $0, session: try await session()) })
+            cache: OfflineCache(), makeSocket: { URLSessionWebSocket(url: $0, session: try await session()) },
+            makeScreenSocket: { URLSessionScreenSocket(url: $0, session: try await session()) })
     }
 
     init(
         tokenStore: any TokenStore, http: any HTTPTransport, defaults: UserDefaults, cache: OfflineCache,
-        makeSocket: @escaping GatewayConnector.SocketFactory = { URLSessionWebSocket(url: $0) }
+        makeSocket: @escaping GatewayConnector.SocketFactory = { URLSessionWebSocket(url: $0) },
+        makeScreenSocket: @escaping ScreenSocketFactory = { URLSessionScreenSocket(url: $0) }
     ) {
+        self.makeScreenSocket = makeScreenSocket
         self.tokenStore = tokenStore
         self.http = http
         self.defaults = defaults
@@ -215,6 +221,8 @@ public final class AppModel {
         usage.clear()
         rooms = [:]
         gatewaySearch.reset()
+        for screen in screens.values { screen.disconnect() }
+        screens = [:]
         gatewayDetails = nil
         lastSaved = nil
         link = .connecting
@@ -286,6 +294,7 @@ public final class AppModel {
                 replayEpoch = ready.replayEpoch?.stringValue
                 for thread in threads.values { thread.replayEpoch = replayEpoch }
                 link = .online(ready.dialect)
+                for screen in screens.values { screen.linkChanged() }
                 await push.refresh()
                 let events = Task { for await event in channel.events { route(event) } }
                 let requests = Task { for await request in channel.requests { await handle(request, on: channel) } }
@@ -485,6 +494,10 @@ public final class AppModel {
         if event.type == "cron.changed" {
             // Jobs changed somewhere on the gateway: reload the lists that are loaded.
             for list in routineLists.values where list.phase == .ready { Task { await list.refresh() } }
+            return
+        }
+        if event.type.hasPrefix("display.") {
+            for screen in screens.values { screen.apply(event) }
             return
         }
         guard let sessionID = event.sessionID,

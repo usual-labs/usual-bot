@@ -33,6 +33,12 @@ struct ThreadPane: View {
     @State private var editing = false
     @State private var calling = false
     @State private var isDropTarget = false
+    @State private var showsComputer = false
+    @Environment(\.screens) private var screens
+    @Environment(\.gatewayOnline) private var isOnline
+    #if os(macOS)
+        @Environment(\.openWindow) private var openWindow
+    #endif
 
     var body: some View {
         content
@@ -52,7 +58,13 @@ struct ThreadPane: View {
             // On the Mac the model menus under the box bring their own space, so the bar's margin
             // shrinks. iPhone shows them inside the box.
             .chatBars(bottomPadding: thread?.model == nil ? nil : ModelControls.gap) {
-                namePill
+                #if os(macOS)
+                    namePill.frame(maxWidth: .infinity).overlay(alignment: .trailing) {
+                        computerButton.padding(.trailing, Self.composerMargin)
+                    }
+                #else
+                    namePill
+                #endif
             } bottom: {
                 if let thread, thread.phase == .ready {
                     Composer(
@@ -81,10 +93,23 @@ struct ThreadPane: View {
                 }
             }
             #if os(iOS)
-                .toolbar { ToolbarItem(placement: .topBarTrailing) { moreMenu } }
+                .toolbar {
+                    if screen?.hasScreen == true, thread?.state.isUsingComputer == true {
+                        ToolbarItem(placement: .topBarTrailing) { computerButton }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) { moreMenu }
+                }
+                .fullScreenCover(isPresented: $showsComputer) {
+                    if let screen {
+                        ScreenView(contact: contact, screen: screen, thread: thread) { showsComputer = false }
+                        .environment(\.gatewayOnline, isOnline)
+                    }
+                }
             #endif
             .environment(\.chatContact, contact)
             .task(id: contact.id) { open() }
+            // Whether the agent has a computer to show, asked again once the gateway is back.
+            .task(id: "\(contact.id) \(isOnline)") { await screen?.refresh() }
             .onChange(of: contact.id) {
                 attachments = []
                 calling = false
@@ -140,12 +165,54 @@ struct ThreadPane: View {
                 if thread?.phase == .ready, !calling {
                     Button("Voice Call", systemImage: "waveform") { calling = true }
                 }
+                if screen?.hasScreen == true {
+                    Button("Computer", systemImage: "display") { showsComputer = true }
+                }
             } label: {
                 Image(systemName: "ellipsis")
             }
             .accessibilityLabel(Text("More"))
         }
     #endif
+
+    /// The agent's computer, for agents only.
+    private var screen: BotScreen? {
+        contact.kind == .agent ? screens?.screen(for: contact) : nil
+    }
+
+    /// Opens the agent's computer: a window on the Mac, full screen on iPhone. A dot shows while the
+    /// agent is using it.
+    @ViewBuilder private var computerButton: some View {
+        if let screen, screen.hasScreen {
+            let working = thread?.state.isUsingComputer == true
+            Button {
+                #if os(macOS)
+                    openWindow(id: "bot-screen", value: contact.id)
+                #else
+                    showsComputer = true
+                #endif
+            } label: {
+                Label("Computer", systemImage: "display")
+                    .labelStyle(.iconOnly)
+                    #if os(macOS)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Theme.ink)
+                        .frame(width: 36, height: 36)
+                        .floatingSurface(in: Circle())
+                        .contentShape(Circle())
+                    #endif
+                    .overlay(alignment: .topTrailing) {
+                        if working {
+                            Circle().fill(Theme.online).frame(width: 9, height: 9).accessibilityHidden(true)
+                        }
+                    }
+            }
+            .buttonStyle(.clickable)
+            .help(working ? "\(contact.name) is using its computer" : "\(contact.name)'s computer")
+            .accessibilityLabel(Text("\(contact.name)'s Computer"))
+            .accessibilityValue(working ? Text("In use") : Text(""))
+        }
+    }
 
     @ViewBuilder private var content: some View {
         switch thread?.phase {
