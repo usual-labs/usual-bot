@@ -86,6 +86,7 @@ struct MessageRow<Content: View>: View {
     /// The pointer is over the message, or left it a moment ago (on its way to the bar).
     @State private var overMessage = false
     @State private var overBar = false
+    @Environment(\.appearsActive) private var appearsActive
     @State private var leaving: Task<Void, Never>?
     @State private var picking = false
 
@@ -156,7 +157,8 @@ struct MessageRow<Content: View>: View {
     #if os(macOS)
         @ViewBuilder private var barSlot: some View {
             if let actions {
-                let shown = overMessage || overBar || picking
+                // A window behind others still tracks the pointer passing over it.
+                let shown = picking || (appearsActive && (overMessage || overBar))
                 bar(actions)
                     .onHover { overBar = $0 }
                     .opacity(shown ? 1 : 0)

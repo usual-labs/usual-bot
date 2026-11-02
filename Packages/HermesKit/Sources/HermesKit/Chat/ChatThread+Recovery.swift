@@ -20,6 +20,28 @@ extension ChatThread {
         }
     }
 
+    /// Another device's message reaches this one only as a turn starting, without its words, so
+    /// they're looked up once the turn is stored, as Hermes's own app does. Only they are put in:
+    /// reloading would take you from what you're reading. A turn that failed may not be stored.
+    func finishTurnElsewhere(_ payload: JSONValue) {
+        guard let index = elsewhereTurnStart else { return }
+        elsewhereTurnStart = nil
+        guard payload["status"]?.stringValue ?? "complete" == "complete", let sessionID, let channel = channel() else {
+            return
+        }
+        let load = transcriptLoad
+        Task { [weak self] in
+            let result = try? await channel.call("session.history", params: ["session_id": .string(sessionID)])
+            guard let self, transcriptLoad == load,
+                let history = try? result?["messages"]?.decode([HistoryMessage].self),
+                // Before the reply: you may already have sent the next message from here.
+                let reply = history.lastIndex(where: { $0.role == "assistant" }),
+                let prompt = history[..<reply].last(where: { $0.role == "user" })
+            else { return }
+            state.insertPrompt(prompt, at: index)
+        }
+    }
+
     /// Side answers and background results sent while this device was away. `false` when the
     /// gateway couldn't replay (restarted, or too much happened since).
     private func replay() async -> Bool {

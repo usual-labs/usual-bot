@@ -56,7 +56,7 @@ struct ThreadPane: View {
                         editing: $editing,
                         inCall: calling, startCall: { calling = true }
                     )
-                    .frame(maxWidth: 780)
+                    .frame(maxWidth: Theme.columnWidth)
                     // On the Mac, ModelControls' row and gaps below the box add up to this margin too.
                     .padding(.horizontal, Self.composerMargin)
                 }

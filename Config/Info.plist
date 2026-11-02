@@ -20,6 +20,18 @@
 			</array>
 		</dict>
 	</array>
+	<!-- usualbot://chat/<id>: what ntfy and Pushover notifications open (Integrations/hermes-push). -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Usual Bot chat link</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>usualbot</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Dictate messages to your agents.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
@@ -35,6 +47,16 @@
 		<key>UIImageRespectsSafeAreaInsets</key>
 		<false/>
 	</dict>
+	<!-- iPhone: iOS wakes the app now and then to check for messages (BackgroundCheckIn.swift).
+	     Ignored on the Mac. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>labs.usual.UsualBot.check-in</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<!-- Many gateways are plain http on a tailnet or home network (e.g. http://100.101.102.103:9119).

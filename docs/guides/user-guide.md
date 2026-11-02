@@ -27,12 +27,13 @@ list. The most recent conversation is at the top.
 - A Bot shows the picture you gave it in the Hermes app. Without one, it gets one of Usual Bot's
   characters.
 - An avatar that gently moves means the agent is working.
-- **Needs you** means it's waiting for your approval or an answer.
-- Search (⌘F on the Mac) filters the list by name.
+- A dot on the avatar means it needs you: it's waiting for your approval or an answer.
+- On the Mac, ⌘K or the Search button finds a chat or room, and opens New Room, Settings or a theme.
+  On iPhone, search filters the list.
 - The dot at the bottom of the sidebar (top left on iPhone) shows the connection. Click it to see
   the gateway and to sign out.
 
-On the Mac, drag the sidebar narrower and it becomes a rail of avatars, with a line between
+On the Mac, press the sidebar button or drag the sidebar narrower and it becomes a rail of avatars, with a line between
 sections.
 
 ### Sections
@@ -42,11 +43,11 @@ Sections group the sidebar however you like. Until you make one, the list has no
 - **Make one:** right-click a chat on the Mac, or touch and hold it on iPhone, and choose **Move to
   New Section**. Type a name and press Return.
 - **Move a chat:** use **Move to Section** in the same menu, or on the Mac drag it to a section.
-  **Remove from Section** puts it back under Unassigned, which holds everything not in a section.
-- **Fold a section:** click its heading. A folded section still shows **Needs you** or an unread
+  **Remove from Section** puts it back under Other, which holds everything not in a section.
+- **Fold a section:** click its heading. A folded section still shows the needs-you dot or an unread
   count, so nothing waiting for you goes out of sight.
 - **Rename, reorder or delete one:** right-click its heading on the Mac, or tap **…** on iPhone.
-  Deleting a section keeps its chats: they move to Unassigned.
+  Deleting a section keeps its chats: they move to Other.
 
 A Bot's section is saved on the Bot, so it shows on your other devices and in the Hermes desktop
 app. Each device keeps its own order of sections, what's folded, and which section a room is in.
@@ -60,10 +61,18 @@ as the agent writes them, with Markdown, code blocks you can copy, and tables. W
 tools, one line such as "Forge edited 1 file and ran 1 command" sums them up; click it to see each
 step.
 
+A chat opens at its newest message and follows new replies while you’re at the end. Scroll up to
+read older messages without being pulled back down; scroll to the end to follow replies again.
+
 - **Attachments.** Use **+**, drag and drop, or paste. On iPhone, pick from Photos, the camera or
   Files. Images up to 25 MB and other files up to 50 MB.
 - **Images from the agent.** When a reply names an image (a screenshot, a chart, a generated
   picture), it shows inline. Click it for full size, to share or to save.
+- **While the agent works.** The line above the box says what it's doing: reading, running a
+  command, waiting on its provider or compressing the conversation. If it keeps a to-do list or
+  hands work to helpers, a line such as "2 of 5 done" or "2 helpers working" shows that; click it to
+  see each one. A helper left working in the background stays listed after the reply until it
+  finishes.
 - **Stop and steer.** While a reply runs, the send button becomes Stop. Or just send another
   message: it steers the running turn instead of waiting for it.
 - **React, reply, copy.** Hover a message on the Mac, or long-press it on iPhone. Reply quotes the
@@ -173,6 +182,12 @@ and pick its members.
 - Each reply shows who wrote it. Agents can hand work to each other, shown as small lines in the
   conversation.
 - Type `/` for the members' skills. ⌘I (or the room's name) shows its members.
+- To rename or delete a room, use **Rename Room…** or **Delete Room…** at the bottom of its panel,
+  or right-click it in the sidebar (touch and hold on iPhone). Deleting stops any agent still
+  answering and removes the room and its messages for good; the agents and their own chats stay.
+- If a reply stops partway, say because the gateway restarted, the room shows the needs-you dot and a
+  card with **Try Again**. The room waits until you do. The agent may have done part of the work
+  already, so trying again can repeat it.
 
 Rooms are text only on the dashboard gateway: attachments in rooms need Hermes's newer gateway.
 
@@ -223,10 +238,18 @@ connection indicator. Preferences stay on this device.
   choice in place. **Disable Shortcut** keeps Quick Message available from the menu bar;
   **Restore Default** tries ⌥Space, then ⌃⌥Space if needed. The menu bar shows the active shortcut.
   Quick Message itself always uses Return to send and ⌘Return to open the full chat.
-- **Notifications:** control background task completion alerts, sounds and previews. When previews
-  are off, new alerts contain neither the task description nor the reply text. System notification
-  settings and Focus also apply. On iPhone the app disconnects in the background, so these aren’t
-  push notifications: an alert needs the app to still be running.
+- **Notifications:** choose what alerts you: messages and replies, an agent needing you, and
+  background tasks finishing, plus sounds and previews. With previews off, new alerts say only who
+  it's from. System notification settings and Focus also apply. Alerts appear when you're
+  not using Usual Bot, and tapping one opens that chat. On the Mac the app must be running, in the menu bar
+  is enough. iPhone alerts from the app itself aren't instant: it disconnects soon after you leave,
+  and iOS decides when it can check in.
+- **Push:** for instant alerts anywhere, even with the app closed, install the plugin in
+  [`Integrations/hermes-push`](../../Integrations/hermes-push/README.md) on your gateway and pick
+  ntfy or Pushover under Notifications. They arrive in that service's app. Tapping one in ntfy opens
+  the chat in Usual Bot; in Pushover, tap it, then **Open in Usual Bot**. Push stays quiet while
+  you're using Usual Bot on any device, so a Mac in front also quiets your iPhone until its screen
+  sleeps.
 - **Voice:** choose the call engine and the language, voice and speed for on-device speech. These
   preferences are shared with the controls inside a call; GPT-Live’s voice stays on the gateway.
 - **Connection:** see the gateway address, status, version and identity when available, or sign out.
@@ -240,7 +263,7 @@ provider keys and gateway administration stay in Hermes.
 | Shortcut | Where | What it does |
 | --- | --- | --- |
 | ⌥Space (configurable in Settings) | Anywhere (Mac) | Opens the quick message panel |
-| ⌘F | Sidebar | Search agents and rooms |
+| ⌘K or ⌘F | Anywhere in the window | Search chats and actions |
 | ↑ / ↓ | Sidebar | Move between chats |
 | ⌘, | Mac | Open Settings |
 | ⌘I | Chat or room | Show the profile or room details |

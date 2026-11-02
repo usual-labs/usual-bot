@@ -317,3 +317,202 @@ struct RoomThreadTests {
         #expect(room.state.items.last?.content == .notice("You allowed “git push” once"))
     }
 }
+
+@Suite("Room editing")
+@MainActor
+struct RoomEditingTests {
+    private func connected() async -> (ScriptedGateway, JSONRPCChannel, RoomThread) {
+        let gateway = ScriptedGateway()
+        let channel = JSONRPCChannel(socket: gateway.socket)
+        await channel.start()
+        let room = RoomThread(summary: RoomSummary(launchRoom)!, channel: { channel })
+        return (gateway, channel, room)
+    }
+
+    @Test func renamingAsksTheGatewayWithAnEventIDThatMakesARepeatHarmless() async throws {
+        let (gateway, channel, room) = await connected()
+        let done = Task { try await room.rename(to: "Launch", on: channel) }
+        let params = try await gateway.answer(0, method: "groups.rename", result: ["room": launchRoom])
+        try await done.value
+        #expect(params["room_id"] == "r1")
+        #expect(params["name"] == "Launch")
+        #expect(params["event_id"]?.stringValue?.isEmpty == false)
+    }
+
+    @Test func aFailedRenameKeepsTheOldName() async throws {
+        let (gateway, channel, room) = await connected()
+        let done = Task { try await room.rename(to: "Launch", on: channel) }
+        _ = try await gateway.answer(0, method: "groups.rename", error: (4123, "worker unavailable"))
+        await #expect(throws: GatewayError.self) { try await done.value }
+        #expect(room.name == "Launch room")
+    }
+
+    @Test func deletingDisbandsTheRoom() async throws {
+        let (gateway, channel, room) = await connected()
+        let done = Task { try await room.disband(on: channel) }
+        let params = try await gateway.answer(0, method: "groups.disband", result: ["tombstone": [:]])
+        try await done.value
+        #expect(params["room_id"] == "r1")
+    }
+
+    @Test func aStoppedTurnOffersARetryAndNeedsYou() async throws {
+        let (gateway, _, room) = await connected()
+        let sync = Task { await room.sync() }
+        _ = try await gateway.answer(0, method: "groups.log", result: ["events": [], "has_more": false])
+        _ = try await gateway.answer(
+            1, method: "groups.state",
+            result: ["driver_status": ["running": true, "pending_actions": [["kind": "retry", "task_id": "t1"]]]])
+        await sync.value
+        #expect(room.retries == ["t1"])
+        #expect(room.activity == .needsYou)
+
+        room.retry("t1")
+        #expect(room.retries.isEmpty)
+        let params = try await gateway.answer(2, method: "groups.retry", result: ["retried": true])
+        #expect(params["task_id"] == "t1")
+        #expect(params["room_id"] == "r1")
+    }
+
+    @Test func aFailedRetryIsSaid() async throws {
+        let (gateway, _, room) = await connected()
+        room.retry("t1")
+        _ = try await gateway.answer(0, method: "groups.retry", error: (4123, "worker unavailable"))
+        try await waitUntilOnMain { !room.state.items.isEmpty }
+        guard case .notice(let text) = room.state.items.last?.content else {
+            Issue.record("expected a notice")
+            return
+        }
+        #expect(text.contains("worker unavailable"))
+    }
+}
+
+@Suite("Room edits and the room list")
+@MainActor
+struct RoomListRaceTests {
+    private func signedIn() async throws -> (AppModel, ScriptedGateway, Contact) {
+        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        let model = AppModel(
+            tokenStore: MemoryTokenStore(), http: ScriptedHTTP { _ in (200, "{}") }, defaults: defaults,
+            cache: OfflineCache(directory: .temporaryDirectory.appending(path: UUID().uuidString)),
+            makeSocket: { _ in FakeSocket() })
+        let gateway = ScriptedGateway()
+        let channel = JSONRPCChannel(socket: gateway.socket)
+        await channel.start()
+        model.channel = channel
+        let summary = try #require(RoomSummary(launchRoom))
+        let contact = Contact(room: summary)
+        model.contacts = [contact]
+        model.rooms[contact.id] = RoomThread(summary: summary, channel: { nil })
+        return (model, gateway, contact)
+    }
+
+    @Test func aListReadBeforeADeleteCannotBringTheRoomBack() async throws {
+        let (model, gateway, contact) = try await signedIn()
+        let channel = try #require(model.channel)
+        let list = Task { await model.refreshRooms(on: channel) }
+        try await waitUntil { gateway.socket.sent.count == 1 }
+        let delete = Task { try await model.deleteRoom(contact) }
+        _ = try await gateway.answer(1, method: "groups.disband", result: ["tombstone": [:]])
+        try await delete.value
+        _ = try await gateway.answer(0, method: "groups.list", result: ["rooms": [launchRoom]])
+        #expect(await list.value == nil)
+        #expect(model.contacts.isEmpty)
+        #expect(model.room(for: contact) == nil)
+    }
+
+    @Test func aListReadBeforeARenameCannotPutTheOldNameBack() async throws {
+        let (model, gateway, contact) = try await signedIn()
+        let channel = try #require(model.channel)
+        let list = Task { await model.refreshRooms(on: channel) }
+        try await waitUntil { gateway.socket.sent.count == 1 }
+        let rename = Task { try await model.renameRoom(contact, to: "Launch") }
+        _ = try await gateway.answer(1, method: "groups.rename", result: ["room": launchRoom])
+        try await rename.value
+        _ = try await gateway.answer(0, method: "groups.list", result: ["rooms": [launchRoom]])
+        #expect(await list.value == nil)
+        #expect(model.contacts.first?.name == "Launch")
+        #expect(model.room(for: contact)?.name == "Launch")
+    }
+
+    @Test func aFailedDeleteKeepsTheRoom() async throws {
+        let (model, gateway, contact) = try await signedIn()
+        let delete = Task { try await model.deleteRoom(contact) }
+        _ = try await gateway.answer(0, method: "groups.disband", error: (4123, "worker unavailable"))
+        await #expect(throws: GatewayError.self) { try await delete.value }
+        #expect(model.contacts.count == 1)
+    }
+}
+
+@MainActor
+@Suite("Alerts about rooms")
+struct RoomAlertTests {
+    private final class Box {
+        var alerts: [AgentAlert] = []
+        var withdrawn: [String] = []
+    }
+
+    private func sync(
+        _ room: RoomThread, _ gateway: ScriptedGateway, from index: Int, events: JSONValue, status: JSONValue
+    )
+        async throws
+    {
+        let finished = Task { await room.sync() }
+        _ = try await gateway.answer(index, method: "groups.log", result: ["events": events, "has_more": false])
+        _ = try await gateway.answer(index + 1, method: "groups.state", result: status)
+        await finished.value
+    }
+
+    private func status(_ actions: JSONValue) -> JSONValue {
+        ["driver_status": ["running": true, "working": false, "pending_actions": actions]]
+    }
+
+    private let retry: JSONValue = ["kind": "retry", "task_id": "t1"]
+
+    private func openRoom() async throws -> (RoomThread, ScriptedGateway, Box) {
+        let gateway = ScriptedGateway()
+        let channel = JSONRPCChannel(socket: gateway.socket)
+        await channel.start()
+        let room = RoomThread(summary: try #require(RoomSummary(launchRoom)), channel: { channel })
+        let box = Box()
+        room.alert = { box.alerts.append($0) }
+        room.alertWithdrawn = { box.withdrawn.append($0) }
+        return (room, gateway, box)
+    }
+
+    private func reply(_ seq: Int, secondsAgo: Double) -> JSONValue {
+        [
+            "room_id": "r1", "seq": .number(Double(seq)), "event_id": .string("e\(seq)"), "kind": "message.member",
+            "actor": member("m-scout"), "authority_epoch": 1, "payload": ["text": "Found it"],
+            "created_at": .number(Date().addingTimeInterval(-secondsAgo).timeIntervalSince1970), "idempotent": false,
+        ]
+    }
+
+    @Test func aRoomsFirstLoadIsntNewsButTheNextReplyIs() async throws {
+        let (room, gateway, box) = try await openRoom()
+        try await sync(room, gateway, from: 0, events: [reply(1, secondsAgo: 60)], status: status([]))
+        #expect(box.alerts.isEmpty)
+
+        try await sync(room, gateway, from: 2, events: [reply(2, secondsAgo: -5)], status: status([]))
+        #expect(box.alerts.map(\.kind) == [.message])
+        #expect(box.alerts.first?.subtitle == "Scout")
+        #expect(box.alerts.first?.preview == "Found it")
+    }
+
+    @Test func aStoppedReplyAlertsOnceThenGoesWhenItsDone() async throws {
+        let (room, gateway, box) = try await openRoom()
+        try await sync(room, gateway, from: 0, events: [], status: status([retry]))
+        try await sync(room, gateway, from: 2, events: [], status: status([retry]))
+        #expect(box.alerts.map(\.id) == ["t1"])
+        #expect(box.alerts.first?.kind == .needsYou)
+
+        try await sync(room, gateway, from: 4, events: [], status: status([]))
+        #expect(box.withdrawn == ["t1"])
+    }
+
+    @Test func aRoomOnScreenDoesntAlert() async throws {
+        let (room, gateway, box) = try await openRoom()
+        room.isVisible = true
+        try await sync(room, gateway, from: 0, events: [reply(1, secondsAgo: -5)], status: status([retry]))
+        #expect(box.alerts.isEmpty)
+    }
+}

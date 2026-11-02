@@ -22,6 +22,70 @@ struct EditTests {
         return (thread, gateway)
     }
 
+    private func event(_ type: String, _ payload: JSONValue = [:]) -> GatewayEvent {
+        GatewayEvent(type: type, sessionID: "live-1", seq: nil, payload: payload)
+    }
+
+    private let storedTurn: [JSONValue] = [
+        ["role": "user", "text": "From the Mac", "row_id": 5], ["role": "assistant", "text": "Reply", "row_id": 6],
+    ]
+
+    private func history(with turn: [JSONValue]) -> JSONValue {
+        guard case .array(let rows) = history else { return [:] }
+        return ["messages": .array(rows + turn)]
+    }
+
+    /// The gateway tells other devices a turn began, but not what was asked.
+    @Test func aMessageFromAnotherDeviceAppearsWhereItsTurnBegan() async throws {
+        let (thread, gateway) = try await openThread()
+        let loadBefore = thread.transcriptLoad
+        thread.apply(event("message.start"))
+        thread.apply(event("tool.start", ["tool_id": "t1", "name": "web_search"]))
+        thread.apply(event("message.delta", ["text": "Reply"]))
+        thread.apply(event("message.complete", ["status": "complete"]))
+        let params = try await gateway.answer(1, method: "session.history", result: history(with: storedTurn))
+        #expect(params == ["session_id": "live-1"])
+        try await waitUntilOnMain { thread.state.items.count == 7 }
+        #expect(thread.state.items[4].content == .user("From the Mac"))
+        #expect(thread.state.items[4].rowID == 5)
+        if case .activity = thread.state.items[5].content {} else { Issue.record("The steps should follow it") }
+        #expect(thread.state.items[6].content == .assistant("Reply"))
+        // Reloading would pull you away from what you're reading.
+        #expect(thread.transcriptLoad == loadBefore)
+    }
+
+    @Test func yourOwnTurnIsntReadBack() async throws {
+        let (thread, gateway) = try await openThread()
+        thread.send("Third")
+        _ = try await gateway.answer(1, method: "prompt.submit", result: [:])
+        thread.apply(event("message.start"))
+        thread.apply(event("message.complete", ["status": "complete", "text": "Three"]))
+        thread.send("Fourth")
+        _ = try await gateway.answer(2, method: "prompt.submit", result: [:])
+    }
+
+    @Test func aMessageSentDuringTheReadBackStays() async throws {
+        let (thread, gateway) = try await openThread()
+        thread.apply(event("message.start"))
+        thread.apply(event("message.complete", ["status": "complete", "text": "Reply"]))
+        thread.send("Next")
+        let stored = storedTurn + [["role": "user", "text": "Next"]]
+        _ = try await gateway.answer(1, method: "session.history", result: history(with: stored))
+        _ = try await gateway.answer(2, method: "prompt.submit", result: [:])
+        try await waitUntilOnMain { thread.state.items.count == 7 }
+        #expect(thread.state.items[4].content == .user("From the Mac"))
+        #expect(thread.state.items.last?.content == .user("Next"))
+    }
+
+    @Test func aFailedTurnKeepsItsError() async throws {
+        let (thread, gateway) = try await openThread()
+        thread.apply(event("message.start"))
+        thread.apply(event("message.complete", ["status": "error", "text": "It broke"]))
+        thread.send("Next")
+        _ = try await gateway.answer(1, method: "prompt.submit", result: [:])
+        #expect(thread.state.items.contains { $0.content == .notice("It broke") })
+    }
+
     @Test func undoTakesBackTheLastExchangeAndReloads() async throws {
         let (thread, gateway) = try await openThread()
         #expect(thread.lastSent?.content == .user("Second"))

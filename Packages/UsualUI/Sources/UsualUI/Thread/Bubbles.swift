@@ -43,7 +43,8 @@ extension View {
     /// A card in a conversation: on the agent's side, as wide as a message can be.
     func cardSurface() -> some View {
         padding(16)
-            .frame(maxWidth: Theme.bubbleWidth)
+            // Leading, or a card with short lines floats towards its middle.
+            .frame(maxWidth: Theme.bubbleWidth, alignment: .leading)
             .background(Theme.bubble, in: RoundedRectangle(cornerRadius: 24))
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .contain)
@@ -58,10 +59,12 @@ extension View {
 private struct HoverHighlight<Highlight: Shape>: ViewModifier {
     let shape: Highlight
     @State private var isHovering = false
+    /// A window behind others still tracks the pointer passing over it.
+    @Environment(\.appearsActive) private var appearsActive
 
     func body(content: Content) -> some View {
         content
-            .background(isHovering ? Theme.selection.opacity(0.5) : .clear, in: shape)
+            .background(isHovering && appearsActive ? Theme.selection.opacity(0.5) : .clear, in: shape)
             .animation(.easeOut(duration: 0.1), value: isHovering)
             .onHover { isHovering = $0 }
     }

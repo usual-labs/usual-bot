@@ -18,6 +18,8 @@ struct ContactList: View {
     @State private var deleting: ContactSection?
     /// The block a chat is being dragged over.
     @State private var dropTarget: SidebarBlock.ID?
+    @State private var roomEdit: RoomEdit?
+    @Environment(\.roomEditing) private var roomEditing
 
     var body: some View {
         let byID = Dictionary(contacts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -34,6 +36,7 @@ struct ContactList: View {
                 list(blocks(of: matching), byID: byID)
             }
         }
+        .roomEditor($roomEdit)
         .confirmationDialog(
             "Delete “\(deleting?.name ?? "")”?",
             isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
@@ -41,7 +44,7 @@ struct ContactList: View {
         ) { section in
             Button("Delete", role: .destructive) { sections?.delete(section, contacts: contacts) }
         } message: { _ in
-            Text("Its chats move to Unassigned.")
+            Text("Its chats move to Other.")
         }
         .alert(
             "Couldn't save that change",
@@ -178,7 +181,7 @@ struct ContactList: View {
         .listRowBackground(Color.clear)
     }
 
-    /// A section's name, or in the middle of renaming it, a field. Unassigned isn't a section, so
+    /// A section's name, or in the middle of renaming it, a field. Other isn't a section, so
     /// it only folds.
     @ViewBuilder private func heading(_ block: SidebarBlock) -> some View {
         if let section = block.section, renaming == section.id {
@@ -189,7 +192,7 @@ struct ContactList: View {
             }
         } else {
             SectionHeader(
-                title: block.section?.name ?? String(localized: "Unassigned"), block: block,
+                title: block.section?.name ?? String(localized: "Other"), block: block,
                 isFolded: isFolded(block)
             ) {
                 withAnimation(.smooth(duration: 0.2)) { sections?.toggleFolded(block.id) }
@@ -233,6 +236,11 @@ struct ContactList: View {
                     Button("Remove from Section") { sections.move(contact, to: nil) }
                 }
             }
+        }
+        if case .room = contact.kind, roomEditing != nil {
+            Divider()
+            Button("Rename Room…") { roomEdit = .rename(contact) }
+            Button("Delete Room…", role: .destructive) { roomEdit = .delete(contact) }
         }
     }
 

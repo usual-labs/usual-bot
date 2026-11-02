@@ -36,6 +36,25 @@ struct LifecycleTests {
         }
     }
 
+    @Test func aCheckInConnectsForAMomentThenLetsGo() async throws {
+        let (model, sockets) = try makeModel()
+        model.setForeground(false)
+        await model.checkIn(within: .milliseconds(100))
+        #expect(sockets.count == 1)
+        #expect(model.linkTask == nil)
+        #expect(!model.isCheckingIn)
+    }
+
+    @Test func aCheckInLeavesTheLinkUpIfYouCameBack() async throws {
+        let (model, sockets) = try makeModel()
+        model.setForeground(false)
+        let checkIn = Task { await model.checkIn(within: .milliseconds(100)) }
+        await waitForSockets(1, in: sockets)
+        model.setForeground(true)
+        await checkIn.value
+        #expect(model.linkTask != nil)
+    }
+
     @Test func launchShowsTheSplashUntilTheSavedSignInIsRead() async throws {
         let (model, _) = try makeModel()
         #expect(model.isRestoring)

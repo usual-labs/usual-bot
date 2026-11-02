@@ -22,3 +22,6 @@ design/avatars/*.zip
 design/avatars/*/png/
 design/avatars/*/references/
 design/avatars/*/receipts/
+
+# Python
+__pycache__/

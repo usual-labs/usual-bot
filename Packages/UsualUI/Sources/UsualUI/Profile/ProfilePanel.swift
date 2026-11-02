@@ -28,15 +28,12 @@ struct ProfilePanel: View {
         ScrollView {
             VStack(spacing: 18) {
                 header
-                Picker("Show", selection: $tab) {
-                    Text("Routines").tag(Tab.routines)
-                    Text("Skills").tag(Tab.skills)
-                    Text("Vault").tag(Tab.vault)
-                    Text("Machine").tag(Tab.machine)
+                HStack(spacing: 2) {
+                    tabButton("Routines", .routines)
+                    tabButton("Skills", .skills)
+                    tabButton("Vault", .vault)
+                    tabButton("Machine", .machine)
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 340)
 
                 switch tab {
                 case .routines:
@@ -98,17 +95,25 @@ struct ProfilePanel: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if let profile = contact.details?.profile {
-                Text("profile: \(profile)")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.secondaryInk)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 2)
-                    .background(Theme.selection, in: Capsule())
-                    .padding(.top, 2)
-            }
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func tabButton(_ title: LocalizedStringKey, _ value: Tab) -> some View {
+        Button {
+            tab = value
+        } label: {
+            Text(title)
+                .font(.system(size: 13.5, weight: .medium))
+                .foregroundStyle(tab == value ? Theme.ink : Theme.secondaryInk)
+                .fixedSize()
+                .padding(.horizontal, 10)
+                .frame(height: 32)
+                .background(tab == value ? Theme.selection : .clear, in: Capsule())
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(tab == value ? .isSelected : [])
     }
 
     /// The panel's big avatar never pulses.
@@ -246,6 +251,7 @@ private struct MachineView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             section("Agent") {
+                row("Profile", details?.profile)
                 row("Model", details?.model)
                 row("Provider", details?.provider)
                 row("Skills", details?.skillCount.map { String($0) })

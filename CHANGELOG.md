@@ -8,6 +8,21 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Added
 
+- **See what the agent is doing.** A chat shows the agent's to-do list and any helpers it hands work
+  to, each as one line you can open. The working line also says when the agent waits on its provider
+  or compresses the conversation, and how far a long step has got. Notices from Hermes, such as a
+  switch to a fallback model, appear in the conversation.
+- **Rename and delete rooms.** From a room's panel or its menu in the sidebar. Deleting a room is
+  permanent and asks first.
+- **Try again in rooms.** A room reply that stopped partway now offers Try Again, and the room shows
+  Needs you until you use it.
+- **Notifications.** Hear when an agent replies, messages you or needs you, in chats and rooms, not
+  just when a background task ends. They hold off while you're using the app. Tapping one opens that
+  chat, and it clears once you've read it.
+- **Push through ntfy or Pushover.** Install the `usual-push` plugin on your gateway, pick a service
+  in Settings, and you're reached even with Usual Bot closed. Usual Bot runs no server of its own.
+- **Unread counts on the Mac** now also count replies that arrive while the window is behind another
+  app.
 - **Settings.** Choose appearance, chat text size, notification sounds and previews, and voice
   preferences. See the gateway connection and sign out. On Mac, set launch at login and Return or
   ⌘Return to send, and record, disable or restore the Quick Message keyboard shortcut. Open
@@ -30,6 +45,13 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Changed
 
+- **Search is now a palette.** ⌘K or the Search button finds chats and rooms, and opens New Room,
+  Settings or a theme. It replaces the filter at the top of the sidebar on the Mac.
+- **A calmer sidebar.** An agent that needs you shows a dot on its avatar, so previews keep their
+  space. The sidebar has a button to collapse it, and chats not in a section are listed under Other.
+- **More room for a conversation.** On the Mac the conversation and message box can use more of the
+  window, and New Room, Settings and an agent's profile match the rest of the app. An agent's Hermes
+  profile moved to the Machine tab.
 - **A new look for chats.** Replies sit in bubbles, messages are grouped, and text is a little
   larger on the Mac. Your messages take the Bot's colour, and so do its voice and send buttons. Cards
   that ask for something share one shape, and a question's choices are lettered A, B, C. Colours are
@@ -42,6 +64,14 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Fixed
 
+- **Small controls and cards.** The context, model and thinking controls under the message box are
+  easier to read and click, and VoiceOver stops on each once. A short card in a chat no longer
+  drifts away from its edge. Windows behind others no longer react as the pointer passes.
+- **Messages sent from another device** now appear in a chat you have open on this one, once the
+  reply finishes, instead of only after reopening the app.
+- **Chats no longer drift into blank space.** Conversations use measured message heights and keep
+  their scroll position within the content after layout changes and returning from another app.
+  Scrolling up still lets you read older messages without new replies pulling you to the end.
 - **Background work no longer looks like your messages.** When a background process or subagent
   finished, Hermes's note appeared as a long message from you, and in the sidebar. It's now one line
   you can open for the details. Undo and Edit act on your own last message instead of that note.

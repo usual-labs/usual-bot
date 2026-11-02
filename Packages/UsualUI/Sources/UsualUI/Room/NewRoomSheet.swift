@@ -22,24 +22,47 @@ struct NewRoomSheet: View {
     var body: some View {
         #if os(macOS)
             VStack(alignment: .leading, spacing: 0) {
-                Text("New Room")
-                    .font(.system(size: 15, weight: .semibold))
-                    .padding(.horizontal, 20)
-                    .padding(.top, 18)
-                form
                 HStack {
+                    Text("New Room")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Theme.ink)
+                    Spacer()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Theme.secondaryInk)
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Close")
+                    .accessibilityLabel(Text("Close"))
+                }
+                .padding(.horizontal, 20)
+                .frame(height: 56)
+                Divider()
+                form
+                    .scrollContentBackground(.hidden)
+                Divider()
+                HStack(spacing: 8) {
                     if isCreating { ProgressView().controlSize(.small) }
                     Spacer()
                     Button("Cancel", role: .cancel) { dismiss() }
+                        .buttonStyle(CardButtonStyle(primary: false))
                         .keyboardShortcut(.cancelAction)
                     Button("Create", action: submit)
+                        .buttonStyle(CardButtonStyle(primary: true))
                         .keyboardShortcut(.defaultAction)
                         .disabled(!canCreate)
+                        .opacity(canCreate ? 1 : 0.4)
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 18)
+                .frame(height: 64)
             }
-            .frame(width: 420, height: 540)
+            .frame(width: 420, height: 560)
+            .presentationBackground(Theme.pane)
         #else
             NavigationStack {
                 form

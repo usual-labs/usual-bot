@@ -12,11 +12,11 @@ struct ModelControls: View {
     let agentDefault: AgentDetails?
     @State private var picking = ModelPicking()
 
-    /// The menus' row, centred between the box above and the window's bottom edge: `gap` on
-    /// either side of it. Gap, row and gap add up to the box's 20 pt side margin (ThreadPane), so
-    /// the box sits as far from the bottom as from the sides.
-    static let height: CGFloat = 16
-    static let gap: CGFloat = 2
+    /// The menus' row fills the space between the box above and the window's bottom edge, as big a
+    /// target as fits. Gap, row and gap add up to the box's 20 pt side margin (ThreadPane), so the
+    /// box sits as far from the bottom as from the sides.
+    static let height: CGFloat = 20
+    static let gap: CGFloat = 0
 
     var body: some View {
         if let model = thread.model {
@@ -55,10 +55,11 @@ struct ModelControls: View {
     private func label(_ text: String) -> some View {
         HStack(spacing: 2) {
             Text(text).lineLimit(1)
-            Image(systemName: "chevron.down").font(.system(size: 5))
+            // Hidden, or VoiceOver stops on the menu a second time.
+            Image(systemName: "chevron.down").font(.system(size: 7, weight: .semibold)).accessibilityHidden(true)
         }
-        .font(.system(size: 10, weight: .light))
-        .foregroundStyle(Theme.secondaryInk.opacity(0.7))
+        .font(.system(size: 11))
+        .foregroundStyle(Theme.secondaryInk)
         .padding(.horizontal, 6)
         .frame(height: Self.height)
         .contentShape(Rectangle())
@@ -322,8 +323,8 @@ struct ContextMeter: View {
                     ring(size: 9, lineWidth: 1.5)
                     Text("\(context.percent)%")
                 }
-                .font(.system(size: 10, weight: .light))
-                .foregroundStyle(Theme.secondaryInk.opacity(0.7))
+                .font(.system(size: 11))
+                .foregroundStyle(Theme.secondaryInk)
                 .padding(.horizontal, 6)
                 .frame(height: ModelControls.height)
                 .contentShape(Rectangle())

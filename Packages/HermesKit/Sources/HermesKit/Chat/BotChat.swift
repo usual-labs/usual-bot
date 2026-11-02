@@ -22,6 +22,8 @@ enum BotChat {
         var openRequests: [ServerRequest] = []
         /// The session's model and reasoning level, as `session.info` reports them.
         var info: JSONValue? = nil
+        /// The chat's to-do list, when it has one.
+        var todoState: JSONValue? = nil
     }
 
     /// `knownID` is the stored Bot Chat ID from the roster, when the gateway reported one.
@@ -70,7 +72,8 @@ enum BotChat {
         return Opened(
             sessionID: live, history: history, running: result["running"]?.boolValue ?? false,
             historyOmitted: omitted || result["messages_omitted"]?.boolValue == true, inflight: inflight,
-            openRequests: requests, info: result["info"])
+            openRequests: requests, info: result["info"],
+            todoState: result["todo_state"])
     }
 
     static func create(profile: String, on channel: JSONRPCChannel) async throws -> Opened {

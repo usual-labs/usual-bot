@@ -6,6 +6,8 @@ public enum AppPreferences {
     public static let textSizeKey = "chatTextSize"
     public static let commandReturnKey = "commandReturnToSend"
     public static let notificationsKey = "taskNotifications"
+    public static let messageNotificationsKey = "messageNotifications"
+    public static let needsYouNotificationsKey = "needsYouNotifications"
     public static let notificationSoundKey = "notificationSound"
     public static let notificationPreviewsKey = "notificationPreviews"
 }
