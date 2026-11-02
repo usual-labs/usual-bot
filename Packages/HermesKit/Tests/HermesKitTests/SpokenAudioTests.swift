@@ -100,3 +100,63 @@ struct SpokenAudioTests {
         #expect(!SpokenAudio.isSpeechFile("/home/h/podcast.mp3"))
     }
 }
+
+@Suite struct SpokenAudioDeliveryTests {
+    private let path = "/Users/me/.hermes/profiles/ops/cache/audio/tts_20261102_232049_518752.mp3"
+
+    private func items(_ contents: [TranscriptItem.Content]) -> [TranscriptItem] {
+        contents.enumerated().map { TranscriptItem(id: $0.offset, content: $0.element) }
+    }
+
+    private func speech(files: [String]?) -> ToolStep {
+        var step = ToolStep(id: "t", name: "text_to_speech", context: "", state: .done)
+        step.spokenText = "Hello"
+        step.audioFiles = files
+        return step
+    }
+
+    @Test func aBarePathAfterALabelBecomesAPlayer() {
+        let text = "Voice memo saved to: \(path)\nAnything else?"
+        let list = items([.user("Say hello"), .activity([speech(files: nil)]), .assistant(text)])
+        #expect(SpokenAudio.delivered(text, in: list, replyAt: 2) == "MEDIA:\(path)\nAnything else?")
+    }
+
+    @Test func aPathInsideASentenceKeepsTheSentence() {
+        let text = "I recorded it as `\(path)` for you to play."
+        let list = items([.user("Say hello"), .assistant(text)])
+        #expect(SpokenAudio.delivered(text, in: list, replyAt: 1) == "I recorded it as for you to play.\nMEDIA:\(path)")
+    }
+
+    @Test func aReplyThatDoesntNameTheFileGetsItFromTheCall() {
+        let list = items([.user("Say hello"), .activity([speech(files: [path])]), .assistant("Here you go!")])
+        #expect(SpokenAudio.delivered("Here you go!", in: list, replyAt: 2) == "Here you go!\nMEDIA:\(path)")
+    }
+
+    @Test func aFileAlreadyDeliveredIsntAddedTwice() {
+        let text = "Here you go!\nMEDIA:\(path)"
+        let list = items([.user("Say hello"), .activity([speech(files: [path])]), .assistant(text)])
+        #expect(SpokenAudio.delivered(text, in: list, replyAt: 2) == text)
+    }
+
+    @Test func onlyTheTurnsLastReplyGetsTheCallsFiles() {
+        let list = items([
+            .user("Say hello"), .activity([speech(files: [path])]), .assistant("One moment."), .assistant("Done."),
+        ])
+        #expect(SpokenAudio.delivered("One moment.", in: list, replyAt: 2) == "One moment.")
+        #expect(SpokenAudio.delivered("Done.", in: list, replyAt: 3) == "Done.\nMEDIA:\(path)")
+    }
+
+    @Test func anEarlierTurnsFilesStayThere() {
+        let list = items([
+            .user("Say hello"), .activity([speech(files: [path])]), .assistant("Here."), .user("Thanks"),
+            .assistant("Any time."),
+        ])
+        #expect(SpokenAudio.delivered("Any time.", in: list, replyAt: 4) == "Any time.")
+    }
+
+    @Test func otherPathsAndCodeAreLeftAlone() {
+        let text = "Saved to /tmp/report.mp3\n```\n\(path)\n```"
+        let list = items([.user("x"), .assistant(text)])
+        #expect(SpokenAudio.delivered(text, in: list, replyAt: 1) == text)
+    }
+}

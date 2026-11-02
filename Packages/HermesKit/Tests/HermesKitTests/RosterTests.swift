@@ -65,4 +65,13 @@ struct RosterTests {
         #expect(Contact.plainPreview("## Summary  of   today") == "Summary of today")
         #expect(Contact.plainPreview("2 * 3 = 6") == "2 * 3 = 6")
     }
+
+    @Test func aVoiceFileThePreviewNamesReadsAsAVoiceMemo() {
+        // Cut at 80 characters by the gateway, partway through the file's name.
+        #expect(
+            Contact.plainPreview("Voice memo saved to: /Users/me/.hermes/profiles/ops/cache/audio/tts_2026")
+                == "Voice memo")
+        #expect(Contact.plainPreview("MEDIA:/Users/me/.hermes/cache/audio/tts_20261102_232049.mp3") == "Voice memo")
+        #expect(Contact.plainPreview("I said it in /tmp/tts_1.mp3 as asked") == "I said it in /tmp/tts_1.mp3 as asked")
+    }
 }

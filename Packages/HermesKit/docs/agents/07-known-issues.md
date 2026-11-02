@@ -99,3 +99,12 @@ doesn't. Not yet checked on a live gateway.
 - **Unverified: custom close codes through `URLSessionWebSocketTask`.** `BotScreen` tells 4000
   (someone else took control), 4001 (screen stopped) and 4401 (ticket spent) apart by
   `closeCode`; that it reports codes outside the enum hasn't been seen on a real gateway.
+
+## A voice reply often names its file instead of attaching it (seen on a real gateway, 2026-11-02)
+
+Hermes's messaging platforms attach a `text_to_speech` file to the reply themselves
+(`_collect_auto_append_media_tags` in `gateway/run.py`), but a dashboard chat leaves it to the
+agent, which wrote "Voice memo saved to: /…/tts_….mp3" instead of a `MEDIA:` line.
+`SpokenAudio.delivered` turns such a path into a player and gives the turn's last reply any file its
+calls made. History keeps only the calls' arguments, so a reply that never names its file has no
+player after a reload.

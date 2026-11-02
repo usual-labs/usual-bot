@@ -137,6 +137,11 @@ extension Contact {
     /// gateway (so bold or code can be left unclosed). The list shows them as plain text.
     static func plainPreview(_ text: String) -> String {
         if let note = GatewayTurn.preview(of: text) { return note }
+        if let speech = text.range(of: #"(MEDIA:)?[`"']?(/|~/)\S*tts_\d"#, options: .regularExpression) {
+            // An agent naming the voice file it made; often cut short, so the name can't be checked.
+            let label = text[..<speech.lowerBound].trimmingCharacters(in: .whitespaces)
+            if label.isEmpty || label.hasSuffix(":") { return String(localized: "Voice memo") }
+        }
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
         var plain = (try? AttributedString(markdown: text, options: options)).map { String($0.characters) } ?? text
         for marker in ["**", "__", "~~", "`"] {

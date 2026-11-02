@@ -27,7 +27,7 @@ struct TranscriptView: View {
                 // A date between two replies parts them.
                 let isLast = index + 1 == items.count
                 ItemView(
-                    item: item, agentName: agentName,
+                    item: Self.shown(items, at: index), agentName: agentName,
                     joinsAbove: item.isReply && index > 0 && items[index - 1].isReply && dates[item.id] == nil,
                     joinsBelow: item.isReply
                         && (isLast
@@ -87,9 +87,18 @@ struct TranscriptView: View {
         ]
     }
 
+    /// The item as the chat shows it: a reply with its turn's voice files attached
+    /// (`SpokenAudio.delivered`).
+    nonisolated static func shown(_ items: [TranscriptItem], at index: Int) -> TranscriptItem {
+        guard case .assistant(let text) = items[index].content else { return items[index] }
+        var item = items[index]
+        item.content = .assistant(SpokenAudio.delivered(text, in: items, replyAt: index))
+        return item
+    }
+
     /// The voice memo transcripts for a reply's audio; empty for the rest.
     nonisolated static func spokenTexts(in items: [TranscriptItem], at index: Int) -> [String: String] {
-        guard case .assistant(let text) = items[index].content, text.contains("MEDIA:") else { return [:] }
+        guard case .assistant(let text) = shown(items, at: index).content, text.contains("MEDIA:") else { return [:] }
         let audio = MarkdownBlock.parse(text).compactMap { block -> String? in
             guard case .media(let path, _) = block, MediaLoading.kind(of: path) == .audio else { return nil }
             return path

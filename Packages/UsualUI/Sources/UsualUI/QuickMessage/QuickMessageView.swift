@@ -281,8 +281,11 @@ private struct QuickAnswer: View {
     }
 
     @ViewBuilder private func chatAnswer(_ thread: ChatThread) -> some View {
-        ForEach(thread.state.items.dropFirst(min(start, thread.state.items.count))) { item in
-            ItemView(item: item, agentName: contact.name)
+        let items = thread.state.items
+        ForEach(Array(zip(items.indices, items).dropFirst(min(start, items.count))), id: \.1.id) { index, _ in
+            ItemView(
+                item: TranscriptView.shown(items, at: index), agentName: contact.name,
+                spokenTexts: TranscriptView.spokenTexts(in: items, at: index))
         }
         if !thread.state.draft.isEmpty {
             AgentBubble { MarkdownView(thread.state.draft) }
