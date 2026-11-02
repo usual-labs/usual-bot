@@ -96,6 +96,11 @@ public struct ToolStep: Identifiable, Equatable, Sendable, Codable {
     public var state: State
     /// How far a long step has got, when the tool says.
     public var progress: String? = nil
+    /// What a `text_to_speech` call was asked to say, which becomes its voice memo's transcript.
+    public var spokenText: String? = nil
+    /// The audio files that call made, when the gateway said (`result.file_paths` live, the
+    /// requested `output_path` in history).
+    public var audioFiles: [String]? = nil
 }
 
 /// A message from `session.resume`: the gateway's display projection of the stored history.
@@ -116,11 +121,13 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
     let displayKind: String?
     /// The short title Hermes gave a row of that kind.
     let displayText: String?
+    /// Tool rows: the call's arguments.
+    let args: JSONValue?
 
     init(
         role: String, text: String? = nil, name: String? = nil, context: String? = nil, toolCallId: String? = nil,
         timestamp: Double? = nil, rowId: Int? = nil, reactions: [Reaction] = [], displayKind: String? = nil,
-        displayText: String? = nil
+        displayText: String? = nil, args: JSONValue? = nil
     ) {
         self.role = role
         self.text = text
@@ -132,6 +139,7 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
         self.reactions = reactions
         self.displayKind = displayKind
         self.displayText = displayText
+        self.args = args
     }
 
     init(from decoder: any Decoder) throws {
@@ -147,10 +155,11 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
         reactions = Reaction.list(metadata?["reactions"])
         displayKind = try? container.decodeIfPresent(String.self, forKey: .displayKind)
         displayText = metadata?["display_text"]?.stringValue
+        args = try? container.decodeIfPresent(JSONValue.self, forKey: .args)
     }
 
     private enum CodingKeys: String, CodingKey {
-        case role, text, name, context, toolCallId, timestamp, rowId, displayKind, displayMetadata
+        case role, text, name, context, toolCallId, timestamp, rowId, displayKind, displayMetadata, args
     }
 }
 
@@ -208,9 +217,10 @@ public struct ThreadState: Equatable, Sendable, Codable {
                     append(.assistant(text), rowID: message.rowId, reactions: message.reactions, date: message.date)
                 }
             case "tool":
-                let step = ToolStep(
+                var step = ToolStep(
                     id: message.toolCallId ?? "history-\(nextID)", name: message.name ?? "tool",
                     context: message.context ?? "", state: .done)
+                step.readSpeech(args: message.args)
                 addStep(step, date: message.date)
             default:
                 break
@@ -340,12 +350,13 @@ public struct ThreadState: Equatable, Sendable, Codable {
         case "tool.start":
             sealDraft()
             live.moveOn()
-            addStep(
-                ToolStep(
-                    id: payload["tool_id"]?.stringValue ?? "tool-\(nextID)",
-                    name: payload["name"]?.stringValue ?? "tool",
-                    context: payload["context"]?.stringValue ?? "",
-                    state: .running))
+            var step = ToolStep(
+                id: payload["tool_id"]?.stringValue ?? "tool-\(nextID)",
+                name: payload["name"]?.stringValue ?? "tool",
+                context: payload["context"]?.stringValue ?? "",
+                state: .running)
+            step.readSpeech(args: payload["args"])
+            addStep(step)
         case "tool.progress":
             updateStep(payload)
         case "tool.complete":
@@ -482,6 +493,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
             step.summary = payload["summary"]?.stringValue?.nonBlank
             step.progress = nil
             if case .number(let seconds) = payload["duration_s"] { step.duration = seconds }
+            if !failed { step.readSpeech(args: payload["args"], result: payload["result"]) }
         }
     }
 

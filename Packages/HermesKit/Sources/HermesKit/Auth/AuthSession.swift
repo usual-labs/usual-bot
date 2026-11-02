@@ -54,6 +54,20 @@ public actor AuthSession {
         }
     }
 
+    /// Downloads a file's bytes with the bearer token. A 401 triggers one refresh and one retry.
+    func download(path: String, timeout: TimeInterval = 120) async throws -> Data {
+        func request(_ bearer: String) -> URLRequest {
+            var request = URLRequest.json(gateway.url(path), bearer: bearer, timeout: timeout)
+            request.setValue(nil, forHTTPHeaderField: "Accept")
+            return request
+        }
+        do {
+            return try await http.body(for: request(try await accessToken()))
+        } catch GatewayError.http(status: 401, _) {
+            return try await http.body(for: request(try await refresh().accessToken))
+        }
+    }
+
     /// A single-use, 30-second ticket for opening the JSON-RPC socket.
     func webSocketTicket() async throws -> String {
         struct Ticket: Decodable { let ticket: String }

@@ -229,6 +229,8 @@ struct ContactsSplitView<Footer: View>: View {
                 select(isLooking ? selected : nil)
                 if jump?.contactID != selected { jump = nil }
                 if findingTask != nil || finding != nil, findingContact != selected { stopFinding() }
+                // Leaving a chat stops what played in it.
+                MediaPlayback.shared.stop(in: "window")
             }
             .onChange(of: query) { search.lookUp(query) }
             .onChange(of: isLooking) { _, looking in
@@ -244,6 +246,7 @@ struct ContactsSplitView<Footer: View>: View {
             .onDisappear {
                 select(nil)
                 focused(false)
+                MediaPlayback.shared.stop(in: "window")
             }
     }
 

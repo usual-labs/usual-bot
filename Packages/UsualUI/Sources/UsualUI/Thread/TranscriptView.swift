@@ -32,7 +32,8 @@ struct TranscriptView: View {
                     joinsBelow: item.isReply
                         && (isLast
                             ? !thread.state.draft.isEmpty
-                            : items[index + 1].isReply && dates[items[index + 1].id] == nil)
+                            : items[index + 1].isReply && dates[items[index + 1].id] == nil),
+                    spokenTexts: Self.spokenTexts(in: items, at: index)
                 )
                 .transition(item.arrival)
                 .accessibilityElement(children: .contain)
@@ -86,6 +87,16 @@ struct TranscriptView: View {
         ]
     }
 
+    /// The voice memo transcripts for a reply's audio; empty for the rest.
+    nonisolated static func spokenTexts(in items: [TranscriptItem], at index: Int) -> [String: String] {
+        guard case .assistant(let text) = items[index].content, text.contains("MEDIA:") else { return [:] }
+        let audio = MarkdownBlock.parse(text).compactMap { block -> String? in
+            guard case .media(let path, _) = block, MediaLoading.kind(of: path) == .audio else { return nil }
+            return path
+        }
+        return SpokenAudio.transcripts(in: items, replyAt: index, audioPaths: audio)
+    }
+
     private var lastItemIsLiveActivity: Bool {
         guard case .activity(let steps) = thread.state.items.last?.content else { return false }
         return steps.contains { $0.state == .running }
@@ -126,6 +137,8 @@ struct ItemView: View {
     let agentName: String
     var joinsAbove = false
     var joinsBelow = false
+    /// Transcripts for a reply's voice memos, by path.
+    var spokenTexts: [String: String] = [:]
     /// Rooms only: resolves a member ID to its author.
     var author: (String) -> MemberAuthor? = { _ in nil }
     @Environment(\.highlightedItem) private var highlighted
@@ -152,6 +165,7 @@ struct ItemView: View {
         case .assistant(let text):
             MessageRow(item: item, text: text, isMine: false) {
                 AgentBubble(joinsAbove: joinsAbove, joinsBelow: joinsBelow) { MarkdownView(text) }
+                    .environment(\.spokenTexts, spokenTexts)
             }
             .joined(joinsAbove)
         case .member(let id, let text):
@@ -221,10 +235,21 @@ struct UserBubbleContent: View {
         // Attachments travel as `@image:`/`@file:` lines after the text; they show above it.
         let (withQuote, attachments) = AttachmentRef.split(text)
         let (quote, body) = QuotedMessage.split(withQuote)
+        // Audio and video you sent get a player; the rest show as tiles.
+        let (playable, tiles) = (
+            attachments.filter { $0.kind == .file && MediaLoading.kind(of: $0.path).isPlayable },
+            attachments.filter { $0.kind != .file || !MediaLoading.kind(of: $0.path).isPlayable }
+        )
         VStack(alignment: .trailing, spacing: 6) {
-            if !attachments.isEmpty {
+            ForEach(playable, id: \.path) { ref in
+                MediaView(path: ref.path)
+                    .padding(10)
+                    .frame(maxWidth: 440)
+                    .background(Theme.selection, in: RoundedRectangle(cornerRadius: 18))
+            }
+            if !tiles.isEmpty {
                 HStack(spacing: 6) {
-                    ForEach(attachments, id: \.path) { ref in
+                    ForEach(tiles, id: \.path) { ref in
                         AttachmentTile(
                             kind: ref.kind, name: ref.name, imageData: sentImages[ref.path], gatewayPath: ref.path)
                     }

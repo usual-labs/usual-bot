@@ -27,6 +27,16 @@ extension HTTPTransport {
     /// Sends `request` and decodes a 2xx JSON body. Network failures become `.unreachable`,
     /// other statuses `.http` with the gateway's `detail` or `error` message when it gives one.
     func json<T: Decodable & Sendable>(_ type: T.Type, for request: URLRequest) async throws -> T {
+        let data = try await body(for: request)
+        do {
+            return try JSONDecoder.gateway.decode(T.self, from: data)
+        } catch {
+            throw GatewayError.invalidResponse
+        }
+    }
+
+    /// Sends `request` and returns a 2xx body as it came, with the same errors as `json`.
+    func body(for request: URLRequest) async throws -> Data {
         let data: Data
         let response: HTTPURLResponse
         do {
@@ -41,11 +51,7 @@ extension HTTPTransport {
         guard (200..<300).contains(response.statusCode) else {
             throw GatewayError.http(status: response.statusCode, message: Self.message(in: data))
         }
-        do {
-            return try JSONDecoder.gateway.decode(T.self, from: data)
-        } catch {
-            throw GatewayError.invalidResponse
-        }
+        return data
     }
 
     /// FastAPI errors carry `{"detail": "..."}`; the auth routes use `{"error": "..."}`. Some

@@ -81,6 +81,13 @@ read older messages without being pulled back down; scroll to the end to follow 
   Files. Images up to 25 MB and other files up to 50 MB.
 - **Images from the agent.** When a reply names an image (a screenshot, a chart, a generated
   picture), it shows inline. Click it for full size, to share or to save.
+- **Audio and video.** Voice replies (Hermes's text to speech), audio files and videos play in the
+  chat or room, one at a time; leaving the chat stops them. A voice memo has its waveform, a speed
+  button and, when Hermes sent the words it spoke, **Show transcript**. A video plays in place;
+  use its full-screen button for more room. **…** shares the file, or saves it on the Mac. The
+  app downloads each file before it plays and deletes the copies when you sign out or quit; a file
+  that isn't downloaded yet while you're offline says so. Types this device can't play (such as
+  WebM) can still be shared.
 - **While the agent works.** The line above the box says what it's doing: reading, running a
   command, waiting on its provider or compressing the conversation. If it keeps a to-do list or
   hands work to helpers, a line such as "2 of 5 done" or "2 helpers working" shows that; click it to

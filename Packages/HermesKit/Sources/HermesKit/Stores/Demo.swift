@@ -37,6 +37,7 @@
                 try await Task.sleep(for: .milliseconds(900))
                 return DemoSearch.results(profile: profile, query: query)
             }
+            model.media.demoMakers = DemoMedia.makers
             return model
         }
     }
@@ -108,7 +109,7 @@
                     "scribe", "Scribe", preview: "Two headline options for the launch post", minutesAgo: 95,
                     about: "Drafts posts, release notes and emails in the house style."),
                 agent(
-                    "ops", "Ops", preview: "All 3 servers healthy, backups verified", minutesAgo: 6 * 60,
+                    "ops", "Ops", preview: "Here's the summary as a voice memo.", minutesAgo: 4,
                     about: "Watches servers, backups and costs, and reports each morning.",
                     section: Self.backOffice),
                 agent(
@@ -163,7 +164,9 @@
             threads["atlas"]?.showDemo(DemoConnections.request)
             threads["ops"] = ChatThread.sample(
                 "ops",
-                state: ThreadState(history: dated(opsChat, from: ago(6 * 60 + 4), to: ago(6 * 60)), running: false))
+                state: ThreadState(
+                    history: dated(opsChat, from: ago(6 * 60 + 4), to: ago(6 * 60))
+                        + dated(DemoMedia.voiceMemoTurn, from: ago(5), to: ago(4)), running: false))
             threads["ops"]?.receive(
                 SecretPrompt(
                     id: "demo-secret", sessionID: "sample",
@@ -372,7 +375,7 @@
                     toolCallId: message.toolCallId,
                     timestamp: start.addingTimeInterval(step * Double(index)).timeIntervalSince1970,
                     rowId: message.rowId, reactions: message.reactions, displayKind: message.displayKind,
-                    displayText: message.displayText)
+                    displayText: message.displayText, args: message.args)
             }
         }
 
@@ -448,7 +451,7 @@
 
         var roomContact: Contact {
             var contact = Contact(room: roomSummary)
-            contact.preview = "Scribe: The post is ready for a final read"
+            contact.preview = "Scribe: Here's the teaser for the post"
             contact.lastActive = ago(30)
             return contact
         }
@@ -485,7 +488,8 @@
                 event(
                     "message.member", from: member("scribe"),
                     "The post is ready for a final read. I kept it under 600 words and led with the search demo.",
-                    minutesAgo: 30),
+                    minutesAgo: 31),
+                event("message.member", from: member("scribe"), DemoMedia.clipReply, minutesAgo: 30),
             ]
             return RoomThread.sample(roomSummary, events: events, retries: ["demo-retry"])
         }
@@ -496,7 +500,7 @@
             }
             return RoomSummary([
                 "room_id": "launch", "name": "Launch crew", "members": .array(members),
-                "updated_at": .number(ago(30).timeIntervalSince1970), "latest_seq": 5,
+                "updated_at": .number(ago(30).timeIntervalSince1970), "latest_seq": 6,
             ])!
         }
     }

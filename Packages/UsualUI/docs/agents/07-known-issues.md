@@ -48,6 +48,20 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **The demo's Connect card and Apps page don't share state.** Connecting Notion in Atlas's chat leaves it unconnected on the Apps page; each fakes its own result.
 - **Demo mode can't show a thinking level change.** `ChatThread.setReasoning` needs a live session, so the slider snaps back there.
 
+## Audio and video
+
+- **One `AVPlayer` for the app (`MediaPlayback.shared`).** Views compare its key, so reading
+  `elapsed` outside the playing view would redraw every player ten times a second. A finished file
+  stays loaded at its start, so a full-screen video isn't pulled out from under AVKit.
+- **AVPlayerView exposed nothing to the accessibility tree** inline in a chat (macOS 27, checked
+  with AX queries, not VoiceOver itself), so on the Mac the playing video is one element with
+  Play, Pause and Play from the start. Its full-screen button shows on hover only; unverified with
+  VoiceOver.
+- **The panel is hidden, not removed,** so its views never disappear: `QuickPanel.close()` stops
+  what played there through `QuickMessageView.panelClosed()`.
+- **Unverified:** Ogg/Opus and WebM in AVFoundation (they show "can't play" and Share if not), iPhone
+  inline playback and full screen, and the silent switch with the `.playback` session.
+
 ## Voice and permissions
 
 - **Permission callbacks crash under Swift 6.** A framework closure written in a `@MainActor` type is inferred main-actor isolated and traps on a background queue. Mark such callbacks `@Sendable` or form them in a nonisolated context.

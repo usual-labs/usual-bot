@@ -12,6 +12,7 @@ All notable changes to Usual Bot are listed here. The format follows
 - **Connect apps from the chat.** When an agent needs an account such as Gmail, or an MCP server's sign-in, a card offers Connect and Not now, opens the sign-in page, and updates once you're done. The Apps page lists the accounts Hermes reaches through your Nous Portal, with Connect and Disconnect.
 - **Watch an agent's computer and take over.** An agent with a computer of its own shows a Computer
   button in its chat: watch its screen live, take over the mouse and keyboard, and hand it back.
+- **Audio and video in chats.** Voice replies play as voice memos with their transcript, and audio files and videos play in chats and rooms, with Share and Save kept.
 - **Search your messages.** Type two or more letters in search (⌘K on the Mac, the list's search
   field on iPhone) to find messages from every chat and room, with the words you typed in bold.
   Choose one to open that chat at the message, highlighted for a moment.

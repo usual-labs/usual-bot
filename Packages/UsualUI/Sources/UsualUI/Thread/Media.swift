@@ -10,6 +10,11 @@ extension EnvironmentValues {
     @Entry var voiceLive: VoiceLiveService?
     /// The profile whose files a message names: the chat's agent, or a room reply's author.
     @Entry var mediaProfile: String?
+    /// Transcripts of the voice memos in a reply, by path (`SpokenAudio.transcripts`).
+    @Entry var spokenTexts: [String: String] = [:]
+    /// Where audio and video play: the main window, or the ⌥Space panel. Leaving one stops only
+    /// what plays there.
+    @Entry var playbackScope = "window"
 }
 
 /// Where an image in a chat comes from.
@@ -20,11 +25,31 @@ enum MediaSource: Equatable, Hashable {
 }
 
 enum MediaLoading {
+    enum Kind {
+        case image, audio, video, file
+
+        var isPlayable: Bool { self == .audio || self == .video }
+    }
+
     /// Image types that draw inline; anything else is a file to save.
     static let imageExtensions: Set<String> = ["png", "jpg", "jpeg", "gif", "webp", "bmp", "heic", "tif", "tiff"]
+    /// Types that get a player. Some, like Ogg or WebM, may not play here; those say so and can
+    /// still be shared.
+    static let audioExtensions: Set<String> = [
+        "mp3", "m4a", "aac", "wav", "aif", "aiff", "aifc", "caf", "flac", "ogg", "oga", "opus",
+    ]
+    static let videoExtensions: Set<String> = ["mp4", "m4v", "mov", "webm", "mkv", "avi", "3gp"]
 
     static func isImage(_ path: String) -> Bool {
         imageExtensions.contains((path as NSString).pathExtension.lowercased())
+    }
+
+    static func kind(of path: String) -> Kind {
+        let ext = (path as NSString).pathExtension.lowercased()
+        if imageExtensions.contains(ext) { return .image }
+        if audioExtensions.contains(ext) { return .audio }
+        if videoExtensions.contains(ext) { return .video }
+        return .file
     }
 
     @MainActor static func data(
@@ -80,14 +105,27 @@ enum MediaLoading {
     }
 }
 
-/// A `MEDIA:` file in a reply: an image inline, anything else as a file you can save.
+/// A `MEDIA:` file in a reply: an image inline, audio and video with a player, anything else as
+/// a file you can save.
 struct MediaView: View {
     let path: String
+    /// The reply asked for its audio as a voice message.
+    var voice = false
+
+    @Environment(\.spokenTexts) private var spokenTexts
 
     var body: some View {
-        if MediaLoading.isImage(path) {
+        switch MediaLoading.kind(of: path) {
+        case .image:
             ReplyImage(source: .gateway(path), name: (path as NSString).lastPathComponent)
-        } else {
+        case .audio:
+            let transcript = spokenTexts[path]
+            AudioMessage(
+                path: path, isVoice: voice || transcript != nil || SpokenAudio.isSpeechFile(path),
+                transcript: transcript)
+        case .video:
+            VideoMessage(path: path)
+        case .file:
             MediaFile(path: path)
         }
     }

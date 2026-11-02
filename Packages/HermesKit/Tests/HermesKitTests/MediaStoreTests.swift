@@ -8,14 +8,16 @@ import Testing
 struct MediaStoreTests {
     private let png = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A])
 
-    private func store(_ http: ScriptedHTTP) -> MediaStore {
+    private func store(_ http: ScriptedHTTP, temporaryDirectory: URL = FileManager.default.temporaryDirectory)
+        -> MediaStore
+    {
         let auth = AuthSession(
             gateway: testGateway,
             tokens: TokenSet(
                 accessToken: "a0", refreshToken: "r0", expiresAt: .now.addingTimeInterval(3600), provider: "nous",
                 userID: "u1"),
             store: MemoryTokenStore(), http: http)
-        return MediaStore(auth: { auth })
+        return MediaStore(auth: { auth }, temporaryDirectory: temporaryDirectory)
     }
 
     @Test func readsTheFileAsTheAgentsProfileAndCachesIt() async throws {
@@ -55,6 +57,66 @@ struct MediaStoreTests {
         let http = ScriptedHTTP { _ in (404, #"{"detail":"File not found"}"#) }
         await #expect(throws: GatewayError.http(status: 404, message: "File not found")) {
             try await store(http).file(at: "/gone.png", profile: "ops")
+        }
+    }
+
+    @Test func downloadsAudioWholeToAFileNamedLikeIt() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "MediaStoreTests-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let http = ScriptedHTTP { _ in (200, "ID3 audio bytes") }
+        let media = store(http, temporaryDirectory: folder)
+
+        let url = try await media.playableFile(at: "/home/h/.hermes/cache/audio/tts_1.mp3", profile: "ops")
+        #expect(try await media.playableFile(at: "/home/h/.hermes/cache/audio/tts_1.mp3", profile: "ops") == url)
+
+        #expect(url.lastPathComponent == "tts_1.mp3")
+        #expect(try Data(contentsOf: url) == Data("ID3 audio bytes".utf8))
+        #expect(http.requests.count == 1)
+        let request = try #require(http.requests.first)
+        #expect(request.url?.path == "/api/fs/download")
+        #expect(request.url?.query == "path=%2Fhome%2Fh%2F.hermes%2Fcache%2Faudio%2Ftts_1.mp3&profile=ops")
+        #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer a0")
+
+        // Signing out deletes the copies.
+        media.clear()
+        #expect(!FileManager.default.fileExists(atPath: url.path))
+    }
+
+    @Test func aDeletedCopyIsDownloadedAgain() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "MediaStoreTests-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let http = ScriptedHTTP { _ in (200, "clip") }
+        let media = store(http, temporaryDirectory: folder)
+        let url = try await media.playableFile(at: "/clip.mp4", profile: "ops")
+        try FileManager.default.removeItem(at: url)
+
+        let again = try await media.playableFile(at: "/clip.mp4", profile: "ops")
+        #expect(FileManager.default.fileExists(atPath: again.path))
+        #expect(http.requests.count == 2)
+    }
+
+    @Test func launchDeletesCopiesFromRunsThatEnded() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "MediaStoreTests-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        // No process has an ID this high; this one is running.
+        let ended = folder.appending(path: "UsualBot-playback-99999999")
+        let running = folder.appending(path: "UsualBot-playback-1")
+        for url in [ended, running] {
+            try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        }
+
+        _ = store(ScriptedHTTP { _ in (200, "") }, temporaryDirectory: folder)
+
+        #expect(!FileManager.default.fileExists(atPath: ended.path))
+        #expect(FileManager.default.fileExists(atPath: running.path))
+    }
+
+    @Test func playingOfflineSaysTheFileIsNotHere() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "MediaStoreTests-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let media = MediaStore(auth: { nil }, temporaryDirectory: folder)
+        await #expect(throws: GatewayError.disconnected) {
+            try await media.playableFile(at: "/clip.mp4", profile: "ops")
         }
     }
 

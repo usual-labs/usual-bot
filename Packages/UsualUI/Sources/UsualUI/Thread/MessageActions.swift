@@ -20,7 +20,9 @@ struct QuotedMessage: Equatable {
         self.mention = mention
         // Plain words: no attachment or `MEDIA:` lines, no Markdown marks.
         let lines = AttachmentRef.split(text).text.split(whereSeparator: \.isNewline)
-            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("MEDIA:") }
+            .filter {
+                !$0.trimmingCharacters(in: .whitespaces).hasPrefix("MEDIA:") && !MarkdownBlock.isDeliveryMarker($0)
+            }
         let joined = lines.joined(separator: " ")
         let flat =
             (try? AttributedString(

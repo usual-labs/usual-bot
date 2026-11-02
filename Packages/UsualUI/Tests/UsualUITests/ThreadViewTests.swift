@@ -14,7 +14,7 @@ struct MarkdownBlockTests {
             case .quote(let text): return "q:" + String(text.characters)
             case .code(let language, let code): return "code(\(language ?? "-")):" + code
             case .rule: return "hr"
-            case .media(let path): return "media:" + path
+            case .media(let path, let voice): return (voice ? "voice:" : "media:") + path
             case .image(let url, let alt): return "img(\(alt)):" + url.absoluteString
             }
         }
@@ -32,6 +32,17 @@ struct MarkdownBlockTests {
                 "p:Here's the chart.", "media:/home/h/.hermes/profiles/ops/cache/cpu.png",
                 "media:/home/h/reports/Q3 summary.pdf", "p:Anything else?",
             ])
+    }
+
+    @Test func voiceMarkersHideAndMakeTheAudioVoice() {
+        let reply = """
+            Here you go.
+            [[audio_as_voice]]
+            MEDIA:/home/h/.hermes/cache/audio/tts_20261102_071502_118204.ogg
+            """
+        #expect(kinds(reply) == ["p:Here you go.", "voice:/home/h/.hermes/cache/audio/tts_20261102_071502_118204.ogg"])
+        #expect(kinds("[[as_document]]\nMEDIA:/tmp/a.mp3") == ["media:/tmp/a.mp3"])
+        #expect(kinds("```\n[[audio_as_voice]]\n```") == ["code(-):[[audio_as_voice]]"])
     }
 
     @Test func plainImagePathsShowAsImages() {

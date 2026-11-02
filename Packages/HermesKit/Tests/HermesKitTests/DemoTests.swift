@@ -13,7 +13,7 @@ struct DemoTests {
         #expect(contacts.first { $0.id == "forge" }?.activity == .needsYou)
 
         let room = try #require(contacts.first { $0.kind != .agent })
-        #expect(model.room(for: room)?.state.items.count == 5)
+        #expect(model.room(for: room)?.state.items.count == 6)
         #expect(model.thread(for: try #require(contacts.first { $0.id == "atlas" })).state.items.count == 5)
 
         let ops = model.thread(for: try #require(contacts.first { $0.id == "ops" }))
@@ -33,6 +33,17 @@ struct DemoTests {
         model.usage.period = .month
         await model.usage.refresh()
         #expect(model.usage.combined.totalTokens > week)
+    }
+
+    @Test func opsReadsItsSummaryAsAVoiceMemoWithItsTranscript() throws {
+        let model = AppModel.demo()
+        let ops = model.thread(for: try #require(model.sidebarContacts.first { $0.id == "ops" }))
+        let items = ops.state.items
+        let reply = try #require(items.lastIndex { if case .assistant = $0.content { true } else { false } })
+        #expect(
+            SpokenAudio.transcripts(in: items, replyAt: reply, audioPaths: [DemoMedia.voiceMemoPath])
+                == [DemoMedia.voiceMemoPath: DemoMedia.voiceMemoText])
+        #expect(Set(model.media.demoMakers.keys) == [DemoMedia.voiceMemoPath, DemoMedia.clipPath])
     }
 
     @Test func demoShowsTheVaultAndItsPromptsWithFakeData() throws {

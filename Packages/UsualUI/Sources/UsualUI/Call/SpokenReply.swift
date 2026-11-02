@@ -38,7 +38,8 @@ struct SpokenReply {
             inCode.toggle()
             return []
         }
-        guard !inCode, !trimmed.hasPrefix("MEDIA:"), !trimmed.hasPrefix("@image:"), !trimmed.hasPrefix("@file:")
+        guard !inCode, !trimmed.hasPrefix("MEDIA:"), !trimmed.hasPrefix("@image:"), !trimmed.hasPrefix("@file:"),
+            !MarkdownBlock.isDeliveryMarker(trimmed)
         else { return [] }
         return Self.split(Self.plain(trimmed))
     }

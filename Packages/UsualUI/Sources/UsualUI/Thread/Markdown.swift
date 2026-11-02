@@ -11,8 +11,8 @@ enum MarkdownBlock: Equatable {
     case code(language: String?, String)
     case rule
     /// A file on the gateway the agent delivered with a `MEDIA:/path` line, or a Markdown image
-    /// with a local path.
-    case media(path: String)
+    /// with a local path. `voice`: the reply asked for its audio as a voice message.
+    case media(path: String, voice: Bool = false)
     /// A Markdown image from the web.
     case image(URL, alt: String)
 
@@ -22,6 +22,9 @@ enum MarkdownBlock: Equatable {
         var blocks: [MarkdownBlock] = []
         var pending: [Substring] = []
         var inFence = false
+        // Hermes's delivery markers (`[[audio_as_voice]]` from its TTS tool) aren't for reading;
+        // the gateway strips them for its messaging platforms too.
+        let voice = markdown.contains(voiceMarker)
         func flush() {
             if !pending.isEmpty { blocks += parseMarkdown(pending.joined(separator: "\n")) }
             pending = []
@@ -29,9 +32,13 @@ enum MarkdownBlock: Equatable {
         for line in markdown.split(separator: "\n", omittingEmptySubsequences: false) {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             if trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") { inFence.toggle() }
-            if !inFence, trimmed.hasPrefix("MEDIA:"), let path = mediaPath(trimmed.dropFirst("MEDIA:".count)) {
+            if !inFence, isDeliveryMarker(trimmed) {
+                continue
+            } else if !inFence, trimmed.hasPrefix("MEDIA:"),
+                let path = mediaPath(trimmed.dropFirst("MEDIA:".count))
+            {
                 flush()
-                blocks.append(.media(path: path))
+                blocks.append(.media(path: path, voice: voice))
             } else if !inFence, let path = mediaPath(Substring(trimmed)), imagePaths(in: path) == [path] {
                 // A line that's only the path to an image: agents outside the desktop app name
                 // the files they make that way.
@@ -43,6 +50,14 @@ enum MarkdownBlock: Equatable {
         }
         flush()
         return blocks
+    }
+
+    static let voiceMarker = "[[audio_as_voice]]"
+
+    /// A line that only tells Hermes how to deliver files, which nobody reads.
+    static func isDeliveryMarker(_ line: some StringProtocol) -> Bool {
+        let line = line.trimmingCharacters(in: .whitespaces)
+        return line == voiceMarker || line == "[[as_document]]"
     }
 
     /// The path in a `MEDIA:` line, unquoted; `nil` when there is none.
@@ -213,8 +228,8 @@ struct MarkdownView: View {
             CodeBlock(language: language, code: code)
         case .rule:
             Divider().overlay(Theme.border)
-        case .media(let path):
-            MediaView(path: path)
+        case .media(let path, let voice):
+            MediaView(path: path, voice: voice)
         case .image(let url, let alt):
             ReplyImage(source: .web(url), name: alt.isEmpty ? url.lastPathComponent : alt)
         }

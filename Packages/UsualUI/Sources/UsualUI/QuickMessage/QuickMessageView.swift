@@ -37,6 +37,7 @@ public struct QuickMessageView: View {
                     answerHeader(contact)
                     QuickAnswer(model: model, contact: contact, start: sent.start, agents: agentsByProfile)
                         .environment(\.chatContact, contact.kind == .agent ? contact : nil)
+                        .environment(\.mediaProfile, contact.details?.profile ?? contact.id)
                     messageField(placeholder: String(localized: "Reply to \(contact.name)"))
                 } else {
                     recipientRow
@@ -59,6 +60,8 @@ public struct QuickMessageView: View {
         .onChange(of: shownAt) { appeared() }
         .appPreferences()
         .environment(\.botPictures, model.pictures)
+        .environment(\.media, model.media)
+        .environment(\.playbackScope, "panel")
         #if os(macOS)
             .onExitCommand(perform: close)
         #endif
@@ -225,6 +228,12 @@ public struct QuickMessageView: View {
         }
         recipientID = contact.id
         text = ""
+    }
+
+    /// The panel closed: what played in it stops. (It's hidden, not removed, so its views don't
+    /// disappear.)
+    public static func panelClosed() {
+        MediaPlayback.shared.stop(in: "panel")
     }
 
     /// Each time the panel opens: a new message, unless the last answer is still coming.

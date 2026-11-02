@@ -22,6 +22,18 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   the gateway and sends only page images. Limits are 25 MB per image (the gateway's) and 50 MB per file.
 - **Gateway files load through `/api/fs/read-data-url?profile=`.** `/api/media` serves only the
   default profile's image folders.
+- **Audio and video download whole through `/api/fs/download?profile=`, then play from a file.**
+  `AVPlayer` can't send the bearer token, the data URL route caps at 16 MB and base64s everything,
+  and the official app's `/api/files/stream` follows the file browser's rules, not a profile's.
+  An `AVAssetResourceLoader` could stream with Range requests, but SSH-backed profiles stream
+  without Range support, so it would need a whole-file fallback anyway. Copies live in a
+  per-process temporary folder (a Mac's temporary folder is shared by every copy of the app
+  running); sign-out and the next launch delete them.
+- **A voice memo's transcript is the `text_to_speech` call's `text`.** Live, `tool.complete`
+  names the files the call made; `session.history` keeps only the arguments, so calls pair with
+  a reply's audio in order and only when the counts match. Rooms carry no tool calls, so their
+  voice replies have no transcript. Voice style also comes from `[[audio_as_voice]]` (hidden, as
+  the gateway hides it) or the tool's default `tts_<date>_<time>` name.
 - **Agents often name images in plain text.** `MEDIA:` lines appear only when Hermes tells an agent
   the surface renders them, and sessions the desktop app didn't create may get terminal
   instructions. So an absolute path ending in an image type also becomes an image.

@@ -10,8 +10,6 @@
     `sessions.max_resume_messages`, 20,000 by default) can't open at one. That needs REST pages
     (`/api/sessions/{id}/messages`, or `/timeline` and `/messages/around`) loaded into the
     transcript. Room logs aren't in the gateway's search at all (they live in the hosted-rooms store).
-  - **Playing audio and video:** a delivered non-image file shows as a file to save or share
-    (`MediaView`), with no player.
   - **Managing Bots:** `profiles.create`, `PATCH /api/profiles/{name}`, `profiles.set_asset`. The
     roster only writes a Bot's section: no create, rename or picture change.
   - **A template's prompt before saving:** `/api/cron/blueprints` leaves out each template's prompt

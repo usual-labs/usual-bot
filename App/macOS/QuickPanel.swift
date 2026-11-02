@@ -61,6 +61,7 @@
         func close() {
             panel?.orderOut(nil)
             model.setPanelOpen(false)
+            QuickMessageView.panelClosed()
         }
 
         /// Brings the main window forward, opening it again if it was closed.
