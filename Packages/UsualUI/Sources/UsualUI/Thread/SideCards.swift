@@ -26,7 +26,7 @@ struct SideQuestionCard: View {
                         .frame(width: 22, height: 22)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
                 .accessibilityLabel(Text("Dismiss the side question"))
             }
             switch question.answer {

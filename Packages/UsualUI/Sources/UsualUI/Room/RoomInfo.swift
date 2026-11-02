@@ -92,7 +92,7 @@ struct RoomPanel: View {
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
     }
 
     private func row(_ member: Contact) -> some View {

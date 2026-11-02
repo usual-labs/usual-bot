@@ -255,7 +255,7 @@ struct CodeBlock: View {
                     .foregroundStyle(Theme.secondaryInk)
                 Spacer()
                 Button("Copy") { Clipboard.copy(code) }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.clickable)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(Theme.secondaryInk)
                     .frame(minHeight: 28)

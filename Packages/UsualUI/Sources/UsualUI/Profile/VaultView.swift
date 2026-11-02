@@ -23,7 +23,7 @@ struct VaultView: View {
                 VStack(spacing: 8) {
                     Text(message).multilineTextAlignment(.center)
                     Button("Try Again") { Task { await list.refresh() } }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.clickable)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Theme.ink)
                         .frame(minHeight: 44)
@@ -104,7 +104,8 @@ struct VaultView: View {
             .contentShape(Capsule())
         }
         .menuStyle(.button)
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
+        .clickable()
         .menuIndicator(.hidden)
         .fixedSize()
     }
@@ -128,7 +129,7 @@ struct VaultView: View {
                         .background(filter == option ? Theme.selection : .clear, in: Capsule())
                         .contentShape(Capsule())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.clickable)
                     .accessibilityAddTraits(filter == option ? .isSelected : [])
                 }
             }
@@ -225,7 +226,7 @@ private struct VaultItemRow: View {
                         .frame(width: 32, height: 32)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
                 .accessibilityLabel(Text("Remove \(item.label)"))
             } else {
                 Text(manager)

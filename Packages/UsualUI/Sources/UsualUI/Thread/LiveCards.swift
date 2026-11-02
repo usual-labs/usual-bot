@@ -24,7 +24,7 @@ struct FoldedRow<Label: View, Rows: View>: View {
                 .frame(minHeight: 28)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.clickable)
             .accessibilityValue(expanded ? Text("Expanded") : Text("Collapsed"))
 
             if expanded {

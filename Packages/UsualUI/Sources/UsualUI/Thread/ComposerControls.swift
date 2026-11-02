@@ -107,14 +107,14 @@ struct ComposerLayout: Layout {
                             .background(pickingLevel ? Theme.primary : Theme.selection, in: Circle())
                             .contentShape(Circle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.clickable)
                     .accessibilityLabel(Text("Model and thinking"))
                     .accessibilityValue(
                         Text("\(ModelControls.short(model.name)), \(ModelControls.levelName(model.reasoning))"))
                 }
             }
             .menuStyle(.button)
-            .buttonStyle(.plain)
+            .buttonStyle(.clickable)
             .menuIndicator(.hidden)
         }
 
@@ -156,7 +156,7 @@ struct ComposerLayout: Layout {
                         .lineLimit(1)
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.clickable)
                     .accessibilityHint(Text("Shows the model and thinking settings"))
                     if chat.thread.takesReasoning(model) {
                         LevelSlider(level: model.reasoning) { chat.thread.setReasoning($0) }

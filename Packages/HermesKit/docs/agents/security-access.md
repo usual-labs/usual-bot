@@ -11,7 +11,7 @@ Vault secrets (`vault.add` values, master passwords, login and code answers) are
 - `vault.list` is metadata and `VaultItem` has no secret field. No method reads a secret back.
 - Gateway error text passes `VaultRedaction.scrub` before it's shown: the values just sent, `password=…`-style pairs and card-shaped digit runs become `[hidden]`.
 - Notices about a prompt name the site and outcome only. Prompts aren't cached (`CachedThread` doesn't carry them).
-- `GatewayAddress.isUnencrypted` (http off this device, outside Tailscale) makes `VaultList` and `ChatThread.answer` refuse to send unless the call passes `allowingUnencrypted`. Unknown state counts as unencrypted. The consent is per send and never stored.
+- `GatewayAddress.isUnencrypted` (http off this device, outside Tailscale) makes `VaultList`, `MCPServerList` (a token or catalog key) and `ChatThread.answer` refuse to send unless the call passes `allowingUnencrypted`. Unknown state counts as unencrypted. The consent is per send and never stored.
 - `FrameRecorder` (Debug, `USUALBOT_RECORD_FRAMES=1`) blanks `result.value` on every outgoing frame and the `secretParams` of `vault.add` and `vault.unlock`; `call(sensitive:)` keeps replies to those calls out of the file.
 - Swift `String`s can't be zeroed; clearing means dropping the reference.
 

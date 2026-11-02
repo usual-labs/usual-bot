@@ -43,7 +43,8 @@ struct ModelControls: View {
                 }
             }
             .menuStyle(.button)
-            .buttonStyle(.plain)
+            .buttonStyle(.clickable)
+            .clickable()
             .menuIndicator(.hidden)
             .fixedSize()
             .task(id: thread.isAttached) { await thread.loadModelsAndUsage() }

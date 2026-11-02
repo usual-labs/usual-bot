@@ -13,8 +13,8 @@
     (`/api/mcp/*`).
   - **Managing Bots:** `profiles.create`, `PATCH /api/profiles/{name}`, `profiles.set_asset`. The
     roster only writes a Bot's section: no create, rename or picture change.
-  - **Routines:** the Routines tab only switches a job on or off. `/api/cron/jobs` also creates,
-    edits, runs and deletes, `/{id}/runs` gives history and `/api/cron/blueprints` gives templates.
+  - **Routine templates:** `/api/cron/blueprints` gives fill-in templates the New Routine form
+    could offer.
   - **Usage across chats:** `usage.bars`, `insights.get`, `/api/analytics/usage`.
   - **Bot desktop:** `display.*` with a ticket for `/api/display/ws` (raw RFB), Take over through
     `display.lease.*`. Largest of these: it needs a VNC viewer in the app.
@@ -63,8 +63,10 @@ Child-local ideas stay in their package KBs.
   no socket errors); gateway sign-in through the web view and the gateway menu reported working
   by the maintainer. Simulator checked for the header, menu and connect-screen switch. Builds:
   iPhone, Simulator, Mac (skips the iOS-only framework via a platform-conditional dependency);
-  HermesKit and UsualUI tests and lint pass, also after merging main (2026-11-01, and again
-  2026-11-02 with push notifications). Before shipping: the merged builds haven't run on a device,
+  HermesKit and UsualUI tests and lint pass, also after merging main (2026-11-01, and twice on
+  2026-11-02: push notifications, then search, routines and MCP servers). An MCP server's OAuth
+  sign-in opens the provider in Safari and the provider returns to the gateway's own callback, so
+  on a tailnet gateway it needs the Tailscale VPN, like the Google hand-off (untested). Before shipping: the merged builds haven't run on a device,
   and the grace period and background check-in haven't been tried with the built-in device on;
   it adds 21 MB (36 MB Debug app); tsnet uploads node logs to Tailscale (logtail) like
   Tailscale's own clients; the Google hand-off is untested; if the iPhone app is ever

@@ -15,6 +15,10 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   Group accessibility per message, not around the whole transcript, so Mac accessibility can
   expose the messages without traversing one enormous group.
 
+- **`ScrollPosition.scrollTo(id:anchor:)` left a search jump at the top on iOS 18.4** (Simulator),
+  under the navigation bar, whatever the anchor. `ConversationScroll` jumps with a
+  `ScrollViewReader`, which centres on both platforms; the scroll policy stays on `ScrollPosition`.
+
 ## macOS window and sidebar
 
 - **macOS 26's sidebar width can't be set.** Its floating sidebar keeps a 140 pt floor and ignores `navigationSplitViewColumnWidth`, `NSSplitView.setPosition` and pinned item thickness. Don't drive sidebar widths through NavigationSplitView or its AppKit split view; ContactsSplitView lays the Mac sidebar out itself. Dragging the edge wasn't verified by automation.

@@ -67,7 +67,7 @@ struct ConnectView<Options: View>: View {
                     .background(Theme.primary, in: Capsule())
                     .contentShape(Capsule())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.clickable)
             .disabled(model.gatewayInput.trimmingCharacters(in: .whitespaces).isEmpty)
             .opacity(model.gatewayInput.trimmingCharacters(in: .whitespaces).isEmpty ? 0.4 : 1)
 
@@ -91,7 +91,7 @@ struct ConnectView<Options: View>: View {
                 .foregroundStyle(Theme.secondaryInk)
                 .multilineTextAlignment(.center)
             Button("Cancel", action: model.cancelSignIn)
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(Theme.ink)
                 .frame(minHeight: 44)

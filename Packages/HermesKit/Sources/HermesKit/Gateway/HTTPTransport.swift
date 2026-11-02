@@ -48,18 +48,20 @@ extension HTTPTransport {
         }
     }
 
-    /// FastAPI errors carry `{"detail": "..."}`; the auth routes use `{"error": "..."}`.
+    /// FastAPI errors carry `{"detail": "..."}`; the auth routes use `{"error": "..."}`. Some
+    /// details are objects with their own `error`, like a routine saved but not scheduled.
     static func message(in data: Data) -> String? {
         guard let body = try? JSONDecoder().decode([String: JSONValue].self, from: data) else { return nil }
-        return body["detail"]?.stringValue ?? body["error"]?.stringValue
+        return body["detail"]?.stringValue ?? body["detail"]?["error"]?.stringValue ?? body["error"]?.stringValue
     }
 }
 
 extension URLRequest {
-    static func json(_ url: URL, method: String = "GET", body: (any Encodable)? = nil, bearer: String? = nil)
-        -> URLRequest
-    {
-        var request = URLRequest(url: url, timeoutInterval: 30)
+    static func json(
+        _ url: URL, method: String = "GET", body: (any Encodable)? = nil, bearer: String? = nil,
+        timeout: TimeInterval = 30
+    ) -> URLRequest {
+        var request = URLRequest(url: url, timeoutInterval: timeout)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if let body {

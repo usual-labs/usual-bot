@@ -60,11 +60,13 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                 createRoom: { try await model.createRoom(named: $0, agents: $1) },
                 renameRoom: { try await model.renameRoom($0, to: $1) },
                 deleteRoom: { try await model.deleteRoom($0) },
+                search: { model.searchMessages($0) },
                 profile: { contact, close in
                     guard contact.kind == .agent else { return nil }
                     return ProfilePanel(
                         contact: contact, routines: model.routines(for: contact), skills: model.skills(for: contact),
-                        vault: model.vault(for: contact), gateway: gateway, link: model.link,
+                        apps: model.apps(for: contact), vault: model.vault(for: contact), gateway: gateway,
+                        link: model.link,
                         gatewayDetails: model.gatewayDetails, loadGatewayDetails: { await model.loadGatewayDetails() },
                         close: close)
                 }
@@ -101,7 +103,7 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                 .frame(width: 32, height: 32)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
         .foregroundStyle(Theme.secondaryInk)
         .accessibilityLabel(Text("Settings"))
         .help("Settings")
@@ -144,6 +146,8 @@ struct ContactsSplitView<Footer: View>: View {
     /// `nil` hides renaming and deleting rooms.
     var renameRoom: ((Contact, String) async throws -> Void)?
     var deleteRoom: ((Contact) async throws -> Void)?
+    /// Messages in every chat and room that match a search.
+    var search: (String) -> [MessageHit] = { _ in [] }
     /// The profile panel for a contact, given a way to close it; `nil` when it has none.
     var profile: (Contact, @escaping () -> Void) -> ProfilePanel? = { _, _ in nil }
     /// Below the list; told whether the sidebar is the narrow window's rail.
@@ -168,6 +172,8 @@ struct ContactsSplitView<Footer: View>: View {
         @State private var showsProfile = false
     #endif
     @State private var isLooking = false
+    /// A message chosen from search, until its chat has scrolled to it.
+    @State private var jump: MessageJump?
 
     var body: some View {
         content
@@ -179,7 +185,10 @@ struct ContactsSplitView<Footer: View>: View {
                 }
             }
             .tracksLooking($isLooking)
-            .onChange(of: selection, initial: true) { _, selected in select(isLooking ? selected : nil) }
+            .onChange(of: selection, initial: true) { _, selected in
+                select(isLooking ? selected : nil)
+                if jump?.contactID != selected { jump = nil }
+            }
             .onChange(of: isLooking) { _, looking in
                 select(looking ? selection : nil)
                 focused(looking)
@@ -234,8 +243,8 @@ struct ContactsSplitView<Footer: View>: View {
                     CommandPalette(
                         contacts: contacts, members: members(of:),
                         canCreateRoom: createRoom != nil && agents.count >= NewRoomSheet.seats.lowerBound,
-                        open: { selection = $0 }, newRoom: { showsNewRoom = true }, settings: settings,
-                        close: { showsPalette = false })
+                        search: search, open: { selection = $0 }, openMessage: show,
+                        newRoom: { showsNewRoom = true }, settings: settings, close: { showsPalette = false })
                 }
             }
         #else
@@ -265,7 +274,8 @@ struct ContactsSplitView<Footer: View>: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ContactList(
-                    contacts: contacts, sections: sections, query: query, compact: compact, selection: $selection)
+                    contacts: contacts, sections: sections, query: query, compact: compact, selection: $selection,
+                    messages: search(query), openMessage: show)
             }
             #if os(macOS)
                 if compact {
@@ -275,7 +285,7 @@ struct ContactsSplitView<Footer: View>: View {
                     }
                     newRoomButton
                         .labelStyle(.iconOnly)
-                        .buttonStyle(.plain)
+                        .buttonStyle(.clickable)
                         .font(.system(size: 17))
                         .foregroundStyle(Theme.secondaryInk)
                         .frame(width: 44, height: 44)
@@ -330,7 +340,7 @@ struct ContactsSplitView<Footer: View>: View {
                     .frame(width: 24, height: 24)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.clickable)
             .help(showsRail ? "Expand Sidebar" : "Collapse Sidebar")
             .accessibilityLabel(showsRail ? Text("Expand Sidebar") : Text("Collapse Sidebar"))
         }
@@ -393,12 +403,13 @@ struct ContactsSplitView<Footer: View>: View {
                 agents: Dictionary(
                     contacts.filter { $0.kind == .agent }.map { ($0.id, $0) },
                     uniquingKeysWith: { first, _ in first }),
-                skills: skills)
+                skills: skills, jump: jump(in: contact), jumped: { jump = nil })
         } else if let contact = contacts.first(where: { $0.id == selection }) {
             let panel = profile(contact) { showsProfile = false }
             ThreadPane(
                 contact: contact, members: members(of: contact), thread: thread(contact),
-                open: { open(contact) }, toggleProfile: panel.map { _ in { showsProfile.toggle() } }
+                open: { open(contact) }, toggleProfile: panel.map { _ in { showsProfile.toggle() } },
+                jump: jump(in: contact), jumped: { jump = nil }
             )
             .inspector(isPresented: Binding(get: { showsProfile && panel != nil }, set: { showsProfile = $0 })) {
                 if let panel {
@@ -415,6 +426,15 @@ struct ContactsSplitView<Footer: View>: View {
             )
             .paneChrome()
         }
+    }
+
+    private func show(_ hit: MessageHit) {
+        jump = MessageJump(hit)
+        selection = hit.contactID
+    }
+
+    private func jump(in contact: Contact) -> MessageJump? {
+        jump?.contactID == contact.id ? jump : nil
     }
 
     private var agents: [Contact] {
@@ -512,6 +532,7 @@ struct ContactsSplitView<Footer: View>: View {
                     .contentShape(Circle())
                     .scaleEffect(configuration.isPressed ? 0.94 : 1)
                     .opacity(isEnabled ? 1 : 0.45)
+                    .clickable()
             }
         }
     }

@@ -36,7 +36,7 @@ struct NewRoomSheet: View {
                             .frame(width: 28, height: 28)
                             .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.clickable)
                     .help("Close")
                     .accessibilityLabel(Text("Close"))
                 }
@@ -129,7 +129,7 @@ struct NewRoomSheet: View {
             .frame(minHeight: 36)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
         .disabled(!isPicked && picked.count >= Self.seats.upperBound)
         .accessibilityAddTraits(isPicked ? .isSelected : [])
     }

@@ -8,6 +8,14 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Added
 
+- **Search your messages.** Type two or more letters in search (⌘K on the Mac, the list's search
+  field on iPhone) to find messages from every chat and room, with the words you typed in bold.
+  Choose one to open that chat at the message, highlighted for a moment.
+- **Dates in chats.** A date sits above the first message, and again after a new day or a quiet
+  hour, in chats and rooms. Hover a message on the Mac for its time, or long-press it on iPhone.
+- **Manage routines.** Create, edit, delete and run an agent's routines from its profile, and read
+  each one's past runs. Schedules read in plain words, a failed run says why, and results can post
+  in the chat or stay in past runs.
 - **See what the agent is doing.** A chat shows the agent's to-do list and any helpers it hands work
   to, each as one line you can open. The working line also says when the agent waits on its provider
   or compresses the conversation, and how far a long step has got. Notices from Hermes, such as a
@@ -40,6 +48,11 @@ All notable changes to Usual Bot are listed here. The format follows
   gateway. In a chat, cards ask for a master password, a login to save or a one-time code, and you
   can skip any of them. On a plain http gateway away from this device and outside Tailscale, nothing
   secret is sent until you tick "Send it anyway" for that send.
+- **Apps.** A Bot's profile has an Apps tab for its MCP servers: switch them on and off, see their
+  tools, add one from Hermes's catalog or by address or command, sign in to ones that use their
+  provider's page, test the connection and remove them. Keys and tokens go to the gateway and aren't
+  kept on the device. Changes reach the Bot's next session, or apply them to the open chat at once,
+  which makes its next reply cost more.
 - **Vault filters.** The Vault tab sorts what's saved into All, Logins, Payments and Addresses, with
   a count on each, and New item asks what you're adding.
 - **Built-in Tailscale on iPhone.** Reach a gateway on your tailnet with the Tailscale VPN off: turn
@@ -52,8 +65,11 @@ All notable changes to Usual Bot are listed here. The format follows
 
 - **Search is now a palette.** ⌘K or the Search button finds chats and rooms, and opens New Room,
   Settings or a theme. It replaces the filter at the top of the sidebar on the Mac.
-- **A calmer sidebar.** An agent that needs you shows a dot on its avatar, so previews keep their
-  space. The sidebar has a button to collapse it, and chats not in a section are listed under Other.
+- **You can tell what's clickable.** On the Mac the pointer becomes a hand over buttons, chats,
+  menus and the rest of what answers a click.
+- **A calmer sidebar.** An agent that needs you shows a dot on its avatar, and rows no longer show a
+  time, so previews keep their space. The sidebar has a button to collapse it, and chats not in a
+  section are listed under Other.
 - **More room for a conversation.** On the Mac the conversation and message box can use more of the
   window, and New Room, Settings and an agent's profile match the rest of the app. An agent's Hermes
   profile moved to the Machine tab.

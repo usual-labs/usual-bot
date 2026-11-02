@@ -63,4 +63,14 @@ struct ConversationScrollTests {
         #expect(state.update(.init(contentHeight: 0, height: 0, offset: 0)) == nil)
         #expect(state.viewport?.end == 7_300)
     }
+
+    @Test func aMessageFoundBySearchStaysOnScreenWhenRepliesArrive() {
+        var state = ConversationScrollState()
+        state.leaveEnd()
+        // The first layout of a chat opened from search, then the jump to a message far up.
+        #expect(state.update(.init(contentHeight: 50_000, height: 700, offset: 49_300)) == nil)
+        #expect(state.update(.init(contentHeight: 50_000, height: 700, offset: 1_200)) == nil)
+        #expect(state.update(.init(contentHeight: 50_400, height: 700, offset: 1_200)) == nil)
+        #expect(!state.followsEnd)
+    }
 }

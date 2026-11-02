@@ -131,7 +131,7 @@ public struct QuickMessageView: View {
                     .background(Theme.primary, in: Circle())
                     .contentShape(Circle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.clickable)
             .opacity(canSubmit ? 1 : 0.35)
             .disabled(!canSubmit)
             .accessibilityLabel(Text("Send"))
@@ -193,7 +193,7 @@ public struct QuickMessageView: View {
                 .overlay(Capsule().strokeBorder(Theme.border))
                 .contentShape(Capsule())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.clickable)
         }
         .padding(.leading, 20)
         .padding(.trailing, 14)
@@ -359,7 +359,7 @@ private struct RecipientButton: View {
             .frame(width: 64)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
@@ -483,7 +483,7 @@ private struct WaitingRow: View {
                 .overlay(Capsule().strokeBorder(primary ? .clear : Theme.border))
                 .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
     }
 }
 

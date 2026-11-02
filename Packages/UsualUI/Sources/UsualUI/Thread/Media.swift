@@ -130,7 +130,7 @@ struct ReplyImage: View {
                         .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.border))
                         .frame(maxWidth: size.width)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
                 .help("Open \(name)")
             case .failed(let reason):
                 AttachmentTile(kind: .image, name: name)
@@ -175,13 +175,13 @@ struct MediaFile: View {
             AttachmentTile(kind: .file, name: name)
             if let file {
                 ShareLink(item: file) { Image(systemName: "square.and.arrow.up") }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.clickable)
                     .foregroundStyle(Theme.secondaryInk)
                     .help("Share \(name)")
             } else {
                 Button("Get File", systemImage: "arrow.down.circle") { Task { await fetch() } }
                     .labelStyle(.iconOnly)
-                    .buttonStyle(.plain)
+                    .buttonStyle(.clickable)
                     .foregroundStyle(Theme.secondaryInk)
                     .help(problem ?? String(localized: "Get \(name) from the gateway"))
             }
@@ -230,7 +230,7 @@ struct MediaViewer: View {
                 Button("Done") { dismiss() }
                     .keyboardShortcut(.cancelAction)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.clickable)
             .font(.system(size: 14, weight: .medium))
             .foregroundStyle(Theme.ink)
             .padding(.horizontal, 18)

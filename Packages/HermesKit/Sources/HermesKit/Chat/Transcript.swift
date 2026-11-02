@@ -27,12 +27,16 @@ public struct TranscriptItem: Identifiable, Equatable, Sendable, Codable {
     public var rowID: Int?
     /// Emoji reactions, one per author at most.
     public var reactions: [Reaction] = []
+    /// When it was said: the gateway's time for history, the time it arrived for the rest. `nil`
+    /// when the gateway didn't say, and in caches written before dates were kept.
+    public var date: Date?
 
-    init(id: Int, content: Content, rowID: Int? = nil, reactions: [Reaction] = []) {
+    init(id: Int, content: Content, rowID: Int? = nil, reactions: [Reaction] = [], date: Date? = nil) {
         self.id = id
         self.content = content
         self.rowID = rowID
         self.reactions = reactions
+        self.date = date
     }
 
     public init(from decoder: any Decoder) throws {
@@ -42,9 +46,10 @@ public struct TranscriptItem: Identifiable, Equatable, Sendable, Codable {
         content = try container.decode(Content.self, forKey: .content)
         rowID = try container.decodeIfPresent(Int.self, forKey: .rowID)
         reactions = try container.decodeIfPresent([Reaction].self, forKey: .reactions) ?? []
+        date = try container.decodeIfPresent(Date.self, forKey: .date)
     }
 
-    private enum CodingKeys: String, CodingKey { case id, content, rowID, reactions }
+    private enum CodingKeys: String, CodingKey { case id, content, rowID, reactions, date }
 }
 
 /// An emoji on a message. Hermes keeps one per author (you, or the agent) and shows them on every
@@ -103,6 +108,7 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
     let toolCallId: String?
     /// Unix seconds, when the gateway knows it.
     let timestamp: Double?
+    var date: Date? { timestamp.map(Date.init(timeIntervalSince1970:)) }
     /// The message's row in the store; reactions address it.
     let rowId: Int?
     let reactions: [Reaction]
@@ -186,7 +192,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
         for message in history {
             if let time = message.timestamp {
                 while let next = pending.first, next.date.timeIntervalSince1970 <= time {
-                    append(.background(task: next.task, result: next.result))
+                    append(.background(task: next.task, result: next.result), date: next.date)
                     pending.removeFirst()
                 }
             }
@@ -195,22 +201,22 @@ public struct ThreadState: Equatable, Sendable, Codable {
                 if let text = message.text?.nonBlank {
                     append(
                         GatewayTurn.content(text: text, kind: message.displayKind, title: message.displayText),
-                        rowID: message.rowId, reactions: message.reactions)
+                        rowID: message.rowId, reactions: message.reactions, date: message.date)
                 }
             case "assistant":
                 if let text = message.text?.nonBlank {
-                    append(.assistant(text), rowID: message.rowId, reactions: message.reactions)
+                    append(.assistant(text), rowID: message.rowId, reactions: message.reactions, date: message.date)
                 }
             case "tool":
                 let step = ToolStep(
                     id: message.toolCallId ?? "history-\(nextID)", name: message.name ?? "tool",
                     context: message.context ?? "", state: .done)
-                addStep(step)
+                addStep(step, date: message.date)
             default:
                 break
             }
         }
-        for next in pending { append(.background(task: next.task, result: next.result)) }
+        for next in pending { append(.background(task: next.task, result: next.result), date: next.date) }
         isRunning = running
         turnStart = items.count
         if running, let inflight {
@@ -263,7 +269,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
         guard index <= items.count, let text = message.text?.nonBlank else { return }
         append(
             GatewayTurn.content(text: text, kind: message.displayKind, title: message.displayText),
-            rowID: message.rowId, reactions: message.reactions)
+            rowID: message.rowId, reactions: message.reactions, date: message.date ?? .now)
         items.insert(items.removeLast(), at: index)
         if index <= turnStart { turnStart += 1 }
     }
@@ -436,8 +442,11 @@ public struct ThreadState: Equatable, Sendable, Codable {
         draft = ""
     }
 
-    private mutating func append(_ content: TranscriptItem.Content, rowID: Int? = nil, reactions: [Reaction] = []) {
-        items.append(TranscriptItem(id: nextID, content: content, rowID: rowID, reactions: reactions))
+    /// Anything that isn't from history is happening now.
+    private mutating func append(
+        _ content: TranscriptItem.Content, rowID: Int? = nil, reactions: [Reaction] = [], date: Date? = .now
+    ) {
+        items.append(TranscriptItem(id: nextID, content: content, rowID: rowID, reactions: reactions, date: date))
         nextID += 1
     }
 
@@ -451,12 +460,12 @@ public struct ThreadState: Equatable, Sendable, Codable {
     // MARK: - Tool steps
 
     /// Consecutive tool calls join the activity item right before them.
-    private mutating func addStep(_ step: ToolStep) {
+    private mutating func addStep(_ step: ToolStep, date: Date? = .now) {
         if case .activity(var steps) = items.last?.content {
             steps.append(step)
             items[items.count - 1].content = .activity(steps)
         } else {
-            append(.activity([step]))
+            append(.activity([step]), date: date)
         }
     }
 

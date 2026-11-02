@@ -54,6 +54,24 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 
 ## Gateway
 
+- **MCP sign-in needs the gateway reachable from the browser** (source finding, unverified live).
+  Hermes builds the OAuth redirect from the address the app used (`request.base_url`) unless
+  `dashboard.public_url` is set, so the browser on the same device can usually reach it. A provider
+  may still refuse a plain `http` redirect that isn't localhost, such as a Tailscale IP; the flow
+  then ends in `error` with the provider's reason. The gateway's callback page says to return to
+  Hermes, not Usual Bot.
+- **A catalog install that fetches code reports nothing back.** `needs_install` entries run as a
+  background `hermes mcp install` and answer `{background: true}`. The app reloads the list for about
+  three minutes and says so if the server never appears; the install's log is on the gateway.
+- **Removing an app keeps its secrets.** `_remove_mcp_server` deletes only the config entry: a key in
+  the profile's `.env` and an OAuth token stay, and adding it again reuses them.
+- **Run Now answers only when the run ends.** `POST /api/cron/jobs/{id}/trigger` runs the job inside
+  the request, which can take minutes, so it gets a 30-minute timeout. If the app loses the request
+  (the iPhone suspends it, the network drops), the run goes on: the routine says to check Past Runs.
+  A second press while it runs gets 409.
+- **Script-only runs have no transcript.** Their rows in `/runs` have `cron_output:` IDs and only a
+  180-character `preview`, so that's all a past run shows for them.
+
 - `/retry` on a message with a photo answers "retry does not support media or unknown content parts".
   That's the gateway's behaviour: send the message again with the image.
 - **A real sign-in needs a gated gateway, which loopback isn't.** `dashboard --isolated` on `127.0.0.1`

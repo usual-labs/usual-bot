@@ -127,7 +127,7 @@ struct RetryCard: View {
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
             Button("Try Again", action: retry)
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(Theme.ink)
                 .frame(minHeight: 44)

@@ -11,6 +11,9 @@ struct ThreadPane: View {
     var open: () -> Void = {}
     /// Shows or hides the agent's profile; `nil` when the contact has none.
     var toggleProfile: (() -> Void)? = nil
+    /// A message search chose in this chat, to scroll to.
+    var jump: MessageJump? = nil
+    var jumped: () -> Void = {}
 
     /// The message box's distance from the window's sides, in chats and rooms. iPhone gives the
     /// box more of its narrow width.
@@ -114,7 +117,7 @@ struct ThreadPane: View {
     @ViewBuilder private var namePill: some View {
         if let toggleProfile {
             Button(action: toggleProfile) { NamePill(contact: contact, members: members) }
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
                 .accessibilityHint(Text("Shows routines and details"))
                 .keyboardShortcut("i", modifiers: .command)
         } else {
@@ -133,7 +136,7 @@ struct ThreadPane: View {
                 VStack(spacing: 10) {
                     Text(message).multilineTextAlignment(.center)
                     Button("Try Again", action: open)
-                        .buttonStyle(.plain)
+                        .buttonStyle(.clickable)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Theme.ink)
                         .frame(minHeight: 44)
@@ -144,7 +147,7 @@ struct ThreadPane: View {
             if let thread {
                 // Every chat numbers its items from 0, so without this a switch would animate one
                 // chat's messages into the next and carry over where you'd scrolled to.
-                TranscriptView(thread: thread, agentName: contact.name).id(contact.id)
+                TranscriptView(thread: thread, agentName: contact.name, jump: jump, jumped: jumped).id(contact.id)
             }
         }
     }

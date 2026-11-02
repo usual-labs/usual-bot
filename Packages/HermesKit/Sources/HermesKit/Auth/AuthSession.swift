@@ -37,15 +37,19 @@ public actor AuthSession {
     }
 
     /// Sends a JSON request with the bearer token. A 401 triggers one refresh and one retry.
+    /// `timeout` is how long the gateway may stay silent, for routes that answer only when work ends.
     func json<T: Decodable & Sendable>(
-        _ type: T.Type, path: String, method: String = "GET", body: (any Encodable & Sendable)? = nil
+        _ type: T.Type, path: String, method: String = "GET", body: (any Encodable & Sendable)? = nil,
+        timeout: TimeInterval = 30
     ) async throws -> T {
-        let request = URLRequest.json(gateway.url(path), method: method, body: body, bearer: try await accessToken())
+        let request = URLRequest.json(
+            gateway.url(path), method: method, body: body, bearer: try await accessToken(), timeout: timeout)
         do {
             return try await http.json(T.self, for: request)
         } catch GatewayError.http(status: 401, _) {
             let retry = URLRequest.json(
-                gateway.url(path), method: method, body: body, bearer: try await refresh().accessToken)
+                gateway.url(path), method: method, body: body, bearer: try await refresh().accessToken,
+                timeout: timeout)
             return try await http.json(T.self, for: retry)
         }
     }

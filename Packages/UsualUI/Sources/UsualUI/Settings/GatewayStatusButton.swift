@@ -42,7 +42,8 @@ struct GatewayStatusButton<More: View>: View {
             .contentShape(Rectangle())
         }
         .menuStyle(.button)
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
+        .clickable()
         .menuIndicator(.hidden)
         .accessibilityLabel(Text("Gateway \(gateway.displayName), \(statusText)"))
     }

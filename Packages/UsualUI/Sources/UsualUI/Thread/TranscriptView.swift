@@ -6,11 +6,13 @@ import SwiftUI
 struct TranscriptView: View {
     let thread: ChatThread
     let agentName: String
+    var jump: MessageJump? = nil
+    var jumped: () -> Void = {}
 
     var body: some View {
         // A reloaded transcript numbers its items afresh, so a position kept by item would now
         // point at an older message: start over at the newest one.
-        ConversationScroll(reload: thread.transcriptLoad, arrival: arrival) {
+        ConversationScroll(reload: thread.transcriptLoad, arrival: arrival, jump: jump, jumped: jumped) {
             if let banner = thread.banner {
                 NoticeLine(text: banner)
             }
@@ -19,12 +21,18 @@ struct TranscriptView: View {
                     .padding(.top, 40)
             }
             let items = thread.state.items
+            let dates = DateLabels.labels(for: items)
             ForEach(Array(zip(items.indices, items)), id: \.1.id) { index, item in
+                if let date = dates[item.id] { DateLabel(text: date) }
+                // A date between two replies parts them.
+                let isLast = index + 1 == items.count
                 ItemView(
                     item: item, agentName: agentName,
-                    joinsAbove: item.isReply && index > 0 && items[index - 1].isReply,
+                    joinsAbove: item.isReply && index > 0 && items[index - 1].isReply && dates[item.id] == nil,
                     joinsBelow: item.isReply
-                        && (index + 1 < items.count ? items[index + 1].isReply : !thread.state.draft.isEmpty)
+                        && (isLast
+                            ? !thread.state.draft.isEmpty
+                            : items[index + 1].isReply && dates[items[index + 1].id] == nil)
                 )
                 .transition(item.arrival)
                 .accessibilityElement(children: .contain)
@@ -115,8 +123,22 @@ struct ItemView: View {
     var joinsBelow = false
     /// Rooms only: resolves a member ID to its author.
     var author: (String) -> MemberAuthor? = { _ in nil }
+    @Environment(\.highlightedItem) private var highlighted
 
     var body: some View {
+        content
+            // Behind the row, not over it: a reply runs the column's full width.
+            .background {
+                if highlighted == item.id {
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.yellow.opacity(0.22))
+                        .padding(-6)
+                        .transition(.opacity)
+                }
+            }
+    }
+
+    @ViewBuilder private var content: some View {
         switch item.content {
         case .user(let text):
             MessageRow(item: item, text: QuotedMessage.split(AttachmentRef.split(text).text).text, isMine: true) {
