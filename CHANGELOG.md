@@ -13,6 +13,9 @@ All notable changes to Usual Bot are listed here. The format follows
 - **Watch an agent's computer and take over.** An agent with a computer of its own shows a Computer
   button in its chat: watch its screen live, take over the mouse and keyboard, and hand it back.
 - **Audio and video in chats.** Voice replies play as voice memos with their transcript, and audio files and videos play in chats and rooms, with Share and Save kept.
+- **Make and change Bots.** **+** › **New Bot…** makes a Bot from a name, an optional picture and
+  what it's for. Rename a Bot, change its picture or delete it from its profile or its menu in the
+  sidebar. Deleting asks you to type its name first.
 - **Search your messages.** Type two or more letters in search (⌘K on the Mac, the list's search
   field on iPhone) to find messages from every chat and room, with the words you typed in bold.
   Choose one to open that chat at the message, highlighted for a moment.

@@ -45,6 +45,23 @@ public final class BotPictures {
 
     func restore(_ saved: [Contact.ID: Stored]) { stored = saved }
 
+    /// A picture just saved from this app, shown before the gateway is read again.
+    func show(_ data: Data, for id: Contact.ID) {
+        stored[id] = Stored(revision: -1, data: data)
+        checked[id] = -1
+    }
+
+    /// The picture of a Bot the gateway renamed, under its new ID.
+    func move(_ old: Contact.ID, to new: Contact.ID) {
+        if let picture = stored.removeValue(forKey: old) { stored[new] = picture }
+        checked[old] = nil
+    }
+
+    func forget(_ id: Contact.ID) {
+        stored[id] = nil
+        checked[id] = nil
+    }
+
     func clear() {
         stored = [:]
         checked = [:]

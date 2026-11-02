@@ -2,7 +2,7 @@
 
 ## What Usual Bot won't compromise on
 
-- **Small.** A messenger for Hermes agents, not a second Hermes app. Agent configuration, skill setup and gateway administration stay in the official app; an agent's routines and MCP servers are the exceptions.
+- **Small.** A messenger for Hermes agents, not a second Hermes app. Agent configuration, skill setup and gateway administration stay in the official app; an agent's routines and MCP servers, and making, renaming and deleting Bots, are the exceptions.
 - **Native and dependency-free.** SwiftUI on Mac and iPhone, with no third-party packages.
 - **Private.** Tokens and conversations stay on the device and the user's own gateway.
 - **Plain.** Text in the app says what happened and what to do next.

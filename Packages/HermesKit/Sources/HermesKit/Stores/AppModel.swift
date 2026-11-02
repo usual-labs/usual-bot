@@ -70,11 +70,16 @@ public final class AppModel {
     /// The gateway process's event numbering, for replaying what a short drop missed.
     @ObservationIgnored private var replayEpoch: String?
     @ObservationIgnored var threads: [Contact.ID: ChatThread] = [:]
-    @ObservationIgnored private var routineLists: [Contact.ID: RoutineList] = [:]
-    @ObservationIgnored private var skillLists: [Contact.ID: SkillList] = [:]
-    @ObservationIgnored private var vaultLists: [Contact.ID: VaultList] = [:]
-    @ObservationIgnored private var appLists: [Contact.ID: MCPServerList] = [:]
-    @ObservationIgnored private var connectorLists: [Contact.ID: ConnectorList] = [:]
+    @ObservationIgnored var routineLists: [Contact.ID: RoutineList] = [:]
+    @ObservationIgnored var skillLists: [Contact.ID: SkillList] = [:]
+    @ObservationIgnored var vaultLists: [Contact.ID: VaultList] = [:]
+    @ObservationIgnored var appLists: [Contact.ID: MCPServerList] = [:]
+    @ObservationIgnored var connectorLists: [Contact.ID: ConnectorList] = [:]
+    /// Bots made, renamed, re-pictured or deleted here that a roster read may not show yet.
+    @ObservationIgnored var rosterHolds = RosterHolds()
+    /// Where Bots renamed on the gateway (`hermes profile rename`) went, old ID to new, so whatever
+    /// still holds an old ID can follow it (`currentID(for:)`).
+    @ObservationIgnored var renamedAgents: [Contact.ID: Contact.ID] = [:]
     @ObservationIgnored var rooms: [Contact.ID: RoomThread] = [:]
     /// Agents' computers, once a chat asked about one.
     @ObservationIgnored var screens: [Contact.ID: BotScreen] = [:]
@@ -214,6 +219,8 @@ public final class AppModel {
         vaultLists = [:]
         appLists = [:]
         connectorLists = [:]
+        rosterHolds = RosterHolds()
+        renamedAgents = [:]
         media.clear()
         pictures.clear()
         sections.clear()
@@ -358,7 +365,7 @@ public final class AppModel {
         return thread
     }
 
-    private func makeThread(_ id: Contact.ID, cached: CachedThread?) -> ChatThread {
+    func makeThread(_ id: Contact.ID, cached: CachedThread?) -> ChatThread {
         let thread = ChatThread(contactID: id, cached: cached, channel: { [weak self] in self?.channel })
         thread.isVisible = id == visibleContactID
         wireAlerts(of: thread, id: id)
@@ -559,10 +566,11 @@ public final class AppModel {
         }
     }
 
-    private func refreshRoster(on channel: JSONRPCChannel) async throws {
+    func refreshRoster(on channel: JSONRPCChannel) async throws {
         let result = try await channel.call("profiles.list", params: ["include_sessions": true])
         let list = try result.decode(ProfileList.self)
-        let agents = list.profiles.compactMap(Contact.init(profile:))
+        followProfileChanges(list.profiles)
+        let agents = rosterHolds.apply(to: list.profiles.compactMap(Contact.init(profile:)))
         pictures.refresh(agents, on: channel)
         contacts = agents + (await refreshRooms(on: channel) ?? contacts.filter { $0.kind != .agent })
         sections.reconcile(contacts)

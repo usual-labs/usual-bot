@@ -15,6 +15,8 @@ struct ProfileRow: Decodable, Sendable {
     /// Whether the profile has an `avatar` asset (read with `profiles.get_asset`).
     let hasAvatar: Bool?
     let canonicalSession: SessionSummary?
+    /// The names this profile had before `hermes profile rename` (or the dashboard) renamed it.
+    let previousNames: [String]
 
     /// The desktop's per-bot presentation settings, stored in `profile.yaml` under
     /// `ui_meta['hermes-bots']`.
@@ -80,6 +82,7 @@ struct ProfileRow: Decodable, Sendable {
             .compactMapValues(\.intValue)
         hasAvatar = try? container.decodeIfPresent(Bool.self, forKey: .hasAvatar)
         canonicalSession = try? container.decodeIfPresent(SessionSummary.self, forKey: .canonicalSession)
+        previousNames = (try? container.decodeIfPresent([String].self, forKey: .previousNames)) ?? []
     }
 
     private struct UIMeta: Decodable {
@@ -95,7 +98,7 @@ struct ProfileRow: Decodable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case name, displayName, description, model, provider, skillCount, uiMeta, uiMetaRevisions, hasAvatar
-        case canonicalSession
+        case canonicalSession, previousNames
     }
 }
 

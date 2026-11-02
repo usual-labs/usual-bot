@@ -37,6 +37,9 @@ struct ProfilePanel: View {
     let close: () -> Void
 
     @State private var tab = Tab.routines
+    @State private var botEdit: BotEdit?
+    @State private var isDropTarget = false
+    @Environment(\.botEditing) private var botEditing
 
     #if os(iOS)
         private static let nameSize: CGFloat = 24
@@ -62,6 +65,7 @@ struct ProfilePanel: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.window)
+            .botEditor($botEdit)
         #else
             // Grok's phone profile: a page pushed from the chat, who it is, then one card of rows,
             // each pushing its page.
@@ -85,6 +89,18 @@ struct ProfilePanel: View {
             }
             .background(Theme.groupedPage)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if let botEditing {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            BotMenuItems(contact: contact, editing: botEditing, edit: $botEdit)
+                        } label: {
+                            Label("Edit Bot", systemImage: "ellipsis")
+                        }
+                    }
+                }
+            }
+            .botEditor($botEdit)
             .task(id: contact.id) {
                 // The rows' counts; each page reloads its own when opened.
                 async let routinesLoad: Void = routines.refresh()
@@ -124,6 +140,14 @@ struct ProfilePanel: View {
     private var header: some View {
         VStack(spacing: 6) {
             AgentAvatar(contact: contactWithoutActivity, size: 88)
+                .overlay {
+                    if isDropTarget {
+                        Circle().strokeBorder(Theme.ink.opacity(0.4), style: StrokeStyle(lineWidth: 2, dash: [5, 4]))
+                    }
+                }
+                .botPictureDrop(isTargeted: $isDropTarget, enabled: botEditing?.unavailable == nil) { data in
+                    botEdit = .usePicture(contact, data)
+                }
             Text(contact.name)
                 .font(.system(size: Self.nameSize, weight: .semibold))
                 .foregroundStyle(Theme.ink)
@@ -136,6 +160,27 @@ struct ProfilePanel: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            #if os(macOS)
+                if let botEditing {
+                    Menu {
+                        BotMenuItems(contact: contact, editing: botEditing, edit: $botEdit)
+                    } label: {
+                        Label("Edit Bot", systemImage: "ellipsis")
+                            .labelStyle(.iconOnly)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Theme.secondaryInk)
+                            .frame(width: 28, height: 28)
+                            .background(Theme.selection, in: Circle())
+                            .contentShape(Circle())
+                    }
+                    .menuStyle(.button)
+                    .buttonStyle(.plain)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .help("Edit Bot")
+                    .padding(.top, 4)
+                }
+            #endif
         }
         .frame(maxWidth: .infinity)
     }

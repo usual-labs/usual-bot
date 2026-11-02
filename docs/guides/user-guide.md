@@ -4,6 +4,7 @@ A tour of what Usual Bot does, in the order you'll meet it. Everything works the
 iPhone unless a section says otherwise.
 
 - [Contacts and the sidebar](#contacts-and-the-sidebar)
+- [Making and changing Bots](#making-and-changing-bots)
 - [Chatting with an agent](#chatting-with-an-agent)
 - [Approvals and questions](#approvals-and-questions)
 - [Skills and commands](#skills-and-commands)
@@ -24,11 +25,11 @@ Each Bot (a Hermes profile) on your gateway is a contact, with one ongoing chat:
 Chat" the Hermes desktop app keeps for it. Bot Mode's group chats are the rooms, in the same
 list. The most recent conversation is at the top.
 
-- A Bot shows the picture you gave it in the Hermes app. Without one, it gets one of Usual Bot's
+- A Bot shows the picture you gave it, here or in the Hermes app. Without one, it gets one of Usual Bot's
   characters.
 - An avatar that gently moves means the agent is working.
 - A dot on the avatar means it needs you: it's waiting for your approval or an answer.
-- On the Mac, ⌘K or the Search button finds a chat or room, and opens New Room, Settings or a theme.
+- On the Mac, ⌘K or the Search button finds a chat or room, and opens New Bot, New Room, Settings or a theme.
   On iPhone, search filters the list.
 - Search also finds messages once you type two letters or more: under the chats, Messages lists
   the newest that hold every word you typed, from all your chats and rooms, ignoring case and
@@ -62,6 +63,26 @@ Sections group the sidebar however you like. Until you make one, the list has no
 A Bot's section is saved on the Bot, so it shows on your other devices and in the Hermes desktop
 app. Each device keeps its own order of sections, what's folded, and which section a room is in.
 Searching lists every match together, without headings.
+
+## Making and changing Bots
+
+- **New Bot:** **+** › **New Bot…** at the top of the sidebar (or ⌘K › New Bot on the Mac). Give it
+  a name, and if you like a picture and a line on what it's for. It starts with Hermes's own model,
+  skills and tools, and the gateway's sign-ins; change those in the Hermes app. Its chat opens once
+  it's made. If Hermes has no model it can use, the app says so before opening it.
+- **Rename, change or remove its picture, or delete it:** right-click the Bot in the sidebar (touch
+  and hold on iPhone), or use **…** in its profile. On the Mac you can also drop a picture on the
+  profile's avatar. On iPhone a picture comes from Photos or Files. Pictures are cropped to the
+  middle square.
+- **Renaming** changes only the name you see, here and in the Hermes app. The Bot's chats, routines
+  and settings stay as they are. If a Bot's profile is renamed elsewhere, such as with `hermes
+  profile rename`, Usual Bot keeps its chat, picture and section.
+- **Deleting** removes the Bot's Hermes profile from the gateway, with its chats, routines, skills,
+  memory, vault, keys and apps, from every app. You type its name to confirm. Rooms it was in keep
+  it listed, but it can't answer there; delete a room to be rid of it. The default Bot can't be
+  deleted.
+
+These need the gateway: offline, they're greyed out and say why.
 
 ## Chatting with an agent
 
@@ -240,8 +261,8 @@ Hermes; Usual Bot only shows it. Rooms have no Computer button: open the agent's
 
 ## Rooms
 
-Rooms are group chats with several agents. Create one with **+** at the top of the sidebar, name it
-and pick its members.
+Rooms are group chats with several agents. Create one with **+** › **New Room…** at the top of the sidebar,
+name it and pick its members.
 
 - A message goes to every agent in the room; `@name` talks to just one.
 - Each reply shows who wrote it. Agents can hand work to each other, shown as small lines in the

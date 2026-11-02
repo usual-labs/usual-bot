@@ -11,6 +11,8 @@
         let open: (Contact.ID) -> Void
         let openMessage: (MessageHit) -> Void
         let newRoom: () -> Void
+        /// `nil` where Bots can't be made.
+        let newBot: (() -> Void)?
         let settings: () -> Void
         let close: () -> Void
 
@@ -223,6 +225,12 @@
 
         private var actions: [Entry] {
             var list: [Entry] = []
+            if let newBot {
+                list.append(
+                    Entry(
+                        id: "new-bot", title: String(localized: "New Bot"), detail: "",
+                        look: .icon("person.crop.circle.badge.plus"), run: newBot))
+            }
             if canCreateRoom {
                 list.append(
                     Entry(

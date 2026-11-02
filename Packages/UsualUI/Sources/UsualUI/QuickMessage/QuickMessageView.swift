@@ -75,7 +75,9 @@ public struct QuickMessageView: View {
     }
 
     private var recipient: Contact? {
-        contacts.first { $0.id == recipientID } ?? contacts.first
+        // A Bot renamed on the gateway stays the one you last wrote to.
+        let id = recipientID.map(model.currentID(for:))
+        return contacts.first { $0.id == id } ?? contacts.first
     }
 
     private var agentsByProfile: [Contact.ID: Contact] {

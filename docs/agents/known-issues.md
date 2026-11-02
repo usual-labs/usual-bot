@@ -22,6 +22,9 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 
 ## Tests
 
+- **A Bot made in the demo doesn't open while `-selectedContact` is passed.** That launch argument
+  pins the stored selection for the run, so the app's write to it is ignored. New Room behaves the
+  same. Launch without it, or pick the Bot from the sidebar.
 - **Recovery starts after the chat takes input again.** `attach` opens the chat, then the recovery
   task runs. What can be lost is decided when the chat attaches; otherwise a question sent just
   after a reconnect shows as lost, which failed `SideQuestionTests` on CI.
@@ -71,6 +74,9 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   A second press while it runs gets 409.
 - **Script-only runs have no transcript.** Their rows in `/runs` have `cron_output:` IDs and only a
   180-character `preview`, so that's all a past run shows for them.
+
+- **Deleting a Bot can take several seconds.** Hermes stops its gateway first (up to 10 s) before
+  removing the folder; the sheet shows Deleting… until the request ends.
 
 - `/retry` on a message with a photo answers "retry does not support media or unknown content parts".
   That's the gateway's behaviour: send the message again with the image.

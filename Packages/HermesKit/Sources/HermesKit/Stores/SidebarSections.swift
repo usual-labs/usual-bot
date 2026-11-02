@@ -218,6 +218,16 @@ public final class SidebarSections {
         return adopted
     }
 
+    /// A Bot's unsaved move follows it to the ID the gateway renamed it to.
+    func renameAgent(from old: Contact.ID, to new: Contact.ID) {
+        if let entry = pending.removeValue(forKey: old) { pending[new] = entry }
+    }
+
+    /// Drops the unsaved move of a Bot that's gone.
+    func forget(_ id: Contact.ID) {
+        pending[id] = nil
+    }
+
     // MARK: - Saving
 
     private func write(_ placement: ContactPlacement, for contact: Contact) {

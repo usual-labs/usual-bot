@@ -63,6 +63,8 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                 createRoom: { try await model.createRoom(named: $0, agents: $1) },
                 renameRoom: { try await model.renameRoom($0, to: $1) },
                 deleteRoom: { try await model.deleteRoom($0) },
+                botEditing: BotEditing(model),
+                currentID: { model.currentID(for: $0) },
                 search: MessageSearching(
                     hits: { model.searchMessages($0) }, status: { model.messageSearchStatus($0) },
                     lookUp: { model.lookUpMessages($0) }, locate: { await model.locate($0) }),
@@ -178,6 +180,10 @@ struct ContactsSplitView<Footer: View>: View {
     /// `nil` hides renaming and deleting rooms.
     var renameRoom: ((Contact, String) async throws -> Void)?
     var deleteRoom: ((Contact) async throws -> Void)?
+    /// Making and changing Bots; `nil` hides New Bot and the Bot actions.
+    var botEditing: BotEditing?
+    /// A contact ID as it is now, after a Bot was renamed on the gateway.
+    var currentID: (Contact.ID) -> Contact.ID = { $0 }
     /// Messages in every chat and room that match a search.
     var search = MessageSearching()
     /// The profile panel for a contact, given a way to close it; `nil` when it has none.
@@ -186,6 +192,7 @@ struct ContactsSplitView<Footer: View>: View {
     @ViewBuilder let footer: (_ compact: Bool) -> Footer
 
     @State private var showsNewRoom = false
+    @State private var showsNewBot = false
     /// Filters the list by name or last message.
     @State private var query = ""
     #if os(macOS)
@@ -215,10 +222,24 @@ struct ContactsSplitView<Footer: View>: View {
         content
             .tint(Theme.ink)
             .environment(\.roomEditing, roomEditing)
+            .environment(
+                \.botEditing,
+                // Deleting the open Bot closes its chat.
+                botEditing?.afterDeleting { if selection == $0.id { selection = nil } }
+            )
             .sheet(isPresented: $showsNewRoom) {
                 if let createRoom {
                     NewRoomSheet(agents: agents, create: createRoom) { selection = $0 }
                 }
+            }
+            .sheet(isPresented: $showsNewBot) {
+                if let botEditing {
+                    NewBotSheet(editing: botEditing) { selection = $0 }
+                }
+            }
+            // A Bot renamed on the gateway keeps its chat open under its new ID.
+            .onChange(of: contacts.map(\.id)) {
+                if let selection, currentID(selection) != selection { self.selection = currentID(selection) }
             }
             .tracksLooking($isLooking)
             .onChange(of: selection, initial: true) { _, selected in
@@ -239,7 +260,7 @@ struct ContactsSplitView<Footer: View>: View {
             }
             .onChange(of: requested, initial: true) { _, requested in
                 guard let requested else { return }
-                selection = requested
+                selection = currentID(requested)
                 openedRequested()
             }
             // A closed window shows nothing, and it may not get a last scene phase.
@@ -273,7 +294,7 @@ struct ContactsSplitView<Footer: View>: View {
             // toolbar also gives the title area its height. Anything drawn under it is hidden.
             .sidebarToolbar(
                 leading: max(0, sidebarWidth - (showsToggleInToolbar ? 229 : 197)), search: searchButton,
-                newRoom: newRoomButton, toggle: showsToggleInToolbar ? sidebarToggle : nil, shown: !showsRail
+                newRoom: newButton, toggle: showsToggleInToolbar ? sidebarToggle : nil, shown: !showsRail
             )
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .frame(minWidth: Self.railWidth + Self.chatMinWidth)
@@ -289,7 +310,8 @@ struct ContactsSplitView<Footer: View>: View {
                         contacts: contacts, members: members(of:),
                         canCreateRoom: createRoom != nil && agents.count >= NewRoomSheet.seats.lowerBound,
                         search: search, open: { selection = $0 }, openMessage: show,
-                        newRoom: { showsNewRoom = true }, settings: settings, close: { showsPalette = false })
+                        newRoom: { showsNewRoom = true }, newBot: botEditing.map { _ in { showsNewBot = true } },
+                        settings: settings, close: { showsPalette = false })
                 }
             }
         #else
@@ -301,7 +323,7 @@ struct ContactsSplitView<Footer: View>: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) { footer(false) }
-                        ToolbarItem(placement: .primaryAction) { newRoomButton }
+                        ToolbarItem(placement: .primaryAction) { newButton }
                     }
             } detail: {
                 // A stack of its own, so a chat can push its agent's profile.
@@ -329,7 +351,7 @@ struct ContactsSplitView<Footer: View>: View {
                         sidebarToggle
                             .frame(width: 44, height: 44)
                     }
-                    newRoomButton
+                    newButton
                         .labelStyle(.iconOnly)
                         .buttonStyle(.clickable)
                         .font(.system(size: 17))
@@ -531,8 +553,22 @@ struct ContactsSplitView<Footer: View>: View {
         contacts.filter { $0.kind == .agent }.sorted(by: Contact.rosterOrder)
     }
 
-    @ViewBuilder private var newRoomButton: some View {
-        if createRoom != nil {
+    /// The +: New Bot and New Room, or just New Room where Bots can't be made.
+    @ViewBuilder private var newButton: some View {
+        if botEditing != nil {
+            Menu {
+                Button("New Bot…", systemImage: "person.crop.circle.badge.plus") { showsNewBot = true }
+                if createRoom != nil {
+                    Button("New Room…", systemImage: "person.2") { showsNewRoom = true }
+                        .disabled(agents.count < NewRoomSheet.seats.lowerBound)
+                }
+            } label: {
+                Label("New", systemImage: "plus")
+            }
+            .menuStyle(.button)
+            .menuIndicator(.hidden)
+            .help("New Bot or Room")
+        } else if createRoom != nil {
             Button {
                 showsNewRoom = true
             } label: {

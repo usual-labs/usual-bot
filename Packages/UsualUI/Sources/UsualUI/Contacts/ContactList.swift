@@ -25,7 +25,9 @@ struct ContactList: View {
     /// The block a chat is being dragged over.
     @State private var dropTarget: SidebarBlock.ID?
     @State private var roomEdit: RoomEdit?
+    @State private var botEdit: BotEdit?
     @Environment(\.roomEditing) private var roomEditing
+    @Environment(\.botEditing) private var botEditing
 
     var body: some View {
         let byID = Dictionary(contacts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -46,6 +48,7 @@ struct ContactList: View {
             }
         }
         .roomEditor($roomEdit)
+        .botEditor($botEdit)
         .confirmationDialog(
             "Delete “\(deleting?.name ?? "")”?",
             isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
@@ -295,6 +298,10 @@ struct ContactList: View {
                     Button("Remove from Section") { sections.move(contact, to: nil) }
                 }
             }
+        }
+        if contact.kind == .agent, let botEditing {
+            Divider()
+            BotMenuItems(contact: contact, editing: botEditing, edit: $botEdit)
         }
         if case .room = contact.kind, roomEditing != nil {
             Divider()

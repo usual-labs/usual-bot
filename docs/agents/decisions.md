@@ -10,8 +10,8 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 ## Scope
 
 - Usual Bot is a messenger for Hermes agents. Agent configuration, provider keys, skill setup and
-  gateway administration stay in the official app, except two the developer chose to bring in: an
-  agent's routines and its MCP servers (the Apps tab).
+  gateway administration stay in the official app, except what the developer chose to bring in: an
+  agent's routines, its MCP servers (the Apps tab), and making, renaming and deleting Bots.
   Device-local preferences belong in Usual Bot.
 - Fast mode isn't built. Only a message that starts with a command runs it; a `/skill` later in the
   text is sent as written, as in the official app.
@@ -166,7 +166,35 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 - `has_avatar` is true for nearly every Bot, because the desktop stores a 160 × 160 PNG of its drawn
   face. That size counts as a picture only when `imageKind` is `photo`. Uploads are 256 px.
 - The roster refreshes every 5 s, so a picture is read again only when its revision changes, and
-  once per connection. `profiles.set_asset` alone doesn't bump the revision.
+  once per connection. `profiles.set_asset` alone doesn't bump the revision, so a picture change
+  also writes `imageKind` (`photo`, or `shape` when removed) through `profiles.configure`, as the
+  desktop's `saveBotMeta` does. That write is what makes other clients read the new picture.
+
+## Managing Bots
+
+- **Create asks only for a name, a picture and what it's for,** like Grok's Create New Bot. It sends
+  what the desktop's Bot Mode sends: `profiles.create` with the slugged name as the profile ID,
+  `share_auth: true`, a composed `SOUL.md` and the description, then the title in
+  `ui_meta['hermes-bots']`. No `clone_from`, so the Bot gets Hermes's bundled skills and the launch
+  profile's provider keys and model (`mirror_credentials`). `setup.runtime_check` on the new profile
+  says whether it can reply; if not, the sheet says so instead of opening a chat that fails. No
+  introduction turn: it would spend a model call.
+- **Names follow the desktop's `slugifyProfileName`** (`BotName.slug`), so a Bot made here gets the
+  same ID it would there. Validation checks the ID against Hermes's rule, its reserved names and the
+  roster.
+- **Rename changes the title, never the profile ID,** as the desktop's Edit Bot does. Changing the
+  ID (`PATCH /api/profiles/{name}`) stops the Bot's gateway and moves its folder, and every piece of
+  client state is keyed by it. An ID renamed elsewhere shows up in the roster's `previous_names`;
+  `AppModel.followProfileChanges` moves the chat, cache, picture, section, lists and open selection
+  to the new ID (`renamedAgents` maps old IDs for views still holding one).
+- **Delete is REST only** (`DELETE /api/profiles/{name}`; no socket method). It takes the whole
+  profile folder, so the sheet lists what goes and asks for the name typed, as `hermes profile
+  delete` does. The default profile can't be deleted. Rooms keep a deleted member: Hermes freezes a
+  room's roster, so the sheet says the Bot stays listed but can't answer, and leaves the room alone.
+- **Roster holds.** A Bot just made, renamed, re-pictured or deleted is held over the next three
+  5 s roster reads (`RosterHolds`), or a read from before the change would undo it on screen. A Bot
+  that leaves the roster without a hold is forgotten locally: chat, cache entry, picture and
+  section.
 
 ## Sidebar sections
 
@@ -357,7 +385,13 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 - Routines against a real gateway: create, edit, delete, Run Now and past runs have run only against
   fakes shaped from the Hermes source and in the demo, never on a gateway, because each costs money
   or changes a real agent. The iPhone layout of the routine sheets hasn't been looked at. Templates
-  (`/api/cron/blueprints` and `/instantiate`) are the same: fakes and the demo only.
+  (`/api/cron/blueprints` and `/instantiate`) were run on a real gateway on the Mac: the catalog,
+  creating from one, a bad time's message, Run Now and Delete.
+- Managing Bots against a real gateway: create, rename, picture, remove picture and delete have run
+  only against fakes shaped from the Hermes source (`bf0203a794`) and in the demo. Unknown: how long
+  `DELETE /api/profiles/{name}` takes when it stops a running gateway (it waits up to 10 s, so the
+  app allows 120 s), whether `share_auth` copies sign-ins the way the desktop expects, and a room
+  turn addressed to a deleted member.
 - The vault beyond a loopback client on the legacy dialect: `vault.unlock_prompt` and `vault.code`, a
   real password manager, a client on a remote address, and the authority path. Sign-in, secret cards
   and the background bar were run against a real gateway on the Mac and in the iPhone Simulator,
