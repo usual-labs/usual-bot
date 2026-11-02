@@ -77,12 +77,17 @@ public final class RoomThread {
     public var preview: String? {
         for item in state.items.reversed() {
             switch item.content {
-            case .user(let text): return text
-            case .member(let id, let text): return "\(state.name(id)): \(text)"
+            case .user(let text): return Self.readable(text)
+            case .member(let id, let text): return "\(state.name(id)): \(Self.readable(text))"
             default: continue
             }
         }
         return nil
+    }
+
+    /// A message as one plain line, without its `MEDIA:` and attachment lines.
+    nonisolated static func readable(_ text: String) -> String {
+        MessageSearch.plain(text).nonBlank ?? String(localized: "Sent a file")
     }
 
     func update(_ summary: RoomSummary) {

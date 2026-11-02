@@ -150,7 +150,7 @@ struct ContactIndicator: View {
 
 extension ContactRow {
     /// "10:44 AM" today, "Yesterday", the weekday within the week, otherwise the date.
-    static func stamp(for date: Date, now: Date = .now, calendar: Calendar = .current) -> String {
+    nonisolated static func stamp(for date: Date, now: Date = .now, calendar: Calendar = .current) -> String {
         if calendar.isDate(date, inSameDayAs: now) {
             return date.formatted(date: .omitted, time: .shortened)
         }

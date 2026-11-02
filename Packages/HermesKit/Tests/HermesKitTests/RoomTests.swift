@@ -516,3 +516,12 @@ struct RoomAlertTests {
         #expect(box.alerts.isEmpty)
     }
 }
+
+@Suite struct RoomPreviewTests {
+    @Test func aPreviewLeavesOutTheFilesAMessageCarries() {
+        #expect(
+            RoomThread.readable("Here's the **teaser**.\nMEDIA:/home/hermes/.hermes/cache/video/teaser.mp4")
+                == "Here's the teaser.")
+        #expect(RoomThread.readable("MEDIA:/home/hermes/.hermes/cache/video/teaser.mp4") == "Sent a file")
+    }
+}
