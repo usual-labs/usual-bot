@@ -103,7 +103,8 @@ public struct MessageSearch: Sendable {
         // A reply's quote is another message, which has its own hit.
         while let first = lines.first, first.hasPrefix("> ") { lines.removeFirst() }
         let words = lines.compactMap { line -> String? in
-            var line = line.trimmingCharacters(in: .whitespaces)
+            guard var line = SpokenAudio.withoutSpeechPaths(Substring(line.trimmingCharacters(in: .whitespaces)))
+            else { return nil }
             if line.hasPrefix("MEDIA:") { return nil }
             for mark in ["#", ">", "- ", "* ", "+ "] {
                 while line.hasPrefix(mark) { line = String(line.dropFirst(mark.count)) }

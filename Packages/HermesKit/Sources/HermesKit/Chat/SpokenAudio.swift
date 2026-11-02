@@ -64,16 +64,7 @@ public enum SpokenAudio {
                 lines.append(String(line))
                 continue
             }
-            var rest = String(line)
-            for path in paths {
-                rest = rest.replacingOccurrences(of: "`\(path)`", with: "")
-                rest = rest.replacingOccurrences(of: path, with: "")
-            }
-            while rest.contains("  ") { rest = rest.replacingOccurrences(of: "  ", with: " ") }
-            let label = rest.trimmingCharacters(in: .whitespaces.union(.punctuationCharacters))
-            // "Voice memo saved to:" only introduced the path; the player says the same.
-            let introducesThePath = rest.trimmingCharacters(in: .whitespaces).hasSuffix(":") && label.count <= 60
-            if !label.isEmpty, !introducesThePath { lines.append(rest.trimmingCharacters(in: .whitespaces)) }
+            if let rest = withoutSpeechPaths(line, paths) { lines.append(rest) }
             for path in paths where !named.contains(path) {
                 lines.append("MEDIA:\(path)")
                 named.insert(path)
@@ -86,6 +77,23 @@ public enum SpokenAudio {
             }
         }
         return lines.joined(separator: "\n")
+    }
+
+    /// `line` without the speech files it names; `nil` when nothing worth reading is left, such
+    /// as "Voice memo saved to:", which only introduced the path that a player now stands for.
+    static func withoutSpeechPaths(_ line: Substring, _ paths: [String]? = nil) -> String? {
+        let paths = paths ?? speechPaths(in: line)
+        guard !paths.isEmpty else { return String(line) }
+        var rest = String(line)
+        for path in paths {
+            rest = rest.replacingOccurrences(of: "`\(path)`", with: "")
+            rest = rest.replacingOccurrences(of: path, with: "")
+        }
+        while rest.contains("  ") { rest = rest.replacingOccurrences(of: "  ", with: " ") }
+        rest = rest.trimmingCharacters(in: .whitespaces)
+        let label = rest.trimmingCharacters(in: .whitespaces.union(.punctuationCharacters))
+        let introducesThePath = rest.hasSuffix(":") && label.count <= 60
+        return label.isEmpty || introducesThePath ? nil : rest
     }
 
     /// Absolute paths in `line` whose file name is the TTS tool's default.

@@ -134,6 +134,11 @@ struct MessageSearchTests {
         #expect(model.searchMessages("invoice").isEmpty)
     }
 
+    @Test func plainTextLeavesOutTheVoiceFilesAReplyNames() {
+        let text = "Voice memo saved to: /Users/me/.hermes/cache/audio/tts_20261102_232049_518752.mp3\nAnything else?"
+        #expect(MessageSearch.plain(text) == "Anything else?")
+    }
+
     @Test func plainTextDropsMarkdownAttachmentsAndQuotes() {
         let text =
             "> Atlas: an earlier reply\n\n## Plan\n- **Turbopuffer** for `search`\nMEDIA:/tmp/a.png\n@file:notes.md"
