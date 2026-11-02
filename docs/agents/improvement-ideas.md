@@ -5,8 +5,11 @@
 - **Hermes features the app doesn't surface yet.** From a Hermes source read (`bf0203a794`,
   22 October 2026); none confirmed against a live gateway. Check each call on the app's
   dashboard socket first.
-  - **Server-side search:** `GET /api/sessions/search`. `AppModel.searchMessages` only searches
-    what the device holds, so older messages in a chat whose history isn't loaded are missed.
+  - **Older messages in a chat over the resume limit:** search finds them through
+    `GET /api/sessions/search`, but a chat the gateway attaches without history (over
+    `sessions.max_resume_messages`, 20,000 by default) can't open at one. That needs REST pages
+    (`/api/sessions/{id}/messages`, or `/timeline` and `/messages/around`) loaded into the
+    transcript. Room logs aren't in the gateway's search at all (they live in the hosted-rooms store).
   - **Playing audio and video:** a delivered non-image file shows as a file to save or share
     (`MediaView`), with no player.
   - **Managing Bots:** `profiles.create`, `PATCH /api/profiles/{name}`, `profiles.set_asset`. The

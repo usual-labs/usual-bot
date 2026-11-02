@@ -11,17 +11,45 @@ public struct MessageHit: Identifiable, Equatable, Sendable {
     }
 
     public let contactID: Contact.ID
-    /// The transcript item to scroll to.
-    public let itemID: Int
+    /// The transcript item to scroll to, or `nil` for a message the gateway found in history this
+    /// device hasn't loaded: `AppModel.locate(_:)` loads the chat and finds it.
+    public let itemID: Int?
     public let author: Author
-    /// When it was said, when known.
+    /// When it was said, when known. The gateway doesn't say for the messages it finds.
     public let date: Date?
     /// One line of the message around its first match, as plain text.
     public let snippet: String
     /// Where the query's words are in `snippet`.
     public let matches: [Range<String.Index>]
+    /// The gateway's snippet as folded words, to find the message once its chat is loaded.
+    let needle: [String]
 
-    public var id: String { "\(contactID)#\(itemID)" }
+    init(
+        contactID: Contact.ID, itemID: Int?, author: Author, date: Date?, snippet: String,
+        matches: [Range<String.Index>], needle: [String] = []
+    ) {
+        self.contactID = contactID
+        self.itemID = itemID
+        self.author = author
+        self.date = date
+        self.snippet = snippet
+        self.matches = matches
+        self.needle = needle
+    }
+
+    /// Found by the gateway in history this device hasn't loaded.
+    public var isEarlier: Bool { itemID == nil }
+
+    /// The gateway reports one match per chat, so a chat has at most one hit without an item.
+    public var id: String { itemID.map { "\(contactID)#\($0)" } ?? "\(contactID)#earlier" }
+}
+
+/// Where a search result is, once its chat has loaded.
+public enum MessageLocation: Equatable, Sendable {
+    /// The transcript item to scroll to.
+    case item(Int)
+    /// It can't be shown, and why, in words for the reader.
+    case unavailable(String)
 }
 
 /// What a search looks for: every word of the query, in any order, ignoring case and accents.
@@ -51,7 +79,7 @@ public struct MessageSearch: Sendable {
         text.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: nil)
     }
 
-    private static func contains(_ needle: [UInt8], in haystack: [UInt8]) -> Bool {
+    static func contains(_ needle: [UInt8], in haystack: [UInt8]) -> Bool {
         guard let first = needle.first, needle.count <= haystack.count else { return needle.isEmpty }
         var start = 0
         let last = haystack.count - needle.count

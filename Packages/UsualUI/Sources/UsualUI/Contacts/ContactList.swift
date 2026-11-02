@@ -15,6 +15,8 @@ struct ContactList: View {
     @Binding var selection: Contact.ID?
     /// Messages that match `query`, shown under the chats (iPhone; the Mac searches in its palette).
     var messages: [MessageHit] = []
+    /// Whether the gateway is still searching older messages, or can't be asked.
+    var status: MessageSearchStatus = .idle
     var openMessage: (MessageHit) -> Void = { _ in }
 
     /// The section whose name is being edited in its heading.
@@ -29,7 +31,7 @@ struct ContactList: View {
         let byID = Dictionary(contacts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let matching = contacts.filter { Self.matches($0, query) }
         Group {
-            if matching.isEmpty, messages.isEmpty, !contacts.isEmpty {
+            if matching.isEmpty, messages.isEmpty, status != .searching, !contacts.isEmpty {
                 Text(
                     searchesMessages
                         ? "No chats or messages match “\(term)”" : "No chats match “\(term)”"
@@ -186,7 +188,7 @@ struct ContactList: View {
         /// Under the chats: each message that matches, which opens its chat at that message.
         private func messageSection(byID: [Contact.ID: Contact]) -> some View {
             Section {
-                if messages.isEmpty {
+                if messages.isEmpty, status != .searching {
                     Text("No messages match “\(term)”")
                         .font(.system(size: 13))
                         .foregroundStyle(Theme.secondaryInk)
@@ -207,6 +209,10 @@ struct ContactList: View {
                         .buttonStyle(.clickable)
                         .listRowBackground(Color.clear)
                     }
+                }
+                if status != .idle {
+                    MessageSearchStatusLine(status: status)
+                        .listRowBackground(Color.clear)
                 }
             } header: {
                 Text("Messages")

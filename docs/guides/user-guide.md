@@ -32,9 +32,12 @@ list. The most recent conversation is at the top.
   On iPhone, search filters the list.
 - Search also finds messages once you type two letters or more: under the chats, Messages lists
   the newest that hold every word you typed, from all your chats and rooms, ignoring case and
-  accents. Choose one to open its chat at that message, highlighted for a moment. Search looks
-  through the messages the app has loaded: everything once it's connected, and your recent
-  messages while it's offline.
+  accents, with when each was said. Choose one to open its chat at that message, highlighted for a
+  moment. The app searches what it has loaded first: everything once a chat is connected, and your
+  recent messages until then or while offline (search says so). For a Bot whose chat isn't loaded
+  yet, the gateway searches the rest and adds its best match, marked "Earlier"; opening it loads the
+  chat and goes to the message. The gateway's search doesn't cover rooms, and a chat too long for
+  the gateway to send can't be opened at an older message.
 - The dot at the bottom of the sidebar shows the connection. Click it to see the gateway and to
   sign out. On iPhone the dot sits on the settings gear at the top left; tap it, then your gateway,
   for its details, Built-in Tailscale and Sign Out.

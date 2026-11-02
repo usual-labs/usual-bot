@@ -177,12 +177,16 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 
 ## Search
 
-- **Search reads what the app holds, not the gateway.** `GET /api/sessions/search` searches one
-  profile per call, returns one hit per conversation with no message ID or time, and includes
-  sessions from other platforms that the app can't show. Online, that's nearly everything: every
-  agent with a Bot Chat is attached at connect with its whole history, and each room's log is read
-  in full. Offline, it's the cache's last 60 items per chat and no rooms. A chat whose history
-  Hermes wouldn't send (`historyOmitted`) has only what arrived since.
+- **The device first, the gateway for chats it doesn't hold.** Online, every agent with a Bot Chat
+  is attached at connect with its whole history (up to `sessions.max_resume_messages`), and each
+  room's log is read in full, so the device's own search is nearly complete and instant. The
+  gateway (`GET /api/sessions/search`, one call per profile, at most four at once, 350 ms after
+  typing stops) is asked only for Bot Chats not yet loaded whole: before they attach, or attached
+  without history (`historyOmitted`). It returns one hit per conversation, so it adds at most one
+  "Earlier" result per Bot, after the device's dated ones. Hits from other sessions (Telegram,
+  CLI, cron, room plumbing) are dropped: the app can't show those chats. Opening one attaches the
+  chat and finds the message by the snippet's words; a chat attached without history can't open
+  at it. Offline, it's the cache's last 60 items per chat and no rooms, and search says so.
 - **Only your and the agents' text,** not tool steps, command output, background results or the
   turns Hermes starts itself, and a reply's quote is left out because the quoted message has its
   own hit.

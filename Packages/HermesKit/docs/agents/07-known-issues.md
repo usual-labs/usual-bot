@@ -73,3 +73,13 @@ the day it began (or the day compression rolled it onto a new session), and one 
 the period is left out entirely. Settings › Usage says so under the chart. Don't try to fix it here
 by spreading tokens over days: the data to do it doesn't exist on the gateway.
 
+## Gateway search gives no message ID or time (source finding, 2026-11-02)
+
+`GET /api/sessions/search` (`hermes_cli/web_routers/sessions.py`, `search_sessions`) returns
+the conversation's IDs, `role` and an FTS5 snippet of the stored text (matches in `>>>`/`<<<`,
+cuts as `...`), never the message's row ID or time. `AppModel.locate` finds the message once the
+chat is loaded by the snippet's words (80% of them, same author), so an "Earlier" result shows no
+date. Without `profile=` it searches the serving process's own profile, whatever the Bot. On a
+gateway without the route, `GET /api/sessions/{id}` answers 404 "Session not found", which turns
+gateway search off until sign-out; an unknown profile's 404 ("Profile '…' does not exist.")
+doesn't. Not yet checked on a live gateway.

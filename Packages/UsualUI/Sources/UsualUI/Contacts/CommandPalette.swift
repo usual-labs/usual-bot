@@ -7,7 +7,7 @@
         let contacts: [Contact]
         let members: (Contact) -> [Contact]
         let canCreateRoom: Bool
-        let search: (String) -> [MessageHit]
+        let search: MessageSearching
         let open: (Contact.ID) -> Void
         let openMessage: (MessageHit) -> Void
         let newRoom: () -> Void
@@ -41,7 +41,11 @@
                 card.padding(.top, 88)
             }
             .onAppear { fieldIsFocused = true }
-            .onChange(of: query) { highlighted = 0 }
+            .onChange(of: query) {
+                highlighted = 0
+                search.lookUp(query)
+            }
+            .onDisappear { search.lookUp("") }
         }
 
         private var card: some View {
@@ -58,7 +62,11 @@
                     .onKeyPress(.downArrow) { move(1, in: entries) }
                     .onKeyPress(.upArrow) { move(-1, in: entries) }
                 Divider()
-                if entries.isEmpty {
+                if entries.isEmpty, status == .searching {
+                    MessageSearchStatusLine(status: status)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 28)
+                } else if entries.isEmpty {
                     Text(
                         searchesMessages ? "No chats, messages or actions match “\(term)”" : "Nothing matches “\(term)”"
                     )
@@ -94,13 +102,18 @@
                         }
                         if searchesMessages, firstMessageID(in: entries) == nil {
                             messagesHeading
-                            Text("No messages match “\(term)”")
-                                .font(.system(size: 13))
-                                .foregroundStyle(Theme.secondaryInk)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 8)
+                            if status != .searching {
+                                Text("No messages match “\(term)”")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Theme.secondaryInk)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 8)
+                            }
                         }
+                        MessageSearchStatusLine(status: status)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
                     }
                     .padding(8)
                 }
@@ -196,9 +209,11 @@
 
         private var searchesMessages: Bool { MessageSearch(query) != nil }
 
+        private var status: MessageSearchStatus { search.status(query) }
+
         private var messages: [Entry] {
             let byID = Dictionary(contacts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-            return search(query).compactMap { hit in
+            return search.hits(query).compactMap { hit in
                 guard let contact = byID[hit.contactID] else { return nil }
                 return Entry(
                     id: "message-\(hit.id)", title: contact.name, detail: hit.snippet, look: .message(hit, contact),

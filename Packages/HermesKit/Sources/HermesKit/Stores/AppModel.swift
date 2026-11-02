@@ -21,7 +21,7 @@ public final class AppModel {
     }
 
     public private(set) var session: Session = .signedOut
-    public private(set) var link: Link = .connecting
+    public internal(set) var link: Link = .connecting
     /// The agents and rooms the gateway reports, in its own terms. Show `sidebarContacts` instead.
     public internal(set) var contacts: [Contact] = []
     /// The chat on screen, if any. Its replies don't count as unread.
@@ -78,6 +78,8 @@ public final class AppModel {
     @ObservationIgnored var rooms: [Contact.ID: RoomThread] = [:]
     /// Chats' messages ready to search (`searchMessages`).
     @ObservationIgnored let messageIndex = MessageIndex()
+    /// Messages the gateway found in history this device hasn't loaded (`lookUpMessages`).
+    let gatewaySearch = GatewaySearch()
     /// Counts finished room edits, so a room list read before one can't undo it.
     @ObservationIgnored var roomEdits = 0
     /// The demo has no gateway, so room edits happen here alone.
@@ -212,6 +214,7 @@ public final class AppModel {
         push.clear()
         usage.clear()
         rooms = [:]
+        gatewaySearch.reset()
         gatewayDetails = nil
         lastSaved = nil
         link = .connecting

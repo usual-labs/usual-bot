@@ -32,6 +32,11 @@
             model.media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }
             model.usage = .demo(
                 agents: { [weak model] in model?.contacts.filter { $0.kind == .agent } ?? [] }, now: now)
+            model.gatewaySearch.fetch = { profile, query in
+                // sleep-ok: a gateway takes a moment, so "Searching older messages" shows.
+                try await Task.sleep(for: .milliseconds(900))
+                return DemoSearch.results(profile: profile, query: query)
+            }
             return model
         }
     }
@@ -198,6 +203,7 @@
                     state: ThreadState(
                         history: dated([message], from: ago(minutesAgo), to: ago(minutesAgo)), running: false))
             }
+            DemoSearch.holdBack(threads["ledger"], now: now)
             threads["scribe"]?.receive(
                 ClarifyPrompt(
                     id: "demo-question", sessionID: "sample",

@@ -89,6 +89,11 @@ public final class ChatThread {
 
     /// The live session the gateway routes this chat's events to; `nil` while offline.
     private(set) var sessionID: String?
+    /// The transcript holds the whole chat as the gateway last sent it, not the offline cache's
+    /// last messages or an attach without the history (`historyOmitted`).
+    var hasFullHistory = false
+    /// The gateway attached without the history, as it was over its size limit.
+    private(set) var historyOmitted = false
     /// When you last had this chat on screen. Replies after it count as unread.
     private(set) var lastViewed: Date?
     /// Set by the app while this chat is on screen.
@@ -167,6 +172,8 @@ public final class ChatThread {
             todoState: opened.todoState)
         transcriptLoad += 1
         banner = opened.historyOmitted ? String(localized: "Earlier messages are too long to load here.") : nil
+        historyOmitted = opened.historyOmitted
+        hasFullHistory = !opened.historyOmitted
         // The gateway re-sends any question still waiting, so the list starts from its answer.
         adoptVaultPrompts(from: opened.openRequests)
         approvals = opened.openRequests.compactMap(ApprovalPrompt.init)
@@ -551,12 +558,16 @@ public final class ChatThread {
     #if DEBUG
         /// The demo: a sent message gets a scripted reply, as there's no gateway to answer it.
         var playsDemoReplies = false
+        /// The demo: the history a chat holding only its last messages loads when search opens an
+        /// older one (`loadDemoHistory()`).
+        var demoFullHistory: [HistoryMessage]?
 
         /// Tests and previews: a chat already open and showing `state`.
         static func sample(_ contactID: Contact.ID, state: ThreadState) -> ChatThread {
             let thread = ChatThread(contactID: contactID, channel: { nil })
             thread.state = state
             thread.sessionID = "sample"
+            thread.hasFullHistory = true
             thread.gatewayIsUnencrypted = { false }
             thread.phase = .ready
             return thread

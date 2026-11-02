@@ -13,6 +13,7 @@ All notable changes to Usual Bot are listed here. The format follows
 - **Search your messages.** Type two or more letters in search (⌘K on the Mac, the list's search
   field on iPhone) to find messages from every chat and room, with the words you typed in bold.
   Choose one to open that chat at the message, highlighted for a moment.
+- **Search older messages on the gateway.** When a Bot's chat isn't loaded yet, search asks the gateway too and adds its match, marked Earlier; opening it loads the chat and goes to the message. Each result now says when it was said.
 - **Dates in chats.** A date sits above the first message, and again after a new day or a quiet
   hour, in chats and rooms. Hover a message on the Mac for its time, or long-press it on iPhone.
 - **Routine templates.** New Routine offers the gateway's templates, like a morning briefing or a price watch: answer a few questions and it's set up, with a note if it needs a skill the agent lacks.

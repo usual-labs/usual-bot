@@ -63,7 +63,9 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                 createRoom: { try await model.createRoom(named: $0, agents: $1) },
                 renameRoom: { try await model.renameRoom($0, to: $1) },
                 deleteRoom: { try await model.deleteRoom($0) },
-                search: { model.searchMessages($0) },
+                search: MessageSearching(
+                    hits: { model.searchMessages($0) }, status: { model.messageSearchStatus($0) },
+                    lookUp: { model.lookUpMessages($0) }, locate: { await model.locate($0) }),
                 profile: { contact, close in
                     guard contact.kind == .agent else { return nil }
                     return ProfilePanel(
@@ -175,7 +177,7 @@ struct ContactsSplitView<Footer: View>: View {
     var renameRoom: ((Contact, String) async throws -> Void)?
     var deleteRoom: ((Contact) async throws -> Void)?
     /// Messages in every chat and room that match a search.
-    var search: (String) -> [MessageHit] = { _ in [] }
+    var search = MessageSearching()
     /// The profile panel for a contact, given a way to close it; `nil` when it has none.
     var profile: (Contact, @escaping () -> Void) -> ProfilePanel? = { _, _ in nil }
     /// Below the list; told whether the sidebar is the narrow window's rail.
@@ -202,6 +204,10 @@ struct ContactsSplitView<Footer: View>: View {
     @State private var isLooking = false
     /// A message chosen from search, until its chat has scrolled to it.
     @State private var jump: MessageJump?
+    /// Loading a chat to find a message the gateway found, or why it couldn't be shown.
+    @State private var finding: FindingNotice.State?
+    @State private var findingTask: Task<Void, Never>?
+    @State private var findingContact: Contact.ID?
 
     var body: some View {
         content
@@ -220,7 +226,9 @@ struct ContactsSplitView<Footer: View>: View {
                 #endif
                 select(isLooking ? selected : nil)
                 if jump?.contactID != selected { jump = nil }
+                if findingTask != nil || finding != nil, findingContact != selected { stopFinding() }
             }
+            .onChange(of: query) { search.lookUp(query) }
             .onChange(of: isLooking) { _, looking in
                 select(looking ? selection : nil)
                 focused(looking)
@@ -253,7 +261,7 @@ struct ContactsSplitView<Footer: View>: View {
                 sidebar(compact: showsRail)
                     .frame(width: sidebarWidth)
                     .overlay(alignment: .trailing) { resizeEdge }
-                detail
+                detailPane
             }
             .animation(.smooth(duration: 0.25), value: showsRail)
             // Search and New Room ride in the window's toolbar, beside the window buttons; the
@@ -292,7 +300,7 @@ struct ContactsSplitView<Footer: View>: View {
                     }
             } detail: {
                 // A stack of its own, so a chat can push its agent's profile.
-                NavigationStack { detail }
+                NavigationStack { detailPane }
             }
         #endif
     }
@@ -308,7 +316,7 @@ struct ContactsSplitView<Footer: View>: View {
             } else {
                 ContactList(
                     contacts: contacts, sections: sections, query: query, compact: compact, selection: $selection,
-                    messages: search(query), openMessage: show)
+                    messages: search.hits(query), status: search.status(query), openMessage: show)
             }
             #if os(macOS)
                 if compact {
@@ -429,6 +437,11 @@ struct ContactsSplitView<Footer: View>: View {
         private static var chatMinWidth: Double { 360 }
     #endif
 
+    /// The chat, with word of a message search is loading it for.
+    private var detailPane: some View {
+        detail.findingNotice(finding, dismiss: stopFinding)
+    }
+
     @ViewBuilder private var detail: some View {
         if let contact = contacts.first(where: { $0.id == selection }), let room = room(contact) {
             RoomPane(
@@ -470,8 +483,39 @@ struct ContactsSplitView<Footer: View>: View {
     }
 
     private func show(_ hit: MessageHit) {
-        jump = MessageJump(hit)
+        stopFinding()
+        if let itemID = hit.itemID {
+            jump = MessageJump(contactID: hit.contactID, itemID: itemID)
+            selection = hit.contactID
+            return
+        }
+        // Found by the gateway in history this device hasn't loaded: open the chat, load it, then jump.
         selection = hit.contactID
+        findingContact = hit.contactID
+        finding = .finding
+        findingTask = Task {
+            let location = await search.locate(hit)
+            guard !Task.isCancelled else { return }
+            findingTask = nil
+            switch location {
+            case .item(let itemID):
+                finding = nil
+                jump = MessageJump(contactID: hit.contactID, itemID: itemID)
+            case .unavailable(let reason):
+                finding = .unavailable(reason)
+                AccessibilityNotification.Announcement(reason).post()
+                // Long enough to read; Dismiss or another chat clears it sooner.
+                try? await Task.sleep(for: .seconds(8))
+                if finding == .unavailable(reason) { finding = nil }
+            }
+        }
+    }
+
+    private func stopFinding() {
+        findingTask?.cancel()
+        findingTask = nil
+        finding = nil
+        findingContact = nil
     }
 
     private func jump(in contact: Contact) -> MessageJump? {
