@@ -278,11 +278,12 @@ private struct QuickAnswer: View {
         if !thread.state.draft.isEmpty {
             AgentBubble { MarkdownView(thread.state.draft) }
         } else if thread.state.isRunning, thread.approvals.isEmpty, thread.questions.isEmpty, thread.secrets.isEmpty,
-            thread.vaultPrompts.isEmpty
+            thread.vaultPrompts.isEmpty, thread.connection == nil
         {
             WorkingRow(text: String(localized: "Thinking…"))
         }
         VaultCards(thread: thread, agentName: contact.name)
+        if let card = thread.connection { ConnectCard(thread: thread, card: card, agentName: contact.name) }
         ForEach(thread.approvals) { approval in
             ApprovalCard(approval: approval, agentName: contact.name) { thread.answer(approval, with: $0) }
         }

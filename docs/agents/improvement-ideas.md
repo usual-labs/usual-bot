@@ -9,8 +9,6 @@
     what the device holds, so older messages in a chat whose history isn't loaded are missed.
   - **Playing audio and video:** a delivered non-image file shows as a file to save or share
     (`MediaView`), with no player.
-  - **Connect cards in chat:** `connectors.*` and the `connection.request` event. MCP servers
-    (`/api/mcp/*`) are in the profile's Apps page already.
   - **Managing Bots:** `profiles.create`, `PATCH /api/profiles/{name}`, `profiles.set_asset`. The
     roster only writes a Bot's section: no create, rename or picture change.
   - **A template's prompt before saving:** `/api/cron/blueprints` leaves out each template's prompt

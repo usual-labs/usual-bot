@@ -128,6 +128,24 @@ anyway** for that send.
 
 ![Cards on the Mac asking for a one-time code and a sudo password, with a warning about plain http](../screenshots/mac-masked-prompts.png)
 
+### Connecting an app
+
+When an agent needs one of your accounts, such as Gmail or Notion, or an MCP server's sign-in, a card
+asks to connect it. **Connect** opens the app's own sign-in page: in your browser on the Mac, in a
+sign-in sheet on iPhone. Sign in there and the card updates by itself, then the agent carries on.
+The sheet on iPhone closes once Hermes says the app is connected.
+
+- **Not now** skips every app still waiting, and the agent goes on without them.
+- If a sign-in fails or its link expires, the row says why and offers **Try Again**.
+- An app that needs a key typed in, or a plugin to review, says to set it up in the Hermes app.
+- The agent waits up to five minutes. After that, or if you stop the reply, the card goes and the
+  chat says which apps didn't connect. Offline, the card stays and its buttons wait for the gateway.
+
+Hosted apps like Gmail sign in through the Nous Portal account Hermes uses, so the gateway needs one.
+An MCP server's sign-in sends your browser back to the gateway, so the gateway's address must open in
+this device's browser; on iPhone with a tailnet gateway that means the Tailscale VPN is on. Rooms show
+no card: there the agent posts the sign-in link in its reply.
+
 ## Skills and commands
 
 Type `/` anywhere in the message box to open a menu of the agent's skills (✦) and Hermes's commands
@@ -253,6 +271,11 @@ can't be changed here.
   in your browser; sign in there and come back. The sheet updates on its own. The provider sends your
   browser back to the gateway, so the gateway's address must open in this device's browser.
 - **Remove** takes the app off the agent. A key or sign-in saved for it stays on the gateway.
+
+**Connected accounts**, under the MCP servers, lists the apps Hermes can reach through your Nous
+Portal account, connected ones first. **Connect** opens the app's sign-in page and the row says
+Connected once you're done; **Disconnect** removes the account from your Nous Portal, so every agent
+that uses it loses it. The section shows only when the gateway has a Nous Portal account.
 
 A change reaches the agent's next session. To use it in the chat that's open now, choose Apply to the
 Open Chat. Hermes reloads the agent's apps, and its next reply costs more, because the whole

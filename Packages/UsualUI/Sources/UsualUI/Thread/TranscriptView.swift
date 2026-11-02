@@ -45,12 +45,15 @@ struct TranscriptView: View {
             }
             LiveCards(live: thread.state.live)
             if thread.state.draft.isEmpty, thread.state.isRunning, !lastItemIsLiveActivity, thread.approvals.isEmpty,
-                thread.questions.isEmpty, thread.secrets.isEmpty, thread.vaultPrompts.isEmpty
+                thread.questions.isEmpty, thread.secrets.isEmpty, thread.vaultPrompts.isEmpty, thread.connection == nil
             {
                 let live = thread.state.live
                 WorkingRow(text: live.status ?? live.thought ?? String(localized: "Thinking…")).transition(.settle)
             }
             VaultCards(thread: thread, agentName: agentName).transition(.settle)
+            if let card = thread.connection {
+                ConnectCard(thread: thread, card: card, agentName: agentName).transition(.settle)
+            }
             ForEach(thread.approvals) { approval in
                 ApprovalCard(approval: approval, agentName: agentName) { thread.answer(approval, with: $0) }
                     .transition(.settle)
@@ -78,6 +81,7 @@ struct TranscriptView: View {
         [
             thread.state.items.count, thread.state.draft.isEmpty ? 0 : 1, thread.state.isRunning ? 1 : 0,
             thread.vaultPrompts.count, thread.approvals.count, thread.questions.count, thread.secrets.count,
+            thread.connection == nil ? 0 : 1,
             thread.state.live.todos.isEmpty ? 0 : 1, thread.state.live.helpers.isEmpty ? 0 : 1,
         ]
     }

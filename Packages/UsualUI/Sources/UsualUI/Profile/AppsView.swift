@@ -5,6 +5,7 @@ import SwiftUI
 /// tools; Add app brings one in from Hermes's catalog or by address.
 struct AppsView: View {
     let list: MCPServerList
+    var connectors: ConnectorList? = nil
     let agentName: String
 
     @State private var selected: MCPServer?
@@ -39,6 +40,7 @@ struct AppsView: View {
             .foregroundStyle(Theme.secondaryInk)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.top, 14)
+            if let connectors { ConnectorsSection(list: connectors, agentName: agentName) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .task(id: list.profile) { await list.refresh() }

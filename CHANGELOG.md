@@ -9,6 +9,7 @@ All notable changes to Usual Bot are listed here. The format follows
 ### Added
 
 - **See where tokens go.** Settings › Usage shows your Bots' tokens over the last 7, 30 or 90 days by day and by Bot, what was written, sent new or sent again, the background work beside your chats, and the cost when Hermes knows it.
+- **Connect apps from the chat.** When an agent needs an account such as Gmail, or an MCP server's sign-in, a card offers Connect and Not now, opens the sign-in page, and updates once you're done. The Apps page lists the accounts Hermes reaches through your Nous Portal, with Connect and Disconnect.
 - **Search your messages.** Type two or more letters in search (⌘K on the Mac, the list's search
   field on iPhone) to find messages from every chat and room, with the words you typed in bold.
   Choose one to open that chat at the message, highlighted for a moment.

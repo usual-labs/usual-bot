@@ -268,9 +268,47 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   list; `MCPServer` keeps only the names. On an unencrypted address (`GatewayAddress.isUnencrypted`)
   the model refuses to send a token or key without that send's consent, as the vault does. Every
   catalog key shows in a secure field, since the catalog doesn't say which are secret.
-- **Out of scope:** Nous-hosted connectors (they need a Nous login), toolsets, the plugin catalog,
-  per-tool switches (`tools.configure`), editing a server, env values for a custom program, and the
-  whole-map `PUT /api/mcp/servers`. Rooms have no apps view; apps belong to an agent, from its chat.
+- **Out of scope:** toolsets, the plugin catalog, per-tool switches (`tools.configure`), editing a
+  server, env values for a custom program, and the whole-map `PUT /api/mcp/servers`. Rooms have no
+  apps view; apps belong to an agent, from its chat.
+
+## Connected apps (connectors)
+
+- **Connectors aren't MCP servers.** They're accounts at the Nous Portal's tool gateway (Gmail,
+  Slack, Notion…), used through Hermes's own tools, and need a Nous Portal identity on the gateway
+  (`connectors_available`). One `manage_connections` call can also ask for MCP servers
+  (`kind: "mcp"`), so the chat card covers both. Read from Hermes `bf0203a794`:
+  `tools/connectors/{operation,run,managed,mcp,contract}.py`, `tui_gateway/methods_connectors*.py`,
+  `tui_gateway/contracts/connectors*.py`, and the desktop's `connector-tool.tsx`.
+- **The card is an event, not a server request.** `connection.request` opens it and every
+  `connection.update` carries all rows with a `seq`; older frames are dropped. The turn waits on the
+  operation (5 minutes, `OPERATION_DEADLINE_SECONDS`), not on an answer to us, so there's no 4404 to
+  worry about. Answers: `connection.respond` with a session owner (`skipped` for Not now, `approved`
+  for an MCP install/enable and for running a failed MCP row again, `settled_by: continue` for a
+  list's Done); Try Again on a hosted row is `connectors.connect` `{reconnect: true}`, which mints a
+  fresh link. The card never claims an app connected; Hermes's watcher does.
+- **One card per chat, kept offline.** Hermes allows one open operation per session. The card stays
+  through a drop with its buttons off, since a sign-in may be under way; on reattach
+  `pending_connection` restores it, and its absence ends it with a notice (the outcome isn't known).
+- **When it ends, it becomes notices,** like approvals: connected, Not now, and what didn't connect
+  and why (time, a stopped reply, going on without it). History has no card to rebuild: Hermes keeps
+  only the tool row, without its result, so an earlier request shows as a `manage_connections` step.
+- **iPhone uses the system sign-in sheet** (`WebAuthenticationSession`), not Safari as the MCP page
+  does: no page ever returns to the app, so the card cancels the sheet once Hermes reports the app
+  connected. Hosted connectors sign in on the internet, so a tailnet gateway needs no VPN for them;
+  an MCP row's provider still returns to the gateway's own callback.
+- **No reason line.** The payload carries no "why"; the card shows MCP setup notes (`instructions`)
+  when there are any, and the agent's reply above says why.
+- **Not here:** rows Hermes wants credentials typed for (`required_env`) and catalog plugin or skill
+  rows say to finish in the Hermes app; a list card (`display`, desktop sessions only) has only Done,
+  and apps are connected from the Apps page. Named accounts (aliases) and renaming aren't offered.
+- **Rooms show no card.** Room members run without `connection_callback` (only
+  `agent_factory._agent_cbs` sets it), so Hermes puts the link in the member's reply instead.
+- **The Apps page** uses account-owned `connectors.list`, `connectors.catalog`, `connectors.accounts`,
+  `connectors.connect` and `connectors.accounts.remove`, each with `profile`, and polls
+  `connectors.operation.status` every 2 s: account frames are broadcast without links and the model
+  needs no global-event routing. Disconnect removes every live account of that app from the Nous
+  Portal, so it says it affects every agent. Hidden when `available` is false or the gate says 4031.
 
 ## Not verified
 

@@ -27,6 +27,8 @@ struct ProfilePanel: View {
     let routines: RoutineList
     let skills: SkillList
     let apps: MCPServerList
+    /// The apps it connects through the Nous Portal, shown on the Apps page.
+    var connectors: ConnectorList? = nil
     let vault: VaultList
     let gateway: GatewayAddress
     let link: AppModel.Link
@@ -101,7 +103,7 @@ struct ProfilePanel: View {
         case .skills:
             SkillsView(list: skills, agentName: contact.name)
         case .apps:
-            AppsView(list: apps, agentName: contact.name)
+            AppsView(list: apps, connectors: connectors, agentName: contact.name)
                 .id(apps.profile)
         case .vault:
             // Per Bot, so nothing typed for one agent can carry over to the next.

@@ -18,6 +18,34 @@
         }
     }
 
+    /// The demo's connected apps: a Connect card in Atlas's chat and the Apps page's hosted apps.
+    /// Its links go nowhere; the demo connects without opening them.
+    enum DemoConnections {
+        static let request = ConnectionRequest(
+            id: "demo-connect", sessionID: "sample",
+            targets: [
+                .init(
+                    name: "notion", kind: .connector, action: "connect", state: .initiated,
+                    connectURL: URL(string: "https://hermes.example.com/connect/notion")),
+                .init(
+                    name: "google_drive", kind: .connector, action: "connect", state: .initiated,
+                    connectURL: URL(string: "https://hermes.example.com/connect/google-drive")),
+            ])
+
+        static let connectors = [
+            ConnectorList.Connector(
+                slug: "github", name: "GitHub", summary: "Issues, pull requests and code", isConnected: true),
+            ConnectorList.Connector(
+                slug: "google_drive", name: "Google Drive", summary: "Docs, sheets and files", isConnected: false),
+            ConnectorList.Connector(slug: "gmail", name: "Gmail", summary: "Read and send email", isConnected: false),
+            ConnectorList.Connector(
+                slug: "notion", name: "Notion", summary: "Pages and databases", isConnected: false),
+            ConnectorList.Connector(
+                slug: "slack", name: "Slack", summary: "Channels and messages", isConnected: false,
+                statusReason: "The Slack token was revoked. Connect again."),
+        ]
+    }
+
     private struct DemoTokenStore: TokenStore {
         func load(for gateway: GatewayAddress) throws -> TokenSet? { nil }
         func save(_ tokens: TokenSet, for gateway: GatewayAddress) throws {}

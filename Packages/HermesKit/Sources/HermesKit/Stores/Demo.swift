@@ -155,6 +155,7 @@
                     answer: .answered(
                         "About **40,000 pages**, re-indexed nightly. Turbopuffer stores them for ~$6 a month."))
             ]
+            threads["atlas"]?.showDemo(DemoConnections.request)
             threads["ops"] = ChatThread.sample(
                 "ops",
                 state: ThreadState(history: dated(opsChat, from: ago(6 * 60 + 4), to: ago(6 * 60)), running: false))

@@ -24,6 +24,8 @@ enum BotChat {
         var info: JSONValue? = nil
         /// The chat's to-do list, when it has one.
         var todoState: JSONValue? = nil
+        /// Apps the agent is waiting for you to connect (`connection.request`'s payload).
+        var pendingConnection: JSONValue? = nil
     }
 
     /// `knownID` is the stored Bot Chat ID from the roster, when the gateway reported one.
@@ -73,7 +75,7 @@ enum BotChat {
             sessionID: live, history: history, running: result["running"]?.boolValue ?? false,
             historyOmitted: omitted || result["messages_omitted"]?.boolValue == true, inflight: inflight,
             openRequests: requests, info: result["info"],
-            todoState: result["todo_state"])
+            todoState: result["todo_state"], pendingConnection: result["pending_connection"])
     }
 
     static func create(profile: String, on channel: JSONRPCChannel) async throws -> Opened {

@@ -58,6 +58,7 @@ extension ChatThread {
             }
         }
         let vault = vaultPrompts.map { (id: $0.id, text: String(localized: "Needs you for a sign-in")) }
-        return commands + asked + secrets + vault
+        let apps = connection.map { [(id: $0.request.id, text: $0.request.alertText)] } ?? []
+        return commands + asked + secrets + vault + apps
     }
 }

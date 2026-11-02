@@ -26,6 +26,9 @@ public final class ChatThread {
     public private(set) var questions: [ClarifyPrompt] = []
     /// Secrets and sudo passwords the gateway is waiting for. Never cached.
     public internal(set) var secrets: [SecretPrompt] = []
+    /// Apps the agent asked to connect, while Hermes waits on them. Kept while offline, with its
+    /// answers held back, as a sign-in may be under way in the browser.
+    public internal(set) var connection: ConnectionCard?
     /// Agent replies since you last had this chat on screen.
     public internal(set) var unreadCount = 0
     /// Goes up each time the gateway's copy of the transcript replaces the one on screen. Item
@@ -118,7 +121,9 @@ public final class ChatThread {
 
     /// What the sidebar shows for this agent.
     public var activity: Contact.Activity {
-        if !approvals.isEmpty || !questions.isEmpty || !secrets.isEmpty || !vaultPrompts.isEmpty { return .needsYou }
+        if !approvals.isEmpty || !questions.isEmpty || !secrets.isEmpty || !vaultPrompts.isEmpty || connection != nil {
+            return .needsYou
+        }
         return state.isRunning ? .working : .idle
     }
 
@@ -167,6 +172,7 @@ public final class ChatThread {
         approvals = opened.openRequests.compactMap(ApprovalPrompt.init)
         questions = opened.openRequests.compactMap(ClarifyPrompt.init)
         secrets = opened.openRequests.compactMap(SecretPrompt.init)
+        adoptConnection(opened.pendingConnection)
         announceRequests()
         if isVisible {
             markViewed()
@@ -214,6 +220,11 @@ public final class ChatThread {
         }
         if event.type == "session.info" {
             model = ChatModel(info: event.payload) ?? model
+            return
+        }
+        if event.type == "connection.request" || event.type == "connection.update" {
+            applyConnection(event)
+            announceRequests()
             return
         }
         if event.type == "btw.complete" {

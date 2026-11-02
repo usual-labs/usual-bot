@@ -74,6 +74,7 @@ public final class AppModel {
     @ObservationIgnored private var skillLists: [Contact.ID: SkillList] = [:]
     @ObservationIgnored private var vaultLists: [Contact.ID: VaultList] = [:]
     @ObservationIgnored private var appLists: [Contact.ID: MCPServerList] = [:]
+    @ObservationIgnored private var connectorLists: [Contact.ID: ConnectorList] = [:]
     @ObservationIgnored var rooms: [Contact.ID: RoomThread] = [:]
     /// Chats' messages ready to search (`searchMessages`).
     @ObservationIgnored let messageIndex = MessageIndex()
@@ -204,6 +205,7 @@ public final class AppModel {
         skillLists = [:]
         vaultLists = [:]
         appLists = [:]
+        connectorLists = [:]
         media.clear()
         pictures.clear()
         sections.clear()
@@ -451,6 +453,18 @@ public final class AppModel {
             sessionID: { [weak self] in self?.threads[contact.id]?.sessionID },
             gatewayIsUnencrypted: { [weak self] in self?.auth?.gateway.isUnencrypted ?? true })
         appLists[contact.id] = list
+        return list
+    }
+
+    /// The apps `contact`'s profile connects through the Nous Portal. Call `ConnectorList.refresh()`.
+    public func connectors(for contact: Contact) -> ConnectorList {
+        if let list = connectorLists[contact.id] { return list }
+        let list = ConnectorList(
+            profile: contact.details?.profile ?? contact.id, channel: { [weak self] in self?.channel })
+        #if DEBUG
+            if isDemo { list.showDemo(DemoConnections.connectors) }
+        #endif
+        connectorLists[contact.id] = list
         return list
     }
 
