@@ -90,7 +90,10 @@ By default the dashboard listens on `127.0.0.1` only, which other devices can't 
 - **Tailscale (recommended).** Put the gateway machine and your devices on the same tailnet and
   bind the dashboard to the machine's tailnet address, for example
   `hermes dashboard --host 100.101.102.103`. Nothing is exposed to the internet. On iPhone,
-  Tailscale has to be on while you use the app.
+  either keep the Tailscale app's VPN on while you use Usual Bot, or turn on **Built-in
+  Tailscale** on the connect screen: the app then joins your tailnet as a device of its own (you
+  sign in to Tailscale once) and the VPN can stay off. A gateway that signs in through Google
+  still needs the VPN for that sign-in, because Google doesn't allow signing in inside apps.
 - **Your home network.** Bind to the machine's local address. The first time, iOS asks whether
   Usual Bot may find devices on your local network; allow it.
 - **The internet.** Put the dashboard behind `https` (a reverse proxy with a certificate). Usual

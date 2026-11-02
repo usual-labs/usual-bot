@@ -19,11 +19,14 @@
         private static let graceLimit: Duration = .seconds(25)
 
         private let model: AppModel
+        /// Stops what a suspended app can't keep, once the app has let go of the gateway.
+        private let suspend: @MainActor () -> Void
         @ObservationIgnored private var hold: Task<Void, Never>?
         @ObservationIgnored private var grace = UIBackgroundTaskIdentifier.invalid
 
-        init(model: AppModel) {
+        init(model: AppModel, suspend: @escaping @MainActor () -> Void) {
             self.model = model
+            self.suspend = suspend
         }
 
         func sceneChanged(to phase: ScenePhase) {
@@ -34,19 +37,19 @@
             }
             scheduleCheckIn()
             guard model.isWorking else {
-                model.setForeground(false)
+                letGo()
                 return
             }
             grace = UIApplication.shared.beginBackgroundTask { [weak self] in
                 MainActor.assumeIsolated {
                     self?.endHold()
-                    self?.model.setForeground(false)
+                    self?.letGo()
                 }
             }
             hold = Task { [weak self, model] in
                 await model.finishWork(within: Self.graceLimit)
                 guard !Task.isCancelled else { return }
-                model.setForeground(false)
+                self?.letGo()
                 self?.endHold()
             }
         }
@@ -56,6 +59,12 @@
             scheduleCheckIn()
             if UIApplication.shared.applicationState == .background { model.setForeground(false) }
             await model.checkIn()
+            if UIApplication.shared.applicationState == .background { suspend() }
+        }
+
+        private func letGo() {
+            model.setForeground(false)
+            suspend()
         }
 
         private func endHold() {

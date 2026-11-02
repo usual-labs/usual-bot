@@ -1,10 +1,12 @@
 import HermesKit
 import SwiftUI
 
-/// First run: type the gateway's address, then finish signing in in the browser.
-struct ConnectView: View {
+/// First run: type the gateway's address, then finish signing in in the browser. `options` are
+/// the app's own settings for reaching it, such as the iPhone's built-in Tailscale.
+struct ConnectView<Options: View>: View {
     @Bindable var model: AppModel
     let presenter: any SignInPresenter
+    @ViewBuilder let options: () -> Options
 
     @FocusState private var addressFocused: Bool
 
@@ -54,6 +56,8 @@ struct ConnectView: View {
             .frame(height: 44)
             .background(Theme.pane, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border))
+
+            options()
 
             Button(action: signIn) {
                 Text("Sign in with browser")

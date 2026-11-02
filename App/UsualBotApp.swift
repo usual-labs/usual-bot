@@ -9,12 +9,23 @@ struct UsualBotApp: App {
         @State private var presenter = BrowserSignInPresenter()
         @State private var quickPanel: QuickPanelController
     #else
-        @State private var presenter = WebAuthSignInPresenter()
+        /// The app's own Tailscale device, which gateway traffic takes while it's on.
+        @State private var tailscale: BuiltInTailscale
+        @State private var systemSignIn = WebAuthSignInPresenter()
+        @State private var tailnetSignIn: TailnetSignInPresenter
         @State private var backgroundLink: BackgroundLink
         @Environment(\.scenePhase) private var scenePhase
     #endif
 
     init() {
+        #if os(iOS)
+            let tailscale = BuiltInTailscale()
+            _tailscale = State(initialValue: tailscale)
+            _tailnetSignIn = State(initialValue: TailnetSignInPresenter(tailnet: tailscale.tailnet))
+            let live = { AppModel(session: { try await tailscale.session() }) }
+        #else
+            let live = { AppModel() }
+        #endif
         #if DEBUG
             // USUALBOT_DEMO=1 (or --demo) shows made-up agents instead of signing in, for screenshots and for
             // trying the app without a Hermes gateway.
@@ -25,9 +36,9 @@ struct UsualBotApp: App {
             let model =
                 demo
                 ? AppModel.demo(longConversations: ProcessInfo.processInfo.arguments.contains("--demo-long-chat"))
-                : AppModel()
+                : live()
         #else
-            let model = AppModel()
+            let model = live()
         #endif
         _model = State(initialValue: model)
         #if os(macOS)
@@ -38,13 +49,13 @@ struct UsualBotApp: App {
             NSWindow.allowsAutomaticWindowTabbing = false
         #else
             AgentNotifications.shared.watch(model, showApp: {})
-            _backgroundLink = State(initialValue: BackgroundLink(model: model))
+            _backgroundLink = State(initialValue: BackgroundLink(model: model, suspend: { tailscale.suspend() }))
         #endif
     }
 
     var body: some Scene {
         WindowGroup(id: "main") {
-            RootView(model: model, presenter: presenter)
+            rootView
                 .task { await model.restore() }
                 .onOpenURL { model.open($0) }
                 // Asked once you're in, not from the background, where iOS can't show the question.
@@ -82,4 +93,24 @@ struct UsualBotApp: App {
             }
         #endif
     }
+
+    #if os(macOS)
+        private var rootView: some View {
+            RootView(model: model, presenter: presenter)
+        }
+    #else
+        private var rootView: some View {
+            RootView(model: model, presenter: signInPresenter) {
+                TailscaleConnectOption(tailscale: tailscale)
+            } gatewayMenu: {
+                TailscaleMenu(tailscale: tailscale, reconnect: model.reconnect)
+            }
+        }
+
+        /// The system sheet can't reach a tailnet, so sign-in goes through the built-in device
+        /// while it's on.
+        private var signInPresenter: any SignInPresenter {
+            tailscale.isOn ? tailnetSignIn : systemSignIn
+        }
+    #endif
 }

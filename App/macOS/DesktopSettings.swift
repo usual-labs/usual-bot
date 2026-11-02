@@ -16,7 +16,7 @@
                     "Launch at login",
                     isOn: Binding(
                         get: { loginStatus == .enabled || loginStatus == .requiresApproval },
-                        set: setLaunchAtLogin))
+                        set: { setLaunchAtLogin($0) }))
                 if loginStatus == .requiresApproval {
                     Button("Approve in Login Items") { SMAppService.openSystemSettingsLoginItems() }
                 }

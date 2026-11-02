@@ -13,6 +13,9 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   repository's Actions allow-list. CodeQL builds the app with Xcode; a package-only SwiftPM scan
   doesn't cover `App/`.
 - `CODEOWNERS` applies from the base branch, so a pull request that adds an owner isn't gated by it.
+- **Pass `Binding(get:set:)` a closure, not a method reference.** CI's Xcode 26.6 crashed in IR
+  generation on `set: setLaunchAtLogin` (a reabstraction thunk for an `@isolated(any)` setter);
+  `set: { setLaunchAtLogin($0) }` builds. Xcode 27 compiles both, so a local build doesn't catch it.
 - Public build and release setup, signing-secret names, environment protection, immutable-release
   behavior and troubleshooting live in [the release guide](../guides/releasing.md). Maintainer
   credentials, account administration and release-session diaries don't belong in the public KB.
