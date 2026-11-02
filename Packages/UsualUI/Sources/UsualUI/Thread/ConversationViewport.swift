@@ -18,6 +18,8 @@ struct ConversationScrollState {
     private(set) var followsEnd = true
     private(set) var isScrollingByHand = false
     private(set) var viewport: ConversationViewport?
+    /// The transcript load a search jumped into, which mustn't send the reader to the end.
+    private var jumpedLoad: Int?
 
     mutating func update(_ viewport: ConversationViewport) -> CGFloat? {
         guard viewport.isUsable else { return nil }
@@ -36,13 +38,19 @@ struct ConversationScrollState {
         return correction
     }
 
-    mutating func reload() -> CGFloat? {
+    /// The transcript was loaded again. `load` counts the loads.
+    mutating func reload(_ load: Int) -> CGFloat? {
+        guard load != jumpedLoad else { return nil }
         followsEnd = true
         return correction
     }
 
-    /// Search showed a message further up: stay there, as after scrolling away by hand.
-    mutating func leaveEnd() { followsEnd = false }
+    /// Search showed a message further up: stay there, as after scrolling away by hand. A message
+    /// found in history the gateway just sent arrives with that load (`atReload`), in either order.
+    mutating func leaveEnd(atReload load: Int) {
+        followsEnd = false
+        jumpedLoad = load
+    }
 
     /// A gesture's final phase can be lost when the app stops being active.
     mutating func resume() -> CGFloat? { scrollingByHand(false) }

@@ -18,6 +18,11 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **`ScrollPosition.scrollTo(id:anchor:)` left a search jump at the top on iOS 18.4** (Simulator),
   under the navigation bar, whatever the anchor. `ConversationScroll` jumps with a
   `ScrollViewReader`, which centres on both platforms; the scroll policy stays on `ScrollPosition`.
+- **The two owners race when history and a jump arrive together** (a result found on the
+  gateway). The taller content reaches `onScrollGeometryChange` before the jump, so the policy
+  queues a move to the end, and on iOS 27 that move landed after the reader's `scrollTo` and won.
+  The order of the `reload` and `jump` `onChange` handlers isn't fixed either. So the policy skips
+  the end for the load a jump came with, and a jump scrolls again after the next layout.
 
 ## macOS window and sidebar
 

@@ -17,6 +17,9 @@ struct ConversationScroll<Content: View>: View {
     /// Waiting for the first layout, which a jump into a chat just opened must follow.
     @State private var pendingJump: Int?
     @State private var highlighted: Int?
+    /// A message just jumped to, shown again after the next layout: a move to the end that the
+    /// same update queued (history arriving with the jump) lands after `scrollTo` and would win.
+    @State private var jumpShown: Int?
 
     var body: some View {
         // `ScrollPosition.scrollTo(id:anchor:)` ignores the anchor on iOS 18 and leaves the message
@@ -48,7 +51,12 @@ struct ConversationScroll<Content: View>: View {
                     offset: geometry.contentOffset.y + geometry.contentInsets.top)
             } action: { _, viewport in
                 move(to: scroll.update(viewport))
-                if let pendingJump { show(pendingJump, with: proxy) }
+                if let pendingJump {
+                    show(pendingJump, with: proxy)
+                } else if let shown = jumpShown {
+                    jumpShown = nil
+                    if !scroll.isScrollingByHand { scrollTo(shown, with: proxy) }
+                }
             }
             .onScrollPhaseChange { _, phase in
                 let byHand = phase == .tracking || phase == .interacting || phase == .decelerating
@@ -56,15 +64,21 @@ struct ConversationScroll<Content: View>: View {
             }
             .onChange(of: reload) {
                 settledReload = reload
-                move(to: scroll.reload())
+                move(to: scroll.reload(reload))
+                if let pendingJump { show(pendingJump, with: proxy) }
             }
             .onAppear { settledReload = reload }
             .onChange(of: jump, initial: true) { _, jump in
                 guard let jump else { return }
                 jumped()
-                scroll.leaveEnd()
+                scroll.leaveEnd(atReload: reload)
                 highlighted = jump.itemID
-                if scroll.viewport == nil { pendingJump = jump.itemID } else { show(jump.itemID, with: proxy) }
+                // A message in history just loaded waits for that load's layout.
+                if scroll.viewport == nil || reload != settledReload {
+                    pendingJump = jump.itemID
+                } else {
+                    show(jump.itemID, with: proxy)
+                }
                 Task {
                     try? await Task.sleep(for: .seconds(2.5))
                     if highlighted == jump.itemID { withAnimation(.easeOut(duration: 0.6)) { highlighted = nil } }
@@ -78,6 +92,11 @@ struct ConversationScroll<Content: View>: View {
 
     private func show(_ itemID: Int, with proxy: ScrollViewProxy) {
         pendingJump = nil
+        jumpShown = itemID
+        scrollTo(itemID, with: proxy)
+    }
+
+    private func scrollTo(_ itemID: Int, with proxy: ScrollViewProxy) {
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) { proxy.scrollTo(itemID, anchor: .center) }

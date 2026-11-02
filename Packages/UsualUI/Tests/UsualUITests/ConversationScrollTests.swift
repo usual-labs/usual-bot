@@ -58,7 +58,7 @@ struct ConversationScrollTests {
         _ = state.scrollingByHand(true)
         _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 1_500))
         _ = state.scrollingByHand(false)
-        #expect(state.reload() == 4_300)
+        #expect(state.reload(1) == 4_300)
         #expect(state.update(.init(contentHeight: 8_000, height: 700, offset: 4_300)) == 7_300)
         #expect(state.update(.init(contentHeight: 0, height: 0, offset: 0)) == nil)
         #expect(state.viewport?.end == 7_300)
@@ -66,11 +66,24 @@ struct ConversationScrollTests {
 
     @Test func aMessageFoundBySearchStaysOnScreenWhenRepliesArrive() {
         var state = ConversationScrollState()
-        state.leaveEnd()
+        state.leaveEnd(atReload: 0)
         // The first layout of a chat opened from search, then the jump to a message far up.
         #expect(state.update(.init(contentHeight: 50_000, height: 700, offset: 49_300)) == nil)
         #expect(state.update(.init(contentHeight: 50_000, height: 700, offset: 1_200)) == nil)
         #expect(state.update(.init(contentHeight: 50_400, height: 700, offset: 1_200)) == nil)
         #expect(!state.followsEnd)
+    }
+
+    @Test func aMessageFoundInHistoryJustLoadedIsntLostToTheReload() {
+        var state = ConversationScrollState()
+        _ = state.update(.init(contentHeight: 900, height: 700, offset: 200))
+        // The history and the jump into it change together, and either handler may run first.
+        state.leaveEnd(atReload: 1)
+        #expect(state.reload(1) == nil)
+        #expect(!state.followsEnd)
+        #expect(state.update(.init(contentHeight: 6_000, height: 700, offset: 1_200)) == nil)
+        // A later reload, such as reconnecting, opens at the newest message again.
+        #expect(state.reload(2) == 5_300)
+        #expect(state.followsEnd)
     }
 }
