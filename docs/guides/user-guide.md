@@ -35,8 +35,9 @@ list. The most recent conversation is at the top.
   accents. Choose one to open its chat at that message, highlighted for a moment. Search looks
   through the messages the app has loaded: everything once it's connected, and your recent
   messages while it's offline.
-- The dot at the bottom of the sidebar (top left on iPhone) shows the connection. Click it to see
-  the gateway and to sign out.
+- The dot at the bottom of the sidebar shows the connection. Click it to see the gateway and to
+  sign out. On iPhone the dot sits on the settings gear at the top left; tap it, then your gateway,
+  for its details, Built-in Tailscale and Sign Out.
 
 On the Mac, press the sidebar button or drag the sidebar narrower and it becomes a rail of avatars, with a line between
 sections.
@@ -51,7 +52,8 @@ Sections group the sidebar however you like. Until you make one, the list has no
   **Remove from Section** puts it back under Other, which holds everything not in a section.
 - **Fold a section:** click its heading. A folded section still shows the needs-you dot or an unread
   count, so nothing waiting for you goes out of sight.
-- **Rename, reorder or delete one:** right-click its heading on the Mac, or tap **…** on iPhone.
+- **Rename, reorder or delete one:** right-click its heading on the Mac, or touch and hold it on
+  iPhone.
   Deleting a section keeps its chats: they move to Other.
 
 A Bot's section is saved on the Bot, so it shows on your other devices and in the Hermes desktop
@@ -101,7 +103,9 @@ in the chat with what it wants to run and why:
 | **Deny** | Refuses; the agent is told and carries on. |
 
 When an agent asks you a question with choices, the same kind of card shows the options; pick one
-or type your own answer. Approvals also wait in the ⌥Space panel on the Mac, so you can answer
+or type your own answer. When it asks one thing with one answer, the card is lighter: tap a choice,
+or type your answer in the message box, which says **Answer** while the question waits. **✕** skips
+it. Approvals also wait in the ⌥Space panel on the Mac, so you can answer
 without opening the chat.
 
 When a skill needs a secret, such as an API key, or a command needs your sudo password, a card asks
@@ -201,8 +205,9 @@ Rooms are text only on the dashboard gateway: attachments in rooms need Hermes's
 
 ## An agent's profile: routines, skills, apps and machine
 
-Click the agent's name at the top of the chat (⌘I) to open its profile beside the chat (a sheet on
-iPhone).
+Click the agent's name at the top of the chat (⌘I) to open its profile beside the chat. On iPhone,
+tap the name or **…** › **View Profile**: the profile is a sheet with a row for each part below,
+showing at a glance how many are on.
 
 - **Routines** are the agent's scheduled jobs. Each shows when it runs, whether it's on, and why the
   last run failed if it did. The switch pauses or resumes one.
@@ -272,7 +277,8 @@ so instead of leaving you waiting.
 ## Settings
 
 Open **Settings…** from the Usual Bot menu (⌘, on Mac), the menu bar item, or the gear beside the
-connection indicator. Preferences stay on this device.
+connection indicator. On iPhone the gear sits at the top of the list, with a dot for the connection,
+and Settings opens with your gateway at the top. Preferences stay on this device.
 
 - **General:** follow the system appearance or choose light or dark, and change chat text size.
   On Mac, choose Return or ⌘Return to send messages, and whether to launch at login.

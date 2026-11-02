@@ -56,10 +56,9 @@ All notable changes to Usual Bot are listed here. The format follows
 - **Vault filters.** The Vault tab sorts what's saved into All, Logins, Payments and Addresses, with
   a count on each, and New item asks what you're adding.
 - **Built-in Tailscale on iPhone.** Reach a gateway on your tailnet with the Tailscale VPN off: turn
-  on Built-in Tailscale on the connect screen or in the gateway menu at the top left, and sign in to
+  on Built-in Tailscale on the connect screen or in Settings under your gateway, and sign in to
   Tailscale once. The app then joins your tailnet as a device of its own. A gateway that signs in
-  through Google still needs the VPN for that sign-in, since Google doesn't allow it inside apps. The
-  top left also shows the gateway's address now.
+  through Google still needs the VPN for that sign-in, since Google doesn't allow it inside apps.
 
 ### Changed
 
@@ -67,8 +66,8 @@ All notable changes to Usual Bot are listed here. The format follows
   Settings or a theme. It replaces the filter at the top of the sidebar on the Mac.
 - **You can tell what's clickable.** On the Mac the pointer becomes a hand over buttons, chats,
   menus and the rest of what answers a click.
-- **A calmer sidebar.** An agent that needs you shows a dot on its avatar, and rows no longer show a
-  time, so previews keep their space. The sidebar has a button to collapse it, and chats not in a
+- **A calmer sidebar.** An agent that needs you shows a dot on its avatar, and rows on the Mac no
+  longer show a time, so previews keep their space. The sidebar has a button to collapse it, and chats not in a
   section are listed under Other.
 - **More room for a conversation.** On the Mac the conversation and message box can use more of the
   window, and New Room, Settings and an agent's profile match the rest of the app. An agent's Hermes
@@ -80,6 +79,15 @@ All notable changes to Usual Bot are listed here. The format follows
 - **See what a Bot is doing.** While it works, a small avatar and a moving line of text say what
   it's up to: "Reading", "Running a command". The same line shows in rooms and the ⌥Space panel. It
   replaces the typing dots, and a working avatar moves gently instead of wearing a ring.
+- **iPhone looks more like a phone messenger.** The chat list shows each chat's last time,
+  without lines between rows, and a section's arrow sits beside its
+  name; touch and hold a heading for its options. The settings gear sits at the top with a
+  connection dot, Settings leads with your gateway, and a chat's **…** button opens the profile or
+  starts a call. An agent's profile is a list of rows (Routines, Skills, Apps, Vault, Machine) with
+  what's in each.
+- **Answer a question in the message box.** A question with one answer gets a lighter card: tap a
+  choice, or type your answer below, where the box says "Answer" plus the agent's name. Elsewhere the
+  box says "Ask" plus the agent's name.
 - **Messages arrive with a small animation,** which Reduce Motion turns off. On the Mac, the message
   box stays one line until your text wraps, and a message's actions sit right beside it.
 

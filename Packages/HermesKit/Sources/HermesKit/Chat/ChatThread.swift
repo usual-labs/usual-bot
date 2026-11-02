@@ -302,6 +302,10 @@ public final class ChatThread {
             Task { await run(command, text: text, sessionID: sessionID, channel: channel) }
             return
         }
+        if let prompt = questionTheBoxAnswers {
+            answer(prompt, with: [prompt.questions[0].id: [text]])
+            return
+        }
         if state.isRunning {
             steer(text, sessionID: sessionID, channel: channel)
             return
@@ -490,6 +494,16 @@ public final class ChatThread {
         Task {
             await channel.respond(to: prompt.id, result: ["answers": .object(answers), "outcome": "submitted"])
         }
+    }
+
+    /// The question a message typed in the box answers, as in Grok ("Or answer in the chat below"):
+    /// the only one waiting, asking one thing with one answer. Otherwise the card takes the answers,
+    /// and a message steers the turn as usual.
+    public var questionTheBoxAnswers: ClarifyPrompt? {
+        guard questions.count == 1, let prompt = questions.first, prompt.questions.count == 1,
+            !prompt.questions[0].allowsMultiple
+        else { return nil }
+        return prompt
     }
 
     /// Declines to answer; the agent carries on without the answers.

@@ -78,6 +78,9 @@ struct ThreadPane: View {
                         .allowsHitTesting(false)
                 }
             }
+            #if os(iOS)
+                .toolbar { ToolbarItem(placement: .topBarTrailing) { moreMenu } }
+            #endif
             .environment(\.chatContact, contact)
             .task(id: contact.id) { open() }
             .onChange(of: contact.id) {
@@ -124,6 +127,23 @@ struct ThreadPane: View {
             NamePill(contact: contact, members: members)
         }
     }
+
+    #if os(iOS)
+        /// Grok's "…" at the chat's top right: the chat's other ways in.
+        private var moreMenu: some View {
+            Menu {
+                if let toggleProfile {
+                    Button("View Profile", systemImage: "person.crop.circle", action: toggleProfile)
+                }
+                if thread?.phase == .ready, !calling {
+                    Button("Voice Call", systemImage: "waveform") { calling = true }
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+            }
+            .accessibilityLabel(Text("More"))
+        }
+    #endif
 
     @ViewBuilder private var content: some View {
         switch thread?.phase {

@@ -2,8 +2,9 @@ import HermesKit
 import SwiftUI
 
 /// One sidebar row: avatar, name, preview and an unread count, with a dot on the avatar when the
-/// agent needs you. No time of last activity, as in Grok. Compact, in the narrow window's rail, it's
-/// the avatar alone with the count as a badge too.
+/// agent needs you. As in Grok, the phone's list says when each chat was last active and the Mac's
+/// sidebar doesn't. Compact, in the narrow window's rail, it's the avatar alone with the count as a
+/// badge too.
 struct ContactRow: View {
     let contact: Contact
     /// Resolved members when `contact` is a room; empty for agents.
@@ -30,10 +31,20 @@ struct ContactRow: View {
                     if contact.activity == .needsYou { NeedsYouDot().offset(x: 3, y: -2) }
                 }
             VStack(alignment: .leading, spacing: 2) {
-                Text(contact.name)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Theme.ink)
-                    .lineLimit(1)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(contact.name)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                    #if os(iOS)
+                        Spacer(minLength: 0)
+                        if let lastActive = contact.lastActive {
+                            Text(Self.stamp(for: lastActive))
+                                .font(.system(size: 13))
+                                .foregroundStyle(Theme.secondaryInk)
+                        }
+                    #endif
+                }
                 HStack(spacing: 8) {
                     Text(previewText)
                         .font(.system(size: 13))
@@ -121,5 +132,26 @@ struct ContactIndicator: View {
                 .background(Capsule().fill(Theme.primary))
                 .accessibilityLabel(Text("\(unreadCount) unread"))
         }
+    }
+}
+
+extension ContactRow {
+    /// "10:44 AM" today, "Yesterday", the weekday within the week, otherwise the date.
+    static func stamp(for date: Date, now: Date = .now, calendar: Calendar = .current) -> String {
+        if calendar.isDate(date, inSameDayAs: now) {
+            return date.formatted(date: .omitted, time: .shortened)
+        }
+        if let yesterday = calendar.date(byAdding: .day, value: -1, to: now),
+            calendar.isDate(date, inSameDayAs: yesterday)
+        {
+            return String(localized: "Yesterday")
+        }
+        let days = calendar.dateComponents(
+            [.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)
+        ).day
+        if let days, days < 7 {
+            return date.formatted(.dateTime.weekday(.wide))
+        }
+        return date.formatted(.dateTime.day().month(.abbreviated))
     }
 }

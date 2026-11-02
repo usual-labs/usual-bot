@@ -163,6 +163,43 @@ struct ChatThreadTests {
         #expect(thread.state.items.last?.content == .user("Yes"))
     }
 
+    @Test func aMessageInTheBoxAnswersTheQuestion() async throws {
+        let (thread, gateway) = try await openThread(resume: [
+            "session_id": "live-1", "running": true, "messages": [], "open_requests": [clarifyRequest],
+        ])
+        #expect(thread.questionTheBoxAnswers?.id == thread.questions.first?.id)
+
+        thread.send("Not yet, keep it until Friday")
+        try await waitUntil { gateway.socket.sent.count == 2 }
+        // An answer to the question, not a steer.
+        #expect(
+            gateway.socket.sent[1] == [
+                "jsonrpc": "2.0", "id": "srq-2",
+                "result": ["answers": ["q0": "Not yet, keep it until Friday"], "outcome": "submitted"],
+            ])
+        #expect(thread.questions.isEmpty)
+        #expect(thread.questionTheBoxAnswers == nil)
+    }
+
+    @Test func theBoxSteersWhenTheCardNeedsMoreThanOneAnswer() async throws {
+        let request: JSONValue = [
+            "id": "srq-2", "method": "clarify",
+            "params": [
+                "session_id": "live-1",
+                "questions": [
+                    ["qid": "q0", "question": "Which folders?", "choices": ["A", "B"], "multi_select": true]
+                ],
+            ],
+        ]
+        let (thread, gateway) = try await openThread(resume: [
+            "session_id": "live-1", "running": true, "messages": [], "open_requests": [request],
+        ])
+        #expect(thread.questionTheBoxAnswers == nil)
+        thread.send("Use the staging branch instead")
+        _ = try await gateway.answer(1, method: "session.steer", result: ["status": "queued"])
+        #expect(thread.questions.count == 1)
+    }
+
     @Test func skippingAQuestionCancelsIt() async throws {
         let (thread, gateway) = try await openThread(resume: [
             "session_id": "live-1", "running": true, "messages": [], "open_requests": [clarifyRequest],

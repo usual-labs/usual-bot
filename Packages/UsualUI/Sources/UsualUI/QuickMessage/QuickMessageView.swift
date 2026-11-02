@@ -289,7 +289,8 @@ private struct QuickAnswer: View {
         ForEach(thread.questions) { prompt in
             QuestionCard(
                 prompt: prompt, agentName: contact.name, answer: { thread.answer(prompt, with: $0) },
-                skip: { thread.skip(prompt) })
+                skip: { thread.skip(prompt) },
+                answersFromBox: thread.questionTheBoxAnswers?.id == prompt.id)
         }
         ForEach(thread.secrets) { prompt in
             SecretCard(

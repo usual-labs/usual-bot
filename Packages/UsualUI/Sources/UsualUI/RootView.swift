@@ -30,7 +30,10 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
         Group { content }
             .appPreferences()
             #if os(iOS)
-                .sheet(isPresented: $showsSettings) { SettingsView(model: model) }
+                .sheet(isPresented: $showsSettings) {
+                    // The gateway menu's items, such as Tailscale, live on Settings' Connection page.
+                    SettingsView(model: model, connectionControls: AnyView(gatewayMenu()))
+                }
                 .overlay(alignment: .topTrailing) {
                     if case .signedOut = model.session, !model.isRestoring {
                         settingsButton.padding(16)
@@ -73,15 +76,18 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
             ) { compact in
                 #if os(macOS)
                     let layout = compact ? AnyLayout(VStackLayout(spacing: 4)) : AnyLayout(HStackLayout(spacing: 8))
+                    layout {
+                        GatewayStatusButton(
+                            gateway: gateway, link: model.link, compact: compact, signOut: model.signOut,
+                            more: gatewayMenu)
+                        settingsButton
+                    }
+                    .fixedSize(horizontal: compact, vertical: false)
                 #else
-                    let layout = AnyLayout(HStackLayout(spacing: 8))
+                    // As in Grok's phone app, one round button; the gateway's state is its dot, and
+                    // the rest of it is at the top of Settings.
+                    phoneSettingsButton
                 #endif
-                layout {
-                    GatewayStatusButton(
-                        gateway: gateway, link: model.link, compact: compact, signOut: model.signOut, more: gatewayMenu)
-                    settingsButton
-                }
-                .fixedSize(horizontal: compact, vertical: false)
             }
             .environment(\.media, model.media)
             .environment(\.botPictures, model.pictures)
@@ -108,6 +114,28 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
         .accessibilityLabel(Text("Settings"))
         .help("Settings")
     }
+
+    #if os(iOS)
+        private var phoneSettingsButton: some View {
+            Button(action: showSettings) {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 19, weight: .regular))
+                    .foregroundStyle(Theme.ink)
+                    .frame(width: 44, height: 44)
+                    .overlay(alignment: .bottomTrailing) {
+                        Circle()
+                            .fill(model.link.dotColor)
+                            .frame(width: 10, height: 10)
+                            .overlay(Circle().strokeBorder(Theme.pane, lineWidth: 2))
+                            .offset(x: -4, y: -4)
+                    }
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.clickable)
+            .accessibilityLabel(Text("Settings"))
+            .accessibilityValue(Text(model.link.statusText))
+        }
+    #endif
 
     private var emptyText: LocalizedStringKey {
         if case .online = model.link { return "No agents on this gateway yet." }
@@ -411,13 +439,19 @@ struct ContactsSplitView<Footer: View>: View {
                 open: { open(contact) }, toggleProfile: panel.map { _ in { showsProfile.toggle() } },
                 jump: jump(in: contact), jumped: { jump = nil }
             )
-            .inspector(isPresented: Binding(get: { showsProfile && panel != nil }, set: { showsProfile = $0 })) {
-                if let panel {
-                    panel.inspectorColumnWidth(min: 280, ideal: 320, max: 420)
-                }
-            }
             #if os(macOS)
+                .inspector(isPresented: Binding(get: { showsProfile && panel != nil }, set: { showsProfile = $0 })) {
+                    if let panel {
+                        panel.inspectorColumnWidth(min: 280, ideal: 320, max: 420)
+                    }
+                }
                 .profileCloseButton(shown: showsProfile && panel != nil) { showsProfile = false }
+            #else
+                // A sheet, not an inspector: an inspector's content sits in the chat's navigation
+                // stack, so its toolbar joins the chat's bar and its pages never open.
+                .sheet(isPresented: Binding(get: { showsProfile && panel != nil }, set: { showsProfile = $0 })) {
+                    panel
+                }
             #endif
         } else {
             ContentUnavailableView(

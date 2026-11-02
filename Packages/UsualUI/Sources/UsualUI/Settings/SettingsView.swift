@@ -30,12 +30,15 @@ public struct SettingsView: View {
 
     private let model: AppModel
     private let desktopControls: AnyView?
+    /// The app's own connection settings, such as iPhone's built-in Tailscale.
+    private let connectionControls: AnyView?
     @State private var page: Page? = .general
     @Environment(\.dismiss) private var dismiss
 
-    public init(model: AppModel, desktopControls: AnyView? = nil) {
+    public init(model: AppModel, desktopControls: AnyView? = nil, connectionControls: AnyView? = nil) {
         self.model = model
         self.desktopControls = desktopControls
+        self.connectionControls = connectionControls
     }
 
     public var body: some View {
@@ -68,22 +71,75 @@ public struct SettingsView: View {
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .appPreferences()
         #else
+            // Grok's phone settings: a close button at the top left, the account (here, the
+            // gateway) on top, then plain rows.
             NavigationStack {
                 List {
-                    ForEach(Page.allCases) { page in
-                        NavigationLink(value: page) { Label(page.title, systemImage: page.icon) }
+                    Section {
+                        NavigationLink(value: Page.connection) { gatewayCard }
+                    }
+                    Section {
+                        ForEach([Page.general, .notifications, .voice]) { page in
+                            NavigationLink(value: page) { Text(page.title).foregroundStyle(Theme.ink) }
+                        }
                     }
                     about
                 }
                 .navigationTitle("Settings")
+                .navigationBarTitleDisplayMode(.inline)
                 .navigationDestination(for: Page.self) { page in
                     content(page).navigationTitle(page.title)
                 }
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark")
+                        }
+                        .accessibilityLabel(Text("Close"))
+                    }
+                }
             }
             .appPreferences()
         #endif
     }
+
+    #if os(iOS)
+        /// Which gateway, and whether it's reachable; opens Connection.
+        private var gatewayCard: some View {
+            HStack(spacing: 14) {
+                Image(systemName: "server.rack")
+                    .font(.system(size: 18))
+                    .foregroundStyle(Theme.ink)
+                    .frame(width: 44, height: 44)
+                    .background(Theme.selection, in: Circle())
+                    .overlay(alignment: .bottomTrailing) {
+                        Circle()
+                            .fill(model.link.dotColor)
+                            .frame(width: 11, height: 11)
+                            .overlay(Circle().strokeBorder(Theme.window, lineWidth: 2))
+                    }
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(gatewayName)
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                    Text(connectionStatus)
+                        .font(.system(size: 14))
+                        .foregroundStyle(Theme.secondaryInk)
+                        .lineLimit(2)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+
+        private var gatewayName: String {
+            if case .signedIn(let gateway) = model.session { return gateway.displayName }
+            return String(localized: "Not connected")
+        }
+    #endif
 
     private func content(_ page: Page) -> some View {
         Form {
@@ -130,6 +186,7 @@ public struct SettingsView: View {
                 #endif
             }
             .task { await model.loadGatewayDetails() }
+            if let connectionControls { connectionControls }
             Section {
                 Button("Sign Out", role: .destructive) { model.signOut() }
             } footer: {
@@ -157,8 +214,11 @@ public struct SettingsView: View {
                 "User Guide",
                 destination: URL(string: "https://github.com/usual-labs/usual-bot/blob/main/docs/guides/user-guide.md")!
             )
+            .foregroundStyle(Theme.ink)
             Link("Source Code", destination: URL(string: "https://github.com/usual-labs/usual-bot")!)
+                .foregroundStyle(Theme.ink)
             Link("Licenses and Credits", destination: URL(string: "https://github.com/usual-labs/usual-bot#license")!)
+                .foregroundStyle(Theme.ink)
             Text("An independent app, not made by, affiliated with or endorsed by Nous Research.")
                 .font(.footnote).foregroundStyle(.secondary)
         }

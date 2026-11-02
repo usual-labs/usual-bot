@@ -126,11 +126,9 @@ struct RetryCard: View {
                 .font(.system(size: 13))
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
+            // A pill like every other card's, so it reads as a button.
             Button("Try Again", action: retry)
-                .buttonStyle(.clickable)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Theme.ink)
-                .frame(minHeight: 44)
+                .buttonStyle(CardButtonStyle(primary: true))
         }
         .cardSurface()
     }

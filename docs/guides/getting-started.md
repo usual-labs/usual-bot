@@ -135,7 +135,7 @@ sign-in for apps that Usual Bot uses. If it's missing, update Hermes on the gate
 
 The app keeps your sign-in in the Keychain and refreshes it as it goes, so you won't sign in again
 unless the gateway ends your session. To switch gateways, sign out from the connection status at
-the bottom of the sidebar (on iPhone, the dot at the top left).
+the bottom of the sidebar (on iPhone, Settings › your gateway).
 
 ## What's next
 

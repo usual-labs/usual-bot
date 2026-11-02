@@ -6,10 +6,21 @@ import SwiftUI
 #endif
 
 /// The agent's card beside the chat: who it is, its routines, skills, apps and vault, and the machine it runs on.
-/// A trailing column on the Mac, a sheet on iPhone.
+/// A trailing column with tabs on the Mac; on iPhone a sheet of rows that open each page, as in
+/// Grok's phone app.
 struct ProfilePanel: View {
-    enum Tab: Hashable {
+    enum Tab: Hashable, CaseIterable {
         case routines, skills, apps, vault, machine
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .routines: "Routines"
+            case .skills: "Skills"
+            case .apps: "Apps"
+            case .vault: "Vault"
+            case .machine: "Machine"
+            }
+        }
     }
 
     let contact: Contact
@@ -24,58 +35,85 @@ struct ProfilePanel: View {
     let close: () -> Void
 
     @State private var tab = Tab.routines
+    /// iPhone: the pages opened from the rows.
+    @State private var path: [Tab] = []
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 18) {
-                header
-                // Centred when the tabs fit; scrolling sideways when they don't, as on iPhone.
-                ViewThatFits(in: .horizontal) {
-                    tabs
-                    ScrollView(.horizontal, showsIndicators: false) { tabs }
+        #if os(macOS)
+            ScrollView {
+                VStack(spacing: 18) {
+                    header
+                    // Centred when the tabs fit; scrolling sideways when they don't.
+                    ViewThatFits(in: .horizontal) {
+                        tabs
+                        ScrollView(.horizontal, showsIndicators: false) { tabs }
+                    }
+                    page(tab)
                 }
-
-                switch tab {
-                case .routines:
-                    RoutinesView(list: routines, agentName: contact.name)
-                case .skills:
-                    SkillsView(list: skills, agentName: contact.name)
-                case .apps:
-                    AppsView(list: apps, agentName: contact.name)
-                        .id(apps.profile)
-                case .vault:
-                    // Per Bot, so nothing typed for one agent can carry over to the next.
-                    VaultView(list: vault, agentName: contact.name, isOnline: isOnline)
-                        .id(vault.profile)
-                case .machine:
-                    MachineView(
-                        details: contact.details, gateway: gateway, link: link, gatewayDetails: gatewayDetails,
-                        load: loadGatewayDetails)
-                }
+                .padding(.horizontal, 20)
+                .padding(.top, 28)
+                .padding(.bottom, 20)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 28)
-            .padding(.bottom, 20)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Theme.window)
-        // On the Mac the close button is a toolbar item the chat adds while the panel is open.
-        #if !os(macOS)
-            .overlay(alignment: .topTrailing) {
-                Button(action: close) {
-                    Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Theme.secondaryInk)
-                    .frame(width: 32, height: 32)
-                    .background(Theme.pane, in: Circle())
-                    .overlay(Circle().strokeBorder(Theme.border))
-                    .contentShape(Circle())
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Theme.window)
+        #else
+            // Grok's phone profile: who it is, then one card of rows, each opening its page.
+            NavigationStack(path: $path) {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        header
+                        PhoneProfileRows(
+                            contact: contact, routines: routines, skills: skills, apps: apps, vault: vault
+                        ) { path.append($0) }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 20)
                 }
-                .buttonStyle(.clickable)
-                .accessibilityLabel(Text("Close profile"))
-                .padding(12)
+                .background(Theme.window)
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationDestination(for: Tab.self) { tab in
+                    ScrollView {
+                        page(tab).padding(20)
+                    }
+                    .background(Theme.window)
+                    .navigationTitle(tab.title)
+                }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Close profile", systemImage: "xmark", action: close)
+                    }
+                }
+                .task(id: contact.id) {
+                    // The rows' counts; each page reloads its own when opened.
+                    async let routinesLoad: Void = routines.refresh()
+                    async let skillsLoad: Void = skills.refresh()
+                    async let appsLoad: Void = apps.refresh()
+                    _ = await (routinesLoad, skillsLoad, appsLoad)
+                    if isOnline { await vault.refresh() }
+                }
             }
         #endif
+    }
+
+    @ViewBuilder private func page(_ tab: Tab) -> some View {
+        switch tab {
+        case .routines:
+            RoutinesView(list: routines, agentName: contact.name)
+        case .skills:
+            SkillsView(list: skills, agentName: contact.name)
+        case .apps:
+            AppsView(list: apps, agentName: contact.name)
+                .id(apps.profile)
+        case .vault:
+            // Per Bot, so nothing typed for one agent can carry over to the next.
+            VaultView(list: vault, agentName: contact.name, isOnline: isOnline)
+                .id(vault.profile)
+        case .machine:
+            MachineView(
+                details: contact.details, gateway: gateway, link: link, gatewayDetails: gatewayDetails,
+                load: loadGatewayDetails)
+        }
     }
 
     private var isOnline: Bool {

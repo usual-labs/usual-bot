@@ -65,8 +65,9 @@ struct Composer: View {
 
     private var placeholder: String {
         if !thread.isAttached { return String(localized: "Reconnecting…") }
+        if thread.questionTheBoxAnswers != nil { return String(localized: "Answer \(agentName)") }
         if thread.state.isRunning { return String(localized: "Steer \(agentName) while it works") }
-        return String(localized: "Message \(agentName)")
+        return String(localized: "Ask \(agentName)")
     }
 }
 

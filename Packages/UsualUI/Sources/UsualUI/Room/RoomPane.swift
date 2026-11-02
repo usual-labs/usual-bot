@@ -218,7 +218,7 @@ struct RoomPane: View {
     }
 
     private var placeholder: String {
-        String(localized: "Message \(contact.name) · @ to mention an agent")
+        String(localized: "Ask everyone, or @ one agent")
     }
 
     /// The members' skills after `/`; reloaded each time the menu opens.

@@ -56,8 +56,15 @@ struct GatewayStatusButton<More: View>: View {
         }
     }
 
-    private var statusText: String {
-        switch link {
+    private var statusText: String { link.statusText }
+
+    private var dotColor: Color { link.dotColor }
+}
+
+extension AppModel.Link {
+    /// What the connection is doing, for the status button and the iPhone settings button.
+    var statusText: String {
+        switch self {
         case .online(let dialect):
             return dialect == .canonical ? String(localized: "Connected") : String(localized: "Connected (dashboard)")
         case .connecting: return String(localized: "Connecting…")
@@ -65,8 +72,8 @@ struct GatewayStatusButton<More: View>: View {
         }
     }
 
-    private var dotColor: Color {
-        switch link {
+    var dotColor: Color {
+        switch self {
         case .online: return Theme.online
         case .connecting: return Theme.needsYouInk
         case .offline: return Theme.danger

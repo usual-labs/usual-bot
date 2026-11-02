@@ -2,17 +2,88 @@ import HermesKit
 import SwiftUI
 
 /// The agent's questions, answered in the chat: pick a suggestion or type your own answer.
+///
+/// One question with one answer takes Grok's lighter card: a choice answers at once, ✕ skips, and
+/// the message box below answers in your own words. Anything more keeps a form with Send.
 struct QuestionCard: View {
     let prompt: ClarifyPrompt
     let agentName: String
     let answer: ([String: [String]]) -> Void
     let skip: () -> Void
+    /// The message box answers this question, so the card needs no field or Send.
+    var answersFromBox = false
 
     @Environment(\.messageTextSize) private var messageSize
     @State private var picked: [String: [String]] = [:]
     @State private var typed: [String: String] = [:]
 
     var body: some View {
+        if answersFromBox, let question = prompt.questions.first {
+            light(question)
+        } else {
+            form
+        }
+    }
+
+    private func light(_ question: ClarifyPrompt.Question) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 12) {
+                    title(question)
+                    Spacer(minLength: 0)
+                    Button(action: skip) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Theme.secondaryInk)
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.clickable)
+                    .accessibilityLabel(Text("Skip the question"))
+                    .help("Skip")
+                }
+                ForEach(Array(question.choices.enumerated()), id: \.element) { index, choice in
+                    choiceButton(index, choice, isPicked: false) { answer([question.id: [choice]]) }
+                }
+            }
+            .cardSurface()
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(Text("\(agentName) has a question"))
+            Text("Or answer in the chat below")
+                .font(.system(size: 13))
+                .foregroundStyle(Theme.secondaryInk)
+                .padding(.leading, 14)
+        }
+    }
+
+    private func title(_ question: ClarifyPrompt.Question) -> some View {
+        Text(question.text)
+            .font(.system(size: messageSize, weight: .semibold))
+            .foregroundStyle(Theme.ink)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func choiceButton(
+        _ index: Int, _ choice: String, isPicked: Bool, action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                letterChip(index, isPicked: isPicked)
+                Text(choice)
+                    .foregroundStyle(Theme.ink)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .font(.system(size: messageSize))
+            .padding(.horizontal, 4)
+            .frame(minHeight: 34)
+            .contentShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.clickable)
+        .hoverHighlight(in: RoundedRectangle(cornerRadius: 10))
+        .accessibilityAddTraits(isPicked ? .isSelected : [])
+    }
+
+    private var form: some View {
         VStack(alignment: .leading, spacing: 16) {
             ForEach(prompt.questions) { question in
                 questionView(question)
@@ -34,29 +105,10 @@ struct QuestionCard: View {
 
     private func questionView(_ question: ClarifyPrompt.Question) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(question.text)
-                .font(.system(size: messageSize, weight: .semibold))
-                .foregroundStyle(Theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
+            title(question)
             ForEach(Array(question.choices.enumerated()), id: \.element) { index, choice in
                 let isPicked = picked[question.id, default: []].contains(choice)
-                Button {
-                    toggle(choice, in: question)
-                } label: {
-                    HStack(spacing: 10) {
-                        letterChip(index, isPicked: isPicked)
-                        Text(choice)
-                            .foregroundStyle(Theme.ink)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .font(.system(size: messageSize))
-                    .padding(.horizontal, 4)
-                    .frame(minHeight: 34)
-                    .contentShape(RoundedRectangle(cornerRadius: 10))
-                }
-                .buttonStyle(.clickable)
-                .hoverHighlight(in: RoundedRectangle(cornerRadius: 10))
-                .accessibilityAddTraits(isPicked ? .isSelected : [])
+                choiceButton(index, choice, isPicked: isPicked) { toggle(choice, in: question) }
             }
             TextField(
                 question.choices.isEmpty ? "Your answer" : "Or type your own answer",

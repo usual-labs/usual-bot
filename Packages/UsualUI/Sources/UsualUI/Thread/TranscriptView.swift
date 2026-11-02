@@ -58,7 +58,8 @@ struct TranscriptView: View {
             ForEach(thread.questions) { prompt in
                 QuestionCard(
                     prompt: prompt, agentName: agentName, answer: { thread.answer(prompt, with: $0) },
-                    skip: { thread.skip(prompt) }
+                    skip: { thread.skip(prompt) },
+                    answersFromBox: thread.questionTheBoxAnswers?.id == prompt.id
                 )
                 .transition(.settle)
             }

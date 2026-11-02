@@ -156,10 +156,8 @@ struct ContactList: View {
                             ForEach(block.contacts) { contact in
                                 ContactRow(contact: contact, members: Self.members(of: contact, in: byID))
                                     .tag(contact.id)
-                                    // No line between the bar and the first chat.
-                                    .listRowSeparator(
-                                        contact.id == block.contacts.first?.id ? .hidden : .automatic, edges: .top
-                                    )
+                                    // No lines between chats, as in Grok.
+                                    .listRowSeparator(.hidden)
                                     .listRowBackground(Color.clear)
                                     .contextMenu { rowMenu(contact) }
                             }
