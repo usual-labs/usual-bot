@@ -60,7 +60,7 @@ struct SectionHeader<Actions: View>: View {
             .hoverHighlight(in: RoundedRectangle(cornerRadius: 10))
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
         .accessibilityLabel(Text(verbatim: title))
         .accessibilityValue(isFolded ? Text("Folded") : Text("Open"))
         .accessibilityAddTraits(.isHeader)

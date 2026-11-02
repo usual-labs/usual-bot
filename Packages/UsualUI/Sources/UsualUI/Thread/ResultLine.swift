@@ -17,7 +17,7 @@ struct ResultLine: View {
                 } label: {
                     label
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
                 .accessibilityValue(expanded ? Text("Expanded") : Text("Collapsed"))
             }
             if expanded {

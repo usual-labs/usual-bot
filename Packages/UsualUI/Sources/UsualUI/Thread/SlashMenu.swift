@@ -60,7 +60,7 @@ struct SuggestionMenu: View {
                                 )
                                 .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.clickable)
                         .onHover { if $0 { highlight(index) } }
                         .accessibilityAddTraits(index == highlighted ? .isSelected : [])
                         .id(item.id)

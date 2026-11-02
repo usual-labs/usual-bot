@@ -41,6 +41,9 @@ struct ConversationScrollState {
         return correction
     }
 
+    /// Search showed a message further up: stay there, as after scrolling away by hand.
+    mutating func leaveEnd() { followsEnd = false }
+
     /// A gesture's final phase can be lost when the app stops being active.
     mutating func resume() -> CGFloat? { scrollingByHand(false) }
 

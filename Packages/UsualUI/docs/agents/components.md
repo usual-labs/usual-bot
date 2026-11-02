@@ -2,7 +2,7 @@
 
 ## Implemented today
 
-RootView owns top-level routing; ContactsSplitView handles selection; ContactList/ContactRow own roster; ThreadPane, Composer and TranscriptView own conversation presentation; RoomPane/NewRoomSheet own rooms; ProfilePanel owns agent profile/routine UI. QuickMessageView is the ⌥Space panel's content.
+RootView owns top-level routing; ContactsSplitView handles selection; ContactList/ContactRow own roster; ThreadPane, Composer and TranscriptView own conversation presentation; RoomPane/NewRoomSheet own rooms; ProfilePanel owns the agent profile; RoutinesView and the sheets it opens own routines. QuickMessageView is the ⌥Space panel's content.
 
 ## What the code doesn't explain
 

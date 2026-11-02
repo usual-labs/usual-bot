@@ -5,16 +5,17 @@ import SwiftUI
     import AppKit
 #endif
 
-/// The agent's card beside the chat: who it is, its routines, skills and vault, and the machine it runs on.
+/// The agent's card beside the chat: who it is, its routines, skills, apps and vault, and the machine it runs on.
 /// A trailing column on the Mac, a sheet on iPhone.
 struct ProfilePanel: View {
     enum Tab: Hashable {
-        case routines, skills, vault, machine
+        case routines, skills, apps, vault, machine
     }
 
     let contact: Contact
     let routines: RoutineList
     let skills: SkillList
+    let apps: MCPServerList
     let vault: VaultList
     let gateway: GatewayAddress
     let link: AppModel.Link
@@ -28,11 +29,10 @@ struct ProfilePanel: View {
         ScrollView {
             VStack(spacing: 18) {
                 header
-                HStack(spacing: 2) {
-                    tabButton("Routines", .routines)
-                    tabButton("Skills", .skills)
-                    tabButton("Vault", .vault)
-                    tabButton("Machine", .machine)
+                // Centred when the tabs fit; scrolling sideways when they don't, as on iPhone.
+                ViewThatFits(in: .horizontal) {
+                    tabs
+                    ScrollView(.horizontal, showsIndicators: false) { tabs }
                 }
 
                 switch tab {
@@ -40,6 +40,9 @@ struct ProfilePanel: View {
                     RoutinesView(list: routines, agentName: contact.name)
                 case .skills:
                     SkillsView(list: skills, agentName: contact.name)
+                case .apps:
+                    AppsView(list: apps, agentName: contact.name)
+                        .id(apps.profile)
                 case .vault:
                     // Per Bot, so nothing typed for one agent can carry over to the next.
                     VaultView(list: vault, agentName: contact.name, isOnline: isOnline)
@@ -68,7 +71,7 @@ struct ProfilePanel: View {
                     .overlay(Circle().strokeBorder(Theme.border))
                     .contentShape(Circle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
                 .accessibilityLabel(Text("Close profile"))
                 .padding(12)
             }
@@ -99,20 +102,31 @@ struct ProfilePanel: View {
         .frame(maxWidth: .infinity)
     }
 
+    private var tabs: some View {
+        // Tight enough for all five in the Mac's side panel.
+        HStack(spacing: 0) {
+            tabButton("Routines", .routines)
+            tabButton("Skills", .skills)
+            tabButton("Apps", .apps)
+            tabButton("Vault", .vault)
+            tabButton("Machine", .machine)
+        }
+    }
+
     private func tabButton(_ title: LocalizedStringKey, _ value: Tab) -> some View {
         Button {
             tab = value
         } label: {
             Text(title)
-                .font(.system(size: 13.5, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(tab == value ? Theme.ink : Theme.secondaryInk)
                 .fixedSize()
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 8)
                 .frame(height: 32)
                 .background(tab == value ? Theme.selection : .clear, in: Capsule())
                 .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
         .accessibilityAddTraits(tab == value ? .isSelected : [])
     }
 
@@ -121,121 +135,6 @@ struct ProfilePanel: View {
         var copy = contact
         copy.activity = .idle
         return copy
-    }
-}
-
-// MARK: - Routines
-
-private struct RoutinesView: View {
-    let list: RoutineList
-    let agentName: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            switch list.phase {
-            case .loading:
-                ProgressView().controlSize(.small).frame(maxWidth: .infinity).padding(.vertical, 20)
-            case .failed(let message):
-                VStack(spacing: 8) {
-                    Text(message).multilineTextAlignment(.center)
-                    Button("Try Again") { Task { await list.refresh() } }
-                        .buttonStyle(.plain)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Theme.ink)
-                        .frame(minHeight: 44)
-                }
-                .font(.system(size: 13))
-                .foregroundStyle(Theme.secondaryInk)
-                .frame(maxWidth: .infinity)
-            case .ready:
-                if list.routines.isEmpty {
-                    Text("No routines yet.")
-                        .font(.system(size: 13.5))
-                        .foregroundStyle(Theme.secondaryInk)
-                        .padding(.vertical, 8)
-                }
-                ForEach(list.routines) { routine in
-                    RoutineRow(routine: routine, list: list)
-                    Divider().overlay(Theme.border)
-                }
-                if let problem = list.problem {
-                    Text(problem)
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Theme.danger)
-                        .padding(.top, 10)
-                }
-            }
-            Text("New routine? Ask \(agentName) in chat, like “every Monday at 9, check our dependencies”.")
-                .font(.system(size: 12.5))
-                .foregroundStyle(Theme.secondaryInk)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 14)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        // Next-run times move on, and jobs can change from chat: keep the list fresh while it shows.
-        .task(id: list.profile) {
-            while !Task.isCancelled {
-                await list.refresh()
-                try? await Task.sleep(for: .seconds(30))
-            }
-        }
-    }
-}
-
-private struct RoutineRow: View {
-    let routine: Routine
-    let list: RoutineList
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(routine.name)
-                    .font(.system(size: 14))
-                    .foregroundStyle(Theme.ink)
-                    .lineLimit(2)
-                statusLine
-                    .font(.system(size: 12.5))
-                    .lineLimit(2)
-            }
-            Spacer(minLength: 8)
-            Toggle(isOn: Binding(get: { routine.isOn }, set: { list.setOn($0, for: routine) })) {
-                Text(routine.name)
-            }
-            .toggleStyle(.switch)
-            .labelsHidden()
-            .tint(Theme.ink)
-            .disabled(routine.isFinished)
-        }
-        .padding(.vertical, 11)
-    }
-
-    /// The schedule in grey, the status after it in red when the last run failed.
-    private var statusLine: Text {
-        let status = RoutineStatus.status(for: routine)
-        let schedule = Text(routine.schedule).foregroundStyle(Theme.secondaryInk)
-        guard !status.isEmpty else { return schedule }
-        let styled = Text(status).foregroundStyle(routine.lastRunFailed ? Theme.danger : Theme.secondaryInk)
-        guard !routine.schedule.isEmpty else { return styled }
-        return Text("\(schedule)\(Text(" · ").foregroundStyle(Theme.secondaryInk))\(styled)")
-    }
-}
-
-/// "Weekdays at 08:00 · next tomorrow".
-enum RoutineStatus {
-    static func line(for routine: Routine, now: Date = .now) -> String {
-        [routine.schedule, status(for: routine, now: now)].filter { !$0.isEmpty }.joined(separator: " · ")
-    }
-
-    static func status(for routine: Routine, now: Date = .now) -> String {
-        if routine.isFinished { return String(localized: "Finished") }
-        if !routine.isOn { return String(localized: "Paused") }
-        let next = routine.nextRun.map {
-            String(localized: "next \($0.formatted(.relative(presentation: .named, unitsStyle: .wide)))")
-        }
-        if routine.lastRunFailed {
-            return [String(localized: "Last run failed"), next].compactMap { $0 }.joined(separator: " · ")
-        }
-        return next ?? ""
     }
 }
 

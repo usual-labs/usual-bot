@@ -143,7 +143,7 @@ struct MessageRow<Content: View>: View {
                             if !reaction.byAgent { Capsule().strokeBorder(Theme.ink.opacity(0.25)) }
                         }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
                 .disabled(actions.map { !$0.canReact(item) } ?? true)
                 .help(reaction.byAgent ? String(localized: "From the agent") : String(localized: "Your reaction"))
                 .accessibilityLabel(
@@ -164,8 +164,8 @@ struct MessageRow<Content: View>: View {
                     .opacity(shown ? 1 : 0)
                     .animation(.easeOut(duration: 0.12), value: shown)
                     .allowsHitTesting(shown)
-                    // Room for all three buttons, so every reply wraps at the same width.
-                    .frame(width: 104, alignment: isMine ? .trailing : .leading)
+                    // Room for all three buttons and the time, so every reply wraps at the same width.
+                    .frame(width: 164, alignment: isMine ? .trailing : .leading)
             }
         }
 
@@ -185,6 +185,8 @@ struct MessageRow<Content: View>: View {
 
         private func bar(_ actions: MessageActions) -> some View {
             HStack(spacing: 2) {
+                // Grok shows when a message was sent only while you point at it.
+                if isMine, let date = item.date { sentTime(date) }
                 if canReact(actions) {
                     barButton("face.smiling", String(localized: "React")) { picking = true }
                         .popover(isPresented: $picking, arrowEdge: .bottom) { picker(actions) }
@@ -197,19 +199,30 @@ struct MessageRow<Content: View>: View {
                     Image(systemName: "ellipsis").frame(width: 28, height: 28).contentShape(Rectangle())
                 }
                 .menuStyle(.button)
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
+                .clickable()
                 .menuIndicator(.hidden)
                 .help("More")
+                if !isMine, let date = item.date { sentTime(date) }
             }
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(Theme.secondaryInk)
+        }
+
+        private func sentTime(_ date: Date) -> some View {
+            Text(DateLabels.time(of: date))
+                .font(.system(size: 11.5))
+                .monospacedDigit()
+                .fixedSize()
+                .padding(.horizontal, 4)
+                .help(date.formatted(date: .complete, time: .shortened))
         }
 
         private func barButton(_ systemImage: String, _ label: String, action: @escaping () -> Void) -> some View {
             Button(action: action) {
                 Image(systemName: systemImage).frame(width: 28, height: 28).contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.clickable)
             .help(label)
             .accessibilityLabel(Text(label))
         }
@@ -237,6 +250,9 @@ struct MessageRow<Content: View>: View {
             Button("Reply", systemImage: "arrowshape.turn.up.left") { actions.reply(item) }
             Button("Copy", systemImage: "doc.on.doc", action: copy)
             rewindButtons(actions)
+            if let date = item.date {
+                Section { Text(date.formatted(date: .abbreviated, time: .shortened)) }
+            }
         }
     #endif
 
@@ -276,7 +292,7 @@ private struct ReactionPicker: View {
                         .frame(width: 36, height: 36)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
                 .help(showsMore ? "Fewer" : "More reactions")
             }
             if showsMore {
@@ -294,7 +310,7 @@ private struct ReactionPicker: View {
         } label: {
             Text(emoji).font(.system(size: 22)).frame(width: 36, height: 36).contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
         .accessibilityLabel(Text("React \(emoji)"))
     }
 }
@@ -332,7 +348,7 @@ struct ReplyChip: View {
                     .frame(width: 24, height: 24)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.clickable)
             .keyboardShortcut(.cancelAction)
             .accessibilityLabel(Text(cancelLabel))
         }

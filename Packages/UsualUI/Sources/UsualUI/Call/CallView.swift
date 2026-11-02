@@ -218,7 +218,7 @@ private struct CallBarButton: View {
                 .background(tint ?? (active ? Theme.ink : Theme.selection), in: Circle())
                 .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
         .help(label)
         .accessibilityLabel(Text(label))
     }

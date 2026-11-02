@@ -16,9 +16,7 @@
                 cache: OfflineCache(directory: .temporaryDirectory.appending(path: "UsualBotDemo")))
             let demo = Demo(now: now, longConversations: longConversations)
             let routines = Dictionary(
-                uniqueKeysWithValues: demo.agents.map {
-                    ($0.id, RoutineList.sample($0.id == "ops" ? demo.opsRoutines : []))
-                })
+                uniqueKeysWithValues: demo.agents.map { ($0.id, DemoRoutines.list(for: $0.id, now: now)) })
             model.showDemo(
                 gateway: Demo.gateway, contacts: demo.agents + [demo.roomContact], threads: demo.threads,
                 rooms: [demo.roomContact.id: demo.room], routines: routines,
@@ -26,7 +24,9 @@
                 vaults: Dictionary(
                     uniqueKeysWithValues: demo.agents.map {
                         ($0.id, VaultList.sample(items: demo.vaultItems, sources: Demo.vaultSources))
-                    }))
+                    }),
+                apps: Dictionary(
+                    uniqueKeysWithValues: demo.agents.map { ($0.id, MCPServerList.demo(gateway: Demo.gateway)) }))
             model.media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }
             return model
         }
@@ -125,10 +125,20 @@
 
         var threads: [Contact.ID: ChatThread] {
             var threads = [
+                // Atlas's question was yesterday and its answer today, so both date labels show.
                 "atlas": ChatThread.sample(
-                    "atlas", state: ThreadState(history: olderHistory + atlasChat, running: false)),
+                    "atlas",
+                    state: ThreadState(
+                        history: dated(olderHistory, from: ago(4 * 1440), to: ago(2 * 1440))
+                            + dated(Array(atlasChat.prefix(5)), from: ago(1440 + 20), to: ago(1440 + 14))
+                            + dated(Array(atlasChat.dropFirst(5)), from: ago(16), to: ago(14)),
+                        running: false)),
                 "forge": ChatThread.sample(
-                    "forge", state: ThreadState(history: olderHistory + forgeChat, running: false)),
+                    "forge",
+                    state: ThreadState(
+                        history: dated(olderHistory, from: ago(4 * 1440), to: ago(2 * 1440))
+                            + dated(forgeChat, from: ago(6), to: ago(2)),
+                        running: false)),
             ]
             threads["forge"]?.receive(
                 ApprovalPrompt(
@@ -141,7 +151,9 @@
                     answer: .answered(
                         "About **40,000 pages**, re-indexed nightly. Turbopuffer stores them for ~$6 a month."))
             ]
-            threads["ops"] = ChatThread.sample("ops", state: ThreadState(history: opsChat, running: false))
+            threads["ops"] = ChatThread.sample(
+                "ops",
+                state: ThreadState(history: dated(opsChat, from: ago(6 * 60 + 4), to: ago(6 * 60)), running: false))
             threads["ops"]?.receive(
                 SecretPrompt(
                     id: "demo-secret", sessionID: "sample",
@@ -171,12 +183,15 @@
                         context: .init(used: 76_000, max: 200_000, percent: 38, estimated: false), input: 412_000,
                         output: 31_500, calls: 46)
             }
-            for (id, text) in [
-                ("scribe", "Two headline options for the launch post"),
-                ("ledger", "October invoices are drafted for review"),
+            for (id, text, minutesAgo) in [
+                ("scribe", "Two headline options for the launch post", 95.0),
+                ("ledger", "October invoices are drafted for review", 26.0 * 60),
             ] {
+                let message = HistoryMessage(role: "assistant", text: text)
                 threads[id] = ChatThread.sample(
-                    id, state: ThreadState(history: [HistoryMessage(role: "assistant", text: text)], running: false))
+                    id,
+                    state: ThreadState(
+                        history: dated([message], from: ago(minutesAgo), to: ago(minutesAgo)), running: false))
             }
             threads["scribe"]?.receive(
                 ClarifyPrompt(
@@ -337,6 +352,19 @@
             return CGImageDestinationFinalize(destination) ? output as Data : nil
         }
 
+        /// Spreads a scripted chat's messages evenly between two times, as the gateway dates them.
+        private func dated(_ messages: [HistoryMessage], from start: Date, to end: Date) -> [HistoryMessage] {
+            let step = messages.count > 1 ? end.timeIntervalSince(start) / Double(messages.count - 1) : 0
+            return messages.enumerated().map { index, message in
+                HistoryMessage(
+                    role: message.role, text: message.text, name: message.name, context: message.context,
+                    toolCallId: message.toolCallId,
+                    timestamp: start.addingTimeInterval(step * Double(index)).timeIntervalSince1970,
+                    rowId: message.rowId, reactions: message.reactions, displayKind: message.displayKind,
+                    displayText: message.displayText)
+            }
+        }
+
         /// Uneven rows exercise scrolling without copying anyone’s actual conversations.
         private var olderHistory: [HistoryMessage] {
             guard longConversations else { return [] }
@@ -436,7 +464,8 @@
                 event("message.user", from: you, "Launch is Thursday. What's left?", minutesAgo: 42),
                 event(
                     "message.member", from: member("forge"),
-                    "Search ships behind a flag tomorrow. Staging is waiting on one migration.", minutesAgo: 40),
+                    "Search on Turbopuffer ships behind a flag tomorrow. Staging is waiting on one migration.",
+                    minutesAgo: 40),
                 event(
                     "message.member", from: member("atlas"),
                     "I checked the three competitors' pricing pages again; nobody changed theirs this week.",
@@ -458,21 +487,6 @@
                 "room_id": "launch", "name": "Launch crew", "members": .array(members),
                 "updated_at": .number(ago(30).timeIntervalSince1970), "latest_seq": 5,
             ])!
-        }
-
-        var opsRoutines: [Routine] {
-            [
-                Routine(
-                    id: "health", name: "Morning health check", schedule: "every day at 8am", isOn: true,
-                    nextRun: now.addingTimeInterval(9 * 3600), lastRun: ago(15 * 60)),
-                Routine(
-                    id: "backups", name: "Verify last night's backups", schedule: "every day at 6am", isOn: true,
-                    nextRun: now.addingTimeInterval(7 * 3600), lastRun: ago(17 * 60)),
-                Routine(
-                    id: "costs", name: "Weekly cost report", schedule: "every monday at 9am", isOn: true,
-                    nextRun: now.addingTimeInterval(3 * 86_400)),
-                Routine(id: "certs", name: "Renew staging certificates", schedule: "0 3 1 * *", isOn: false),
-            ]
         }
     }
 #endif

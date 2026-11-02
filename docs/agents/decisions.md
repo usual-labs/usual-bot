@@ -10,7 +10,9 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 ## Scope
 
 - Usual Bot is a messenger for Hermes agents. Agent configuration, provider keys, skill setup and
-  gateway administration stay in the official app. Device-local preferences belong in Usual Bot.
+  gateway administration stay in the official app, except two the developer chose to bring in: an
+  agent's routines and its MCP servers (the Apps tab).
+  Device-local preferences belong in Usual Bot.
 - Fast mode isn't built. Only a message that starts with a command runs it; a `/skill` later in the
   text is sent as written, as in the official app.
 
@@ -162,6 +164,21 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 - **Search and the ⌥Space panel stay flat,** and the rail shows lines instead of headings and folds
   nothing, because it has no heading to unfold with.
 
+## Search
+
+- **Search reads what the app holds, not the gateway.** `GET /api/sessions/search` searches one
+  profile per call, returns one hit per conversation with no message ID or time, and includes
+  sessions from other platforms that the app can't show. Online, that's nearly everything: every
+  agent with a Bot Chat is attached at connect with its whole history, and each room's log is read
+  in full. Offline, it's the cache's last 60 items per chat and no rooms. A chat whose history
+  Hermes wouldn't send (`historyOmitted`) has only what arrived since.
+- **Only your and the agents' text,** not tool steps, command output, background results or the
+  turns Hermes starts itself, and a reply's quote is left out because the quoted message has its
+  own hit.
+- **Newest first across every chat, up to 50.** Messages carry the gateway's time (or when they
+  arrived). Those without one, from a cache written before times were kept, come after, chats in
+  order of last activity.
+
 ## Masked prompts
 
 - **Never answer `secret`, `sudo` or `vault.*` with 4404.** With no other client attached, Hermes
@@ -176,6 +193,24 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   sending stays possible, as such a gateway already carries the sign-in and chats that way. Vault
   secrets need Send it anyway ticked for each send, and the model enforces that, not only the view.
 
+## Routines
+
+- **Usual Bot creates and edits routines,** a decision that narrows "gateway administration" in
+  Scope: a routine is something you ask an agent for, so it belongs in the messenger. Only the name,
+  prompt, schedule and delivery are editable; scripts, skills, models and other fields stay in Hermes.
+- **Edits send only what changed.** `PUT /api/cron/jobs/{id}` re-parses any `schedule` it gets, which
+  resets the next run, so an unchanged schedule isn't sent. A `deliver` Usual Bot didn't set (Telegram,
+  `origin`, several targets) is kept unless you pick one of the two choices.
+- **"Post in this chat" is `bot-chat:<profile>`.** In `cron/scheduler_delivery.py` the output becomes
+  an inbound turn in that profile's Bot Chat, the chat Usual Bot shows, so the agent replies to it and
+  that costs a turn. If the profile's gateway isn't running, the gateway queues it. Verified in the
+  source only.
+- **Presets write cron expressions** ("0 9 * * 1-5"), and the list reads them back in plain words.
+  Custom text goes to the gateway as typed, and its 400 message is shown as is: it lists the forms
+  it accepts.
+- **Run Now on a paused routine turns it back on.** The trigger route passes `force`, which resumes
+  the job as it claims the run. The detail says so before you press it.
+
 ## Vault
 
 - **Remote clients may use it.** `tui_gateway/methods_vault.py` has no peer or loopback check; its
@@ -185,6 +220,36 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 - **Every call names `profile`.** Otherwise `_profile_scoped` uses the launch or ticket profile, so
   a call would reach the wrong Bot's vault.
 - `VaultItem` has no field for a secret: `vault.list` is metadata, and it stays that way here.
+
+## Apps (MCP servers)
+
+- **Dashboard routes, not RPC.** `/api/mcp/servers`, `/catalog`, `/catalog/install`, `/oauth/flows`
+  through `AuthSession.json`, each with `?profile=`. Read from Hermes `bf0203a794`
+  (`hermes_cli/web_routers/mcp.py`).
+- **Changes apply to the next session unless you apply them.** The routes write config; a running
+  chat keeps its tools. Apply to the Open Chat sends `reload.mcp` `{session_id, confirm: true}` on the
+  agent's attached chat, offered only while one is attached. It never sends `always`, which would turn
+  off Hermes's cost warning for good. The cost: the prompt cache is dropped, so the next reply sends
+  the whole conversation again. The two dialects differ: the authority reconciles only that profile's
+  servers and refreshes every chat of the profile (`gateway/session_ancillary.py`); the legacy
+  handler tears down and rediscovers every MCP server in the process, cutting other chats' running
+  MCP calls. A sign-in doesn't ask to apply: Hermes reconnects the server itself when the flow's
+  profile is the gateway's own (`reconnect_live`).
+- **Sign-in opens the system browser** through `openURL`, on Mac and iPhone alike, and the list asks
+  `/oauth/flows/{id}` every 2 s until `approved` or `error` (or 16 minutes; Hermes drops a flow after
+  15). Cancel sends `DELETE`. Not `ASWebAuthenticationSession`: the provider redirects to the
+  gateway's own `/api/mcp/oauth/callback/<name>`, not to an app scheme, so that session would never
+  complete and would sit on the gateway's "Authorization received" page until cancelled.
+- **The list doesn't probe servers.** Testing starts each server on the gateway, so tool counts come
+  from a test, run when you open an app or press Test Connection, and last for the app session.
+- **Secrets.** Bearer tokens and catalog keys go only in the request body and aren't kept or logged.
+  Errors pass `VaultRedaction.scrub` with the values just sent. The gateway masks env values in the
+  list; `MCPServer` keeps only the names. On an unencrypted address (`GatewayAddress.isUnencrypted`)
+  the model refuses to send a token or key without that send's consent, as the vault does. Every
+  catalog key shows in a secure field, since the catalog doesn't say which are secret.
+- **Out of scope:** Nous-hosted connectors (they need a Nous login), toolsets, the plugin catalog,
+  per-tool switches (`tools.configure`), editing a server, env values for a custom program, and the
+  whole-map `PUT /api/mcp/servers`. Rooms have no apps view; apps belong to an agent, from its chat.
 
 ## Not verified
 
@@ -209,6 +274,14 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   `/bg` task (it may notify twice on the Mac), and a routine's message. iOS background check-ins
   can't be forced in the Simulator, so `BackgroundLink` has only run through unit tests of
   `AppModel.checkIn`.
+- Apps against a real gateway: nothing in the Apps tab has run against one, by design, since it
+  changes real agents. The routes, bodies and flow states are read from source and run against fakes
+  and the demo. Unknown: whether the native sign-in's bearer passes `_require_token` on `/auth` and
+  `/oauth/flows` (it should, as `native_http_principal`), how long a real test or catalog install
+  takes, and `reload.mcp` on either dialect.
+- Routines against a real gateway: create, edit, delete, Run Now and past runs have run only against
+  fakes shaped from the Hermes source and in the demo, never on a gateway, because each costs money
+  or changes a real agent. The iPhone layout of the routine sheets hasn't been looked at.
 - The vault beyond a loopback client on the legacy dialect: `vault.unlock_prompt` and `vault.code`, a
   real password manager, a client on a remote address, and the authority path. Sign-in, secret cards
   and the background bar were run against a real gateway on the Mac and in the iPhone Simulator,

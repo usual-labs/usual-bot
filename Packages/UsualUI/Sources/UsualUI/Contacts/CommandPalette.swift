@@ -2,12 +2,14 @@
     import HermesKit
     import SwiftUI
 
-    /// Finds a chat or runs an action from the keyboard: ⌘K, or the sidebar's Search.
+    /// Finds a chat or a message, or runs an action, from the keyboard: ⌘K, or the sidebar's Search.
     struct CommandPalette: View {
         let contacts: [Contact]
         let members: (Contact) -> [Contact]
         let canCreateRoom: Bool
+        let search: (String) -> [MessageHit]
         let open: (Contact.ID) -> Void
+        let openMessage: (MessageHit) -> Void
         let newRoom: () -> Void
         let settings: () -> Void
         let close: () -> Void
@@ -21,6 +23,7 @@
             enum Look {
                 case contact(Contact)
                 case icon(String)
+                case message(MessageHit, Contact)
             }
             let id: String
             let title: String
@@ -44,7 +47,7 @@
         private var card: some View {
             let entries = entries
             return VStack(spacing: 0) {
-                TextField("Search chats and actions", text: $query)
+                TextField("Search chats, messages and actions", text: $query)
                     .textFieldStyle(.plain)
                     .font(.system(size: 15))
                     .focused($fieldIsFocused)
@@ -56,11 +59,13 @@
                     .onKeyPress(.upArrow) { move(-1, in: entries) }
                 Divider()
                 if entries.isEmpty {
-                    Text("Nothing matches “\(query.trimmingCharacters(in: .whitespaces))”")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Theme.secondaryInk)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 28)
+                    Text(
+                        searchesMessages ? "No chats, messages or actions match “\(term)”" : "Nothing matches “\(term)”"
+                    )
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.secondaryInk)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 28)
                 } else {
                     results(entries)
                 }
@@ -77,14 +82,24 @@
                 ScrollView {
                     VStack(spacing: 2) {
                         ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                            if entry.id == firstMessageID(in: entries) { messagesHeading }
                             Button {
                                 close()
                                 entry.run()
                             } label: {
                                 row(entry, isHighlighted: index == highlighted)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.clickable)
                             .id(entry.id)
+                        }
+                        if searchesMessages, firstMessageID(in: entries) == nil {
+                            messagesHeading
+                            Text("No messages match “\(term)”")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Theme.secondaryInk)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
                         }
                     }
                     .padding(8)
@@ -97,7 +112,37 @@
             }
         }
 
-        private func row(_ entry: Entry, isHighlighted: Bool) -> some View {
+        private var messagesHeading: some View {
+            Text("Messages")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Theme.secondaryInk)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 10)
+                .padding(.top, 10)
+                .padding(.bottom, 4)
+                .accessibilityAddTraits(.isHeader)
+        }
+
+        private func firstMessageID(in entries: [Entry]) -> String? {
+            entries.first {
+                if case .message = $0.look { true } else { false }
+            }?.id
+        }
+
+        @ViewBuilder private func row(_ entry: Entry, isHighlighted: Bool) -> some View {
+            if case .message(let hit, let contact) = entry.look {
+                MessageHitRow(hit: hit, contact: contact, members: members(contact))
+                    .padding(.horizontal, 10)
+                    .frame(height: 50)
+                    .background(isHighlighted ? Theme.selection : .clear, in: RoundedRectangle(cornerRadius: 12))
+                    .contentShape(Rectangle())
+                    .accessibilityAddTraits(isHighlighted ? .isSelected : [])
+            } else {
+                plainRow(entry, isHighlighted: isHighlighted)
+            }
+        }
+
+        private func plainRow(_ entry: Entry, isHighlighted: Bool) -> some View {
             HStack(spacing: 12) {
                 switch entry.look {
                 case .contact(let contact):
@@ -111,6 +156,8 @@
                         .font(.system(size: 15))
                         .foregroundStyle(Theme.secondaryInk)
                         .frame(width: 32, height: 32)
+                case .message:
+                    EmptyView()
                 }
                 VStack(alignment: .leading, spacing: 1) {
                     Text(entry.title)
@@ -140,8 +187,23 @@
                     id: contact.id, title: contact.name, detail: contact.preview ?? "", look: .contact(contact),
                     run: { open(contact.id) })
             }
-            let term = query.trimmingCharacters(in: .whitespaces)
-            return chats + actions.filter { term.isEmpty || $0.title.localizedCaseInsensitiveContains(term) }
+            let matchingActions = actions.filter { term.isEmpty || $0.title.localizedCaseInsensitiveContains(term) }
+            // After the few actions, so a long list of messages doesn't push them out of sight.
+            return chats + matchingActions + messages
+        }
+
+        private var term: String { query.trimmingCharacters(in: .whitespaces) }
+
+        private var searchesMessages: Bool { MessageSearch(query) != nil }
+
+        private var messages: [Entry] {
+            let byID = Dictionary(contacts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+            return search(query).compactMap { hit in
+                guard let contact = byID[hit.contactID] else { return nil }
+                return Entry(
+                    id: "message-\(hit.id)", title: contact.name, detail: hit.snippet, look: .message(hit, contact),
+                    run: { openMessage(hit) })
+            }
         }
 
         private var actions: [Entry] {

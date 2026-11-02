@@ -12,6 +12,9 @@ struct RoomPane: View {
     let agents: [Contact.ID: Contact]
     /// A member's skills, for the `/` menu; `nil` where there are none to show.
     var skills: (Contact) -> SkillList? = { _ in nil }
+    /// A message search chose in this room, to scroll to.
+    var jump: MessageJump? = nil
+    var jumped: () -> Void = {}
 
     /// The message you're replying to; a reply to an agent goes to that agent only.
     @State private var replyTo: QuotedMessage?
@@ -33,7 +36,7 @@ struct RoomPane: View {
                 } label: {
                     NamePill(contact: contact, members: members)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
                 .accessibilityHint(Text("Shows the room's members"))
                 .keyboardShortcut("i", modifiers: .command)
             } bottom: {
@@ -110,7 +113,7 @@ struct RoomPane: View {
             VStack(spacing: 10) {
                 Text(message).multilineTextAlignment(.center)
                 Button("Try Again") { Task { await room.sync() } }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.clickable)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Theme.ink)
                     .frame(minHeight: 44)
@@ -127,7 +130,8 @@ struct RoomPane: View {
 
     private var transcript: some View {
         ConversationScroll(
-            arrival: [room.state.items.count, room.pending.count, room.working.count, room.retries.count]
+            arrival: [room.state.items.count, room.pending.count, room.working.count, room.retries.count],
+            jump: jump, jumped: jumped
         ) {
             if !room.driverRunning {
                 NoticeLine(
@@ -137,7 +141,9 @@ struct RoomPane: View {
                 NoticeLine(text: String(localized: "Say hello to everyone, or use @ to talk to one agent."))
                     .padding(.top, 40)
             }
+            let dates = DateLabels.labels(for: room.state.items)
             ForEach(room.state.items) { item in
+                if let date = dates[item.id] { DateLabel(text: date) }
                 ItemView(item: item, agentName: contact.name, author: author)
                     .transition(.settle)
                     .accessibilityElement(children: .contain)

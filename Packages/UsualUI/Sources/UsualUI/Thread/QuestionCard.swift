@@ -54,7 +54,7 @@ struct QuestionCard: View {
                     .frame(minHeight: 34)
                     .contentShape(RoundedRectangle(cornerRadius: 10))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
                 .hoverHighlight(in: RoundedRectangle(cornerRadius: 10))
                 .accessibilityAddTraits(isPicked ? .isSelected : [])
             }
@@ -134,5 +134,6 @@ struct CardButtonStyle: ButtonStyle {
             .overlay { if !primary { Capsule().strokeBorder(Theme.border) } }
             .opacity(configuration.isPressed ? 0.7 : 1)
             .contentShape(Capsule())
+            .clickable()
     }
 }

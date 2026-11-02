@@ -15,7 +15,7 @@ struct SkillsView: View {
                 VStack(spacing: 8) {
                     Text(message).multilineTextAlignment(.center)
                     Button("Try Again") { Task { await list.refresh() } }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.clickable)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Theme.ink)
                         .frame(minHeight: 44)

@@ -73,7 +73,10 @@ public final class AppModel {
     @ObservationIgnored private var routineLists: [Contact.ID: RoutineList] = [:]
     @ObservationIgnored private var skillLists: [Contact.ID: SkillList] = [:]
     @ObservationIgnored private var vaultLists: [Contact.ID: VaultList] = [:]
+    @ObservationIgnored private var appLists: [Contact.ID: MCPServerList] = [:]
     @ObservationIgnored var rooms: [Contact.ID: RoomThread] = [:]
+    /// Chats' messages ready to search (`searchMessages`).
+    @ObservationIgnored let messageIndex = MessageIndex()
     /// Counts finished room edits, so a room list read before one can't undo it.
     @ObservationIgnored var roomEdits = 0
     /// The demo has no gateway, so room edits happen here alone.
@@ -182,6 +185,7 @@ public final class AppModel {
         routineLists = [:]
         skillLists = [:]
         vaultLists = [:]
+        appLists = [:]
         media.clear()
         pictures.clear()
         sections.clear()
@@ -199,7 +203,7 @@ public final class AppModel {
         func showDemo(
             gateway: GatewayAddress, contacts: [Contact], threads: [Contact.ID: ChatThread],
             rooms: [Contact.ID: RoomThread], routines: [Contact.ID: RoutineList], skills: [Contact.ID: SkillList],
-            vaults: [Contact.ID: VaultList]
+            vaults: [Contact.ID: VaultList], apps: [Contact.ID: MCPServerList]
         ) {
             isDemo = true
             session = .signedIn(gateway)
@@ -212,6 +216,7 @@ public final class AppModel {
             routineLists = routines
             skillLists = skills
             vaultLists = vaults
+            appLists = apps
             sections.save = { _, _ in }
             sections.reconcile(contacts)
             push.showDemo()
@@ -415,6 +420,18 @@ public final class AppModel {
             profile: contact.details?.profile ?? contact.id, channel: { [weak self] in self?.channel },
             gatewayIsUnencrypted: { [weak self] in self?.auth?.gateway.isUnencrypted ?? true })
         vaultLists[contact.id] = list
+        return list
+    }
+
+    /// The MCP servers ("apps") of `contact`'s profile. Call `MCPServerList.refresh()` to load them.
+    public func apps(for contact: Contact) -> MCPServerList {
+        if let list = appLists[contact.id] { return list }
+        let list = MCPServerList(
+            profile: contact.details?.profile ?? contact.id, auth: { [weak self] in self?.auth },
+            channel: { [weak self] in self?.channel },
+            sessionID: { [weak self] in self?.threads[contact.id]?.sessionID },
+            gatewayIsUnencrypted: { [weak self] in self?.auth?.gateway.isUnencrypted ?? true })
+        appLists[contact.id] = list
         return list
     }
 

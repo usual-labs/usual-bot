@@ -9,6 +9,10 @@ public struct RoomState: Equatable, Sendable {
     /// Event IDs of your messages, to recognise them when they come back in the log.
     private(set) var seenEventIDs: Set<String> = []
     private var nextID = 0
+    /// When the event being applied happened. Set only while applying it, so equal logs give
+    /// equal states.
+    private var eventDate: Date?
+
     init(members: [RoomMember]) {
         self.members = members
     }
@@ -27,6 +31,9 @@ public struct RoomState: Equatable, Sendable {
 
     private mutating func apply(_ event: RoomEvent) {
         seenEventIDs.insert(event.id)
+        // An event with no time is dated when it arrived.
+        eventDate = event.createdAt == .distantPast ? .now : event.createdAt
+        defer { eventDate = nil }
         let payload = event.payload
         switch event.kind {
         case "message.user":
@@ -123,7 +130,7 @@ public struct RoomState: Equatable, Sendable {
     }
 
     private mutating func append(_ content: TranscriptItem.Content) {
-        items.append(TranscriptItem(id: nextID, content: content))
+        items.append(TranscriptItem(id: nextID, content: content, date: eventDate ?? .now))
         nextID += 1
     }
 }

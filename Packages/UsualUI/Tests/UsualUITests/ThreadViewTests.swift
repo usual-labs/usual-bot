@@ -148,12 +148,19 @@ struct RoutineStatusTests {
     @Test func describesScheduleAndState() {
         let next = Routine(
             id: "1", name: "Brief", schedule: "weekdays at 8am", isOn: true, nextRun: now.addingTimeInterval(86_400))
-        #expect(RoutineStatus.line(for: next, now: now).hasPrefix("weekdays at 8am · next "))
+        #expect(RoutineStatus.status(for: next, now: now).hasPrefix("next "))
+        #expect(RoutineSchedule.plainWords(next.schedule) == "Weekdays at 8am")
         let paused = Routine(id: "2", name: "Recap", schedule: "every friday", isOn: false)
-        #expect(RoutineStatus.line(for: paused, now: now) == "every friday · Paused")
+        #expect(RoutineStatus.status(for: paused, now: now) == "Paused")
         let done = Routine(id: "3", name: "Once", schedule: "", isOn: true, isFinished: true)
-        #expect(RoutineStatus.line(for: done, now: now) == "Finished")
+        #expect(RoutineStatus.status(for: done, now: now) == "Finished")
         let failed = Routine(id: "4", name: "Check", schedule: "hourly", isOn: true, lastRunFailed: true)
-        #expect(RoutineStatus.line(for: failed, now: now) == "hourly · Last run failed")
+        #expect(RoutineStatus.status(for: failed, now: now) == "Last run failed")
+        let explained = Routine(
+            id: "5", name: "Check", schedule: "hourly", isOn: true, lastRunFailed: true, lastError: "Provider timed out"
+        )
+        #expect(RoutineStatus.status(for: explained, now: now) == "Last run failed: Provider timed out")
+        // The detail shows the failure on its own line, so its status leaves it out.
+        #expect(RoutineStatus.status(for: explained, failure: false, now: now) == "")
     }
 }

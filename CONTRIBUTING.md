@@ -120,6 +120,7 @@ Debug builds read these environment variables:
 | `--demo-long-chat` | Runs the demo with long, uneven chats and a room to check scrolling, app switching and reflow. Never connects. |
 | `USUALBOT_SHOW_QUICK_PANEL=1` | Opens the ⌥Space panel shortly after launch (Mac). |
 | `USUALBOT_WINDOW_WIDTH=560` | Opens the main window at that width (Mac). |
+| `USUALBOT_OPEN_ROUTINE=health` | Opens that routine's sheet in the profile once routines load. `new` opens New Routine; add `/edit`, `/run` (its latest run) or `/start` (Run Now). Use with `-showsProfile YES`. |
 | `USUALBOT_RECORD_FRAMES=1` | Appends every socket frame to `usualbot-frames.jsonl` in the app's temporary directory, with answers to masked prompts and vault secrets blanked. |
 
 Launch arguments set the stored UI choices for one run, which helps for screenshots:

@@ -118,7 +118,7 @@ struct AttachButton: View {
             } label: {
                 icon
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.clickable)
             .help("Attach Files")
             .accessibilityLabel(Text("Attach Files"))
         }
@@ -227,7 +227,7 @@ struct AttachmentChips: View {
                                     .padding(4)
                                     .contentShape(Circle())
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.clickable)
                             .accessibilityLabel(Text("Remove \(attachment.name)"))
                         }
                 }
@@ -269,7 +269,7 @@ struct AttachmentTile: View {
                     .frame(width: 64, height: 64)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.clickable)
                 .task(id: imageData) { await show() }
                 .sheet(isPresented: $viewing) {
                     if let data { MediaViewer(data: data, name: name) }

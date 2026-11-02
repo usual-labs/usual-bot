@@ -30,6 +30,11 @@ list. The most recent conversation is at the top.
 - A dot on the avatar means it needs you: it's waiting for your approval or an answer.
 - On the Mac, ⌘K or the Search button finds a chat or room, and opens New Room, Settings or a theme.
   On iPhone, search filters the list.
+- Search also finds messages once you type two letters or more: under the chats, Messages lists
+  the newest that hold every word you typed, from all your chats and rooms, ignoring case and
+  accents. Choose one to open its chat at that message, highlighted for a moment. Search looks
+  through the messages the app has loaded: everything once it's connected, and your recent
+  messages while it's offline.
 - The dot at the bottom of the sidebar (top left on iPhone) shows the connection. Click it to see
   the gateway and to sign out.
 
@@ -60,6 +65,9 @@ can change sending to ⌘Return, leaving Return for new lines. Replies stream in
 as the agent writes them, with Markdown, code blocks you can copy, and tables. While the agent uses
 tools, one line such as "Forge edited 1 file and ran 1 command" sums them up; click it to see each
 step.
+
+A date such as "Yesterday 12:27 PM" sits above the first message and again after a new day starts
+or an hour passes. Hover a message on the Mac to see its time, or long-press it on iPhone.
 
 A chat opens at its newest message and follows new replies while you’re at the end. Scroll up to
 read older messages without being pulled back down; scroll to the end to follow replies again.
@@ -191,17 +199,52 @@ and pick its members.
 
 Rooms are text only on the dashboard gateway: attachments in rooms need Hermes's newer gateway.
 
-## An agent's profile: routines, skills and machine
+## An agent's profile: routines, skills, apps and machine
 
 Click the agent's name at the top of the chat (⌘I) to open its profile beside the chat (a sheet on
 iPhone).
 
-- **Routines** are the agent's scheduled jobs. The switch pauses or resumes one. To create a
-  routine, ask the agent in the chat, for example "every Monday at 9, check our dependencies".
+- **Routines** are the agent's scheduled jobs. Each shows when it runs, whether it's on, and why the
+  last run failed if it did. The switch pauses or resumes one.
+  - **New Routine** asks for a name, what to do, when, and where results go. **When** offers every
+    day, weekdays, every week, every month, every hour and every 15 minutes, or **Custom** for text
+    like "every 2h", "every monday 9am", "0 9 * * 1-5" or "in 30m". If the gateway can't read it,
+    it says which forms it accepts.
+  - **Results:** **Post in this chat** sends each result to the agent here, and it replies, which
+    uses a turn. **Keep in past runs only** posts nothing. A routine set up to send elsewhere, such
+    as Telegram, keeps going there unless you change it.
+  - Open a routine to **Edit** it, **Run Now**, **Delete** it, or read its **Past Runs**. Run Now can
+    take a few minutes; you can close the sheet and keep going, and the routine shows when it's done.
+    Running a paused routine turns it back on. A past run opens to what the agent said; a run that
+    only ran a script shows the start of what it printed.
+  - You can still ask the agent in the chat, for example "every Monday at 9, check our dependencies".
 - **Skills** lists what the agent can do, with switches to turn skills on and off.
+- **Apps** are the agent's MCP servers, which give it tools from other services. See
+  [Apps](#apps) below.
 - **Machine** shows the agent's model and provider, and the gateway's address, Hermes version,
   connection status and who you're signed in as. On the Mac, when the official Hermes app is
   installed, a button opens it for advanced settings.
+
+### Apps
+
+The Apps tab lists the agent's MCP servers with where each runs: a web address or a program on the
+gateway's machine. The switch turns one on or off. One marked Plugin comes with a Hermes plugin and
+can't be changed here.
+
+- **See its tools.** Click an app. Usual Bot connects to it from the gateway and lists its tools.
+  Test Connection does that again.
+- **Add an app.** Add app opens Hermes's catalog. Pick one, fill in any key it asks for, and add it.
+  Custom adds one by web address, with an optional token, or by a command and its arguments. Keys and
+  tokens go to the gateway and are saved there, not on this device. On a plain http gateway away from
+  this device and outside Tailscale, tick "Send it anyway" to send one.
+- **Sign in.** An app that signs in with its provider's page shows Sign In. Usual Bot opens the page
+  in your browser; sign in there and come back. The sheet updates on its own. The provider sends your
+  browser back to the gateway, so the gateway's address must open in this device's browser.
+- **Remove** takes the app off the agent. A key or sign-in saved for it stays on the gateway.
+
+A change reaches the agent's next session. To use it in the chat that's open now, choose Apply to the
+Open Chat. Hermes reloads the agent's apps, and its next reply costs more, because the whole
+conversation is sent again.
 
 ## Quick message (Mac)
 
@@ -263,7 +306,7 @@ provider keys and gateway administration stay in Hermes.
 | Shortcut | Where | What it does |
 | --- | --- | --- |
 | ⌥Space (configurable in Settings) | Anywhere (Mac) | Opens the quick message panel |
-| ⌘K or ⌘F | Anywhere in the window | Search chats and actions |
+| ⌘K or ⌘F | Anywhere in the window | Search chats, messages and actions |
 | ↑ / ↓ | Sidebar | Move between chats |
 | ⌘, | Mac | Open Settings |
 | ⌘I | Chat or room | Show the profile or room details |

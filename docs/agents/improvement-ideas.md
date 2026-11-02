@@ -13,8 +13,8 @@
     (`/api/mcp/*`).
   - **Managing Bots:** `profiles.create`, `PATCH /api/profiles/{name}`, `profiles.set_asset`. The
     roster only writes a Bot's section: no create, rename or picture change.
-  - **Routines:** the Routines tab only switches a job on or off. `/api/cron/jobs` also creates,
-    edits, runs and deletes, `/{id}/runs` gives history and `/api/cron/blueprints` gives templates.
+  - **Routine templates:** `/api/cron/blueprints` gives fill-in templates the New Routine form
+    could offer.
   - **Usage across chats:** `usage.bars`, `insights.get`, `/api/analytics/usage`.
   - **Bot desktop:** `display.*` with a ticket for `/api/display/ws` (raw RFB), Take over through
     `display.lease.*`. Largest of these: it needs a VNC viewer in the app.

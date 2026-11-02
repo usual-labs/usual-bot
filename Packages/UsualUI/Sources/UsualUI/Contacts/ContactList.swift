@@ -2,7 +2,8 @@ import HermesKit
 import SwiftUI
 
 /// The sidebar: every agent and room in roster order, grouped into sections once there are any.
-/// A search lists its matches together, and the rail groups without headings.
+/// A search lists its matches together, then on iPhone the messages that match, and the rail
+/// groups without headings.
 struct ContactList: View {
     let contacts: [Contact]
     /// How the list is grouped; `nil` lists everything together.
@@ -12,6 +13,9 @@ struct ContactList: View {
     /// The narrow window's rail: avatars only.
     var compact = false
     @Binding var selection: Contact.ID?
+    /// Messages that match `query`, shown under the chats (iPhone; the Mac searches in its palette).
+    var messages: [MessageHit] = []
+    var openMessage: (MessageHit) -> Void = { _ in }
 
     /// The section whose name is being edited in its heading.
     @State private var renaming: ContactSection.ID?
@@ -25,13 +29,16 @@ struct ContactList: View {
         let byID = Dictionary(contacts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let matching = contacts.filter { Self.matches($0, query) }
         Group {
-            if matching.isEmpty, !contacts.isEmpty {
-                Text("No chats match “\(query.trimmingCharacters(in: .whitespaces))”")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Theme.secondaryInk)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            if matching.isEmpty, messages.isEmpty, !contacts.isEmpty {
+                Text(
+                    searchesMessages
+                        ? "No chats or messages match “\(term)”" : "No chats match “\(term)”"
+                )
+                .font(.system(size: 13))
+                .foregroundStyle(Theme.secondaryInk)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 list(blocks(of: matching), byID: byID)
             }
@@ -65,7 +72,17 @@ struct ContactList: View {
     }
 
     private var isSearching: Bool {
-        !query.trimmingCharacters(in: .whitespaces).isEmpty
+        !term.isEmpty
+    }
+
+    private var term: String { query.trimmingCharacters(in: .whitespaces) }
+
+    private var searchesMessages: Bool {
+        #if os(iOS)
+            MessageSearch(query) != nil
+        #else
+            false
+        #endif
     }
 
     /// Whether sections shape the list right now.
@@ -155,6 +172,7 @@ struct ContactList: View {
                     .listSectionSeparator(.hidden)
                     .listSectionSpacing(6)
                 }
+                if searchesMessages { messageSection(byID: byID) }
             }
             // Full-width rows on the chat colour, like a messenger's chat list.
             .listStyle(.plain)
@@ -163,6 +181,41 @@ struct ContactList: View {
             .background(Theme.pane)
         #endif
     }
+
+    #if os(iOS)
+        /// Under the chats: each message that matches, which opens its chat at that message.
+        private func messageSection(byID: [Contact.ID: Contact]) -> some View {
+            Section {
+                if messages.isEmpty {
+                    Text("No messages match “\(term)”")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Theme.secondaryInk)
+                        .listRowBackground(Color.clear)
+                }
+                ForEach(messages) { hit in
+                    if let contact = byID[hit.contactID] {
+                        Button {
+                            openMessage(hit)
+                        } label: {
+                            MessageHitRow(
+                                hit: hit, contact: contact, members: Self.members(of: contact, in: byID),
+                                avatarSize: 44
+                            )
+                            .padding(.vertical, 4)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.clickable)
+                        .listRowBackground(Color.clear)
+                    }
+                }
+            } header: {
+                Text("Messages")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.secondaryInk)
+            }
+            .listSectionSeparator(.hidden)
+        }
+    #endif
 
     private enum Hint { case mac, phone }
 
@@ -291,7 +344,7 @@ struct ContactList: View {
                     .hoverHighlight(in: RoundedRectangle(cornerRadius: 12))
                     .contentShape(RoundedRectangle(cornerRadius: 12))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.clickable)
             .accessibilityAddTraits(isSelected ? .isSelected : [])
             .contextMenu { rowMenu(contact) }
             .draggable(SidebarDrag(id: contact.id)) {

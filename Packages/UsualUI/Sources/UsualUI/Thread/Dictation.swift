@@ -248,7 +248,7 @@ struct MicButton: View {
                 }
                 .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
         .help(dictation.isListening ? "Stop dictation" : "Dictate")
         .accessibilityLabel(Text(dictation.isListening ? "Stop dictation" : "Dictate"))
     }
@@ -269,7 +269,7 @@ struct DictationProblem: View {
             Spacer(minLength: 0)
             if showsSettings {
                 Button("Open Settings", action: Dictation.openSettings)
-                    .buttonStyle(.plain)
+                    .buttonStyle(.clickable)
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(Theme.ink)
             }
@@ -279,7 +279,7 @@ struct DictationProblem: View {
                     .frame(width: 22, height: 22)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.clickable)
             .accessibilityLabel(Text("Dismiss"))
         }
         .padding(.horizontal, 8)
@@ -301,7 +301,7 @@ struct CallStartButton: View {
                 .background(contact?.accent ?? Theme.primary, in: Circle())
                 .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
         .help("Voice call")
         .accessibilityLabel(Text("Start a voice call"))
     }

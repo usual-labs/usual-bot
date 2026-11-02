@@ -428,7 +428,7 @@ private struct RoundButton: View {
                 .background(contact?.accent ?? Theme.primary, in: Circle())
                 .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.clickable)
         .accessibilityLabel(Text(label))
     }
 }
