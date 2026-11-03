@@ -8,6 +8,8 @@ struct RoutineEditor: View {
     /// `nil` for a new routine.
     let routine: Routine?
     let agentName: String
+    /// Back to New Routine's templates; `nil` where it didn't come from them.
+    var back: (() -> Void)? = nil
     /// Saved (with the routine) or cancelled (`nil`).
     let done: (Routine?) -> Void
 
@@ -16,11 +18,17 @@ struct RoutineEditor: View {
     @State private var custom: String
     @State private var isSaving = false
     @State private var problem: String?
+    /// While you write what to do, Return starts a new line instead of saving.
+    @FocusState private var writingPrompt: Bool
 
-    init(list: RoutineList, routine: Routine?, agentName: String, done: @escaping (Routine?) -> Void) {
+    init(
+        list: RoutineList, routine: Routine?, agentName: String, back: (() -> Void)? = nil,
+        done: @escaping (Routine?) -> Void
+    ) {
         self.list = list
         self.routine = routine
         self.agentName = agentName
+        self.back = back
         self.done = done
         let draft = routine.map { RoutineDraft($0, profile: list.profile) } ?? RoutineDraft()
         let choice = routine.map { RoutineSchedule.Choice($0.scheduleText) } ?? .init(preset: .daily)
@@ -30,37 +38,32 @@ struct RoutineEditor: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(routine == nil ? "New Routine" : "Edit Routine")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
-                    .accessibilityAddTraits(.isHeader)
-                field("Name") {
-                    VaultTextField(title: "Optional, like Morning brief", text: $draft.name)
+        SheetForm(
+            title: Text(routine == nil ? "New Routine" : "Edit Routine"),
+            back: back.map { SheetBack(label: Text("Back to templates"), perform: $0) },
+            cancel: { done(nil) },
+            action: SheetAction(
+                title: routine == nil ? "Create" : "Save", isEnabled: canSave, isDefault: !writingPrompt, perform: save),
+            busy: isSaving ? (routine == nil ? "Creating…" : "Saving…") : nil
+        ) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    field("Name") {
+                        VaultTextField(title: "Optional, like Morning brief", text: $draft.name)
+                    }
+                    whatToDo
+                    when
+                    results
+                    if let problem {
+                        Text(problem)
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(Theme.danger)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                whatToDo
-                when
-                results
-                if let problem {
-                    Text(problem)
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Theme.danger)
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                HStack(spacing: 8) {
-                    Spacer(minLength: 0)
-                    Button("Cancel") { done(nil) }
-                        .buttonStyle(CardButtonStyle(primary: false))
-                        .keyboardShortcut(.cancelAction)
-                    Button(routine == nil ? "Create" : "Save", action: save)
-                        .buttonStyle(CardButtonStyle(primary: true))
-                        .disabled(!canSave)
-                        .opacity(canSave ? 1 : 0.4)
-                }
+                .padding(20)
             }
-            .padding(20)
         }
         .frame(minWidth: 340, idealWidth: 460, maxWidth: 560, minHeight: 460)
         .background(Theme.window)
@@ -77,6 +80,7 @@ struct RoutineEditor: View {
         } else {
             field("What to do") {
                 TextEditor(text: $draft.prompt)
+                    .focused($writingPrompt)
                     .font(.system(size: 14))
                     .scrollContentBackground(.hidden)
                     .padding(8)
@@ -198,6 +202,7 @@ struct RoutineEditor: View {
     }
 
     private func save() {
+        guard canSave else { return }
         var filled = draft
         filled.schedule = schedule
         isSaving = true

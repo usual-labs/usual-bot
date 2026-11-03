@@ -15,58 +15,28 @@ struct DeleteBotSheet: View {
     @State private var problem: String?
 
     var body: some View {
+        SheetForm(
+            title: Text("Delete “\(contact.name)”?"), cancel: { dismiss() },
+            action: SheetAction(
+                title: "Delete Bot", role: .destructive, isEnabled: canDelete, isDefault: false, perform: submit),
+            busy: isDeleting ? "Deleting…" : nil
+        ) {
+            #if os(macOS)
+                content.padding(20)
+            #else
+                ScrollView { content.padding(20) }
+            #endif
+        }
         #if os(macOS)
-            VStack(alignment: .leading, spacing: 16) {
-                content
-                HStack(spacing: 8) {
-                    if isDeleting {
-                        ProgressView().controlSize(.small)
-                        Text("Deleting…").foregroundStyle(Theme.secondaryInk)
-                    }
-                    Spacer()
-                    Button("Cancel", role: .cancel) { dismiss() }
-                        .buttonStyle(CardButtonStyle(primary: false))
-                        .keyboardShortcut(.cancelAction)
-                        .disabled(isDeleting)
-                    Button("Delete Bot", role: .destructive, action: submit)
-                        .buttonStyle(DeleteButtonStyle())
-                        .disabled(!canDelete)
-                        .opacity(canDelete ? 1 : 0.4)
-                }
-            }
-            .padding(24)
             .frame(width: 440)
             .presentationBackground(Theme.pane)
         #else
-            NavigationStack {
-                ScrollView {
-                    content.padding(20)
-                }
-                .navigationTitle("Delete Bot")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel", role: .cancel) { dismiss() }.disabled(isDeleting)
-                    }
-                    ToolbarItem(placement: .destructiveAction) {
-                        if isDeleting {
-                            ProgressView()
-                        } else {
-                            Button("Delete", role: .destructive, action: submit).disabled(!canDelete)
-                        }
-                    }
-                }
-            }
             .presentationDetents([.medium, .large])
         #endif
     }
 
     private var content: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Delete “\(contact.name)”?")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Theme.ink)
-                .accessibilityAddTraits(.isHeader)
             Text(
                 "This deletes \(contact.name)'s Hermes profile from the gateway, with everything in it: its chats, routines, skills, memory, vault, keys and apps. It goes from every app, and it can't be undone."
             )
@@ -116,23 +86,6 @@ struct DeleteBotSheet: View {
         }
     }
 }
-
-#if os(macOS)
-    /// Red, so it can't pass for the usual primary button.
-    private struct DeleteButtonStyle: ButtonStyle {
-        func makeBody(configuration: Configuration) -> some View {
-            configuration.label
-                .font(.system(size: 13.5, weight: .semibold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 14)
-                .frame(minHeight: 34)
-                .background(Color(light: 0xB42318, dark: 0xD92D20), in: Capsule())
-                .opacity(configuration.isPressed ? 0.7 : 1)
-                .contentShape(Capsule())
-                .clickable()
-        }
-    }
-#endif
 
 #Preview("Delete a Bot") {
     let contacts = SampleData.contacts()

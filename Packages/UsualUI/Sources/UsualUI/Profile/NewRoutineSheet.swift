@@ -38,16 +38,17 @@ struct NewRoutineSheet: View {
             switch page {
             case .choose: chooser
             case .blank:
-                RoutineEditor(list: list, routine: nil, agentName: agentName) { _ in done() }
+                // Back to the templates, unless the gateway has none to go back to.
+                RoutineEditor(
+                    list: list, routine: nil, agentName: agentName,
+                    back: list.templatePhase == .unavailable ? nil : { page = .choose }
+                ) { _ in done() }
             case .template(let template):
                 RoutineTemplateForm(
                     list: list, template: template, agentName: agentName, back: { page = .choose },
                     cancel: done, created: { page = .created($0) })
             case .created(let made):
-                VStack(spacing: 0) {
-                    CreatedFromTemplate(made: made, agentName: agentName)
-                    RoutineDetail(list: list, id: made.routine.id, agentName: agentName)
-                }
+                RoutineDetail(list: list, id: made.routine.id, agentName: agentName, created: made)
             }
         }
         // Templates that turn out to be missing leave only the blank form to show.
@@ -61,48 +62,40 @@ struct NewRoutineSheet: View {
     }
 
     private var chooser: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("New Routine")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Theme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                    Spacer(minLength: 8)
-                    Button("Cancel", action: done)
-                        .buttonStyle(CardButtonStyle(primary: false))
-                        .keyboardShortcut(.cancelAction)
-                }
-                ChoiceRow(
-                    icon: "square.and.pencil", title: Text("Start from scratch"),
-                    summary: String(localized: "Say what \(agentName) should do and when.")
-                ) { page = .blank }
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Templates")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Theme.secondaryInk)
-                        .accessibilityAddTraits(.isHeader)
-                        .padding(.bottom, 4)
-                    if list.templatePhase == .loading {
-                        HStack(spacing: 8) {
-                            ProgressView().controlSize(.small)
-                            Text("Loading templates…")
+        SheetForm(title: Text("New Routine"), cancel: done) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    ChoiceRow(
+                        icon: "square.and.pencil", title: Text("Start from scratch"),
+                        summary: String(localized: "Say what \(agentName) should do and when.")
+                    ) { page = .blank }
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Templates")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Theme.secondaryInk)
+                            .accessibilityAddTraits(.isHeader)
+                            .padding(.bottom, 4)
+                        if list.templatePhase == .loading {
+                            HStack(spacing: 8) {
+                                ProgressView().controlSize(.small)
+                                Text("Loading templates…")
+                            }
+                            .font(.system(size: 13))
+                            .foregroundStyle(Theme.secondaryInk)
+                            .padding(.vertical, 12)
+                            .accessibilityElement(children: .combine)
                         }
-                        .font(.system(size: 13))
-                        .foregroundStyle(Theme.secondaryInk)
-                        .padding(.vertical, 12)
-                        .accessibilityElement(children: .combine)
-                    }
-                    ForEach(list.templates) { template in
-                        ChoiceRow(
-                            icon: Self.icon(template.category), title: Text(verbatim: template.title),
-                            summary: template.summary
-                        ) { page = .template(template) }
-                        Divider().overlay(Theme.border)
+                        ForEach(list.templates) { template in
+                            ChoiceRow(
+                                icon: Self.icon(template.category), title: Text(verbatim: template.title),
+                                summary: template.summary
+                            ) { page = .template(template) }
+                            Divider().overlay(Theme.border)
+                        }
                     }
                 }
+                .padding(20)
             }
-            .padding(20)
         }
         .frame(minWidth: 340, idealWidth: 460, maxWidth: 560, minHeight: 460)
         .background(Theme.window)
@@ -166,7 +159,7 @@ private struct ChoiceRow: View {
 
 /// Above a routine just made from a template: that it's made, to look it over, and any skill it
 /// uses that the agent can't load.
-private struct CreatedFromTemplate: View {
+struct CreatedFromTemplate: View {
     let made: TemplateRoutine
     let agentName: String
 
@@ -186,10 +179,7 @@ private struct CreatedFromTemplate: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.window)
     }
 
     /// Hermes skips a skill it can't load and runs without it, so say that and how to fix it.

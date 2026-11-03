@@ -23,83 +23,21 @@ struct NewBotSheet: View {
     private static let previewID = "new-bot-preview"
 
     var body: some View {
+        SheetForm(
+            title: Text("New Bot"), cancel: made == nil ? { dismiss() } : nil,
+            action: made != nil
+                ? SheetAction(title: "Open Chat", perform: finish)
+                : SheetAction(title: "Create", isEnabled: canCreate, perform: submit),
+            busy: isCreating ? "Creating…" : nil
+        ) {
+            form
+                #if os(macOS)
+                    .scrollContentBackground(.hidden)
+                #endif
+        }
         #if os(macOS)
-            VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Text("New Bot")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Theme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                    Spacer()
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Theme.secondaryInk)
-                            .frame(width: 28, height: 28)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.clickable)
-                    .help("Close")
-                    .accessibilityLabel(Text("Close"))
-                    .disabled(isCreating)
-                }
-                .padding(.horizontal, 20)
-                .frame(height: 56)
-                Divider()
-                form.scrollContentBackground(.hidden)
-                Divider()
-                HStack(spacing: 8) {
-                    if isCreating {
-                        ProgressView().controlSize(.small)
-                        Text("Creating…").foregroundStyle(Theme.secondaryInk)
-                    }
-                    Spacer()
-                    if made != nil {
-                        Button("Open Chat", action: finish)
-                            .buttonStyle(CardButtonStyle(primary: true))
-                            .keyboardShortcut(.defaultAction)
-                    } else {
-                        Button("Cancel", role: .cancel) { dismiss() }
-                            .buttonStyle(CardButtonStyle(primary: false))
-                            .keyboardShortcut(.cancelAction)
-                            .disabled(isCreating)
-                        Button("Create", action: submit)
-                            .buttonStyle(CardButtonStyle(primary: true))
-                            .keyboardShortcut(.defaultAction)
-                            .disabled(!canCreate)
-                            .opacity(canCreate ? 1 : 0.4)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .frame(height: 64)
-            }
             .frame(width: 420, height: 560)
             .presentationBackground(Theme.pane)
-        #else
-            NavigationStack {
-                form
-                    .navigationTitle("New Bot")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            if made == nil {
-                                Button("Cancel", role: .cancel) { dismiss() }.disabled(isCreating)
-                            }
-                        }
-                        ToolbarItem(placement: .confirmationAction) {
-                            if isCreating {
-                                ProgressView()
-                            } else if made != nil {
-                                Button("Open Chat", action: finish)
-                            } else {
-                                Button("Create", action: submit).disabled(!canCreate)
-                            }
-                        }
-                    }
-            }
-            .interactiveDismissDisabled(isCreating)
         #endif
     }
 

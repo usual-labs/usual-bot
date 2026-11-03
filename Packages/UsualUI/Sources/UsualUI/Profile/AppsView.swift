@@ -2,7 +2,7 @@ import HermesKit
 import SwiftUI
 
 /// The agent's apps: the MCP servers its profile uses, each with a switch. Opening one shows its
-/// tools; Add app brings one in from Hermes's catalog or by address.
+/// tools; New App brings one in from Hermes's catalog or by address.
 struct AppsView: View {
     let list: MCPServerList
     var connectors: ConnectorList? = nil
@@ -61,7 +61,7 @@ struct AppsView: View {
                 Button {
                     isAdding = true
                 } label: {
-                    Label("Add app", systemImage: "plus")
+                    Label("New App", systemImage: "plus")
                         .font(.system(size: 13.5, weight: .semibold))
                         .foregroundStyle(Theme.primaryInk)
                         .padding(.horizontal, 14)

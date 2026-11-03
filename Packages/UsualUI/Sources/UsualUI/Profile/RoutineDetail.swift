@@ -13,6 +13,8 @@ struct RoutineDetail: View {
     let list: RoutineList
     let id: Routine.ID
     let agentName: String
+    /// Just made from a template, to say so above it.
+    var created: TemplateRoutine? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var page = Page.overview
@@ -50,24 +52,16 @@ struct RoutineDetail: View {
     }
 
     private func overview(_ routine: Routine) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(routine.name)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityAddTraits(.isHeader)
-                    Spacer(minLength: 8)
-                    Button("Done") { dismiss() }
-                        .buttonStyle(CardButtonStyle(primary: false))
-                        .keyboardShortcut(.cancelAction)
+        SheetForm(title: Text(routine.name), action: SheetAction(title: "Done") { dismiss() }) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    if let created { CreatedFromTemplate(made: created, agentName: agentName) }
+                    facts(routine)
+                    actions(routine)
+                    pastRuns(routine)
                 }
-                facts(routine)
-                actions(routine)
-                pastRuns(routine)
+                .padding(20)
             }
-            .padding(20)
         }
         .task(id: routine.lastRun) {
             await loadRuns(routine)

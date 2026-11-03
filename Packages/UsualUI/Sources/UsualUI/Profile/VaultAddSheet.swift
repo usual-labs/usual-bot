@@ -39,48 +39,44 @@ struct VaultAddSheet: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Add to Vault")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
-                    .accessibilityAddTraits(.isHeader)
-                Picker("Kind", selection: $kind) {
-                    Text("Login").tag(VaultDraft.Kind.login)
-                    Text("Card").tag(VaultDraft.Kind.payment)
-                    Text("Address").tag(VaultDraft.Kind.address)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                VaultTextField(title: "Name", text: $form.label)
-                switch kind {
-                case .login: login
-                case .payment: card
-                case .address: address
-                }
-                if list.isUnencrypted { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
-                if let problem = list.problem {
-                    Text(problem)
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Theme.danger)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                HStack(spacing: 8) {
-                    Spacer(minLength: 0)
-                    Button("Cancel") {
-                        form = Form()
-                        dismiss()
+        SheetForm(
+            title: Text("New Item"), cancel: cancel,
+            action: SheetAction(title: "Add", isEnabled: canSave, perform: save),
+            busy: isSaving ? "Adding…" : nil
+        ) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Picker("Kind", selection: $kind) {
+                        Text("Login").tag(VaultDraft.Kind.login)
+                        Text("Card").tag(VaultDraft.Kind.payment)
+                        Text("Address").tag(VaultDraft.Kind.address)
                     }
-                    .buttonStyle(CardButtonStyle(primary: false))
-                    Button("Save", action: save)
-                        .buttonStyle(CardButtonStyle(primary: true))
-                        .disabled(!canSave)
-                        .opacity(canSave ? 1 : 0.4)
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    VaultTextField(title: "Name", text: $form.label)
+                    switch kind {
+                    case .login: login
+                    case .payment: card
+                    case .address: address
+                    }
+                    if list.isUnencrypted { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
+                    if let problem = list.problem {
+                        Text(problem)
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(Theme.danger)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
+                .padding(20)
             }
-            .padding(20)
         }
         .frame(minWidth: 340, idealWidth: 420, maxWidth: 480, minHeight: 420)
+        .background(Theme.window)
+    }
+
+    private func cancel() {
+        form = Form()
+        dismiss()
     }
 
     @ViewBuilder private var login: some View {
@@ -139,6 +135,7 @@ struct VaultAddSheet: View {
     }
 
     private func save() {
+        guard canSave else { return }
         isSaving = true
         Task {
             // A failure keeps the form to fix and try again, unless you cancel.

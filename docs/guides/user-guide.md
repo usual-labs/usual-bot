@@ -332,7 +332,7 @@ can't be changed here.
 
 - **See its tools.** Click an app. Usual Bot connects to it from the gateway and lists its tools.
   Test Connection does that again.
-- **Add an app.** Add app opens Hermes's catalog. Pick one, fill in any key it asks for, and add it.
+- **Add an app.** New App opens Hermes's catalog. Pick one, fill in any key it asks for, and add it.
   Custom adds one by web address, with an optional token, or by a command and its arguments. Keys and
   tokens go to the gateway and are saved there, not on this device. On a plain http gateway away from
   this device and outside Tailscale, tick "Send it anyway" to send one.

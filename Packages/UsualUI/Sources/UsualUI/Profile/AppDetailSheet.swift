@@ -22,37 +22,35 @@ struct AppDetailSheet: View {
     private var server: MCPServer { list.servers.first { $0.id == opened.id } ?? opened }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                header
-                if !server.isFromPlugin { onOff }
-                if server.usesSignIn && !server.isFromPlugin { signIn }
-                tools
-                if !server.envNames.isEmpty {
-                    Text("Keys saved on the gateway: \(server.envNames.joined(separator: ", "))")
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Theme.secondaryInk)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if let problem = list.problem {
-                    Text(problem)
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Theme.danger)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                HStack(spacing: 8) {
-                    if !server.isFromPlugin {
-                        Button("Remove", role: .destructive) { isRemoving = true }
-                            .buttonStyle(CardButtonStyle(primary: false))
-                            .foregroundStyle(Theme.danger)
+        SheetForm(title: Text(server.name), action: SheetAction(title: "Done") { dismiss() }) {
+            #if os(macOS)
+                if !server.isFromPlugin { removeButton }
+            #endif
+        } content: {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    header
+                    if !server.isFromPlugin { onOff }
+                    if server.usesSignIn && !server.isFromPlugin { signIn }
+                    tools
+                    if !server.envNames.isEmpty {
+                        Text("Keys saved on the gateway: \(server.envNames.joined(separator: ", "))")
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(Theme.secondaryInk)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    Spacer(minLength: 0)
-                    Button("Done") { dismiss() }
-                        .buttonStyle(CardButtonStyle(primary: true))
-                        .keyboardShortcut(.defaultAction)
+                    if let problem = list.problem {
+                        Text(problem)
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(Theme.danger)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    #if os(iOS)
+                        if !server.isFromPlugin { removeButton }
+                    #endif
                 }
+                .padding(20)
             }
-            .padding(20)
         }
         .frame(minWidth: 340, idealWidth: 420, maxWidth: 480, minHeight: 420)
         .background(Theme.window)
@@ -71,6 +69,16 @@ struct AppDetailSheet: View {
         }
     }
 
+    /// Red: the label's own colour, as the button style sets the ink for anything without one.
+    private var removeButton: some View {
+        Button(role: .destructive) {
+            isRemoving = true
+        } label: {
+            Text("Remove").foregroundStyle(Theme.danger)
+        }
+        .buttonStyle(CardButtonStyle(primary: false))
+    }
+
     private var header: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: AppSymbol.name(for: server))
@@ -80,10 +88,6 @@ struct AppDetailSheet: View {
                 .background(Theme.selection, in: RoundedRectangle(cornerRadius: 9))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text(server.name)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
-                    .accessibilityAddTraits(.isHeader)
                 Text(server.url ?? ([server.command ?? ""] + server.args).joined(separator: " "))
                     .font(.system(size: 12.5))
                     .foregroundStyle(Theme.secondaryInk)

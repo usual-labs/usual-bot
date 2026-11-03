@@ -32,57 +32,40 @@ struct RoutineTemplateForm: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Button(action: back) {
-                    Label("Templates", systemImage: "chevron.left")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Theme.secondaryInk)
-                        .frame(minHeight: 28)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.clickable)
-                .accessibilityLabel(Text("Back to templates"))
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(verbatim: template.title)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(Theme.ink)
-                        .accessibilityAddTraits(.isHeader)
+        SheetForm(
+            title: Text(verbatim: template.title),
+            back: SheetBack(label: Text("Back to templates"), perform: back),
+            cancel: cancel,
+            action: SheetAction(title: "Create", isEnabled: canCreate, perform: create),
+            busy: isSaving ? "Creating…" : nil
+        ) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
                     Text(verbatim: template.summary)
                         .font(.system(size: 13))
                         .foregroundStyle(Theme.secondaryInk)
                         .fixedSize(horizontal: false, vertical: true)
+                    ForEach(template.questions) { field in
+                        question(field)
+                    }
+                    schedule
+                    if template.hasDelivery { results }
+                    Text(
+                        "\(agentName) gets instructions written from your answers. You can read and change them once it's created."
+                    )
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.secondaryInk)
+                    .fixedSize(horizontal: false, vertical: true)
+                    if let problem {
+                        Text(problem)
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(Theme.danger)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                ForEach(template.questions) { field in
-                    question(field)
-                }
-                schedule
-                if template.hasDelivery { results }
-                Text(
-                    "\(agentName) gets instructions written from your answers. You can read and change them once it's created."
-                )
-                .font(.system(size: 12))
-                .foregroundStyle(Theme.secondaryInk)
-                .fixedSize(horizontal: false, vertical: true)
-                if let problem {
-                    Text(problem)
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Theme.danger)
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                HStack(spacing: 8) {
-                    Spacer(minLength: 0)
-                    Button("Cancel", action: cancel)
-                        .buttonStyle(CardButtonStyle(primary: false))
-                        .keyboardShortcut(.cancelAction)
-                    Button(isSaving ? "Creating…" : "Create", action: create)
-                        .buttonStyle(CardButtonStyle(primary: true))
-                        .disabled(!canCreate)
-                        .opacity(canCreate ? 1 : 0.4)
-                }
+                .padding(20)
             }
-            .padding(20)
         }
         .frame(minWidth: 340, idealWidth: 460, maxWidth: 560, minHeight: 460)
         .background(Theme.window)
@@ -184,6 +167,7 @@ struct RoutineTemplateForm: View {
     private var canCreate: Bool { template.isComplete(values) && !isSaving }
 
     private func create() {
+        guard canCreate else { return }
         isSaving = true
         problem = nil
         Task {

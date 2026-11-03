@@ -8,7 +8,7 @@ struct VaultView: View {
     let agentName: String
     let isOnline: Bool
 
-    /// What New item is adding.
+    /// What New Item is adding.
     @State private var adding: VaultDraft.Kind?
     @State private var filter: Filter = .all
     @State private var unlocking: VaultSource?
@@ -93,7 +93,7 @@ struct VaultView: View {
             Button("Address", systemImage: "mappin.and.ellipse") { adding = .address }
         } label: {
             HStack(spacing: 4) {
-                Text("New item")
+                Text("New Item")
                 Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold))
             }
             .font(.system(size: 13.5, weight: .semibold))
@@ -158,30 +158,30 @@ struct VaultView: View {
 
 /// Which of the saved items show.
 private enum Filter: CaseIterable {
-    case all, logins, payments, addresses
+    case all, logins, cards, addresses
 
     var title: LocalizedStringKey {
         switch self {
         case .all: "All"
         case .logins: "Logins"
-        case .payments: "Payments"
+        case .cards: "Cards"
         case .addresses: "Addresses"
         }
     }
 
     var emptyText: LocalizedStringKey {
         switch self {
-        case .all: "Nothing saved yet. Add something with New item."
-        case .logins: "No logins yet. Add one with New item."
-        case .payments: "No cards yet. Add one with New item."
-        case .addresses: "No addresses yet. Add one with New item."
+        case .all: "Nothing saved yet. Add something with New Item."
+        case .logins: "No logins yet. Add one with New Item."
+        case .cards: "No cards yet. Add one with New Item."
+        case .addresses: "No addresses yet. Add one with New Item."
         }
     }
 
     func includes(_ item: VaultItem) -> Bool {
         switch self {
         case .all: true
-        case .payments: item.kind == "payment"
+        case .cards: item.kind == "payment"
         case .addresses: item.kind == "address"
         // As the row's icon does, anything else counts as a login.
         case .logins: item.kind != "payment" && item.kind != "address"
@@ -323,39 +323,37 @@ private struct VaultUnlockSheet: View {
     @State private var isSending = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Unlock \(source.displayName)")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Theme.ink)
-                .accessibilityAddTraits(.isHeader)
-            Text("It stays unlocked for a while on the gateway. The master password isn't kept.")
-                .font(.system(size: 13))
-                .foregroundStyle(Theme.secondaryInk)
-                .fixedSize(horizontal: false, vertical: true)
-            VaultSecureField(title: "Master password", text: $password)
-            if list.isUnencrypted { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
-            if let problem = list.problem {
-                Text(problem)
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(Theme.danger)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            HStack(spacing: 8) {
-                Spacer(minLength: 0)
-                Button("Cancel") {
-                    password = ""
-                    dismiss()
+        SheetForm(
+            title: Text("Unlock \(source.displayName)"), cancel: cancel,
+            action: SheetAction(title: "Unlock", isEnabled: canSend, perform: send),
+            busy: isSending ? "Unlocking…" : nil
+        ) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("It stays unlocked for a while on the gateway. The master password isn't kept.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Theme.secondaryInk)
+                        .fixedSize(horizontal: false, vertical: true)
+                    VaultSecureField(title: "Master password", text: $password)
+                    if list.isUnencrypted { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
+                    if let problem = list.problem {
+                        Text(problem)
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(Theme.danger)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                .buttonStyle(CardButtonStyle(primary: false))
-                Button("Unlock", action: send)
-                    .buttonStyle(CardButtonStyle(primary: true))
-                    .disabled(!canSend)
-                    .opacity(canSend ? 1 : 0.4)
+                .padding(20)
             }
         }
-        .padding(20)
-        .frame(minWidth: 320, maxWidth: 420)
+        .frame(minWidth: 320, idealWidth: 400, maxWidth: 420, minHeight: 300)
+        .background(Theme.window)
         .presentationDetents([.medium])
+    }
+
+    private func cancel() {
+        password = ""
+        dismiss()
     }
 
     private var canSend: Bool {
@@ -363,6 +361,7 @@ private struct VaultUnlockSheet: View {
     }
 
     private func send() {
+        guard canSend else { return }
         isSending = true
         Task {
             // A failure leaves the password for another try, unless you cancel.

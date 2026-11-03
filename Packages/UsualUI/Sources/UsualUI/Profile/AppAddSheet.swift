@@ -20,47 +20,38 @@ struct AppAddSheet: View {
     @State private var allowsUnencrypted = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Add an App")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
-                    .accessibilityAddTraits(.isHeader)
-                Picker("Add from", selection: $source) {
-                    Text("Catalog").tag(Source.catalog)
-                    Text("Custom").tag(Source.custom)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                switch source {
-                case .catalog:
-                    if let entry { entryForm(entry) } else { catalog }
-                case .custom: custom
-                }
-                if list.isUnencrypted && sendsSecret { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
-                if let problem = list.problem {
-                    Text(problem)
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(Theme.danger)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                HStack(spacing: 8) {
-                    if source == .catalog, entry != nil {
-                        Button("Back") { pick(nil) }
-                            .buttonStyle(CardButtonStyle(primary: false))
+        SheetForm(
+            title: Text("New App"),
+            back: source == .catalog && entry != nil
+                ? SheetBack(label: Text("Back to the catalog")) { pick(nil) } : nil,
+            cancel: close,
+            action: source == .custom || entry != nil
+                ? SheetAction(title: "Add", isEnabled: canAdd, perform: add) : nil,
+            busy: isAdding ? "Adding…" : nil
+        ) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Picker("Add from", selection: $source) {
+                        Text("Catalog").tag(Source.catalog)
+                        Text("Custom").tag(Source.custom)
                     }
-                    Spacer(minLength: 0)
-                    Button("Cancel", action: close)
-                        .buttonStyle(CardButtonStyle(primary: false))
-                    if source == .custom || entry != nil {
-                        Button("Add", action: add)
-                            .buttonStyle(CardButtonStyle(primary: true))
-                            .disabled(!canAdd)
-                            .opacity(canAdd ? 1 : 0.4)
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    switch source {
+                    case .catalog:
+                        if let entry { entryForm(entry) } else { catalog }
+                    case .custom: custom
+                    }
+                    if list.isUnencrypted && sendsSecret { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
+                    if let problem = list.problem {
+                        Text(problem)
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(Theme.danger)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                .padding(20)
             }
-            .padding(20)
         }
         .frame(minWidth: 340, idealWidth: 420, maxWidth: 480, minHeight: 460)
         .background(Theme.window)
@@ -210,6 +201,7 @@ struct AppAddSheet: View {
     }
 
     private func add() {
+        guard canAdd else { return }
         isAdding = true
         Task {
             let added: Bool
