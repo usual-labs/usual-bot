@@ -50,7 +50,8 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
             ConnectView(model: model, presenter: presenter, options: connectOptions)
         case .signedIn(let gateway):
             ContactsSplitView(
-                contacts: model.sidebarContacts, sections: model.sections, emptyText: emptyText,
+                contacts: model.sidebarContacts, sections: model.sections, emptyText: model.link.emptyListText,
+                tryAgain: model.link.offersTryAgain ? { model.reconnect() } : nil,
                 thread: { $0.kind == .agent ? model.thread(for: $0) : nil },
                 room: { model.room(for: $0) },
                 skills: { $0.kind == .agent ? model.skills(for: $0) : nil },
@@ -142,11 +143,6 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
             .accessibilityValue(Text(model.link.statusText))
         }
     #endif
-
-    private var emptyText: LocalizedStringKey {
-        if case .online = model.link { return "No agents on this gateway yet." }
-        return "Connecting…"
-    }
 }
 
 extension RootView where ConnectOptions == EmptyView, GatewayMenu == EmptyView {
@@ -161,7 +157,9 @@ struct ContactsSplitView<Footer: View>: View {
     let contacts: [Contact]
     /// How the sidebar is grouped; `nil` lists everything together.
     var sections: SidebarSections?
-    var emptyText: LocalizedStringKey = "No agents yet."
+    var emptyText = String(localized: "No agents yet.")
+    /// Shown under `emptyText` as Try Again, when there's something to try again.
+    var tryAgain: (() -> Void)?
     var thread: (Contact) -> ChatThread? = { _ in nil }
     var room: (Contact) -> RoomThread? = { _ in nil }
     /// An agent's skills, for a room's `/` menu.
@@ -336,10 +334,20 @@ struct ContactsSplitView<Footer: View>: View {
     private func sidebar(compact: Bool) -> some View {
         VStack(spacing: 0) {
             if contacts.isEmpty {
-                Text(emptyText)
-                    .font(.system(size: 13))
-                    .foregroundStyle(Theme.secondaryInk)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 10) {
+                    Text(verbatim: emptyText).multilineTextAlignment(.center)
+                    if let tryAgain {
+                        Button("Try Again", action: tryAgain)
+                            .buttonStyle(.clickable)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Theme.ink)
+                            .frame(minHeight: 44)
+                    }
+                }
+                .font(.system(size: 13))
+                .foregroundStyle(Theme.secondaryInk)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ContactList(
                     contacts: contacts, sections: sections, query: query, compact: compact, selection: $selection,

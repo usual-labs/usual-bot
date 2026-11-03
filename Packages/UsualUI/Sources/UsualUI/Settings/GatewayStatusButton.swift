@@ -103,6 +103,22 @@ extension AppModel.Link {
         case .offline: return Theme.danger
         }
     }
+
+    /// The chat list with nothing in it. Offline, the app retries by itself, but say what to
+    /// check rather than "Connecting…", which reads as if it's about to work.
+    var emptyListText: String {
+        switch self {
+        case .online: String(localized: "No agents on this gateway yet.")
+        case .connecting: String(localized: "Connecting…")
+        case .offline: String(localized: "Can't reach your gateway. Check your connection or Tailscale.")
+        }
+    }
+
+    /// Offline, the empty list offers to reconnect now instead of waiting for the next retry.
+    var offersTryAgain: Bool {
+        if case .offline = self { return true }
+        return false
+    }
 }
 
 #Preview("Contacts") {
