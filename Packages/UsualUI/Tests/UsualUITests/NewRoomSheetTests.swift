@@ -2,6 +2,7 @@ import Testing
 
 @testable import UsualUI
 
+@MainActor
 struct NewRoomSheetTests {
     @Test func namesARoomFromItsAgentsInTheOrderPicked() {
         #expect(NewRoomSheet.suggestedName(for: []) == "")
