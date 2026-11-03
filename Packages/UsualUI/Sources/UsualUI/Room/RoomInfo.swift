@@ -30,8 +30,6 @@ enum RoomSkills {
 struct RoomPanel: View {
     let room: Contact
     let members: [Contact]
-    /// You confirmed deleting the room.
-    var delete: () -> Void = {}
 
     @Environment(\.roomEditing) private var editing
     @State private var edit: RoomEdit?
@@ -53,11 +51,11 @@ struct RoomPanel: View {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(members) { member in
                         row(member)
-                        if member.id != members.last?.id { Divider().overlay(Theme.border).padding(.leading, 48) }
+                        if member.id != members.last?.id { Divider().overlay(Self.line).padding(.leading, 48) }
                     }
                 }
                 .padding(.horizontal, 12)
-                .background(Theme.pane, in: RoundedRectangle(cornerRadius: 14))
+                .background(Self.card, in: RoundedRectangle(cornerRadius: 14))
 
                 Text(
                     "Each agent answers here with its default model. To change one, open that agent's chat and choose Make Default in its model menu."
@@ -69,20 +67,34 @@ struct RoomPanel: View {
                 if editing != nil {
                     VStack(spacing: 0) {
                         action("Rename Room…", tint: Theme.ink) { edit = .rename(room) }
-                        Divider().overlay(Theme.border)
+                        Divider().overlay(Self.line)
                         action("Delete Room…", tint: Theme.danger) { edit = .delete(room) }
                     }
                     .padding(.horizontal, 12)
-                    .background(Theme.pane, in: RoundedRectangle(cornerRadius: 14))
+                    .background(Self.card, in: RoundedRectangle(cornerRadius: 14))
                 }
             }
             .padding(.horizontal, 20)
             .padding(.top, 28)
             .padding(.bottom, 20)
         }
-        .background(Theme.window)
-        .roomEditor($edit, confirmDelete: delete)
+        #if os(macOS)
+            .background(Theme.window)
+        #else
+            // A page pushed from the room, like a Bot's profile.
+            .background(Theme.groupedPage)
+            .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .roomEditor($edit)
     }
+
+    #if os(macOS)
+        private static let card = Theme.pane
+        private static let line = Theme.border
+    #else
+        private static let card = Theme.groupedCard
+        private static let line = Theme.groupedBorder
+    #endif
 
     private func action(_ title: LocalizedStringKey, tint: Color, perform: @escaping () -> Void) -> some View {
         Button(action: perform) {

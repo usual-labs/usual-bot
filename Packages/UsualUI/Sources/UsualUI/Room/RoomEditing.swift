@@ -20,10 +20,9 @@ enum RoomEdit: Equatable {
 
 extension View {
     /// Asks for what `edit` needs, then makes the change. Each place that offers these holds its
-    /// own: on iPhone the room's panel is a sheet, which nothing behind it can present over.
-    /// `confirmDelete` replaces deleting right away, for a place that has to go first.
-    func roomEditor(_ edit: Binding<RoomEdit?>, confirmDelete: (() -> Void)? = nil) -> some View {
-        modifier(RoomEditor(edit: edit, confirmDelete: confirmDelete))
+    /// own, so the list's menu and the room's panel each present from where they are.
+    func roomEditor(_ edit: Binding<RoomEdit?>) -> some View {
+        modifier(RoomEditor(edit: edit))
     }
 }
 
@@ -32,7 +31,6 @@ private struct RoomEditor: ViewModifier {
     private static let longestName = 200
 
     @Binding var edit: RoomEdit?
-    let confirmDelete: (() -> Void)?
     @Environment(\.roomEditing) private var editing
     @State private var name = ""
     @State private var problem: String?
@@ -96,7 +94,6 @@ private struct RoomEditor: ViewModifier {
     }
 
     private func delete(_ contact: Contact) {
-        if let confirmDelete { return confirmDelete() }
         guard let editing else { return }
         Task {
             do {

@@ -19,13 +19,6 @@ struct RoomPane: View {
     /// The message you're replying to; a reply to an agent goes to that agent only.
     @State private var replyTo: QuotedMessage?
     @State private var showsInfo = false
-    /// Waiting for the panel to close, to delete the room.
-    @State private var deleting = false
-    @State private var deleteProblem: String?
-    @Environment(\.roomEditing) private var editing
-    #if os(iOS)
-        @Environment(\.horizontalSizeClass) private var sizeClass
-    #endif
 
     var body: some View {
         content
@@ -66,23 +59,18 @@ struct RoomPane: View {
                     \.chatPanel,
                     ChatPanelCommand(title: showsInfo ? "Hide Room Details" : "Show Room Details") {
                         showsInfo.toggle()
-                    })
-            #endif
-            .inspector(isPresented: $showsInfo) {
-                RoomPanel(room: contact, members: members, delete: confirmDelete)
-                    .inspectorColumnWidth(min: 260, ideal: 300, max: 400)
-                    .onDisappear {
-                        if deleting { delete() }
                     }
-            }
-            .alert(
-                "That didn't work",
-                isPresented: Binding(get: { deleteProblem != nil }, set: { if !$0 { deleteProblem = nil } })
-            ) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(deleteProblem ?? "")
-            }
+                )
+                .inspector(isPresented: $showsInfo) {
+                    RoomPanel(room: contact, members: members)
+                    .inspectorColumnWidth(min: Self.panelWidth, ideal: 300, max: 400)
+                }
+            #else
+                // Pushed, as a Bot's profile is. A compact inspector drops the name from the bar.
+                .navigationDestination(isPresented: $showsInfo) {
+                    RoomPanel(room: contact, members: members)
+                }
+            #endif
             // Rooms push nothing: read new events while the room is on screen.
             .task(id: room.roomID) {
                 while !Task.isCancelled {
@@ -92,30 +80,8 @@ struct RoomPane: View {
             }
     }
 
-    /// Deleted with its panel open, a room leaves that panel's iPhone sheet behind, blank and
-    /// impossible to close. A panel that's a column on the Mac or iPad never disappears.
-    private func confirmDelete() {
-        #if os(iOS)
-            if sizeClass == .compact {
-                deleting = true
-                showsInfo = false
-                return
-            }
-        #endif
-        delete()
-    }
-
-    private func delete() {
-        deleting = false
-        guard let editing else { return }
-        Task {
-            do {
-                try await editing.delete(contact)
-            } catch {
-                deleteProblem = String(localized: "“\(contact.name)” wasn't deleted. \(AppModel.describe(error))")
-            }
-        }
-    }
+    /// The room panel's narrowest, which the window's minimum width makes room for.
+    static let panelWidth: CGFloat = 260
 
     @ViewBuilder private var content: some View {
         switch room.phase {
