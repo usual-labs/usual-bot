@@ -3,6 +3,7 @@ import Testing
 @testable import HermesKit
 @testable import UsualUI
 
+@MainActor
 struct QuickMessageTests {
     @Test func tabCyclesRecipientsAndWraps() {
         let ids = ["hermes", "scout", "room:r1"]
@@ -19,5 +20,16 @@ struct QuickMessageTests {
         #expect(SecretCard.title(secret, agentName: "Ops") == "Ops needs a secret")
         let sudo = SecretPrompt(id: "2", sessionID: "s", kind: .sudo(command: "sudo ls"))
         #expect(SecretCard.title(sudo, agentName: "Ops") == "Ops needs your sudo password")
+    }
+
+    @Test func waitingOnYouListsRoomRetriesAndAppConnections() {
+        let model = AppModel.demo()
+        let rows = WaitingOnYou.rows(model: model, contacts: model.sidebarContacts)
+        let retry = rows.first { $0.id == "demo-retry" }
+        #expect(retry?.title == "A reply in Launch crew didn't finish")
+        if case .retry = retry?.action {} else { Issue.record("A stopped room reply should offer Try Again") }
+        let connect = rows.first { $0.id == "demo-connect" }
+        #expect(connect?.title == "Atlas wants to connect Notion and Google Drive")
+        if case .open = connect?.action {} else { Issue.record("A connection request should open its chat") }
     }
 }

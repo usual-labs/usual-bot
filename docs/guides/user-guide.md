@@ -345,7 +345,9 @@ you’re doing.
 - Pick the agent along the top (Tab moves to the next), type, and press Return to send. The answer
   shows in the panel.
 - ⌘Return opens the full chat; Esc closes the panel.
-- **Waiting on you** lists approvals from every agent, with Allow and Deny.
+- **Waiting on you** lists what every agent and room is waiting for: approvals, with Allow and
+  Deny; room replies that stopped partway, with Try Again; and questions, passwords, sign-ins and
+  apps to connect, with Open.
 
 Usual Bot keeps running in the menu bar after you close its window. Quick Message stays available
 there even if you disable its shortcut. Quit the app from the menu bar item.
