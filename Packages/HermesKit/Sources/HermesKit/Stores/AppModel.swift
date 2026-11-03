@@ -337,12 +337,20 @@ public final class AppModel {
     // MARK: - Chats
 
     /// Contacts as the sidebar shows them: the roster plus each chat's live activity and unread count.
+    /// A chat's newest message stands in for the roster's preview and time when it's newer, so the
+    /// row moves as soon as you send and when the reply comes, not at the next roster refresh.
     public var sidebarContacts: [Contact] {
         contacts.map { contact in
             var contact = sections.placed(contact)
             if let thread = threads[contact.id] {
                 contact.activity = thread.activity
                 contact.unreadCount = thread.unreadCount
+                if let newest = Self.newestMessage(in: thread.state.items),
+                    newest.date > contact.lastActive ?? .distantPast
+                {
+                    contact.preview = newest.text
+                    contact.lastActive = newest.date
+                }
             } else if let room = rooms[contact.id] {
                 contact.activity = room.activity
                 contact.unreadCount = room.unreadCount
@@ -350,6 +358,18 @@ public final class AppModel {
             }
             return contact
         }
+    }
+
+    /// A chat's newest message, yours or the agent's, as one plain line, and when it was said.
+    private static func newestMessage(in items: [TranscriptItem]) -> (text: String, date: Date)? {
+        for item in items.reversed() {
+            switch item.content {
+            case .user(let text), .assistant(let text):
+                return item.date.map { (RoomThread.readable(text), $0) }
+            default: continue
+            }
+        }
+        return nil
     }
 
     /// The room behind a room contact.
