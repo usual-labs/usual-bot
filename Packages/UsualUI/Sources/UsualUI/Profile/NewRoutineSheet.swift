@@ -120,6 +120,13 @@ private struct ChoiceRow: View {
     let summary: String
     let open: () -> Void
 
+    /// A phone's narrow sheet cuts one line short after a few words.
+    #if os(iOS)
+        private static let summaryLines = 2
+    #else
+        private static let summaryLines = 1
+    #endif
+
     var body: some View {
         Button(action: open) {
             HStack(spacing: 12) {
@@ -137,7 +144,7 @@ private struct ChoiceRow: View {
                     Text(summary)
                         .font(.system(size: 12.5))
                         .foregroundStyle(Theme.secondaryInk)
-                        .lineLimit(1)
+                        .lineLimit(Self.summaryLines)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Image(systemName: "chevron.right")

@@ -168,9 +168,11 @@ private struct AppRow: View {
                             .font(.system(size: 14))
                             .foregroundStyle(server.enabled ? Theme.ink : Theme.secondaryInk)
                             .lineLimit(1)
+                        // A problem shows whole: it says what to do next.
                         statusLine
                             .font(.system(size: 12.5))
-                            .lineLimit(2)
+                            .lineLimit(isProblem ? nil : 2)
+                            .fixedSize(horizontal: false, vertical: isProblem)
                     }
                     Spacer(minLength: 0)
                 }
@@ -204,6 +206,8 @@ private struct AppRow: View {
     }
 
     /// Where it runs, then how it's doing: off, its tool count, or what went wrong.
+    private var isProblem: Bool { AppStatus(server: server, list: list).isProblem }
+
     private var statusLine: Text {
         let location = Text(server.location).foregroundStyle(Theme.secondaryInk)
         let status = AppStatus(server: server, list: list)

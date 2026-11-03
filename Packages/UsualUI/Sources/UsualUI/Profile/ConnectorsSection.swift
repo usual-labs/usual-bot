@@ -118,10 +118,12 @@ private struct ConnectorRow: View {
                     .foregroundStyle(Theme.ink)
                     .lineLimit(1)
                 if let status {
+                    // A problem shows whole: it says what to do next.
                     Text(status)
                         .font(.system(size: 12.5))
                         .foregroundStyle(isProblem ? Theme.danger : Theme.secondaryInk)
-                        .lineLimit(2)
+                        .lineLimit(isProblem ? nil : 2)
+                        .fixedSize(horizontal: false, vertical: isProblem)
                 }
             }
             .accessibilityElement(children: .combine)
