@@ -23,3 +23,11 @@ struct SidebarSpeechTests {
         #expect(SidebarSpeech.section(block, isFolded: false) == "Open")
     }
 }
+
+struct MachineRowTests {
+    @Test func theMachineRowSaysWhenTheBotIsWaitingOnYou() {
+        #expect(Contact.Activity.needsYou.label == "Needs you")
+        #expect(Contact.Activity.working.label == "Working")
+        #expect(Contact.Activity.idle.label == "Idle")
+    }
+}

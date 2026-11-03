@@ -1,6 +1,17 @@
 import HermesKit
 import SwiftUI
 
+extension Contact.Activity {
+    /// The Machine row's value: what the Bot is doing, or that it's waiting on you.
+    var label: String {
+        switch self {
+        case .idle: String(localized: "Idle")
+        case .working: String(localized: "Working")
+        case .needsYou: String(localized: "Needs you")
+        }
+    }
+}
+
 #if os(iOS)
     extension Theme {
         /// Grok's grouped look for the phone profile: a grey page with lighter cards, like Settings.
@@ -87,7 +98,7 @@ import SwiftUI
                 guard vault.phase == .ready else { return nil }
                 return vault.items.count.formatted()
             case .machine:
-                return contact.activity == .working ? String(localized: "Working") : String(localized: "Idle")
+                return contact.activity.label
             }
         }
 
