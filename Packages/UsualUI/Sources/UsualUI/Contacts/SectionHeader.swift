@@ -28,12 +28,23 @@ struct SectionHeader<Actions: View>: View {
                 } primaryAction: {
                     toggle()
                 }
-                .accessibilityLabel(Text(verbatim: title))
+                // A menu exposed a pop-up button, an unlabelled button and the arrow ("Go Down")
+                // apart, and `accessibilityHidden` on the arrow didn't hold inside its label. So
+                // VoiceOver gets one heading that folds, with the menu's items as its actions.
+                .accessibilityRepresentation {
+                    Button(action: toggle) { Text(verbatim: title) }
+                }
                 .accessibilityValue(Text(verbatim: spokenValue))
-                .accessibilityHint(Text("Touch and hold for the section's options"))
                 .accessibilityAddTraits(.isHeader)
+                .accessibilityActions { actions() }
             } else {
+                // Other has no options, but its arrow showed the same way.
                 foldButton
+                    .accessibilityRepresentation {
+                        Button(action: toggle) { Text(verbatim: title) }
+                    }
+                    .accessibilityValue(Text(verbatim: spokenValue))
+                    .accessibilityAddTraits(.isHeader)
             }
         #endif
     }
