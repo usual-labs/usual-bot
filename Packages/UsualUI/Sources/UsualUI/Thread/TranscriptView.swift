@@ -40,6 +40,12 @@ struct TranscriptView: View {
         }
         .onChange(of: hasCards, initial: true) { cardsAfter = hasCards ? items.last?.id ?? -1 : nil }
         .onChange(of: thread.transcriptLoad) { if hasCards { cardsAfter = items.last?.id ?? -1 } }
+        // A card may be out of sight, or VoiceOver elsewhere in the chat.
+        .onChange(of: waiting) { old, new in
+            if let text = TranscriptAnnouncement.appeared(from: old, to: new, agent: agentName) {
+                TranscriptAnnouncement.post(text)
+            }
+        }
     }
 
     private var items: [TranscriptItem] { thread.state.items }
@@ -109,10 +115,12 @@ struct TranscriptView: View {
     }
 
     /// What the agent waits on you for.
-    private var hasCards: Bool {
-        !thread.vaultPrompts.isEmpty || thread.connection != nil || !thread.approvals.isEmpty
-            || !thread.questions.isEmpty || !thread.secrets.isEmpty
+    private var waiting: WaitingCards {
+        WaitingCards(
+            approvals: thread.approvals.count, questions: thread.questions.count, secrets: thread.secrets.count,
+            vault: thread.vaultPrompts.count, connections: thread.connection == nil ? 0 : 1)
     }
+    private var hasCards: Bool { waiting != WaitingCards() }
 
     /// Where the waiting cards sit: after the items there were when they appeared, so a message you
     /// send while one waits, and the answer, come after it like any other message.

@@ -188,6 +188,14 @@ struct RoomPane: View {
                 RetryCard { room.retry(taskID) }
             }
         }
+        .onChange(of: room.approvals.count) { old, new in
+            guard let asking = room.approvals.last,
+                let text = TranscriptAnnouncement.appeared(
+                    from: WaitingCards(approvals: old), to: WaitingCards(approvals: new),
+                    agent: author(asking.memberID)?.name ?? asking.memberID)
+            else { return }
+            TranscriptAnnouncement.post(text)
+        }
     }
 
     private func replyingRow(_ text: String, @ViewBuilder avatar: () -> some View) -> some View {
