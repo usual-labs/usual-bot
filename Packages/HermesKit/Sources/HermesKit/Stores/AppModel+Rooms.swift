@@ -41,9 +41,14 @@ extension AppModel {
     /// Creates a room with `agents`, two to six of this gateway's agents, and lists it at once.
     /// Returns the room's contact ID, to open it.
     public func createRoom(named name: String, agents: [Contact]) async throws -> Contact.ID {
+        let profiles = agents.map { $0.details?.profile ?? $0.id }
+        if isDemo {
+            #if DEBUG
+                return addDemoRoom(named: name, profiles: profiles)
+            #endif
+        }
         guard let channel else { throw GatewayError.disconnected }
-        let summary = try await RoomThread.create(
-            named: name, profiles: agents.map { $0.details?.profile ?? $0.id }, on: channel)
+        let summary = try await RoomThread.create(named: name, profiles: profiles, on: channel)
         let contact = Contact(room: summary)
         let room = roomThread(for: summary)
         rooms[contact.id] = room
@@ -79,4 +84,21 @@ extension AppModel {
         contacts.removeAll { $0.id == contact.id }
         sections.move(contact, to: nil)
     }
+
+    #if DEBUG
+        /// The demo has no gateway: a new room starts empty, and its members don't answer.
+        private func addDemoRoom(named name: String, profiles: [String]) -> Contact.ID {
+            let members: [JSONValue] = profiles.map {
+                ["member_id": .string($0), "profile": .string($0), "handle": .string($0)]
+            }
+            let summary = RoomSummary([
+                "room_id": .string("demo-\(UUID().uuidString.prefix(8).lowercased())"), "name": .string(name),
+                "members": .array(members), "updated_at": .number(Date.now.timeIntervalSince1970),
+            ])!
+            let contact = Contact(room: summary)
+            rooms[contact.id] = RoomThread.sample(summary, events: [])
+            contacts.append(contact)
+            return contact.id
+        }
+    #endif
 }

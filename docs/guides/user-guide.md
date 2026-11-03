@@ -273,7 +273,8 @@ Hermes; Usual Bot only shows it. Rooms have no Computer button: open the agent's
 ## Rooms
 
 Rooms are group chats with several agents. Create one with **+** › **New Room…** at the top of the sidebar
-(⇧⌘N on the Mac), name it and pick its members.
+(⇧⌘N on the Mac) and pick two to six members. Leave the name blank and the room is named after them,
+like "Forge, Atlas & Scribe".
 
 - A message goes to every agent in the room; `@name` talks to just one.
 - Each reply shows who wrote it. Agents can hand work to each other, shown as small lines in the

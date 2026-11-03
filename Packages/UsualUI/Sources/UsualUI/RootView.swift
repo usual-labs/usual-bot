@@ -311,7 +311,7 @@ struct ContactsSplitView<Footer: View>: View {
                 if showsPalette {
                     CommandPalette(
                         contacts: contacts, members: members(of:),
-                        canCreateRoom: createRoom != nil && agents.count >= NewRoomSheet.seats.lowerBound,
+                        canCreateRoom: createRoom != nil,
                         search: search, open: { selection = $0 }, openMessage: show,
                         newRoom: { showsNewRoom = true }, newBot: botEditing.map { _ in { showsNewBot = true } },
                         settings: settings, close: { showsPalette = false })
@@ -619,7 +619,6 @@ struct ContactsSplitView<Footer: View>: View {
                 Button("New Bot…", systemImage: "person.crop.circle.badge.plus") { showsNewBot = true }
                 if createRoom != nil {
                     Button("New Room…", systemImage: "person.2") { showsNewRoom = true }
-                        .disabled(agents.count < NewRoomSheet.seats.lowerBound)
                 }
             } label: {
                 Label("New", systemImage: "plus")
@@ -633,7 +632,6 @@ struct ContactsSplitView<Footer: View>: View {
             } label: {
                 Label("New Room", systemImage: "plus")
             }
-            .disabled(agents.count < NewRoomSheet.seats.lowerBound)
             .help("New Room")
         }
     }

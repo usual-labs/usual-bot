@@ -47,6 +47,20 @@ struct DemoTests {
         #expect(ops.state.items.last?.content == .notice("Stopped"))
     }
 
+    /// New Room works in the demo, as renaming and deleting one do, instead of failing on the
+    /// gateway it doesn't have.
+    @Test func demoMakesARoomWithoutAGateway() async throws {
+        let model = AppModel.demo()
+        let agents = model.sidebarContacts.filter { $0.id == "forge" || $0.id == "ledger" }
+        let id = try await model.createRoom(named: "Billing", agents: agents)
+        let room = try #require(model.sidebarContacts.first { $0.id == id })
+        #expect(room.name == "Billing")
+        #expect(room.kind == .room(memberIDs: ["forge", "ledger"]))
+        #expect(model.room(for: room)?.phase == .ready)
+        // A second room gets its own ID.
+        #expect(try await model.createRoom(named: "Billing", agents: agents) != id)
+    }
+
     @Test func demoShowsUsageForEveryBotThatAgreesAcrossPeriods() async {
         let model = AppModel.demo()
         await model.usage.refresh()
