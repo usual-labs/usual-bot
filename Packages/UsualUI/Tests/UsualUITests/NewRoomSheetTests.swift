@@ -12,11 +12,11 @@ struct NewRoomSheetTests {
     }
 
     @Test func saysWhyCreateIsOff() {
-        #expect(NewRoomSheet.seatsNote(picked: 0, available: 5) == "Pick two to six agents.")
-        #expect(NewRoomSheet.seatsNote(picked: 1, available: 5) == "Pick one more agent.")
+        #expect(NewRoomSheet.seatsNote(picked: 0, available: 5) == "Pick two to six Bots.")
+        #expect(NewRoomSheet.seatsNote(picked: 1, available: 5) == "Pick one more Bot.")
         #expect(NewRoomSheet.seatsNote(picked: 2, available: 5) == nil)
         #expect(
             NewRoomSheet.seatsNote(picked: 0, available: 1)
-                == "A room needs at least two agents, and this gateway has one. Make another with New Bot first.")
+                == "A room needs at least two Bots, and this gateway has one. Make another with New Bot first.")
     }
 }

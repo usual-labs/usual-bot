@@ -13,7 +13,7 @@ struct EmptyListTests {
     @Test func connectingAndOnlineSayWhatsTrueWithoutTryAgain() {
         #expect(AppModel.Link.connecting.emptyListText == "Connecting…")
         #expect(!AppModel.Link.connecting.offersTryAgain)
-        #expect(AppModel.Link.online(.legacy).emptyListText == "No agents on this gateway yet.")
+        #expect(AppModel.Link.online(.legacy).emptyListText == "No Bots on this gateway yet.")
         #expect(!AppModel.Link.online(.legacy).offersTryAgain)
     }
 }
