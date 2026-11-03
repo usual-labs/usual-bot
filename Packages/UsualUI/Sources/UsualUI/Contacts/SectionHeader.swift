@@ -95,14 +95,14 @@ struct SectionHeader<Actions: View>: View {
             .accessibilityHidden(true)
     }
 
+    private static var titleFont: Font { SectionNameField.titleFont }
+
     #if os(macOS)
-        private static var titleFont: Font { .system(size: 13, weight: .medium) }
         private static var chevronSize: CGFloat { 10 }
         private static var chevronWeight: Font.Weight { .semibold }
         private static var chevronOpacity: Double { 1 }
     #else
         // Grok's phone headings: larger, with a thin, quieter arrow.
-        private static var titleFont: Font { .system(size: 17) }
         private static var chevronSize: CGFloat { 13 }
         private static var chevronWeight: Font.Weight { .regular }
         private static var chevronOpacity: Double { 0.7 }
@@ -118,7 +118,9 @@ struct SectionHeader<Actions: View>: View {
     }
 }
 
-/// Types a section's name in place of its heading. Esc cancels; any other way of leaving saves.
+/// Types a section's name in place of its heading, in the heading's type and place. Esc on the
+/// Mac or Cancel on iPhone keeps the old name, and so does leaving it empty; any other way of
+/// leaving saves.
 struct SectionNameField: View {
     let commit: (String) -> Void
     let cancel: () -> Void
@@ -135,14 +137,30 @@ struct SectionNameField: View {
     }
 
     var body: some View {
+        HStack(spacing: 8) {
+            field
+            #if os(iOS)
+                // iPhone has no Esc.
+                Button("Cancel", action: dismiss)
+                    .buttonStyle(.clickable)
+                    .font(.system(size: 15))
+                    .foregroundStyle(Theme.secondaryInk)
+            #endif
+        }
+        .padding(.horizontal, 10)
+        .frame(minHeight: 30)
+        .background(Theme.selection, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var field: some View {
         TextField("Section name", text: $draft, selection: $selection)
             .textFieldStyle(.plain)
-            .font(.system(size: 13, weight: .medium))
+            .font(Self.titleFont)
             .foregroundStyle(Theme.ink)
             .focused($isFocused)
-            .padding(.horizontal, 10)
-            .frame(minHeight: 30)
-            .background(Theme.selection, in: RoundedRectangle(cornerRadius: 10))
+            #if os(iOS)
+                .submitLabel(.done)
+            #endif
             .onSubmit(finish)
             .onChange(of: isFocused) { _, focused in
                 if !focused { finish() }
@@ -150,10 +168,7 @@ struct SectionNameField: View {
             // On the Mac, clicking another chat leaves the focus here, and the list closes the field.
             .onDisappear(perform: finish)
             #if os(macOS)
-                .onExitCommand {
-                    isFinished = true
-                    cancel()
-                }
+                .onExitCommand(perform: dismiss)
             #endif
             .task {
                 // The context menu that led here takes the focus back as it closes.
@@ -170,6 +185,18 @@ struct SectionNameField: View {
         isFinished = true
         commit(draft)
     }
+
+    private func dismiss() {
+        guard !isFinished else { return }
+        isFinished = true
+        cancel()
+    }
+
+    #if os(macOS)
+        static var titleFont: Font { .system(size: 13, weight: .medium) }
+    #else
+        static var titleFont: Font { .system(size: 17) }
+    #endif
 
     private static var menuCloseDelay: Int {
         #if os(macOS)
