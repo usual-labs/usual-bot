@@ -351,6 +351,13 @@ struct ContactsSplitView<Footer: View>: View {
                         sidebarToggle
                             .frame(width: 44, height: 44)
                     }
+                    searchButton
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.clickable)
+                        .font(.system(size: 17))
+                        .foregroundStyle(Theme.secondaryInk)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                     newButton
                         .labelStyle(.iconOnly)
                         // Not `.clickable`: a menu ignores that style and draws a grey box.
@@ -387,10 +394,10 @@ struct ContactsSplitView<Footer: View>: View {
 
         private var searchButton: some View {
             Button("Search", systemImage: "magnifyingglass") { showsPalette = true }
-                .help("Search")
+                .help("Search (⌘K)")
         }
 
-        /// Here rather than on the button, which the rail doesn't have.
+        /// One place for the toolbar's button and the rail's.
         private var paletteShortcuts: some View {
             Group {
                 Button("Search") { showsPalette.toggle() }.keyboardShortcut("k")
