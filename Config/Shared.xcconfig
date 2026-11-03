@@ -26,7 +26,7 @@ INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphone*] = YES
 // The launch screen (the Hermes mark on the window colour) is UILaunchScreen in Config/Info.plist.
 // iOS asks before the app reaches a gateway on the home network (a tailnet address needs no prompt).
 INFOPLIST_KEY_NSLocalNetworkUsageDescription[sdk=iphone*] = Usual Bot connects to your Hermes gateway on your home network.
-INFOPLIST_KEY_NSCameraUsageDescription[sdk=iphone*] = Take a photo to send to an agent.
+INFOPLIST_KEY_NSCameraUsageDescription[sdk=iphone*] = Take a photo to send to a Bot.
 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone[sdk=iphone*] = UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad[sdk=iphone*] = UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
 

@@ -18,7 +18,7 @@ enum QuickSend: Equatable {
         }
         if let failure { return .blocked(failure) }
         if roomServiceStopped {
-            return .blocked(String(localized: "The gateway's room service isn't running, so agents won't answer."))
+            return .blocked(String(localized: "The gateway's room service isn't running, so Bots won't answer."))
         }
         return .opening
     }

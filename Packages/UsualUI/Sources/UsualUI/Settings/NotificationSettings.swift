@@ -37,7 +37,7 @@ struct NotificationSettings: View {
         }
         Section {
             Toggle("Messages and replies", isOn: $messages)
-            Toggle("When an agent needs you", isOn: $needsYou)
+            Toggle("When a Bot needs you", isOn: $needsYou)
             Toggle("Background task completions", isOn: $tasks)
             Toggle("Play a sound", isOn: $sound).disabled(!anyEnabled)
             Toggle("Show previews", isOn: $previews).disabled(!anyEnabled)
@@ -45,7 +45,7 @@ struct NotificationSettings: View {
             Text("Alerts")
         } footer: {
             Text(
-                "Alerts appear when you’re not using Usual Bot. Hiding previews keeps what agents say and ask for out of new notifications."
+                "Alerts appear when you’re not using Usual Bot. Hiding previews keeps what Bots say and ask for out of new notifications."
             )
         }
         // On the top section: a list loads lower ones only when they scroll into view, and the

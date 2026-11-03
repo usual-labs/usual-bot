@@ -42,7 +42,7 @@ struct RoomPanel: View {
                     Text(room.name)
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundStyle(Theme.ink)
-                    Text("^[\(members.count) agent](inflect: true)")
+                    Text("^[\(members.count) Bot](inflect: true)")
                         .font(.system(size: 13))
                         .foregroundStyle(Theme.secondaryInk)
                 }
@@ -58,7 +58,7 @@ struct RoomPanel: View {
                 .background(Self.card, in: RoundedRectangle(cornerRadius: 14))
 
                 Text(
-                    "Each agent answers here with its default model. To change one, open that agent's chat and choose Make Default in its model menu."
+                    "Each Bot answers here with its default model. To change one, open that Bot's chat and choose Make Default in its model menu."
                 )
                 .font(.system(size: 12))
                 .foregroundStyle(Theme.secondaryInk)

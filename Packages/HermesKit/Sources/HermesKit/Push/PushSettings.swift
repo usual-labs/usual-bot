@@ -185,7 +185,7 @@ public final class PushSettings {
         /// The demo: as if ntfy were set up, with nowhere to send to.
         func showDemo() {
             service = .ntfy
-            topic = "my-agents"
+            topic = "my-bots"
             phase = .ready
             isDemo = true
         }

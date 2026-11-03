@@ -404,7 +404,7 @@ private struct QuickAnswer: View {
 
     private func replyingLine(_ room: RoomThread) -> String {
         let names = room.working.sorted().map { author(in: room, $0)?.name ?? room.state.name($0) }
-        if names.isEmpty { return String(localized: "Agents are replying…") }
+        if names.isEmpty { return String(localized: "Bots are replying…") }
         return String(localized: "\(ListFormatter.localizedString(byJoining: names)) replying…")
     }
 

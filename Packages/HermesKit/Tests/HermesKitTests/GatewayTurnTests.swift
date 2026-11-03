@@ -51,7 +51,7 @@ struct GatewayTurnTests {
         #expect(
             contents([HistoryMessage(role: "user", text: text, displayKind: "async_delegation_complete")]) == [
                 .result(
-                    title: "Background agent work finished",
+                    title: "A background helper finished",
                     detail: "A background subagent you dispatched earlier has finished.")
             ])
     }
@@ -117,7 +117,7 @@ struct GatewayTurnTests {
 
     @Test func theSidebarSaysWhatHappened() {
         #expect(Contact.plainPreview(Self.notice) == "Background process finished")
-        #expect(Contact.plainPreview("[ASYNC DELEGATION COMPLETE — d1]\nDone") == "Background agent work finished")
+        #expect(Contact.plainPreview("[ASYNC DELEGATION COMPLETE — d1]\nDone") == "A background helper finished")
         #expect(Contact.plainPreview("[IMPORTANT: read this first") == "[IMPORTANT: read this first")
     }
 

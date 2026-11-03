@@ -136,7 +136,7 @@ struct ModelSwitchTests {
                 "confirm_expensive_model": true,
             ])
         #expect(await second == .switched)
-        #expect(thread.state.items.last?.content == .notice("claude-opus-5-5 is now this agent's default model."))
+        #expect(thread.state.items.last?.content == .notice("claude-opus-5-5 is now this Bot's default model."))
     }
 
     @Test func defaultThinkingIsWrittenToTheAgentsOwnConfig() async throws {

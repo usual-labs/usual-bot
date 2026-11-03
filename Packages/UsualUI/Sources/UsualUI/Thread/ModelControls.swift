@@ -37,7 +37,7 @@ struct ModelControls: View {
                     } label: {
                         label(Self.levelName(model.reasoning))
                     }
-                    .help("How hard the agent thinks in this chat")
+                    .help("How hard the Bot thinks in this chat")
                     .accessibilityLabel(
                         Text("Thinking: \(model.reasoning.map(Self.name(of:)) ?? String(localized: "Default"))"))
                 }

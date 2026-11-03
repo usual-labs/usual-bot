@@ -1,6 +1,6 @@
 # Push notifications for Usual Bot
 
-A Hermes plugin that tells you when an agent replies, messages you or needs you, through
+A Hermes plugin that tells you when a Bot replies, messages you or needs you, through
 [ntfy](https://ntfy.sh) or [Pushover](https://pushover.net), even when Usual Bot is closed.
 
 It runs on your gateway, which is the only thing awake when your phone isn't. Apple's own push would
@@ -34,8 +34,8 @@ its own app first, so tap the notification, then **Open in Usual Bot** below the
 
 ## What it sends
 
-- A reply or message from an agent, and a room member's reply.
-- When an agent asks for approval, asks a question or wants the sudo password. Passwords and your
+- A reply or message from a Bot, and a room member's reply.
+- When a Bot asks for approval, asks a question or wants the sudo password. Passwords and your
   answers never reach the plugin.
 
 Helpers, routines and other platforms stay quiet, and so does everything while you're using Usual

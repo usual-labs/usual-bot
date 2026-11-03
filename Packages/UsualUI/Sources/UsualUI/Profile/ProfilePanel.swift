@@ -235,7 +235,7 @@ private struct MachineView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            section("Agent") {
+            section("Bot") {
                 row("Profile", details?.profile)
                 row("Model", details?.model)
                 row("Provider", details?.provider)

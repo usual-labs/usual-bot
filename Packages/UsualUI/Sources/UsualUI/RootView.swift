@@ -157,7 +157,7 @@ struct ContactsSplitView<Footer: View>: View {
     let contacts: [Contact]
     /// How the sidebar is grouped; `nil` lists everything together.
     var sections: SidebarSections?
-    var emptyText = String(localized: "No agents yet.")
+    var emptyText = String(localized: "No Bots yet.")
     /// Shown under `emptyText` as Try Again, when there's something to try again.
     var tryAgain: (() -> Void)?
     var thread: (Contact) -> ChatThread? = { _ in nil }
@@ -562,7 +562,7 @@ struct ContactsSplitView<Footer: View>: View {
         } else {
             ContentUnavailableView(
                 "No chat selected", systemImage: "bubble.left.and.bubble.right",
-                description: Text("Pick an agent or a room from the list.")
+                description: Text("Pick a Bot or a room from the list.")
             )
             .paneChrome()
         }

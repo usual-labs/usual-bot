@@ -98,7 +98,7 @@ extension ChatThread {
     /// Switches this chat (only this chat: the agent's default stays) to `name` from `provider`.
     public func setModel(_ name: String, provider: String, confirmed: Bool = false) async -> ModelSwitch {
         guard let sessionID, let channel = channel() else {
-            return .failed(String(localized: "The agent isn't connected."))
+            return .failed(String(localized: "This Bot isn't connected."))
         }
         var params: [String: JSONValue] = [
             "session_id": .string(sessionID), "key": "model",
@@ -174,7 +174,7 @@ extension ChatThread {
                 if let level = ReasoningLevel(rawValue: applied.lowercased()) { model?.reasoning = level }
                 state.addNotice(
                     global
-                        ? String(localized: "Thinking set to \(applied) for this agent")
+                        ? String(localized: "Thinking set to \(applied) for this Bot")
                         : String(localized: "Thinking set to \(applied) in this chat"))
             } catch {
                 state.addNotice(String(localized: "/reasoning didn't run: \(AppModel.describe(error))"))
@@ -186,7 +186,7 @@ extension ChatThread {
     /// chats, routines and rooms use it from then on. A pricier model asks first, as switching does.
     public func makeModelDefault(confirmed: Bool = false) async -> ModelSwitch {
         guard let model, let channel = channel() else {
-            return .failed(String(localized: "The agent isn't connected."))
+            return .failed(String(localized: "This Bot isn't connected."))
         }
         var params: [String: JSONValue] = [
             "name": .string(contactID), "model": .string(model.name), "provider": .string(model.provider),
@@ -197,12 +197,12 @@ extension ChatThread {
             if result["confirm_required"]?.boolValue == true {
                 return .needsConfirmation(
                     result["confirm_message"]?.stringValue?.nonBlank
-                        ?? String(localized: "\(model.name) costs more than the agent's default model."))
+                        ?? String(localized: "\(model.name) costs more than the Bot's default model."))
             }
             guard result["applied"]?["model"]?.boolValue != false else {
-                return .failed(String(localized: "The gateway couldn't save the agent's settings."))
+                return .failed(String(localized: "The gateway couldn't save the Bot's settings."))
             }
-            state.addNotice(String(localized: "\(model.name) is now this agent's default model."))
+            state.addNotice(String(localized: "\(model.name) is now this Bot's default model."))
             return .switched
         } catch {
             return .failed(AppModel.describe(error))
@@ -219,7 +219,7 @@ extension ChatThread {
                     "session_id": .string(sessionID), "key": "reasoning", "value": .string(level.rawValue),
                     "scope": "global", "profile": .string(contactID),
                 ])
-            state.addNotice(String(localized: "This agent now thinks at \(level.rawValue) by default."))
+            state.addNotice(String(localized: "This Bot now thinks at \(level.rawValue) by default."))
         } catch {
             state.addNotice(String(localized: "Couldn't change the default thinking: \(AppModel.describe(error))"))
         }

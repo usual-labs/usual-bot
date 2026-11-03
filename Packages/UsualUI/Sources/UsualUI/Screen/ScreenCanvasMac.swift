@@ -53,7 +53,7 @@
             layer?.magnificationFilter = .linear
             setAccessibilityElement(true)
             setAccessibilityRole(.image)
-            setAccessibilityLabel(String(localized: "The agent's screen"))
+            setAccessibilityLabel(String(localized: "The Bot's screen"))
         }
 
         @available(*, unavailable)

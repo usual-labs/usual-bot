@@ -325,7 +325,7 @@ struct MCPServerListTests {
         let apps = list(ScriptedHTTP { _ in (200, "{}") })
         #expect(!apps.canApplyNow)
         await apps.applyNow()
-        #expect(apps.problem == "Open a chat with this agent first, then apply.")
+        #expect(apps.problem == "Open a chat with this Bot first, then apply.")
     }
 }
 

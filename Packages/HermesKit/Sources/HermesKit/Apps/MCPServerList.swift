@@ -238,7 +238,7 @@ public final class MCPServerList {
             return
         }
         guard let sessionID = sessionID(), let channel = channel() else {
-            problem = String(localized: "Open a chat with this agent first, then apply.")
+            problem = String(localized: "Open a chat with this Bot first, then apply.")
             return
         }
         do {

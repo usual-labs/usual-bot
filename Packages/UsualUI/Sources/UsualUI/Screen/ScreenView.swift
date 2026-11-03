@@ -251,7 +251,7 @@ public struct BotScreenWindow: View {
                 .navigationTitle(Text("\(contact.name)'s Computer"))
                 .frame(minWidth: 480, minHeight: 360)
         } else {
-            Text("This agent isn't on the gateway anymore.")
+            Text("This Bot isn't on the gateway anymore.")
                 .foregroundStyle(Theme.secondaryInk)
                 .frame(minWidth: 480, minHeight: 360)
         }

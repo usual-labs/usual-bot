@@ -1,6 +1,6 @@
 name: usual-push
 version: "0.1.0"
-description: "Sends what your agents do to ntfy or Pushover, for Usual Bot"
+description: "Sends what your Bots do to ntfy or Pushover, for Usual Bot"
 author: "Usual Labs"
 provides_hooks:
   - post_llm_call

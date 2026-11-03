@@ -50,6 +50,6 @@ struct QuickMessageTests {
                 == .blocked("Chat isn't supported yet."))
         #expect(
             QuickSend.readiness(canSend: false, link: .online(.legacy), failure: nil, roomServiceStopped: true)
-                == .blocked("The gateway's room service isn't running, so agents won't answer."))
+                == .blocked("The gateway's room service isn't running, so Bots won't answer."))
     }
 }

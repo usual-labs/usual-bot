@@ -17,7 +17,7 @@ struct VoiceSettings: View {
             Text("Voice calls")
         } footer: {
             Text(
-                "Automatic follows the agent’s gateway setting. GPT-Live requires an OpenAI key on your gateway; OpenAI bills the minutes. You can also change these choices inside a call."
+                "Automatic follows the Bot’s gateway setting. GPT-Live requires an OpenAI key on your gateway; OpenAI bills the minutes. You can also change these choices inside a call."
             )
         }
         Section {

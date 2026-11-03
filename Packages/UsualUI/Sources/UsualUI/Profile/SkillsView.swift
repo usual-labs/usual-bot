@@ -86,7 +86,7 @@ private struct SkillRow: View {
         case "hub": String(localized: "Installed from the skills hub")
         case "bundled": String(localized: "Comes with Hermes")
         case "external": String(localized: "From a shared skills folder")
-        default: String(localized: "Written for this agent")
+        default: String(localized: "Written for this Bot")
         }
     }
 }

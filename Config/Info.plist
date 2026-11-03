@@ -33,7 +33,7 @@
 		</dict>
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Dictate messages to your agents.</string>
+	<string>Dictate messages to your Bots.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Turn what you say into message text, on this device when it can.</string>
 	<!-- iPhone launch screen: the Hermes mark centred on the window colour (App/Assets.xcassets), which

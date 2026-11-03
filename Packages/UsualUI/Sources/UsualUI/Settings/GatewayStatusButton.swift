@@ -108,7 +108,7 @@ extension AppModel.Link {
     /// check rather than "Connecting…", which reads as if it's about to work.
     var emptyListText: String {
         switch self {
-        case .online: String(localized: "No agents on this gateway yet.")
+        case .online: String(localized: "No Bots on this gateway yet.")
         case .connecting: String(localized: "Connecting…")
         case .offline: String(localized: "Can't reach your gateway. Check your connection or Tailscale.")
         }

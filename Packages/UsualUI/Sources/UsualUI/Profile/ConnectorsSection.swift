@@ -39,7 +39,7 @@ struct ConnectorsSection: View {
         ) { connector in
             Button("Disconnect", role: .destructive) { Task { await list.disconnect(connector) } }
         } message: { _ in
-            Text("The account is removed from your Nous Portal, so every agent that uses it loses it.")
+            Text("The account is removed from your Nous Portal, so every Bot that uses it loses it.")
         }
     }
 

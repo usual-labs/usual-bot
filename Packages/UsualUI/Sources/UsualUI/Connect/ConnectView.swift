@@ -33,7 +33,7 @@ struct ConnectView<Options: View>: View {
                 Text("Connect to Hermes")
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(Theme.ink)
-                Text("Sign in to your Hermes gateway to see your agents.")
+                Text("Sign in to your Hermes gateway to see your Bots.")
                     .font(.system(size: 14))
                     .foregroundStyle(Theme.secondaryInk)
                     .multilineTextAlignment(.center)

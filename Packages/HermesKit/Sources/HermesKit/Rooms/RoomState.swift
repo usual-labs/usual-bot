@@ -48,7 +48,7 @@ public struct RoomState: Equatable, Sendable {
                 append(.notice(String(localized: "\(name(author)) handed off to \(names)")))
             }
         case "turn.failed":
-            let who = payload["member_id"]?.stringValue.map(name) ?? String(localized: "An agent")
+            let who = payload["member_id"]?.stringValue.map(name) ?? String(localized: "A Bot")
             let error = payload["error"]?.stringValue?.nonBlank
             append(
                 .notice(
@@ -63,7 +63,7 @@ public struct RoomState: Equatable, Sendable {
                             ?? String(localized: "\(who) stopped")))
             }
         case "turn.deferred":
-            let who = payload["member_id"]?.stringValue.map(name) ?? String(localized: "An agent")
+            let who = payload["member_id"]?.stringValue.map(name) ?? String(localized: "A Bot")
             let reason = payload["reason"]?.stringValue?.nonBlank
             append(
                 .notice(
@@ -81,7 +81,7 @@ public struct RoomState: Equatable, Sendable {
         case "authority.lost":
             append(.notice(String(localized: "Another gateway now hosts this room")))
         case "member.unavailable":
-            let who = (payload["member_id"]?.stringValue ?? event.actorID).map(name) ?? String(localized: "An agent")
+            let who = (payload["member_id"]?.stringValue ?? event.actorID).map(name) ?? String(localized: "A Bot")
             append(.notice(String(localized: "\(who) is unavailable")))
         case "room.renamed":
             if let newName = payload["name"]?.stringValue?.nonBlank {

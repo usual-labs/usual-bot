@@ -117,10 +117,10 @@ struct RoomPane: View {
         ) {
             if !room.driverRunning {
                 NoticeLine(
-                    text: String(localized: "The gateway's room service isn't running, so agents won't answer."))
+                    text: String(localized: "The gateway's room service isn't running, so Bots won't answer."))
             }
             if room.state.items.isEmpty, room.pending.isEmpty {
-                NoticeLine(text: String(localized: "Say hello to everyone, or use @ to talk to one agent."))
+                NoticeLine(text: String(localized: "Say hello to everyone, or use @ to talk to one Bot."))
                     .padding(.top, 40)
             }
             let dates = DateLabels.labels(for: room.state.items)
@@ -145,7 +145,7 @@ struct RoomPane: View {
             }
             if room.isBusy, room.working.isEmpty {
                 // An older gateway says only that someone is answering, not who.
-                replyingRow(String(localized: "Agents are replying…")) { RoomAvatar(members: members, size: 24) }
+                replyingRow(String(localized: "Bots are replying…")) { RoomAvatar(members: members, size: 24) }
             }
             ForEach(room.approvals) { approval in
                 ApprovalCard(
@@ -212,7 +212,7 @@ struct RoomPane: View {
     }
 
     private var placeholder: String {
-        String(localized: "Ask everyone, or @ one agent")
+        String(localized: "Ask everyone, or @ one Bot")
     }
 
     /// The members' skills after `/`; reloaded each time the menu opens.

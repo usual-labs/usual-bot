@@ -51,7 +51,7 @@ private struct RoomEditor: ViewModifier {
                 Button("Cancel", role: .cancel) {}
             } message: { _ in
                 Text(
-                    "The room and its messages will be gone for good, and any agent still answering stops. The agents themselves aren't affected."
+                    "The room and its messages will be gone for good, and any Bot still answering stops. The Bots themselves aren't affected."
                 )
             }
             .alert(
@@ -150,7 +150,7 @@ struct RetryCard: View {
         let work =
             agentName.map {
                 String(localized: "\($0) may have done part of the work, so trying again can repeat it.")
-            } ?? String(localized: "The agent may have done part of the work, so trying again can repeat it.")
+            } ?? String(localized: "The Bot may have done part of the work, so trying again can repeat it.")
         guard othersBusy else { return work }
         return work + " " + String(localized: "Dismiss also stops the replies still running or waiting in this room.")
     }

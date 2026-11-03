@@ -62,7 +62,7 @@
             backgroundColor = .black
             picture.isUserInteractionEnabled = true
             picture.isAccessibilityElement = true
-            picture.accessibilityLabel = String(localized: "The agent's screen")
+            picture.accessibilityLabel = String(localized: "The Bot's screen")
             picture.accessibilityTraits = .image
             picture.accessibilityHint = String(localized: "Take over to use the computer.")
             addSubview(picture)

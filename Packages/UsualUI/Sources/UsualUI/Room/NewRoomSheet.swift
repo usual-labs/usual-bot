@@ -47,7 +47,7 @@ struct NewRoomSheet: View {
             Section {
                 ForEach(agents) { row($0) }
             } header: {
-                Text("Agents")
+                Text("Bots")
             } footer: {
                 VStack(alignment: .leading, spacing: 4) {
                     if let note = Self.seatsNote(picked: picked.count, available: agents.count) {
@@ -102,16 +102,16 @@ struct NewRoomSheet: View {
     /// Why Create is off while too few agents are picked.
     static func seatsNote(picked: Int, available: Int) -> String? {
         if available == 0 {
-            return String(localized: "A room needs at least two agents, and this gateway has none yet.")
+            return String(localized: "A room needs at least two Bots, and this gateway has none yet.")
         }
         if available < seats.lowerBound {
             return String(
                 localized:
-                    "A room needs at least two agents, and this gateway has one. Make another with New Bot first.")
+                    "A room needs at least two Bots, and this gateway has one. Make another with New Bot first.")
         }
         switch picked {
-        case 0: return String(localized: "Pick two to six agents.")
-        case 1: return String(localized: "Pick one more agent.")
+        case 0: return String(localized: "Pick two to six Bots.")
+        case 1: return String(localized: "Pick one more Bot.")
         default: return nil
         }
     }

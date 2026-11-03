@@ -38,7 +38,7 @@ enum GatewayTurn {
         return nil
     }
 
-    private static var agentWorkFinished: String { String(localized: "Background agent work finished") }
+    private static var agentWorkFinished: String { String(localized: "A background helper finished") }
 
     private static func withoutFooter(_ text: String) -> String {
         let kept = text.range(of: footer, options: .backwards).map { String(text[..<$0.lowerBound]) } ?? text
