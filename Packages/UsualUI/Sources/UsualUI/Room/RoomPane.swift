@@ -63,8 +63,9 @@ struct RoomPane: View {
                 )
                 .inspector(isPresented: $showsInfo) {
                     RoomPanel(room: contact, members: members)
-                    .inspectorColumnWidth(min: Self.panelWidth, ideal: 300, max: 400)
+                    .inspectorColumnWidth(min: 260, ideal: Self.panelWidth, max: 400)
                 }
+                .preference(key: OpenPanelWidth.self, value: showsInfo ? Self.panelWidth : 0)
             #else
                 // Pushed, as a Bot's profile is. A compact inspector drops the name from the bar.
                 .navigationDestination(isPresented: $showsInfo) {
@@ -80,8 +81,9 @@ struct RoomPane: View {
             }
     }
 
-    /// The room panel's narrowest, which the window's minimum width makes room for.
-    static let panelWidth: CGFloat = 260
+    /// The room panel's usual width, which the window's minimum width makes room for. The split
+    /// view keeps an inspector near this rather than shrinking it to its minimum.
+    static let panelWidth: CGFloat = 300
 
     @ViewBuilder private var content: some View {
         switch room.phase {
@@ -218,3 +220,12 @@ struct RoomPane: View {
             prefill: .constant(nil))
     }
 }
+
+#if os(macOS)
+    /// The open side panel's (profile or room) usual width; 0 with none open. The window keeps room
+    /// for it, or the panel pushes the sidebar and the chat out of the window.
+    struct OpenPanelWidth: PreferenceKey {
+        static let defaultValue: CGFloat = 0
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+    }
+#endif

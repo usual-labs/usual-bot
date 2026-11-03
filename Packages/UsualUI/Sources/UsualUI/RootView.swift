@@ -200,6 +200,8 @@ struct ContactsSplitView<Footer: View>: View {
         @State private var dragWidth: Double?
         @State private var dragStart: Double?
         @State private var windowWidth: CGFloat = 0
+        /// The open profile or room panel's usual width; 0 with none.
+        @State private var panelWidth: CGFloat = 0
         @State private var showsPalette = false
         /// The open chat, reopened at the next launch.
         @AppStorage("selectedContact") private var selection: Contact.ID?
@@ -295,7 +297,10 @@ struct ContactsSplitView<Footer: View>: View {
                 newRoom: newButton, toggle: showsToggleInToolbar ? sidebarToggle : nil, shown: !showsRail
             )
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-            .frame(minWidth: Self.railWidth + Self.chatMinWidth)
+            // Room for the open panel too: without it, a narrow window's panel pushes the sidebar
+            // and the chat off its sides.
+            .frame(minWidth: Self.railWidth + Self.chatMinWidth + panelWidth)
+            .onPreferenceChange(OpenPanelWidth.self) { panelWidth = $0 }
             .onGeometryChange(for: CGFloat.self) {
                 $0.size.width
             } action: {
@@ -394,7 +399,9 @@ struct ContactsSplitView<Footer: View>: View {
         /// chat too little room.
         private var sidebarWidth: CGFloat {
             let wanted = CGFloat(dragWidth ?? listWidth)
-            if dragWidth == nil, windowWidth > 0, windowWidth - wanted < Self.chatMinWidth { return Self.railWidth }
+            if dragWidth == nil, windowWidth > 0, windowWidth - wanted - panelWidth < Self.chatMinWidth {
+                return Self.railWidth
+            }
             return wanted
         }
 
@@ -458,7 +465,7 @@ struct ContactsSplitView<Footer: View>: View {
         }
 
         /// A window too narrow for the list keeps the rail, so a button there would do nothing.
-        private var canLeaveRail: Bool { windowWidth - Self.fullWidth >= Self.chatMinWidth }
+        private var canLeaveRail: Bool { windowWidth - Self.fullWidth - panelWidth >= Self.chatMinWidth }
 
         /// The toolbar's row doesn't fit it in the narrowest list.
         private var showsToggleInToolbar: Bool { sidebarWidth >= 229 }
@@ -531,9 +538,10 @@ struct ContactsSplitView<Footer: View>: View {
             #if os(macOS)
                 .inspector(isPresented: Binding(get: { showsProfile && panel != nil }, set: { showsProfile = $0 })) {
                     if let panel {
-                        panel.inspectorColumnWidth(min: 280, ideal: 320, max: 420)
+                        panel.inspectorColumnWidth(min: 280, ideal: ProfilePanel.width, max: 420)
                     }
                 }
+                .preference(key: OpenPanelWidth.self, value: showsProfile && panel != nil ? ProfilePanel.width : 0)
                 .profileCloseButton(shown: showsProfile && panel != nil) { showsProfile = false }
                 .focusedSceneValue(
                     \.chatPanel,

@@ -36,6 +36,8 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **Views under the toolbar strip don't show,** because the title bar container covers that strip. Search and New Room are a `.navigation` toolbar item after a spacer sized from the sidebar, with the toolbar's shared glass hidden and each button drawn by `CircleButtonStyle`. The toolbar also gives the window buttons their room.
 - **Trailing toolbar items land on the leading side.** `.primaryAction` is the leading edge on macOS. On macOS 26, put `ToolbarSpacer(.flexible)` before a plain `ToolbarItem` (`profileCloseButton`).
 
+- **An inspector doesn't shrink to its minimum, and it doesn't fit itself into the window.** Opened in a narrow window, the profile or room panel pushed the sidebar and the chat off both sides, and at 560 pt the room's pill seemed to do nothing. The split view keeps an inspector near its ideal width, so the window's minimum width counts the open panel's ideal (`OpenPanelWidth`), and SwiftUI then grows the window to fit. Keep the preference's value in step with `inspectorColumnWidth`'s ideal.
+- **The chat can need more than its 360 pt.** In the demo, Forge's approval card holds the chat at about 428 pt, so a window at its minimum still spills that chat off both sides. Not looked into.
 - **With no chat selected, the Mac sidebar sits about 200 pt in from the window's left edge,** leaving a blank strip. Seen right after sign-in and in the demo with an unknown `-selectedContact`; selecting a chat puts it back. Cause not looked into.
 
 ## Lists and text

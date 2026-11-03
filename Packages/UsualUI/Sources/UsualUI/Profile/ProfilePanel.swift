@@ -41,6 +41,9 @@ struct ProfilePanel: View {
     @State private var isDropTarget = false
     @Environment(\.botEditing) private var botEditing
 
+    /// The Mac panel's usual width, which the window's minimum width makes room for.
+    static let width: CGFloat = 320
+
     #if os(iOS)
         private static let nameSize: CGFloat = 24
     #else
