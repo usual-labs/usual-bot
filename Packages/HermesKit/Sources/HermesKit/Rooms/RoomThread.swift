@@ -29,6 +29,10 @@ public final class RoomThread {
     public private(set) var approvals: [RoomApproval] = []
     /// Turns that stopped partway and can be run again, by task ID.
     public private(set) var retries: [String] = []
+    /// Whose turn each retry is, where that could be told (`retryMember`).
+    private var retryMembers: [String: String] = [:]
+    /// Members with a turn running or queued at the last read.
+    private var lastLive: Set<String> = []
     /// Your messages sent but not yet back in the log.
     public private(set) var pending: [PendingMessage] = []
     /// A message that didn't send, for the message box to take back so its text isn't lost.
@@ -161,7 +165,14 @@ public final class RoomThread {
                         localized: "\(state.name(approval.memberID)) wants to run “\(approval.prompt.shortCommand)”")
                 )
             }
-            + retries.map { (id: $0, text: String(localized: "A reply stopped partway. Open the room to try again.")) }
+            + retries.map { taskID in
+                (
+                    id: taskID,
+                    text: retryMember(taskID).map {
+                        String(localized: "\(state.name($0))'s reply stopped partway. Open the room to try again.")
+                    } ?? String(localized: "A reply stopped partway. Open the room to try again.")
+                )
+            }
         for request in waiting where !announcedRequests.contains(request.id) && !isVisible {
             alert?(AgentAlert(id: request.id, kind: .needsYou, subtitle: nil, preview: request.text))
         }
@@ -183,17 +194,22 @@ public final class RoomThread {
             isBusy = false
             approvals = []
             retries = []
+            retryMembers = [:]
+            lastLive = []
             return
         }
         driverRunning = status["running"]?.boolValue ?? true
         // Queued turns wait behind another; only running ones are replying.
+        var live: Set<String> = []
         if case .array(let activity) = status["member_activity"] {
             working = Set(
                 activity.filter { $0["status"]?.stringValue != "queued" }.compactMap { $0["member_id"]?.stringValue })
+            live = Set(activity.compactMap { $0["member_id"]?.stringValue })
         } else {
             working = []
         }
         isBusy = !working.isEmpty || status["working"]?.boolValue == true
+        let earlier = Set(retries)
         if case .array(let actions) = status["pending_actions"] {
             approvals = actions.compactMap(RoomApproval.init)
             retries = actions.filter { $0["kind"]?.stringValue == "retry" }.compactMap { $0["task_id"]?.stringValue }
@@ -201,7 +217,19 @@ public final class RoomThread {
             approvals = []
             retries = []
         }
+        noteWhoseRetries(new: retries.filter { !earlier.contains($0) }, stopped: lastLive.subtracting(live))
+        lastLive = live
     }
+
+    /// A retry names only its task. One that appears just as one member stops answering is that
+    /// member's; with more at once, there's no telling which is whose.
+    private func noteWhoseRetries(new: [String], stopped: Set<String>) {
+        retryMembers = retryMembers.filter { retries.contains($0.key) }
+        if new.count == 1, stopped.count == 1, let member = stopped.first { retryMembers[new[0]] = member }
+    }
+
+    /// The member whose turn `taskID` is, when it could be told.
+    public func retryMember(_ taskID: String) -> String? { retryMembers[taskID] }
 
     // MARK: - Your actions
 
@@ -287,6 +315,23 @@ public final class RoomThread {
         }
     }
 
+    /// Gives up on a turn that stopped partway. The dashboard socket has no `groups.discard`, so
+    /// this is `groups.stop`, which also stops any other turn running or waiting in the room.
+    public func dismiss(_ taskID: String) {
+        retries.removeAll { $0 == taskID }
+        guard let channel = channel() else { return }
+        Task {
+            do {
+                _ = try await channel.call(
+                    "groups.stop",
+                    params: ["room_id": .string(roomID), "cancel_id": .string("usualbot-\(UUID().uuidString)")])
+            } catch {
+                state.addNotice(String(localized: "The reply wasn't dismissed: \(AppModel.describe(error))"))
+            }
+            await sync()
+        }
+    }
+
     func rename(to name: String, on channel: JSONRPCChannel) async throws {
         _ = try await channel.call(
             "groups.rename",
@@ -335,10 +380,13 @@ public final class RoomThread {
 
     #if DEBUG
         /// Tests and previews: a room already showing `events`.
-        static func sample(_ summary: RoomSummary, events: [JSONValue], retries: [String] = []) -> RoomThread {
+        static func sample(
+            _ summary: RoomSummary, events: [JSONValue], retries: [String: String?] = [:]
+        ) -> RoomThread {
             let room = RoomThread(summary: summary, channel: { nil })
             room.state.apply(events.compactMap(RoomEvent.init))
-            room.retries = retries
+            room.retries = retries.keys.sorted()
+            room.retryMembers = retries.compactMapValues { $0 }
             room.phase = .ready
             return room
         }

@@ -286,8 +286,9 @@ like "Forge, Atlas & Scribe".
 - A message that doesn't send goes back in the message box, ahead of anything you typed since, so
   you can send it again.
 - If a reply stops partway, say because the gateway restarted, the room shows the needs-you dot and a
-  card with **Try Again**. The room waits until you do. The agent may have done part of the work
-  already, so trying again can repeat it.
+  card naming the agent, when it can tell, with **Try Again** and **Dismiss**. The room waits until
+  you choose. The agent may have done part of the work already, so trying again can repeat it.
+  Dismiss gives up on that reply, and also stops any other reply still running in the room.
 
 Rooms are text only on the dashboard gateway: attachments in rooms need Hermes's newer gateway.
 

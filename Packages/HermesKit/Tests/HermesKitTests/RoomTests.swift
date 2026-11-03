@@ -391,6 +391,70 @@ struct RoomEditingTests {
         #expect(params["room_id"] == "r1")
     }
 
+    /// The gateway's retry names only its task: the member who stopped answering as it appeared
+    /// is the one it belongs to.
+    @Test func aStoppedTurnIsPutToTheMemberWhoStoppedAnswering() async throws {
+        let (gateway, _, room) = await connected()
+        let first = Task { await room.sync() }
+        _ = try await gateway.answer(0, method: "groups.log", result: ["events": [], "has_more": false])
+        _ = try await gateway.answer(
+            1, method: "groups.state",
+            result: [
+                "driver_status": [
+                    "running": true, "member_activity": [["member_id": "m-scout", "status": "running"]],
+                ]
+            ])
+        await first.value
+        let second = Task { await room.sync() }
+        _ = try await gateway.answer(2, method: "groups.log", result: ["events": [], "has_more": false])
+        _ = try await gateway.answer(
+            3, method: "groups.state",
+            result: ["driver_status": ["running": true, "pending_actions": [["kind": "retry", "task_id": "t1"]]]])
+        await second.value
+        #expect(room.retryMember("t1") == "m-scout")
+    }
+
+    @Test func aStoppedTurnNamesNoOneWhenTwoStoppedAtOnce() async throws {
+        let (gateway, _, room) = await connected()
+        let first = Task { await room.sync() }
+        _ = try await gateway.answer(0, method: "groups.log", result: ["events": [], "has_more": false])
+        _ = try await gateway.answer(
+            1, method: "groups.state",
+            result: [
+                "driver_status": [
+                    "running": true,
+                    "member_activity": [
+                        ["member_id": "m-scout", "status": "running"], ["member_id": "m-atlas", "status": "queued"],
+                    ],
+                ]
+            ])
+        await first.value
+        let second = Task { await room.sync() }
+        _ = try await gateway.answer(2, method: "groups.log", result: ["events": [], "has_more": false])
+        _ = try await gateway.answer(
+            3, method: "groups.state",
+            result: ["driver_status": ["running": true, "pending_actions": [["kind": "retry", "task_id": "t1"]]]])
+        await second.value
+        #expect(room.retryMember("t1") == nil)
+    }
+
+    /// Dismissing cancels the turn on the gateway (`groups.stop`), which unblocks the room.
+    @Test func dismissingAStoppedTurnStopsItOnTheGateway() async throws {
+        let (gateway, _, room) = await connected()
+        let sync = Task { await room.sync() }
+        _ = try await gateway.answer(0, method: "groups.log", result: ["events": [], "has_more": false])
+        _ = try await gateway.answer(
+            1, method: "groups.state",
+            result: ["driver_status": ["running": true, "pending_actions": [["kind": "retry", "task_id": "t1"]]]])
+        await sync.value
+
+        room.dismiss("t1")
+        #expect(room.retries.isEmpty)
+        #expect(room.activity == .idle)
+        let params = try await gateway.answer(2, method: "groups.stop", result: ["cancelled": 1])
+        #expect(params["room_id"] == "r1")
+    }
+
     @Test func aFailedRetryIsSaid() async throws {
         let (gateway, _, room) = await connected()
         room.retry("t1")

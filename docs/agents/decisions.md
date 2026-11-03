@@ -112,9 +112,14 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 - Legacy gateways have no room attachments and no per-member usage.
 - **No live activity in rooms.** Members run on hidden sessions, so no tool or helper events reach a
   client; rooms keep "X is replying…" from `driver_status.member_activity`.
-- **Retry, no discard.** `groups.discard` isn't on the dashboard socket's method table. A retryable
-  task blocks the room (`driver_status.blocked`), so Try Again is the only way out here, and the room
-  shows Needs you.
+- **Dismiss is `groups.stop`.** `groups.discard` isn't on the dashboard socket's method table, and a
+  retryable task blocks the room (`driver_status.blocked`). `groups.stop` cancels every stoppable task
+  in the room, retryable ones included (`_STOPPABLE_STATUSES` in Hermes's `hosted_room_service.py`),
+  so it's a real dismissal, not a local hide. It also stops other members' turns, and the retry card
+  says so while any are running, waiting or stopped. Source finding; not run against a gateway.
+- **Whose retry it is is a guess.** A `retry` action carries only `task_id`. The card names the member
+  who left `member_activity` as the retry appeared, and only when exactly one did; otherwise it says
+  "A reply". The guess isn't cached, so after a relaunch the card is unnamed.
 - **"Delete" is `groups.disband`,** which stops the room and then tombstones it. A room list read
   before an edit landed is thrown away (`roomEdits`), or it would bring the room or its old name back.
 

@@ -153,7 +153,11 @@ struct RoomPane: View {
                 ) { room.answer(approval, with: $0) }
             }
             ForEach(room.retries, id: \.self) { taskID in
-                RetryCard { room.retry(taskID) }
+                RetryCard(
+                    agentName: room.retryMember(taskID).flatMap { author($0)?.name },
+                    othersBusy: room.isBusy || !room.pending.isEmpty || room.retries.count > 1,
+                    retry: { room.retry(taskID) },
+                    dismiss: { room.dismiss(taskID) })
             }
         }
         .onChange(of: room.approvals.count) { old, new in

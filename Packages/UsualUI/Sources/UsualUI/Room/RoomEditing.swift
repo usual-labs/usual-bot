@@ -106,27 +106,52 @@ private struct RoomEditor: ViewModifier {
 }
 
 /// A room turn that stopped partway, and can be run again.
+/// A turn that stopped partway. Dismiss is `groups.stop`, the only way the gateway lets go of
+/// it, and that stops every other turn in the room too, so the card says so while there are any.
 struct RetryCard: View {
+    /// Whose turn it was, when that could be told.
+    let agentName: String?
+    /// Other turns are running or waiting, and Dismiss would stop them.
+    let othersBusy: Bool
     let retry: () -> Void
+    let dismiss: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label {
-                Text("A reply didn't finish")
+                Text(title)
                     .font(.system(size: 13.5, weight: .semibold))
                     .foregroundStyle(Theme.ink)
             } icon: {
                 Image(systemName: "exclamationmark.arrow.circlepath")
                     .foregroundStyle(Theme.needsYouInk)
             }
-            Text("The agent may have done part of the work, so trying again can repeat it.")
+            Text(detail)
                 .font(.system(size: 13))
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
-            // A pill like every other card's, so it reads as a button.
-            Button("Try Again", action: retry)
-                .buttonStyle(CardButtonStyle(primary: true))
+            // Pills like every other card's, so they read as buttons.
+            HStack(spacing: 8) {
+                Button("Try Again", action: retry)
+                    .buttonStyle(CardButtonStyle(primary: true))
+                Button("Dismiss", action: dismiss)
+                    .buttonStyle(CardButtonStyle(primary: false))
+            }
         }
         .cardSurface()
+    }
+
+    private var title: String {
+        agentName.map { String(localized: "\($0)'s reply didn't finish") }
+            ?? String(localized: "A reply didn't finish")
+    }
+
+    private var detail: String {
+        let work =
+            agentName.map {
+                String(localized: "\($0) may have done part of the work, so trying again can repeat it.")
+            } ?? String(localized: "The agent may have done part of the work, so trying again can repeat it.")
+        guard othersBusy else { return work }
+        return work + " " + String(localized: "Dismiss also stops the replies still running or waiting in this room.")
     }
 }
