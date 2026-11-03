@@ -23,6 +23,12 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   queues a move to the end, and on iOS 27 that move landed after the reader's `scrollTo` and won.
   The order of the `reload` and `jump` `onChange` handlers isn't fixed either. So the policy skips
   the end for the load a jump came with, and a jump scrolls again after the next layout.
+- **A load changes the same counts news and sending do.** History for a search result adds items and
+  your messages at once, so the jump-to-latest dot and "you sent, follow the end" compare counts only
+  within one `transcriptLoad`. Rooms have no load count, so a page of older room history would read
+  as sending.
+- **macOS 26's soft scroll edge doesn't hide text under the Mac name pill:** text stays readable
+  beside it, over a hairline. The Mac keeps its own fade, solid down to the pill's bottom edge.
 
 ## macOS window and sidebar
 
