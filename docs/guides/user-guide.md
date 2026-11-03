@@ -116,8 +116,9 @@ read older messages without being pulled back down; scroll to the end to follow 
   finishes.
 - **Stop and steer.** While a reply runs, the send button becomes Stop. Or just send another
   message: it steers the running turn instead of waiting for it.
-- **React, reply, copy.** Hover a message on the Mac, or long-press it on iPhone. Reply quotes the
-  message above the box.
+- **React, reply, copy.** Hover or right-click a message on the Mac, or long-press it on iPhone.
+  **More Reactions** has the full set. Reply quotes the message above the box. With VoiceOver,
+  each message starts with who wrote it, and these are in its actions.
 - **Edit and undo.** On your last message, **Edit** puts it back in the box; send it to replace the
   exchange and get a fresh answer. **Undo** takes the last exchange back.
 

@@ -68,18 +68,22 @@ extension EnvironmentValues {
     @Entry var messageActions: MessageActions?
 }
 
-/// The quick reactions, as in Messages and Grok Bot, and more behind +.
+/// The quick reactions, as in Messages and Grok Bot, and the rest behind + (or More Reactions).
 private let quickReactions = ["👍", "👎", "❤️", "😂", "🎉"]
 private let moreReactions = [
     "🙏", "👀", "🔥", "✅", "💯", "🤔", "😮", "😢", "👏", "🚀", "💡", "⚠️", "🙌", "😅", "🤝", "⭐️", "🧐", "❌",
 ]
 
-/// A message in a transcript with its actions: a bar on hover (Mac), a long-press menu (iPhone),
-/// and its reactions underneath.
+/// A message in a transcript with its actions: a bar on hover and a right-click menu (Mac), a
+/// long-press menu (iPhone), VoiceOver actions on both, and its reactions underneath.
 struct MessageRow<Content: View>: View {
     let item: TranscriptItem
     /// The text Copy takes.
     let text: String
+    /// Who wrote it, which VoiceOver says first: "You", the agent or a room member.
+    let author: String
+    /// The chat's agent, who reacts to messages.
+    let agentName: String
     /// Your own messages sit on the right, so their reactions do too.
     let isMine: Bool
     @ViewBuilder let content: Content
@@ -93,6 +97,12 @@ struct MessageRow<Content: View>: View {
     @State private var picking = false
 
     var body: some View {
+        row
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(Text(author))
+    }
+
+    @ViewBuilder private var row: some View {
         #if os(macOS)
             // As in Grok Bot, the bar sits beside the message: right of a reply, left of your
             // bubble. Its slot is always there, so nothing moves when it appears.
@@ -105,6 +115,7 @@ struct MessageRow<Content: View>: View {
                 message
                     .contentShape(Rectangle())
                     .onHover(perform: hoverMessage)
+                    .contextMenu { if let actions { menu(actions) } }
                 if !isMine {
                     barSlot
                     Spacer(minLength: 0)
@@ -116,6 +127,13 @@ struct MessageRow<Content: View>: View {
                 .padding(.leading, isMine ? 48 : 0)
                 .frame(maxWidth: .infinity, alignment: isMine ? .trailing : .leading)
                 .contextMenu { if let actions { menu(actions) } }
+                .sheet(isPresented: $picking) {
+                    if let actions {
+                        picker(actions)
+                            .presentationDetents([.height(280)])
+                            .presentationDragIndicator(.visible)
+                    }
+                }
         #endif
     }
 
@@ -123,6 +141,19 @@ struct MessageRow<Content: View>: View {
         VStack(alignment: isMine ? .trailing : .leading, spacing: 4) {
             content
             if !item.reactions.isEmpty { reactionPills }
+        }
+        // On each part of the message, so VoiceOver offers them wherever it lands.
+        .accessibilityActions { if let actions { accessibilityActions(actions) } }
+    }
+
+    /// The menu's actions, for VoiceOver.
+    @ViewBuilder private func accessibilityActions(_ actions: MessageActions) -> some View {
+        if canReact(actions) { Button("React") { picking = true } }
+        Button("Reply") { actions.reply(item) }
+        Button("Copy", action: copy)
+        if actions.canRewind(item) {
+            Button("Edit") { actions.edit(item) }
+            Button("Undo") { actions.undo(item) }
         }
     }
 
@@ -147,9 +178,9 @@ struct MessageRow<Content: View>: View {
                 }
                 .buttonStyle(.clickable)
                 .disabled(actions.map { !$0.canReact(item) } ?? true)
-                .help(reaction.byAgent ? String(localized: "From the agent") : String(localized: "Your reaction"))
+                .help(reaction.byAgent ? String(localized: "From \(agentName)") : String(localized: "Your reaction"))
                 .accessibilityLabel(
-                    Text(reaction.byAgent ? "Agent reacted \(reaction.emoji)" : "You reacted \(reaction.emoji)"))
+                    Text(reaction.byAgent ? "\(agentName) reacted \(reaction.emoji)" : "You reacted \(reaction.emoji)"))
             }
         }
     }
@@ -229,34 +260,53 @@ struct MessageRow<Content: View>: View {
             .accessibilityLabel(Text(label))
         }
 
-        private func picker(_ actions: MessageActions) -> some View {
-            ReactionPicker { emoji in
-                picking = false
-                actions.react(emoji, item)
-            }
-        }
     #endif
 
-    // MARK: iPhone: the long-press menu
+    /// Every reaction: in a popover from the bar on the Mac, a sheet on iPhone.
+    private func picker(_ actions: MessageActions) -> some View {
+        #if os(macOS)
+            let showsAll = false
+        #else
+            let showsAll = true
+        #endif
+        return ReactionPicker(showsAll: showsAll) { emoji in
+            picking = false
+            actions.react(emoji, item)
+        }
+    }
 
-    #if os(iOS)
-        @ViewBuilder private func menu(_ actions: MessageActions) -> some View {
-            if canReact(actions) {
+    // MARK: The right-click (Mac) and long-press (iPhone) menu
+
+    @ViewBuilder private func menu(_ actions: MessageActions) -> some View {
+        if canReact(actions) {
+            #if os(macOS)
+                // A Mac menu's palette leaves out buttons without an image, so emoji go in a submenu.
+                Menu("React", systemImage: "face.smiling") {
+                    ForEach(quickReactions, id: \.self) { emoji in
+                        Button(emoji) { actions.react(emoji, item) }
+                    }
+                    Divider()
+                    Button("More Reactions…") { picking = true }
+                }
+            #else
                 ControlGroup {
                     ForEach(quickReactions, id: \.self) { emoji in
                         Button(emoji) { actions.react(emoji, item) }
                     }
+                    Button("More Reactions", systemImage: "plus") { picking = true }
                 }
                 .controlGroupStyle(.palette)
-            }
-            Button("Reply", systemImage: "arrowshape.turn.up.left") { actions.reply(item) }
-            Button("Copy", systemImage: "doc.on.doc", action: copy)
-            rewindButtons(actions)
+            #endif
+        }
+        Button("Reply", systemImage: "arrowshape.turn.up.left") { actions.reply(item) }
+        Button("Copy", systemImage: "doc.on.doc", action: copy)
+        rewindButtons(actions)
+        #if os(iOS)
             if let date = item.date {
                 Section { Text(date.formatted(date: .abbreviated, time: .shortened)) }
             }
-        }
-    #endif
+        #endif
+    }
 
     /// Edit and Undo, for your last message.
     @ViewBuilder private func rewindButtons(_ actions: MessageActions) -> some View {
@@ -276,12 +326,30 @@ struct MessageRow<Content: View>: View {
     }
 }
 
-/// Five quick reactions, and more behind +.
+/// Five quick reactions and more behind +, or all of them at once.
 private struct ReactionPicker: View {
+    var showsAll = false
     let pick: (String) -> Void
     @State private var showsMore = false
 
+    #if os(iOS)
+        private static let size: CGFloat = 44
+    #else
+        private static let size: CGFloat = 36
+    #endif
+
     var body: some View {
+        if showsAll {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(Self.size), spacing: 4), count: 6), spacing: 4) {
+                ForEach(quickReactions + moreReactions, id: \.self, content: emojiButton)
+            }
+            .padding(12)
+        } else {
+            compact
+        }
+    }
+
+    private var compact: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 2) {
                 ForEach(quickReactions, id: \.self, content: emojiButton)
@@ -291,14 +359,15 @@ private struct ReactionPicker: View {
                     Image(systemName: showsMore ? "chevron.up" : "plus")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(Theme.secondaryInk)
-                        .frame(width: 36, height: 36)
+                        .frame(width: Self.size, height: Self.size)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.clickable)
                 .help(showsMore ? "Fewer" : "More reactions")
+                .accessibilityLabel(Text(showsMore ? "Fewer reactions" : "More reactions"))
             }
             if showsMore {
-                LazyVGrid(columns: Array(repeating: GridItem(.fixed(36), spacing: 2), count: 6), spacing: 2) {
+                LazyVGrid(columns: Array(repeating: GridItem(.fixed(Self.size), spacing: 2), count: 6), spacing: 2) {
                     ForEach(moreReactions, id: \.self, content: emojiButton)
                 }
             }
@@ -310,7 +379,8 @@ private struct ReactionPicker: View {
         Button {
             pick(emoji)
         } label: {
-            Text(emoji).font(.system(size: 22)).frame(width: 36, height: 36).contentShape(Rectangle())
+            Text(emoji).font(.system(size: 22)).frame(width: Self.size, height: Self.size)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.clickable)
         .accessibilityLabel(Text("React \(emoji)"))

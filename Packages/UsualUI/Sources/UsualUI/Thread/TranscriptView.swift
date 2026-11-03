@@ -168,18 +168,21 @@ struct ItemView: View {
     @ViewBuilder private var content: some View {
         switch item.content {
         case .user(let text):
-            MessageRow(item: item, text: QuotedMessage.split(AttachmentRef.split(text).text).text, isMine: true) {
+            MessageRow(
+                item: item, text: QuotedMessage.split(AttachmentRef.split(text).text).text,
+                author: String(localized: "You"), agentName: agentName, isMine: true
+            ) {
                 UserBubbleContent(text: text)
             }
         case .assistant(let text):
-            MessageRow(item: item, text: text, isMine: false) {
+            MessageRow(item: item, text: text, author: agentName, agentName: agentName, isMine: false) {
                 AgentBubble(joinsAbove: joinsAbove, joinsBelow: joinsBelow) { MarkdownView(text) }
                     .environment(\.spokenTexts, spokenTexts)
             }
             .joined(joinsAbove)
         case .member(let id, let text):
             let author = author(id)
-            MessageRow(item: item, text: text, isMine: false) {
+            MessageRow(item: item, text: text, author: author?.name ?? id, agentName: agentName, isMine: false) {
                 HStack(alignment: .top, spacing: 10) {
                     if let author {
                         AgentAvatar(contact: author.contact, size: 28)
@@ -204,9 +207,11 @@ struct ItemView: View {
         case .result(let title, let detail):
             ResultLine(title: title, detail: detail)
         case .output(let text):
-            MessageRow(item: item, text: text, isMine: false) { CommandOutput(text: text) }
+            MessageRow(item: item, text: text, author: agentName, agentName: agentName, isMine: false) {
+                CommandOutput(text: text)
+            }
         case .background(let task, let result):
-            MessageRow(item: item, text: result, isMine: false) {
+            MessageRow(item: item, text: result, author: agentName, agentName: agentName, isMine: false) {
                 VStack(alignment: .leading, spacing: 6) {
                     Label {
                         Text("Background task: \(task)").lineLimit(2)
