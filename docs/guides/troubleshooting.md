@@ -44,7 +44,7 @@ time offline, or the gateway's sign-in settings changed. Sign in again.
 
 Usual Bot supports the Hermes **dashboard** (`hermes dashboard`), which speaks the "legacy"
 session protocol. A gateway started with `hermes gateway` speaks the newer "canonical" protocol:
-the app connects and lists agents, but chats there aren't supported yet. Connect to the gateway
+the app connects and lists your Bots, but chats there aren't supported yet. Connect to the gateway
 machine's dashboard instead.
 
 ## On the Mac
@@ -88,8 +88,8 @@ only starting gets a similar note: if no result comes, start it again.
 
 ### An image in a reply shows as a file tile
 
-The app couldn't load the file the agent named; hover the tile to see why. Common causes are a
-relative path or a file the gateway doesn't let apps read. Ask the agent for the full path, or to
+The app couldn't load the file the Bot named; hover the tile to see why. Common causes are a
+relative path or a file the gateway doesn't let apps read. Ask the Bot for the full path, or to
 save the image again.
 
 ## Voice

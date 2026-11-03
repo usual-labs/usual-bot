@@ -29,7 +29,7 @@ Usual Bot connects to the Hermes gateway you already run and works with Hermes
 [Bot Mode](https://hermes-agent.nousresearch.com/docs/user-guide/bot-mode): each Bot is a contact
 with its one ongoing Bot Chat, group chats are rooms, and routines sit in each Bot's profile.
 These are the same conversations you see in the Hermes desktop app. The sidebar shows which
-agents are working and which need you. It does one thing well: talking to your agents. Settings,
+Bots are working and which need you. It does one thing well: talking to your Bots. Settings,
 skill setup and everything else stay in the official Hermes app.
 
 > [!NOTE]
@@ -66,40 +66,40 @@ xcodebuild -project UsualBot.xcodeproj -scheme UsualBot -destination 'platform=m
 USUALBOT_DEMO=1 build/Build/Products/Debug/UsualBot.app/Contents/MacOS/UsualBot
 ```
 
-That opens a made-up team of agents, a room and some routines. Nothing is sent anywhere.
+That opens a made-up team of Bots, a room and some routines. Nothing is sent anywhere.
 
-**Use it with your own agents.**
+**Use it with your own Bots.**
 
 1. `open UsualBot.xcodeproj`, pick the **UsualBot** scheme and **My Mac** (or an iPhone simulator),
    and press **Run**.
 2. Make sure your Hermes dashboard can be reached from this device and has a sign-in set up.
    [Getting started](docs/guides/getting-started.md#2-get-your-gateway-ready) shows how.
 3. In Usual Bot, enter the gateway's address, for example `100.101.102.103:9119`, and sign in
-   on the gateway's page that opens. Your agents appear as contacts.
+   on the gateway's page that opens. Your Bots appear as contacts.
 
 To run it on your own iPhone, set your Apple team in `Config/Local.xcconfig` first; see
 [Getting started](docs/guides/getting-started.md#run-it-on-your-iphone).
 
 ## Screenshots
 
-![Usual Bot on the Mac: the chat list, and an agent asking to run a command](docs/screenshots/mac-approval.png)
+![Usual Bot on the Mac: the chat list, and a Bot asking to run a command](docs/screenshots/mac-approval.png)
 
 <table>
   <tr>
     <td width="50%"><img src="docs/screenshots/mac-side-question.png" alt="A chat on the Mac, with a side question answered above the message box"></td>
-    <td width="50%"><img src="docs/screenshots/mac-room.png" alt="A room on the Mac where several agents answer"></td>
+    <td width="50%"><img src="docs/screenshots/mac-room.png" alt="A room on the Mac where several Bots answer"></td>
   </tr>
   <tr>
-    <td>A chat, with a <code>/btw</code> side question answered while the agent keeps working.</td>
-    <td>A room: messages go to every agent, <code>@name</code> talks to one.</td>
+    <td>A chat, with a <code>/btw</code> side question answered while the Bot keeps working.</td>
+    <td>A room: messages go to every Bot, <code>@name</code> talks to one.</td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/mac-profile.png" alt="An agent's profile beside its chat, with routines and their switches"></td>
+    <td><img src="docs/screenshots/mac-profile.png" alt="A Bot's profile beside its chat, with routines and their switches"></td>
     <td><img src="docs/screenshots/mac-quick-message.png" alt="The quick message panel with an approval waiting"></td>
   </tr>
   <tr>
-    <td>An agent's routines beside its chat, and two background tasks running.</td>
-    <td>Press ⌥Space anywhere to message an agent or answer an approval.</td>
+    <td>A Bot's routines beside its chat, and two background tasks running.</td>
+    <td>Press ⌥Space anywhere to message a Bot or answer an approval.</td>
   </tr>
 </table>
 
@@ -110,43 +110,43 @@ To run it on your own iPhone, set your Apple team in `Config/Local.xcconfig` fir
   <img src="docs/screenshots/iphone-approval-dark.png" width="200" alt="An approval on iPhone in dark mode">
 </p>
 
-The film and all screenshots come from the built-in demo, with made-up agents.
+The film and all screenshots come from the built-in demo, with made-up Bots.
 
 ## Features
 
 **Chatting**
 
-- **One chat per agent.** Each Bot's ongoing Bot Chat from Hermes Bot Mode, with streaming
+- **One chat per Bot.** Each Bot's ongoing Bot Chat from Hermes Bot Mode, with streaming
   replies, Markdown, and tool calls folded into one line you can open.
-- **Images and files both ways.** Attach photos, PDFs and other files. Images an agent makes or
+- **Images and files both ways.** Attach photos, PDFs and other files. Images a Bot makes or
   finds show inline, open full size, and can be shared or saved.
 - **React, reply and copy.** Hover a message (long-press on iPhone) to react, quote it in a reply,
   or copy it.
 - **Edit and undo.** Rewrite your last message for a fresh answer, or take it back.
 - **Dictation.** Tap the mic and speak; your words appear as you talk.
-- **Voice calls.** Talk with an agent and it answers aloud, and stops when you speak over it. Uses
+- **Voice calls.** Talk with a Bot and it answers aloud, and stops when you speak over it. Uses
   on-device speech, or Hermes's GPT-Live voice when your gateway has an OpenAI key.
 
 **Staying in control**
 
-- **Approvals and questions inline.** When an agent wants to run a command, allow it once, for this
+- **Approvals and questions inline.** When a Bot wants to run a command, allow it once, for this
   chat, always, or deny it, right in the conversation. Secrets and sudo passwords are asked for in a masked field.
 - **Stop and steer.** Stop a running reply, or send a message while it runs to change course.
 - **Model and thinking.** Pick each chat's model and how hard it thinks from the message box (on
   iPhone, a gauge while you type). A small meter shows how full the context is, with a button to
   compress it.
-- **Needs you.** The sidebar marks agents that are working and agents waiting on you.
+- **Needs you.** The sidebar marks Bots that are working and Bots waiting on you.
 
 **Getting more done**
 
-- **Skills and commands.** Type `/` anywhere in a message for the agent's skills and Hermes
+- **Skills and commands.** Type `/` anywhere in a message for the Bot's skills and Hermes
   commands, such as `/reasoning` or `/status`.
-- **Side questions.** `/btw` asks about the conversation without interrupting the agent.
-- **Background tasks.** `/bg` hands a task to a fresh agent while you keep chatting. You get a
+- **Side questions.** `/btw` asks about the conversation without interrupting the Bot.
+- **Background tasks.** `/bg` has the Bot do a task in the background while you keep chatting. You get a
   notification when it's done, even if the app was closed.
-- **Rooms.** Group chats with several agents.
-- **Routines.** Each agent's scheduled jobs, with a switch to pause and resume them.
-- **Quick message (Mac).** ⌥Space opens a small panel to message any agent from anywhere.
+- **Rooms.** Group chats with several Bots.
+- **Routines.** Each Bot's scheduled jobs, with a switch to pause and resume them.
+- **Quick message (Mac).** ⌥Space opens a small panel to message any Bot from anywhere.
 - **Works offline.** Recent chats are cached, and the app reconnects by itself and catches up on
   what it missed.
 

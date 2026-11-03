@@ -1,6 +1,6 @@
 # Getting started
 
-This guide takes you from nothing to chatting with your own agents. It has three parts:
+This guide takes you from nothing to chatting with your own Bots. It has three parts:
 get the app, get your Hermes gateway ready, and sign in.
 
 ## 1. Get the app
@@ -50,7 +50,7 @@ Press **Run** (⌘R). The app opens on the connect screen.
 ### Look around first with the demo
 
 Debug builds started with the `USUALBOT_DEMO=1` environment variable show a made-up team of
-agents, a room, an approval and some routines instead of signing in. The demo never connects to
+Bots, a room, an approval and some routines instead of signing in. The demo never connects to
 anything, so nothing you do in it is sent anywhere.
 
 - **In Xcode:** **Product › Scheme › Edit Scheme… › Run › Arguments**, add `USUALBOT_DEMO` with
@@ -130,7 +130,7 @@ sign-in for apps that Usual Bot uses. If it's missing, update Hermes on the gate
 2. Usual Bot checks the gateway and opens its sign-in page: on the Mac in your default browser, so
    saved passwords and existing sign-ins carry over; on iPhone in a sign-in sheet. Sign in there as
    you would in the official app.
-3. The page hands the sign-in back to the app, and your agents appear as contacts. On the Mac,
+3. The page hands the sign-in back to the app, and your Bots appear as contacts. On the Mac,
    switch back to Usual Bot; the browser tab says you can close it.
 
 The app keeps your sign-in in the Keychain and refreshes it as it goes, so you won't sign in again

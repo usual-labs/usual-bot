@@ -13,6 +13,9 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   gateway administration stay in the official app, except what the developer chose to bring in: an
   agent's routines, its MCP servers (the Apps tab), and making, renaming and deleting Bots.
   Device-local preferences belong in Usual Bot.
+- **User-facing text calls them Bots,** never agents, to match New, Rename and Delete Bot, Hermes's
+  own Bot Mode and Bot Chat, and the Grok-style naming of Create. "Agent" stays in code, logs,
+  developer docs, Hermes's product name (Hermes Agent) and text sent to the model.
 - Fast mode isn't built. Only a message that starts with a command runs it; a `/skill` later in the
   text is sent as written, as in the official app.
 
