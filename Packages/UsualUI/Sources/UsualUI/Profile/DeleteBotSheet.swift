@@ -40,8 +40,8 @@ struct DeleteBotSheet: View {
             Text(
                 "This deletes \(contact.name)'s Hermes profile from the gateway, with everything in it: its chats, routines, skills, memory, vault, keys and apps. It goes from every app, and it can't be undone."
             )
-            if contact.activity != .idle {
-                Text("\(contact.name) is in the middle of a reply. Deleting it stops that.")
+            if let note = Self.activityNote(for: contact) {
+                Text(note)
             }
             if !rooms.isEmpty {
                 Text(
@@ -50,6 +50,8 @@ struct DeleteBotSheet: View {
             }
             TextField("Type \(contact.name) to confirm", text: $typed)
                 .textFieldStyle(.roundedBorder)
+                // What you type, in ink: the sentences around it are grey.
+                .foregroundStyle(Theme.ink)
                 .autocorrectionDisabled()
                 #if os(iOS)
                     .textInputAutocapitalization(.never)
@@ -63,6 +65,15 @@ struct DeleteBotSheet: View {
         .font(.system(size: 13.5))
         .foregroundStyle(Theme.secondaryInk)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// What deleting it now would cut short, if anything.
+    static func activityNote(for contact: Contact) -> String? {
+        switch contact.activity {
+        case .idle: nil
+        case .working: String(localized: "\(contact.name) is in the middle of a reply. Deleting it stops that.")
+        case .needsYou: String(localized: "\(contact.name) is waiting on you. Deleting it drops that request.")
+        }
     }
 
     private var canDelete: Bool {
