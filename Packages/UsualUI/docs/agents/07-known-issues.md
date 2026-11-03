@@ -43,12 +43,19 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **On iPhone, don't use `.inspector` for a panel with toolbar items or pages.** A compact inspector's content lives in the presenting chat's navigation stack: its toolbar items show in the chat's bar even while closed, `.toolbarVisibility(.hidden)` hides the chat's bar, and a `NavigationStack` inside it never pushes. Emptying its content to stop that leaves a blank sheet that can't be closed. On iPhone the profile is pushed instead, with `navigationDestination(isPresented:)`, which needs the split view's detail wrapped in its own `NavigationStack`: the detail column alone ignores it. The room panel has no toolbar or pages, so it stays an inspector.
 - **An iPhone `List` section header can't use `.contextMenu`:** touch and hold triggers the header's button instead. `SectionHeader` uses `Menu(content:label:primaryAction:)`, so a tap folds and touch and hold opens the menu.
 
+## Message actions
+
+- **A Mac menu's palette drops buttons without an image.** A `.palette` `ControlGroup` in a Mac context menu showed only the `+`, not the emoji, so the Mac menu puts reactions in a React submenu; iPhone keeps the palette.
+- **Accessibility modifiers inside a `.contain` group reach each element in it** (checked on the Mac through AX). `MessageRow` puts its actions on the message's content, so every paragraph carries Reply, Copy and React. On the group itself they'd belong to the container, which VoiceOver on iPhone doesn't focus.
+- **Unverified on iPhone:** the 44 pt hit areas from `touchTarget` (negative padding, so they spill past the control; a scroll view's edge may still clip them), the reaction sheet opened from the long-press menu, and whether VoiceOver reads a message group's author label on the way in.
+
 ## Message box
 
 - **iOS fires `onSubmit` for a Return `onKeyPress` handled.** `MessageBox` notes when Return picked from a menu (`pickedAt`) and ignores a submit within 0.3 s.
 - **Replacing `text` keeps the old selection.** Go through `MessageBox.replaceText(with:)` so the cursor lands at the end.
 - **Moving a view between stacks resets it.** The field would lose focus and `+` would drop an open picker. `ComposerLayout` repositions the same subviews; keep views that hold focus or presentation state in one place in the hierarchy.
 - **The bottom safe area doesn't separate the keyboard from the home indicator.** In the iOS 26.5 Simulator, readers ignoring `.container` and `.keyboard` both report 34 pt with the keyboard down and 335 pt up. `ChatBars` treats 50 pt or less as the home indicator; keep that threshold above 34 pt and below any keyboard height.
+- **Unverified: ⌘. for Stop.** A hidden button in `MessageBox`, as ⌘K is in `RootView`; automation couldn't press it without taking the keyboard.
 - **Unverified: Mac paste.** ⌘V uses `onPasteCommand(of: [.fileURL, .image])`. Plain text paste wasn't checked by automation. If it breaks, drop the modifier and keep drag-and-drop and the paperclip.
 - **Unverified: the iPhone sign-in sheet closes itself.** `SignInPage` cancels the task running `WebAuthenticationSession.authenticate` once Hermes says the app connected, relying on task cancellation to dismiss the sheet. Not yet run on a device or Simulator; if the sheet stays, keep an `ASWebAuthenticationSession` and call `cancel()` instead.
 - **The demo's Connect card and Apps page don't share state.** Connecting Notion in Atlas's chat leaves it unconnected on the Apps page; each fakes its own result.
