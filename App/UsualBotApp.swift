@@ -94,8 +94,12 @@ struct UsualBotApp: App {
             }
 
             // Keeps the quick panel and the app within reach after the window is closed.
-            MenuBarExtra("Usual Bot", systemImage: "bubble.left.and.bubble.right") {
+            MenuBarExtra {
                 QuickPanelMenu(controller: quickPanel)
+            } label: {
+                // Named, or VoiceOver reads the symbol's name, "Conversation".
+                Image(systemName: "bubble.left.and.bubble.right")
+                    .accessibilityLabel(Text("Usual Bot"))
             }
         #endif
     }
