@@ -249,6 +249,24 @@ struct RoomThreadTests {
         #expect(room.state.items.map(\.content) == [.user("@writer go")])
     }
 
+    @Test func aMessageThatDidntSendGoesBackToTheBox() async throws {
+        let (room, gateway) = try await open()
+        async let first: Void = room.sync()
+        _ = try await gateway.answer(0, method: "groups.log", result: ["events": [], "has_more": false])
+        _ = try await gateway.answer(1, method: "groups.state", result: idle)
+        await first
+
+        room.send("@writer go")
+        _ = try await gateway.answer(2, method: "groups.send", error: (4123, "worker unavailable"))
+        try await waitUntilOnMain { room.pending.isEmpty }
+        #expect(room.unsent == "@writer go")
+        guard case .notice(let text) = room.state.items.last?.content else {
+            Issue.record("expected a notice")
+            return
+        }
+        #expect(text.contains("worker unavailable"))
+    }
+
     @Test func roomServiceDownStopsSending() async throws {
         let (room, gateway) = try await open()
         async let synced: Void = room.sync()

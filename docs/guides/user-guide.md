@@ -271,6 +271,8 @@ Rooms are group chats with several agents. Create one with **+** › **New Room�
 - To rename or delete a room, use **Rename Room…** or **Delete Room…** at the bottom of its panel,
   or right-click it in the sidebar (touch and hold on iPhone). Deleting stops any agent still
   answering and removes the room and its messages for good; the agents and their own chats stay.
+- A message that doesn't send goes back in the message box, ahead of anything you typed since, so
+  you can send it again.
 - If a reply stops partway, say because the gateway restarted, the room shows the needs-you dot and a
   card with **Try Again**. The room waits until you do. The agent may have done part of the work
   already, so trying again can repeat it.

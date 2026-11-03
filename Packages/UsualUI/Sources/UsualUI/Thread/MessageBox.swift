@@ -25,6 +25,8 @@ struct MessageBox: View {
     var commands: SlashCommands?
     /// Chats only: the model, thinking and context controls the iPhone shows while you type.
     var chat: ChatControls?
+    /// Rooms: a message that didn't send, taken back into the box so its text isn't lost.
+    var unsent: Binding<String?>?
     let send: (String) -> Void
     let stop: () -> Void
 
@@ -168,6 +170,13 @@ struct MessageBox: View {
         .onChange(of: menuText) { _, text in
             highlighted = 0
             if text != dismissedText { dismissedText = nil }
+        }
+        // Ahead of anything typed since, so neither is lost.
+        .onChange(of: unsent?.wrappedValue, initial: true) { _, unsent in
+            guard let unsent else { return }
+            replaceText(with: isEmpty ? unsent : unsent + "\n\n" + text)
+            self.unsent?.wrappedValue = nil
+            focused = true
         }
         .onChange(of: commands?.prefill) { _, prefill in
             guard let prefill else { return }

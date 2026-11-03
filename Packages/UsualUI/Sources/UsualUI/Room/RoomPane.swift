@@ -47,7 +47,9 @@ struct RoomPane: View {
                     MessageBox(
                         placeholder: placeholder, isRunning: !room.working.isEmpty, canSend: room.canSend,
                         stopLabel: String(localized: "Stop everyone in \(contact.name)"), mentions: mentions,
-                        replyTo: $replyTo, commands: roomSkills, send: room.send, stop: room.stop
+                        replyTo: $replyTo, commands: roomSkills,
+                        unsent: Binding(get: { room.unsent }, set: { room.unsent = $0 }), send: room.send,
+                        stop: room.stop
                     )
                     .frame(maxWidth: Theme.columnWidth)
                     .padding(.horizontal, ThreadPane.composerMargin)

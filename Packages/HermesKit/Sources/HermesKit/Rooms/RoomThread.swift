@@ -31,6 +31,8 @@ public final class RoomThread {
     public private(set) var retries: [String] = []
     /// Your messages sent but not yet back in the log.
     public private(set) var pending: [PendingMessage] = []
+    /// A message that didn't send, for the message box to take back so its text isn't lost.
+    public var unsent: String?
     /// Member replies since you last had the room on screen.
     public private(set) var unreadCount = 0
     /// Whether the gateway's room service is running; rooms can't be used without it.
@@ -224,7 +226,10 @@ public final class RoomThread {
                 await sync()
             } catch {
                 pending.removeAll { $0.id == clientID }
-                state.addNotice(String(localized: "Your message didn't send: \(AppModel.describe(error))"))
+                unsent = text
+                let reason = AppModel.describe(error)
+                state.addNotice(
+                    String(localized: "Your message didn't send, so it's back in the message box: \(reason)"))
             }
         }
     }
