@@ -38,7 +38,10 @@ struct RoomPane: View {
                 }
                 .buttonStyle(.clickable)
                 .accessibilityHint(Text("Shows the room's members"))
-                .keyboardShortcut("i", modifiers: .command)
+                #if os(iOS)
+                    // The Mac's is in the View menu.
+                    .keyboardShortcut("i", modifiers: .command)
+                #endif
             } bottom: {
                 if room.phase == .ready {
                     MessageBox(
@@ -56,6 +59,13 @@ struct RoomPane: View {
             }
             // Inside the inspector: outside, the name drops below the window buttons' line.
             .paneChrome()
+            #if os(macOS)
+                .focusedSceneValue(
+                    \.chatPanel,
+                    ChatPanelCommand(title: showsInfo ? "Hide Room Details" : "Show Room Details") {
+                        showsInfo.toggle()
+                    })
+            #endif
             .inspector(isPresented: $showsInfo) {
                 RoomPanel(room: contact, members: members, delete: confirmDelete)
                     .inspectorColumnWidth(min: 260, ideal: 300, max: 400)

@@ -303,7 +303,7 @@ struct ContactsSplitView<Footer: View>: View {
             } action: {
                 windowWidth = $0
             }
-            .background { paletteShortcuts }
+            .focusedSceneValue(\.windowCommands, windowCommands)
             .overlay {
                 if showsPalette {
                     CommandPalette(
@@ -397,20 +397,47 @@ struct ContactsSplitView<Footer: View>: View {
                 .help("Search (⌘K)")
         }
 
-        /// One place for the toolbar's button and the rail's.
-        private var paletteShortcuts: some View {
-            Group {
-                Button("Search") { showsPalette.toggle() }.keyboardShortcut("k")
-                Button("Search") { showsPalette.toggle() }.keyboardShortcut("f")
+        /// The menu bar's commands for this window (`UsualBotCommands`).
+        private var windowCommands: WindowCommands {
+            // One sheet at a time.
+            let free = !showsNewBot && !showsNewRoom
+            let canMakeRoom = createRoom != nil && agents.count >= NewRoomSheet.seats.lowerBound
+            let grouped = sections?.sections.isEmpty == false
+            let blocks =
+                grouped
+                ? sections?.blocks(for: contacts) ?? []
+                : [SidebarBlock(section: nil, contacts: contacts.sorted(by: Contact.rosterOrder))]
+            let folds = !showsRail && grouped
+            let ids = ChatOrder.shown(blocks) { folds && sections?.isFolded($0) == true }.map(\.id)
+            var commands = WindowCommands(search: { showsPalette.toggle() })
+            if botEditing != nil, free {
+                commands.newBot = {
+                    showsPalette = false
+                    showsNewBot = true
+                }
             }
-            .opacity(0)
-            .accessibilityHidden(true)
+            if canMakeRoom, free {
+                commands.newRoom = {
+                    showsPalette = false
+                    showsNewRoom = true
+                }
+            }
+            if !showsRail || canLeaveRail {
+                commands.sidebar = (showsRail ? "Expand Sidebar" : "Collapse Sidebar", toggleSidebar)
+            }
+            if !ids.isEmpty {
+                commands.previousChat = { selection = ChatOrder.step(from: selection, by: -1, in: ids) }
+                commands.nextChat = { selection = ChatOrder.step(from: selection, by: 1, in: ids) }
+            }
+            return commands
+        }
+
+        private func toggleSidebar() {
+            withAnimation(.smooth(duration: 0.25)) { listWidth = showsRail ? Self.fullWidth : Self.railWidth }
         }
 
         private var sidebarToggle: some View {
-            Button {
-                withAnimation(.smooth(duration: 0.25)) { listWidth = showsRail ? Self.fullWidth : Self.railWidth }
-            } label: {
+            Button(action: toggleSidebar) {
                 Image(systemName: "sidebar.left")
                     .font(.system(size: 15))
                     .foregroundStyle(Theme.secondaryInk)
@@ -418,7 +445,7 @@ struct ContactsSplitView<Footer: View>: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.clickable)
-            .help(showsRail ? "Expand Sidebar" : "Collapse Sidebar")
+            .help(showsRail ? "Expand Sidebar (⌃⌘S)" : "Collapse Sidebar (⌃⌘S)")
             .accessibilityLabel(showsRail ? Text("Expand Sidebar") : Text("Collapse Sidebar"))
         }
 
@@ -500,6 +527,13 @@ struct ContactsSplitView<Footer: View>: View {
                     }
                 }
                 .profileCloseButton(shown: showsProfile && panel != nil) { showsProfile = false }
+                .focusedSceneValue(
+                    \.chatPanel,
+                    panel.map { _ in
+                        ChatPanelCommand(title: showsProfile ? "Hide Profile" : "Show Profile") {
+                            showsProfile.toggle()
+                        }
+                    })
             #else
                 // Pushed from the chat, as in Grok's phone app. Not an inspector: its content sits
                 // in the chat's navigation stack, so its toolbar joins the chat's bar.

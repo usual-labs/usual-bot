@@ -80,6 +80,7 @@ struct UsualBotApp: App {
             .handlesExternalEvents(matching: ["*"])
             .windowBackgroundDragBehavior(.enabled)
             .defaultSize(width: 1100, height: 720)
+            .commands { UsualBotCommands() }
         #endif
 
         #if os(macOS)
@@ -88,6 +89,8 @@ struct UsualBotApp: App {
                 if let contactID { BotScreenWindow(model: model, contactID: contactID) }
             }
             .defaultSize(width: 1000, height: 680)
+            // Opened only from a chat, for its agent: File › New would show an empty window.
+            .commandsRemoved()
 
             Settings {
                 SettingsView(model: model, desktopControls: AnyView(DesktopSettings(controller: quickPanel)))

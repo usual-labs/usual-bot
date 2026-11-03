@@ -66,7 +66,7 @@ Searching lists every match together, without headings.
 
 ## Making and changing Bots
 
-- **New Bot:** **+** › **New Bot…** at the top of the sidebar (or ⌘K › New Bot on the Mac). Give it
+- **New Bot:** **+** › **New Bot…** at the top of the sidebar (or ⌘N on the Mac). Give it
   a name, and if you like a picture and a line on what it's for. It starts with Hermes's own model,
   skills and tools, and the gateway's sign-ins; change those in the Hermes app. Its chat opens once
   it's made. If Hermes has no model it can use, the app says so before opening it.
@@ -261,8 +261,8 @@ Hermes; Usual Bot only shows it. Rooms have no Computer button: open the agent's
 
 ## Rooms
 
-Rooms are group chats with several agents. Create one with **+** › **New Room…** at the top of the sidebar,
-name it and pick its members.
+Rooms are group chats with several agents. Create one with **+** › **New Room…** at the top of the sidebar
+(⇧⌘N on the Mac), name it and pick its members.
 
 - A message goes to every agent in the room; `@name` talks to just one.
 - Each reply shows who wrote it. Agents can hand work to each other, shown as small lines in the
@@ -407,11 +407,16 @@ provider keys and gateway administration stay in Hermes.
 
 ## Keyboard shortcuts
 
+On the Mac these are also in the menu bar: File, View and Go.
+
 | Shortcut | Where | What it does |
 | --- | --- | --- |
 | ⌥Space (configurable in Settings) | Anywhere (Mac) | Opens the quick message panel |
+| ⌘N / ⇧⌘N | Mac | New Bot / New Room |
 | ⌘K or ⌘F | Anywhere in the window | Search chats, messages and actions |
 | ↑ / ↓ | Sidebar | Move between chats |
+| ⌃Tab / ⌃⇧Tab | Mac | Next / previous chat, in sidebar order, skipping folded sections |
+| ⌃⌘S | Mac | Collapse or expand the sidebar |
 | ⌘, | Mac | Open Settings |
 | ⌘I | Chat or room | Show the profile or room details |
 | Return | Message box | Send by default, or pick from the open `/` or `@` menu |

@@ -149,7 +149,10 @@ struct ThreadPane: View {
             Button(action: toggleProfile) { NamePill(contact: contact, members: members) }
                 .buttonStyle(.clickable)
                 .accessibilityHint(Text("Shows routines and details"))
-                .keyboardShortcut("i", modifiers: .command)
+                #if os(iOS)
+                    // The Mac's is in the View menu.
+                    .keyboardShortcut("i", modifiers: .command)
+                #endif
         } else {
             NamePill(contact: contact, members: members)
         }

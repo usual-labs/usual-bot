@@ -52,6 +52,9 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 - **A `WindowGroup` gets AppKit's automatic window tabbing** unless the app turns it off
   (`NSWindow.allowsAutomaticWindowTabbing = false` in `UsualBotApp.init`). Windows already tabbed when
   the app relaunches weren't tested.
+- **The menu bar's File, View and Go items follow the window in front** (`UsualBotCommands`, through
+  `focusedSceneValue`). They're disabled while the app is in the background or has no main window,
+  so a demo run in the background shows them all disabled; check what they do with the app active.
 - **AppKit fills menus when they open.** `NSApp.mainMenu` read at launch shows neither the tab items nor
   Enter Full Screen, so open the menu before checking its items.
 
