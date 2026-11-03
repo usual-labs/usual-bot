@@ -278,6 +278,9 @@ struct AttachmentTile: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.clickable)
+                // On the button, not around it, so VoiceOver can still open it.
+                .accessibilityLabel(Text("Image \(name)"))
+                .accessibilityHint(data == nil ? Text("") : Text("Opens it full size"))
                 .task(id: imageData) { await show() }
                 .sheet(isPresented: $viewing) {
                     if let data { MediaViewer(data: data, name: name) }
@@ -299,10 +302,10 @@ struct AttachmentTile: View {
                 .padding(.horizontal, 12)
                 .frame(minHeight: 40)
                 .background(Theme.selection, in: RoundedRectangle(cornerRadius: 12))
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(kind == .image ? "Image \(name)" : "File \(name)"))
             }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(kind == .image ? "Image \(name)" : "File \(name)"))
     }
 
     /// A small decoded copy, so a 12-megapixel photo doesn't sit in memory at full size. Images
