@@ -70,6 +70,23 @@ All notable changes to Usual Bot are listed here. The format follows
   Tailscale once. The app then joins your tailnet as a device of its own. A gateway that signs in
   through Google still needs the VPN for that sign-in, since Google doesn't allow it inside apps.
 
+- **Jump to the newest message.** After you scroll up, a round arrow above the message box takes you
+  back to the end, with a dot when something new arrived.
+- **Right-click a message on the Mac** to react, reply, copy, edit or undo. VoiceOver offers the same
+  actions on both platforms, and says who wrote each message.
+- **Every reaction on iPhone,** behind More Reactions, and **Select Text** in a message's menu to copy
+  part of it.
+- **Menu bar commands on the Mac.** File › New Bot… (⌘N) and New Room… (⇧⌘N), View › Show Profile
+  (⌘I) and Collapse Sidebar (⌃⌘S), a Go menu with Search… (⌘K) and Previous/Next Chat (⌃⇧⇥/⌃⇥),
+  and Help › Usual Bot Help. The narrow sidebar rail has a Search button. ⌘. stops a running reply.
+- **Room details on iPhone.** Tap a room's name to see its members, rename it or delete it.
+- **Dismiss a stopped room reply.** The card names the Bot when the app can tell, and Dismiss stops
+  it on the gateway, along with any other reply still running in the room.
+- **Rooms name themselves.** Leave the name blank and a new room is called after its Bots, like
+  "Forge, Atlas & Scribe".
+- **VoiceOver announces** approval, question, secret, vault and Connect cards as they appear, and a
+  message found by search.
+
 ### Changed
 
 - **Search is now a palette.** ⌘K or the Search button finds chats and rooms, and opens New Room,
@@ -103,6 +120,19 @@ All notable changes to Usual Bot are listed here. The format follows
 - **Messages arrive with a small animation,** which Reduce Motion turns off. On the Mac, the message
   box stays one line until your text wraps, and a message's actions sit right beside it.
 
+- **The app says "Bot" everywhere** for the agents you chat with, matching New, Rename and Delete Bot.
+- **Sheets look and work the same everywhere.** On iPhone, Cancel and the main action sit in the
+  bar; on the Mac, Esc cancels and Return confirms. Start from scratch in New Routine has Back.
+- **Approval buttons say what they cover,** and Always allow no longer sits next to Deny.
+- **Signing out asks first,** on the Mac and iPhone.
+- **A voice call ends with ⇧⌘H** instead of Esc, and its dots stay still with Reduce Motion on.
+- **Quick message waits** for a chat that's still opening and sends then, or says why it can't.
+  Waiting on you also lists room replies to try again and apps to connect.
+- **A message you send while a card waits,** and its reply, come after the card, in view.
+- **Settings use the app's ink,** and switches are easier to see in dark mode. Push settings label
+  their fields, and the Notifications page says up top when notifications are off.
+- **The demo shows idle, unread and working Bots,** not only ones that need you.
+
 ### Fixed
 
 - **Small controls and cards.** The context, model and thinking controls under the message box are
@@ -129,6 +159,26 @@ All notable changes to Usual Bot are listed here. The format follows
   reconnected could show as lost, even though the gateway had it.
 - **Mac tab bar.** Window tabs are off, so View no longer offers Show Tab Bar and the tab bar can't
   cover the top of the window.
+
+- **Narrow Mac window with a panel open.** The window makes room for the profile or room panel
+  instead of cutting off the sidebar and the chat.
+- **A chat's row in the list** shows your message as soon as you send it, and the reply when it
+  comes. Rows no longer shift when an unread count appears.
+- **A room message that doesn't send** goes back in the message box instead of being lost.
+- **Delete Bot** says when the Bot is waiting on you rather than replying, and its Delete is red.
+- **Text at the top of a Mac chat** no longer shows beside the name.
+- **A message found by search** stands out in light and dark.
+- **Small iPhone controls** have 44 pt tap areas, and a question's letters no longer look like keys.
+- **VoiceOver** can open an image you sent and Start from scratch or a routine template, says when a
+  Bot is working and what a folded section needs, reads each iPhone section heading as one element,
+  and names the menu bar item Usual Bot.
+- **Grey boxes** around the +, New item, More and gateway menus on the Mac are gone.
+- **The empty list offline** says it can't reach your gateway, with Try Again, instead of
+  "Connecting…".
+- **An app's problem shows in full,** and template summaries get two lines on iPhone. The connect
+  screen scrolls, and New Room says why Create is off.
+- **On iPhone, renaming a section** uses the heading's size and has Cancel, and the profile's Machine
+  row says Needs you while the Bot waits on you.
 
 ## 0.3.0 - 2026-10-26
 
