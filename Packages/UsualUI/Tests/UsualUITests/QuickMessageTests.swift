@@ -22,14 +22,19 @@ struct QuickMessageTests {
         #expect(SecretCard.title(sudo, agentName: "Ops") == "Ops needs your sudo password")
     }
 
-    @Test func waitingOnYouListsRoomRetriesAndAppConnections() {
+    @Test func waitingOnYouListsRoomRetriesAndAppConnections() throws {
         let model = AppModel.demo()
-        let rows = WaitingOnYou.rows(model: model, contacts: model.sidebarContacts)
-        let retry = rows.first { $0.id == "demo-retry" }
+        // The demo room is idle, so give one a stopped reply of its own.
+        let contact = try #require(model.sidebarContacts.first { $0.name == "Launch crew" })
+        let summary = try #require(
+            RoomSummary(["room_id": "launch", "name": "Launch crew", "members": .array([])]))
+        let room = RoomThread.sample(summary, events: [], retries: ["demo-retry": nil])
+        let retry = WaitingOnYou.rows(in: room, contact: contact).first { $0.id == "demo-retry" }
         #expect(retry?.title == "A reply in Launch crew didn't finish")
         if case .retry = retry?.action {} else { Issue.record("A stopped room reply should offer Try Again") }
+        let rows = WaitingOnYou.rows(model: model, contacts: model.sidebarContacts)
         let connect = rows.first { $0.id == "demo-connect" }
-        #expect(connect?.title == "Atlas wants to connect Notion and Google Drive")
+        #expect(connect?.title == "Scribe wants to connect Notion and Google Drive")
         if case .open = connect?.action {} else { Issue.record("A connection request should open its chat") }
     }
 

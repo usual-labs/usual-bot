@@ -58,7 +58,7 @@ struct WaitingOnYou: View {
         }
     }
 
-    private static func rows(in room: RoomThread, contact: Contact) -> [WaitingRow.Row] {
+    static func rows(in room: RoomThread, contact: Contact) -> [WaitingRow.Row] {
         let approvals = room.approvals.map { approval in
             WaitingRow.Row(
                 id: approval.id, contact: contact,
