@@ -48,9 +48,10 @@ struct CallBar: View {
                 ) { call.muted.toggle() }
                 CallBarButton(
                     systemImage: "xmark", label: String(localized: "End call"), active: false, tint: Theme.danger,
-                    ink: .white, action: hangUp
+                    ink: .white, shortcut: "⇧⌘H", action: hangUp
                 )
-                .keyboardShortcut(.cancelAction)
+                // Not Esc, which also closes menus and cancels a reply: a missed one would hang up.
+                .keyboardShortcut("h", modifiers: [.command, .shift])
             }
             .padding(.leading, 18)
             .padding(.trailing, 10)
@@ -167,13 +168,15 @@ struct CallBar: View {
 }
 
 /// The voice as a row of dots: your loudness while listening, a gentle wave while the agent talks.
+/// Under Reduce Motion the wave is a still raised row and loudness changes without easing.
 private struct VoiceDots: View {
     let levels: [Double]
     let speaking: Bool
     let tint: Color
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 15, paused: !speaking)) { context in
+        TimelineView(.animation(minimumInterval: 1 / 15, paused: !speaking || reduceMotion)) { context in
             HStack(spacing: 4) {
                 ForEach(levels.indices, id: \.self) { index in
                     Capsule()
@@ -182,12 +185,13 @@ private struct VoiceDots: View {
                 }
             }
             .frame(height: 26)
-            .animation(.easeOut(duration: 0.1), value: levels)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.1), value: levels)
         }
     }
 
     private func height(_ index: Int, at date: Date) -> CGFloat {
         if speaking {
+            if reduceMotion { return 4 + 14 * 0.6 }
             let phase = date.timeIntervalSinceReferenceDate * 6 + Double(index) * 0.7
             return 4 + 14 * (0.5 + 0.5 * sin(phase))
         }
@@ -201,6 +205,8 @@ private struct CallBarButton: View {
     let active: Bool
     var tint: Color? = nil
     var ink: Color? = nil
+    /// Its keyboard shortcut, shown in the tooltip.
+    var shortcut: String? = nil
     let action: () -> Void
 
     #if os(macOS)
@@ -219,7 +225,7 @@ private struct CallBarButton: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.clickable)
-        .help(label)
+        .help(shortcut.map { "\(label) (\($0))" } ?? label)
         .accessibilityLabel(Text(label))
     }
 }

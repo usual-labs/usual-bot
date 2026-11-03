@@ -419,5 +419,6 @@ provider keys and gateway administration stay in Hermes.
 | Shift-Return | Message box | New line |
 | ↑ / ↓, Tab | `/` or `@` menu | Move, pick |
 | Esc | `/` or `@` menu, reply, edit | Close the menu or cancel |
+| ⇧⌘H | Voice call | End the call |
 | Tab | Quick message | Next agent |
 | ⌘Return | Quick message | Open the full chat |
