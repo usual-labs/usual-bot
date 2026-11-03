@@ -57,7 +57,8 @@ Sections group the sidebar however you like. Until you make one, the list has no
 - **Fold a section:** click its heading. A folded section still shows the needs-you dot or an unread
   count, so nothing waiting for you goes out of sight.
 - **Rename, reorder or delete one:** right-click its heading on the Mac, or touch and hold it on
-  iPhone.
+  iPhone (with VoiceOver, they're the heading's actions). While renaming, Esc on the Mac or
+  **Cancel** on iPhone keeps the old name.
   Deleting a section keeps its chats: they move to Other.
 
 A Bot's section is saved on the Bot, so it shows on your other devices and in the Hermes desktop
@@ -375,6 +376,9 @@ app goes to the background and reopens when you come back.
 
 If an answer couldn't be recovered (for example, the gateway restarted meanwhile), the chat says
 so instead of leaving you waiting.
+
+If the app can't reach your gateway and has no chats saved yet, the list says so: check your
+connection or Tailscale, then choose **Try Again** to reconnect without waiting for the next retry.
 
 ## Settings
 
