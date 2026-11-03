@@ -29,10 +29,13 @@ extension Contact.Activity {
         let vault: VaultList
         @ViewBuilder let destination: (ProfilePanel.Tab) -> Destination
 
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+        @ScaledMetric(relativeTo: .body) private var iconWidth: CGFloat = 26
+
         var body: some View {
             VStack(spacing: 0) {
                 ForEach(Array(ProfilePanel.Tab.allCases.enumerated()), id: \.element) { index, tab in
-                    if index > 0 { Divider().padding(.leading, 56) }
+                    if index > 0 { Divider().padding(.leading, iconWidth + 30) }
                     // A link to its view, not a value: no destination to register on the chat's stack.
                     NavigationLink {
                         destination(tab)
@@ -49,25 +52,34 @@ extension Contact.Activity {
         private func row(_ tab: ProfilePanel.Tab) -> some View {
             HStack(spacing: 14) {
                 Image(systemName: icon(tab))
-                    .font(.system(size: 18))
+                    .scaledFont(size: 18)
                     .foregroundStyle(Theme.secondaryInk)
-                    .frame(width: 26)
+                    .frame(width: iconWidth)
                     .accessibilityHidden(true)
-                Text(tab.title)
-                    .font(.system(size: 17))
-                    .foregroundStyle(Theme.ink)
-                Spacer(minLength: 8)
-                if let value = value(tab) {
-                    Text(value)
-                        .font(.system(size: 17))
-                        .foregroundStyle(Theme.secondaryInk)
+                // At accessibility text sizes what's in the page goes under its name.
+                let text =
+                    dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+                    : AnyLayout(HStackLayout(spacing: 0))
+                text {
+                    Text(tab.title)
+                        .scaledFont(size: 17)
+                        .foregroundStyle(Theme.ink)
+                    if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 8) }
+                    if let value = value(tab) {
+                        Text(value)
+                            .scaledFont(size: 17)
+                            .foregroundStyle(Theme.secondaryInk)
+                    }
                 }
+                if dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
+                    .scaledFont(size: 14, weight: .semibold)
                     .foregroundStyle(Theme.secondaryInk)
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, 16)
+            .padding(.vertical, 8)
             .frame(minHeight: 52)
             .contentShape(Rectangle())
         }

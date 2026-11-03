@@ -13,7 +13,7 @@ struct RoutinesView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Scheduled")
-                    .font(.system(size: 12, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold)
                     .foregroundStyle(Theme.secondaryInk)
                     .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 8)
@@ -30,11 +30,11 @@ struct RoutinesView: View {
                     Text(message).multilineTextAlignment(.center)
                     Button("Try Again") { Task { await list.refresh() } }
                         .buttonStyle(.clickable)
-                        .font(.system(size: 13, weight: .medium))
+                        .scaledFont(size: 13, weight: .medium)
                         .foregroundStyle(Theme.ink)
                         .frame(minHeight: 44)
                 }
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .frame(maxWidth: .infinity)
             case .ready:
@@ -42,7 +42,7 @@ struct RoutinesView: View {
                     Text(
                         "No routines yet. A routine has \(agentName) do something on a schedule, like every weekday at 9."
                     )
-                    .font(.system(size: 13.5))
+                    .scaledFont(size: 13.5)
                     .foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical, 8)
@@ -53,13 +53,13 @@ struct RoutinesView: View {
                 }
                 if let problem = list.problem {
                     Text(problem)
-                        .font(.system(size: 12.5))
+                        .scaledFont(size: 12.5)
                         .foregroundStyle(Theme.danger)
                         .padding(.top, 10)
                 }
             }
             Text("You can also ask \(agentName) in chat, like “every Monday at 9, check our dependencies”.")
-                .font(.system(size: 12.5))
+                .scaledFont(size: 12.5)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 14)
@@ -131,11 +131,11 @@ private struct RoutineRow: View {
             Button(action: open) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(routine.name)
-                        .font(.system(size: 14))
+                        .scaledFont(size: 14)
                         .foregroundStyle(Theme.ink)
                         .lineLimit(2)
                     RoutineStatus.text(for: routine, isRunning: list.running.contains(routine.id))
-                        .font(.system(size: 12.5))
+                        .scaledFont(size: 12.5)
                         .lineLimit(3)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

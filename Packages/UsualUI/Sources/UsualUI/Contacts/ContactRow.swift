@@ -11,6 +11,9 @@ struct ContactRow: View {
     let members: [Contact]
     var compact = false
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .body) private var scaledAvatar: CGFloat = 44
+
     var body: some View {
         if compact {
             avatar
@@ -25,37 +28,42 @@ struct ContactRow: View {
     }
 
     private var row: some View {
-        HStack(spacing: Self.gap) {
+        HStack(alignment: dynamicTypeSize.isAccessibilitySize ? .top : .center, spacing: Self.gap) {
             avatar
                 .overlay(alignment: .topTrailing) {
                     if contact.activity == .needsYou { NeedsYouDot().offset(x: 3, y: -2) }
                 }
             VStack(alignment: .leading, spacing: Self.lineGap) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                // At accessibility text sizes the time moves under the name, so neither is cut short.
+                let nameLine =
+                    dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: Self.lineGap))
+                    : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 8))
+                nameLine {
                     Text(contact.name)
-                        .font(Self.nameFont)
+                        .scaledFont(size: Self.nameSize, weight: Self.nameWeight)
                         .foregroundStyle(Theme.ink)
-                        .lineLimit(1)
+                        .lineLimit(1, accessibility: 2)
                     #if os(iOS)
-                        Spacer(minLength: 0)
+                        if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
                         if let lastActive = contact.lastActive {
                             Text(Self.stamp(for: lastActive))
-                                .font(.system(size: 14))
+                                .scaledFont(size: 14)
                                 .foregroundStyle(Theme.secondaryInk.opacity(0.75))
                         }
                     #endif
                 }
                 HStack(spacing: 8) {
                     Text(previewText)
-                        .font(Self.previewFont)
+                        .scaledFont(size: Self.previewSize)
                         .foregroundStyle(Theme.secondaryInk)
-                        .lineLimit(1)
+                        .lineLimit(1, accessibility: 3)
                     Spacer(minLength: 0)
                     ContactIndicator(needsYou: false, unreadCount: contact.unreadCount)
                 }
                 // The text's own height: the taller unread badge overhangs it rather than moving
-                // the row when a count appears.
-                .frame(height: Self.previewLineHeight)
+                // the row when a count appears. At accessibility sizes the preview wraps instead.
+                .frame(height: dynamicTypeSize.isAccessibilitySize ? nil : previewLineHeight)
             }
         }
         .padding(.vertical, 4)
@@ -76,16 +84,23 @@ struct ContactRow: View {
     #if os(iOS)
         private static let gap: CGFloat = 16
         private static let lineGap: CGFloat = 4
-        private static let nameFont = Font.system(size: 17)
-        private static let previewFont = Font.system(size: 15.5)
+        private static let nameSize: CGFloat = 17
+        private static let nameWeight: Font.Weight? = nil
+        private static let previewSize: CGFloat = 15.5
         private static let previewLineHeight: CGFloat = 19
     #else
         private static let gap: CGFloat = 12
         private static let lineGap: CGFloat = 2
-        private static let nameFont = Font.system(size: 15, weight: .medium)
-        private static let previewFont = Font.system(size: 13)
+        private static let nameSize: CGFloat = 15
+        private static let nameWeight: Font.Weight? = .medium
+        private static let previewSize: CGFloat = 13
         private static let previewLineHeight: CGFloat = 16
     #endif
+
+    /// One line of preview, grown in step with its text.
+    private var previewLineHeight: CGFloat {
+        Self.previewLineHeight * Theme.scaled(Self.previewSize, for: dynamicTypeSize) / Self.previewSize
+    }
 
     @ViewBuilder private var avatar: some View {
         switch contact.kind {
@@ -95,11 +110,12 @@ struct ContactRow: View {
     }
 
     /// iPhone rows and the Mac's rail keep the larger avatar; the Mac's rows have the name to go by.
+    /// On iPhone it grows with the text, but only so far: the name needs the room more.
     private var avatarSize: CGFloat {
         #if os(macOS)
             compact ? 44 : 36
         #else
-            44
+            min(scaledAvatar, 60)
         #endif
     }
 
@@ -109,7 +125,7 @@ struct ContactRow: View {
             NeedsYouDot()
         } else if contact.unreadCount > 0 {
             Text(contact.unreadCount, format: .number)
-                .font(.system(size: 10.5, weight: .semibold))
+                .scaledFont(size: 10.5, weight: .semibold)
                 .foregroundStyle(Theme.primaryInk)
                 .padding(.horizontal, 4)
                 .frame(minWidth: 18, minHeight: 18)
@@ -147,7 +163,7 @@ struct ContactIndicator: View {
             NeedsYouDot()
         } else if unreadCount > 0 {
             Text(unreadCount, format: .number)
-                .font(.system(size: 11.5, weight: .semibold))
+                .scaledFont(size: 11.5, weight: .semibold)
                 .foregroundStyle(Theme.primaryInk)
                 .padding(.horizontal, 6)
                 .frame(minWidth: 20, minHeight: 20)

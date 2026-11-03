@@ -40,7 +40,7 @@ struct VaultTextField: View {
 
 extension View {
     fileprivate func vaultFieldStyle() -> some View {
-        font(.system(size: 14))
+        scaledFont(size: 14)
             .padding(.horizontal, 12)
             .frame(minHeight: 40)
             .background(Theme.pane, in: RoundedRectangle(cornerRadius: 10))
@@ -59,7 +59,7 @@ struct UnencryptedConsent: View {
                 Text(
                     "This gateway uses plain http, so this could be read on the network. It's safe only inside a tunnel such as Tailscale."
                 )
-                .font(.system(size: 12.5))
+                .scaledFont(size: 12.5)
                 .foregroundStyle(Theme.needsYouInk)
                 .fixedSize(horizontal: false, vertical: true)
             } icon: {
@@ -67,7 +67,7 @@ struct UnencryptedConsent: View {
                     .foregroundStyle(Theme.needsYouInk)
             }
             Toggle("Send it anyway", isOn: $isAllowed)
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.ink)
                 .tint(Theme.switchOn)
         }

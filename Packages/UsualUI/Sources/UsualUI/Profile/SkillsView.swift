@@ -16,17 +16,17 @@ struct SkillsView: View {
                     Text(message).multilineTextAlignment(.center)
                     Button("Try Again") { Task { await list.refresh() } }
                         .buttonStyle(.clickable)
-                        .font(.system(size: 13, weight: .medium))
+                        .scaledFont(size: 13, weight: .medium)
                         .foregroundStyle(Theme.ink)
                         .frame(minHeight: 44)
                 }
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .frame(maxWidth: .infinity)
             case .ready:
                 if list.skills.isEmpty {
                     Text("No skills yet.")
-                        .font(.system(size: 13.5))
+                        .scaledFont(size: 13.5)
                         .foregroundStyle(Theme.secondaryInk)
                         .padding(.vertical, 8)
                 }
@@ -36,13 +36,13 @@ struct SkillsView: View {
                 }
                 if let problem = list.problem {
                     Text(problem)
-                        .font(.system(size: 12.5))
+                        .scaledFont(size: 12.5)
                         .foregroundStyle(Theme.danger)
                         .padding(.top, 10)
                 }
             }
             Text("Type / in the chat to use a skill. \(agentName) also picks them up on its own when they fit.")
-                .font(.system(size: 12.5))
+                .scaledFont(size: 12.5)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 14)
@@ -60,11 +60,11 @@ private struct SkillRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(skill.name)
-                    .font(.system(size: 14))
+                    .scaledFont(size: 14)
                     .foregroundStyle(skill.enabled ? Theme.ink : Theme.secondaryInk)
-                    .lineLimit(1)
+                    .lineLimit(1, accessibility: 3)
                 Text(skill.description)
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.secondaryInk)
                     .lineLimit(2)
             }

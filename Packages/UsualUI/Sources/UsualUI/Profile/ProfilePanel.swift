@@ -152,13 +152,13 @@ struct ProfilePanel: View {
                     botEdit = .usePicture(contact, data)
                 }
             Text(contact.name)
-                .font(.system(size: Self.nameSize, weight: .semibold))
+                .scaledFont(size: Self.nameSize, weight: .semibold)
                 .foregroundStyle(Theme.ink)
                 .padding(.top, 6)
                 .accessibilityAddTraits(.isHeader)
             if let description = contact.details?.description {
                 Text(description)
-                    .font(.system(size: 13.5))
+                    .scaledFont(size: 13.5)
                     .foregroundStyle(Theme.secondaryInk)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -204,11 +204,11 @@ struct ProfilePanel: View {
             tab = value
         } label: {
             Text(title)
-                .font(.system(size: 13, weight: .medium))
+                .scaledFont(size: 13, weight: .medium)
                 .foregroundStyle(tab == value ? Theme.ink : Theme.secondaryInk)
                 .fixedSize()
                 .padding(.horizontal, 8)
-                .frame(height: 32)
+                .frame(minHeight: 32)
                 .background(tab == value ? Theme.selection : .clear, in: Capsule())
                 .contentShape(Capsule())
         }
@@ -272,7 +272,7 @@ private struct MachineView: View {
     private func section(_ title: LocalizedStringKey, @ViewBuilder rows: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.system(size: 12, weight: .semibold))
+                .scaledFont(size: 12, weight: .semibold)
                 .foregroundStyle(Theme.secondaryInk)
                 .accessibilityAddTraits(.isHeader)
             Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 14, verticalSpacing: 8) {
@@ -287,7 +287,7 @@ private struct MachineView: View {
                 Text(label).foregroundStyle(Theme.secondaryInk)
                 Text(value).foregroundStyle(Theme.ink).textSelection(.enabled)
             }
-            .font(.system(size: 13.5))
+            .scaledFont(size: 13.5)
         }
     }
 

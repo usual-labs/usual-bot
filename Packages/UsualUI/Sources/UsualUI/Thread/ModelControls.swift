@@ -57,9 +57,9 @@ struct ModelControls: View {
         HStack(spacing: 2) {
             Text(text).lineLimit(1)
             // Hidden, or VoiceOver stops on the menu a second time.
-            Image(systemName: "chevron.down").font(.system(size: 7, weight: .semibold)).accessibilityHidden(true)
+            Image(systemName: "chevron.down").scaledFont(size: 7, weight: .semibold).accessibilityHidden(true)
         }
-        .font(.system(size: 11))
+        .scaledFont(size: 11)
         .foregroundStyle(Theme.secondaryInk)
         .padding(.horizontal, 6)
         .frame(height: Self.height)
@@ -313,7 +313,7 @@ struct ContextMeter: View {
                     ring(size: 16, lineWidth: 2)
                     Text("\(context.percent)%")
                 }
-                .font(.system(size: 14, weight: .medium))
+                .scaledFont(size: 14, weight: .medium)
                 .foregroundStyle(Theme.ink)
                 .padding(.horizontal, 10)
                 .frame(height: buttonSize)
@@ -324,7 +324,7 @@ struct ContextMeter: View {
                     ring(size: 9, lineWidth: 1.5)
                     Text("\(context.percent)%")
                 }
-                .font(.system(size: 11))
+                .scaledFont(size: 11)
                 .foregroundStyle(Theme.secondaryInk)
                 .padding(.horizontal, 6)
                 .frame(height: ModelControls.height)

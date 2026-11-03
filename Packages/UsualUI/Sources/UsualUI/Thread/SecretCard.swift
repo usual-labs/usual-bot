@@ -25,7 +25,7 @@ struct SecretCard: View {
         VStack(alignment: .leading, spacing: 10) {
             Label {
                 Text(verbatim: Self.title(prompt, agentName: agentName))
-                    .font(.system(size: 13.5, weight: .medium))
+                    .scaledFont(size: 13.5, weight: .medium)
                     .foregroundStyle(Theme.ink)
             } icon: {
                 Image(systemName: icon)
@@ -34,7 +34,7 @@ struct SecretCard: View {
             details
             SecureField(placeholder, text: $value)
                 .textFieldStyle(.plain)
-                .font(.system(size: 14))
+                .scaledFont(size: 14)
                 .autocorrectionDisabled()
                 .privacySensitive()
                 #if os(iOS)
@@ -50,7 +50,7 @@ struct SecretCard: View {
                     "This gateway uses plain http, so others on your network could read what you send.",
                     systemImage: "exclamationmark.triangle"
                 )
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.needsYouInk)
                 .fixedSize(horizontal: false, vertical: true)
             }
@@ -78,7 +78,7 @@ struct SecretCard: View {
             code(name)
             if !message.isEmpty {
                 Text(verbatim: message)
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Theme.secondaryInk)
                     .lineLimit(8)
                     .fixedSize(horizontal: false, vertical: true)
@@ -90,7 +90,7 @@ struct SecretCard: View {
 
     private func code(_ text: String) -> some View {
         Text(verbatim: text)
-            .font(.system(size: 13, design: .monospaced))
+            .scaledFont(size: 13, design: .monospaced)
             .foregroundStyle(Theme.ink)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)

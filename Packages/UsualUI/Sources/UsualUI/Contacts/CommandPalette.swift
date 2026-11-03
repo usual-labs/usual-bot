@@ -55,7 +55,7 @@
             return VStack(spacing: 0) {
                 TextField("Search chats, messages and actions", text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 15))
+                    .scaledFont(size: 15)
                     .focused($fieldIsFocused)
                     .padding(.horizontal, 18)
                     .frame(height: 52)
@@ -72,7 +72,7 @@
                     Text(
                         searchesMessages ? "No chats, messages or actions match “\(term)”" : "Nothing matches “\(term)”"
                     )
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Theme.secondaryInk)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 28)
@@ -106,7 +106,7 @@
                             messagesHeading
                             if status != .searching {
                                 Text("No messages match “\(term)”")
-                                    .font(.system(size: 13))
+                                    .scaledFont(size: 13)
                                     .foregroundStyle(Theme.secondaryInk)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(.horizontal, 10)
@@ -129,7 +129,7 @@
 
         private var messagesHeading: some View {
             Text("Messages")
-                .font(.system(size: 12, weight: .semibold))
+                .scaledFont(size: 12, weight: .semibold)
                 .foregroundStyle(Theme.secondaryInk)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 10)
@@ -176,11 +176,11 @@
                 }
                 VStack(alignment: .leading, spacing: 1) {
                     Text(entry.title)
-                        .font(.system(size: 14, weight: .medium))
+                        .scaledFont(size: 14, weight: .medium)
                         .foregroundStyle(Theme.ink)
                     if !entry.detail.isEmpty {
                         Text(entry.detail)
-                            .font(.system(size: 12.5))
+                            .scaledFont(size: 12.5)
                             .foregroundStyle(Theme.secondaryInk)
                     }
                 }

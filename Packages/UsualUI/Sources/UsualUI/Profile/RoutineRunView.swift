@@ -32,7 +32,7 @@ struct RoutineRunView: View {
         HStack(spacing: 10) {
             Button(action: back) {
                 Label("Back", systemImage: "chevron.left")
-                    .font(.system(size: 13.5, weight: .medium))
+                    .scaledFont(size: 13.5, weight: .medium)
                     .foregroundStyle(Theme.ink)
                     .frame(minHeight: 34)
                     .contentShape(Rectangle())
@@ -42,14 +42,14 @@ struct RoutineRunView: View {
             .accessibilityLabel(Text("Back to \(routine.name)"))
             VStack(alignment: .leading, spacing: 1) {
                 Text(routine.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .scaledFont(size: 14, weight: .semibold)
                     .foregroundStyle(Theme.ink)
-                    .lineLimit(1)
+                    .lineLimit(1, accessibility: 3)
                     .accessibilityAddTraits(.isHeader)
                 Text(
                     "\(run.started.formatted(date: .abbreviated, time: .shortened)) · \(RoutineDescriptions.status(run.status))"
                 )
-                .font(.system(size: 12.5))
+                .scaledFont(size: 12.5)
                 .foregroundStyle(run.status == .failed ? Theme.danger : Theme.secondaryInk)
             }
             Spacer(minLength: 0)
@@ -64,7 +64,7 @@ struct RoutineRunView: View {
                 AgentBubble { MarkdownView(preview) }
             }
             Text("A script ran for this one. The gateway sends only the start of what it printed.")
-                .font(.system(size: 12.5))
+                .scaledFont(size: 12.5)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
         } else if let items {
@@ -73,7 +73,7 @@ struct RoutineRunView: View {
                     run.status == .running
                         ? "It's still running. Nothing has been said yet." : "Nothing was said in this run."
                 )
-                .font(.system(size: 13.5))
+                .scaledFont(size: 13.5)
                 .foregroundStyle(Theme.secondaryInk)
             }
             ForEach(items) { item in
@@ -84,11 +84,11 @@ struct RoutineRunView: View {
                 Text(problem).foregroundStyle(Theme.secondaryInk)
                 Button("Try Again") { Task { await load() } }
                     .buttonStyle(.clickable)
-                    .font(.system(size: 13, weight: .medium))
+                    .scaledFont(size: 13, weight: .medium)
                     .foregroundStyle(Theme.ink)
                     .frame(minHeight: 44)
             }
-            .font(.system(size: 13))
+            .scaledFont(size: 13)
         } else {
             ProgressView().controlSize(.small).frame(maxWidth: .infinity).padding(.vertical, 20)
         }

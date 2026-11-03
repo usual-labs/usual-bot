@@ -137,7 +137,7 @@ public struct QuickMessageView: View {
         HStack(spacing: 8) {
             TextField(placeholder, text: $text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 17))
+                .scaledFont(size: 17)
                 .focused($fieldFocused)
                 .onSubmit(submit)
                 #if os(macOS)
@@ -201,11 +201,11 @@ public struct QuickMessageView: View {
             }
             VStack(alignment: .leading, spacing: 0) {
                 Text(contact.name)
-                    .font(.system(size: 15, weight: .semibold))
+                    .scaledFont(size: 15, weight: .semibold)
                     .foregroundStyle(Theme.ink)
                 if let about = contact.details?.description?.nonEmpty {
                     Text(about)
-                        .font(.system(size: 12.5))
+                        .scaledFont(size: 12.5)
                         .foregroundStyle(Theme.secondaryInk)
                         .lineLimit(1)
                 }
@@ -218,7 +218,7 @@ public struct QuickMessageView: View {
                     Text("Open chat")
                     KeyCap(key: "⌘↵")
                 }
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.ink)
                 .padding(.horizontal, 12)
                 .frame(height: 32)
@@ -438,7 +438,7 @@ private struct RecipientButton: View {
                 .padding(2)
                 .overlay(Circle().strokeBorder(isSelected ? Theme.ink : .clear, lineWidth: 2))
                 Text(contact.name)
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(isSelected ? Theme.ink : Theme.secondaryInk)
                     .lineLimit(1)
                     .frame(maxWidth: 64)
@@ -460,7 +460,7 @@ private struct KeyHint: View {
             KeyCap(key: key)
             Text(label)
         }
-        .font(.system(size: 12))
+        .scaledFont(size: 12)
         .foregroundStyle(Theme.secondaryInk)
     }
 }
@@ -470,7 +470,7 @@ private struct KeyCap: View {
 
     var body: some View {
         Text(key)
-            .font(.system(size: 12))
+            .scaledFont(size: 12)
             .foregroundStyle(Theme.ink)
             .padding(.horizontal, 6)
             .padding(.vertical, 1)

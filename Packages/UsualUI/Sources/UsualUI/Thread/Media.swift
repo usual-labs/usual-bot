@@ -253,9 +253,9 @@ struct MediaViewer: View {
         VStack(spacing: 0) {
             HStack(spacing: 14) {
                 Text(name)
-                    .font(.system(size: 13, weight: .medium))
+                    .scaledFont(size: 13, weight: .medium)
                     .foregroundStyle(Theme.secondaryInk)
-                    .lineLimit(1)
+                    .lineLimit(1, accessibility: 3)
                     .truncationMode(.middle)
                 Spacer()
                 if let file {
@@ -269,7 +269,7 @@ struct MediaViewer: View {
                     .keyboardShortcut(.cancelAction)
             }
             .buttonStyle(.clickable)
-            .font(.system(size: 14, weight: .medium))
+            .scaledFont(size: 14, weight: .medium)
             .foregroundStyle(Theme.ink)
             .padding(.horizontal, 18)
             .padding(.vertical, 14)

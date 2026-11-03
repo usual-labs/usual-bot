@@ -53,21 +53,21 @@ struct VideoMessage: View {
                 .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.border))
             case .unplayable, .failed:
                 placeholder {
-                    Image(systemName: "video.slash").font(.system(size: 22)).foregroundStyle(Theme.secondaryInk)
+                    Image(systemName: "video.slash").scaledFont(size: 22).foregroundStyle(Theme.secondaryInk)
                 }
                 .accessibilityLabel(Text("Video \(name)"))
             }
             HStack(spacing: 6) {
                 Text(name)
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
-                    .lineLimit(1)
+                    .lineLimit(1, accessibility: 3)
                     .truncationMode(.middle)
                 if let url = phase.url { SaveShareMenu(url: url, name: name) }
             }
             if let problem {
                 Text(problem)
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -98,7 +98,7 @@ struct VideoMessage: View {
             }
             .overlay(alignment: .bottomTrailing) {
                 Text(PlayableText.time(video.duration))
-                    .font(.system(size: 11.5, weight: .semibold).monospacedDigit())
+                    .scaledFont(size: 11.5, weight: .semibold).monospacedDigit()
                     .foregroundStyle(.white)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)

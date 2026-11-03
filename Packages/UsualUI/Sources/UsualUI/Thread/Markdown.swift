@@ -266,12 +266,12 @@ struct CodeBlock: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text(language ?? "code")
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
                 Spacer()
                 Button("Copy") { Clipboard.copy(code) }
                     .buttonStyle(.clickable)
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium)
                     .foregroundStyle(Theme.secondaryInk)
                     .frame(minHeight: 28)
             }
@@ -279,7 +279,7 @@ struct CodeBlock: View {
             .padding(.top, 4)
             ScrollView(.horizontal, showsIndicators: false) {
                 Text(code)
-                    .font(.system(size: 13 + messageSize - Theme.messageSize, design: .monospaced))
+                    .scaledFont(size: 13 + messageSize - Theme.messageSize, design: .monospaced)
                     .foregroundStyle(Theme.ink)
                     .fixedSize()
                     .padding(.horizontal, 12)

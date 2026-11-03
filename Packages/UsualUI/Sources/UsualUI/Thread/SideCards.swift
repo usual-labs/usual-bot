@@ -11,12 +11,12 @@ struct SideQuestionCard: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("Side question")
-                    .font(.system(size: 12, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold)
                     .foregroundStyle(Theme.secondaryInk)
                 Text(question.question)
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
-                    .lineLimit(1)
+                    .lineLimit(1, accessibility: 3)
                     .truncationMode(.tail)
                 Spacer(minLength: 0)
                 Button(action: dismiss) {
@@ -35,7 +35,7 @@ struct SideQuestionCard: View {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
                     Text("Thinking on the side…")
-                        .font(.system(size: 13))
+                        .scaledFont(size: 13)
                         .foregroundStyle(Theme.secondaryInk)
                 }
             case .answered(let text):
@@ -48,7 +48,7 @@ struct SideQuestionCard: View {
                 .fixedSize(horizontal: false, vertical: true)
             case .failed(let message):
                 Text("Couldn't answer: \(message)")
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Theme.secondaryInk)
             }
         }
@@ -69,9 +69,9 @@ struct BackgroundTasksBar: View {
         HStack(spacing: 8) {
             ProgressView().controlSize(.small)
             Text(summary)
-                .font(.system(size: 12.5))
+                .scaledFont(size: 12.5)
                 .foregroundStyle(Theme.secondaryInk)
-                .lineLimit(1)
+                .lineLimit(1, accessibility: 3)
                 .truncationMode(.tail)
             Spacer(minLength: 0)
         }

@@ -43,6 +43,7 @@ struct MessageBox: View {
     /// Where the cursor is, to put a line break there.
     @State private var selection: TextSelection?
     @FocusState private var focused: Bool
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.conversationTaps) private var conversationTaps
     @State private var dictation = Dictation()
     /// iPhone: the gauge's level picker is open above the box.
@@ -54,19 +55,21 @@ struct MessageBox: View {
     @State private var hasWrapped = false
 
     #if os(iOS)
-        /// Larger than the Mac's, for thumbs: 34 pt buttons in 6 pt of padding.
-        private static let buttonSize: CGFloat = 34
+        /// Larger than the Mac's, for thumbs: 34 pt buttons in 6 pt of padding. They grow with the
+        /// text, short of crowding the field out.
+        @ScaledMetric(relativeTo: .body) private var scaledButtonSize: CGFloat = 34
+        private var buttonSize: CGFloat { min(scaledButtonSize, 50) }
         private static let inset: CGFloat = 6
         private static let fontSize: CGFloat = 17
         private static let fieldPadding: CGFloat = 6
     #else
-        private static let buttonSize: CGFloat = 28
+        private let buttonSize: CGFloat = 28
         private static let inset: CGFloat = 8
         private static let fontSize: CGFloat = 15
         private static let fieldPadding: CGFloat = 4
     #endif
     /// Round ends on one line.
-    private static var cornerRadius: CGFloat { buttonSize / 2 + inset }
+    private var cornerRadius: CGFloat { buttonSize / 2 + Self.inset }
 
     /// The text gets the box's whole width and the buttons move to a row below it: on iPhone while
     /// you type in a chat, with the chat's settings, and on the Mac once your text wraps.
@@ -111,12 +114,13 @@ struct MessageBox: View {
                     AttachmentChips(attachments: attaching.$attachments)
                     if isRunning {
                         Text("You can send these when the reply ends.")
-                            .font(.system(size: 12))
+                            .scaledFont(size: 12)
                             .foregroundStyle(Theme.secondaryInk)
                             .padding(.horizontal, 8)
                     }
                 }
-                ComposerLayout(expanded: expanded) {
+                // At accessibility text sizes the text always gets the whole width.
+                ComposerLayout(expanded: expanded || dynamicTypeSize.isAccessibilitySize) {
                     if let attaching {
                         AttachButton { attaching.attachments.append(contentsOf: $0) }
                             .layoutValue(key: ComposerLayout.RoleKey.self, value: .leading)
@@ -142,7 +146,7 @@ struct MessageBox: View {
                 }
             }
             .padding(Self.inset)
-            .floatingSurface(in: RoundedRectangle(cornerRadius: Self.cornerRadius))
+            .floatingSurface(in: RoundedRectangle(cornerRadius: cornerRadius))
         }
         .background {
             // ⌘. stops the reply even after Send has taken Stop's place.
@@ -154,7 +158,7 @@ struct MessageBox: View {
                     .accessibilityHidden(true)
             }
         }
-        .environment(\.composerButtonSize, Self.buttonSize)
+        .environment(\.composerButtonSize, buttonSize)
         .animation(.smooth(duration: 0.25), value: expanded)
         .animation(.smooth(duration: 0.2), value: pickingLevel)
         .animation(.snappy(duration: 0.16), value: isEmpty)
@@ -275,7 +279,7 @@ struct MessageBox: View {
             selection: $selection, axis: .vertical
         )
         .textFieldStyle(.plain)
-        .font(.system(size: Self.fontSize))
+        .scaledFont(size: Self.fontSize)
         .lineLimit(1...8)
         .focused($focused)
         // Menu completion wins over sending. A handled key can still trigger onSubmit on iOS.
@@ -330,7 +334,7 @@ struct MessageBox: View {
         if attaching?.isUploading == true {
             ProgressView()
                 .controlSize(.small)
-                .frame(width: Self.buttonSize, height: Self.buttonSize)
+                .frame(width: buttonSize, height: buttonSize)
                 .accessibilityLabel(Text("Uploading"))
         } else if isRunning, isEmpty, !hasAttachments, !dictation.isListening {
             RoundButton(systemImage: "stop.fill", label: stopLabel, action: stop)

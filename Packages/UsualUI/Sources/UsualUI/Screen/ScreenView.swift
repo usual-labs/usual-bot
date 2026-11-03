@@ -52,12 +52,12 @@ struct ScreenView: View {
             }
             ForEach(lines, id: \.self) { line in
                 Text(line)
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let problem = screen.problem {
-                Text(problem).font(.system(size: 12)).foregroundStyle(Theme.danger)
+                Text(problem).scaledFont(size: 12).foregroundStyle(Theme.danger)
             }
         }
         .padding(.horizontal, 14)
@@ -77,7 +77,7 @@ struct ScreenView: View {
             }
         return HStack(spacing: 6) {
             Circle().fill(tint).frame(width: 8, height: 8)
-            Text(text).font(.system(size: 13, weight: .medium)).foregroundStyle(Theme.ink)
+            Text(text).scaledFont(size: 13, weight: .medium).foregroundStyle(Theme.ink)
         }
         .padding(.horizontal, 10)
         .frame(height: 28)
@@ -144,14 +144,14 @@ struct ScreenView: View {
                     : "\(contact.name) has no computer to show.")
         } else if let status = screen.status, !status.running {
             VStack(spacing: 12) {
-                Text("The computer is off").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.ink)
+                Text("The computer is off").scaledFont(size: 15, weight: .semibold).foregroundStyle(Theme.ink)
                 Text(
                     status.blocker
                         ?? String(
                             localized: "Turn it on to watch what \(contact.name) does, and take over when it needs you."
                         )
                 )
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .multilineTextAlignment(.center)
                 Button("Turn On") { Task { await screen.start() } }
@@ -197,7 +197,7 @@ struct ScreenView: View {
             .padding(20)
             .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 14))
             .foregroundStyle(.white)
-            .font(.system(size: 13))
+            .scaledFont(size: 13)
         case .idle where screen.status == nil:
             label {
                 ProgressView().controlSize(.small).tint(.white)
@@ -216,7 +216,7 @@ struct ScreenView: View {
             icon()
             text()
         }
-        .font(.system(size: 13))
+        .scaledFont(size: 13)
         .foregroundStyle(.white.opacity(0.85))
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
@@ -226,7 +226,7 @@ struct ScreenView: View {
 
     private func message(_ text: LocalizedStringKey) -> some View {
         Text(text)
-            .font(.system(size: 13))
+            .scaledFont(size: 13)
             .foregroundStyle(Theme.secondaryInk)
             .multilineTextAlignment(.center)
             .padding(32)

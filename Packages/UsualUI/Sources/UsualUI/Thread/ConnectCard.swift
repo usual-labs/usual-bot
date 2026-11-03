@@ -18,7 +18,7 @@ struct ConnectCard: View {
         VStack(alignment: .leading, spacing: 12) {
             Label {
                 Text(title)
-                    .font(.system(size: 13.5, weight: .medium))
+                    .scaledFont(size: 13.5, weight: .medium)
                     .foregroundStyle(Theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
             } icon: {
@@ -40,19 +40,19 @@ struct ConnectCard: View {
                 .padding(.horizontal, 12)
                 .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
                 Text(note)
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if !canAnswer {
                 Text("Reconnecting to the gateway. You can answer once it's back.")
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let problem = card.problem {
                 Text(problem)
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.danger)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -97,12 +97,12 @@ struct ConnectCard: View {
     @ViewBuilder private var listBody: some View {
         if let suggested = request.suggested, !suggested.isEmpty {
             Text("Suggested: \(suggested.formatted(.list(type: .and)))")
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
         }
         Text("Connect them on \(agentName)'s Apps page, then choose Done.")
-            .font(.system(size: 12.5))
+            .scaledFont(size: 12.5)
             .foregroundStyle(Theme.secondaryInk)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -127,11 +127,11 @@ private struct ConnectRow: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(target.title)
-                    .font(.system(size: 14))
+                    .scaledFont(size: 14)
                     .foregroundStyle(Theme.ink)
                 if let status {
                     Text(status)
-                        .font(.system(size: 12.5))
+                        .scaledFont(size: 12.5)
                         .foregroundStyle(isProblem ? Theme.danger : Theme.secondaryInk)
                         .fixedSize(horizontal: false, vertical: true)
                 }

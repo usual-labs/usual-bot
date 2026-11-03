@@ -25,9 +25,9 @@ struct AudioMessage: View {
         VStack(alignment: .leading, spacing: 8) {
             if !isVoice {
                 Label(name, systemImage: "waveform")
-                    .font(.system(size: 13, weight: .medium))
+                    .scaledFont(size: 13, weight: .medium)
                     .foregroundStyle(Theme.secondaryInk)
-                    .lineLimit(1)
+                    .lineLimit(1, accessibility: 3)
                     .truncationMode(.middle)
             }
             HStack(spacing: 10) {
@@ -45,7 +45,7 @@ struct AudioMessage: View {
                         }
                     HStack(spacing: 6) {
                         Text(timeText)
-                            .font(.system(size: 11.5).monospacedDigit())
+                            .scaledFont(size: 11.5).monospacedDigit()
                             .foregroundStyle(Theme.secondaryInk)
                             .accessibilityHidden(true)
                         Spacer(minLength: 0)
@@ -56,7 +56,7 @@ struct AudioMessage: View {
             }
             if let problem {
                 Text(problem)
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -117,10 +117,10 @@ struct AudioMessage: View {
             if isCurrent { playback.setRate(speed) }
         } label: {
             Text(speedText)
-                .font(.system(size: 11.5, weight: .semibold).monospacedDigit())
+                .scaledFont(size: 11.5, weight: .semibold).monospacedDigit()
                 .foregroundStyle(Theme.secondaryInk)
                 .padding(.horizontal, 6)
-                .frame(height: 20)
+                .frame(minHeight: 20)
                 .background(Theme.selection, in: Capsule())
         }
         .buttonStyle(.clickable)
@@ -136,11 +136,11 @@ struct AudioMessage: View {
                 withAnimation(.easeOut(duration: 0.15)) { showsTranscript.toggle() }
             }
             .buttonStyle(.clickable)
-            .font(.system(size: 12.5, weight: .medium))
+            .scaledFont(size: 12.5, weight: .medium)
             .foregroundStyle(Theme.secondaryInk)
             if showsTranscript {
                 Text(text)
-                    .font(.system(size: 14))
+                    .scaledFont(size: 14)
                     .foregroundStyle(Theme.ink)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)

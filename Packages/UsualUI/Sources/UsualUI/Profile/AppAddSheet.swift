@@ -45,7 +45,7 @@ struct AppAddSheet: View {
                     if list.isUnencrypted && sendsSecret { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
                     if let problem = list.problem {
                         Text(problem)
-                            .font(.system(size: 12.5))
+                            .scaledFont(size: 12.5)
                             .foregroundStyle(Theme.danger)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -70,14 +70,14 @@ struct AppAddSheet: View {
             ProgressView().controlSize(.small).frame(maxWidth: .infinity).padding(.vertical, 20)
         case .failed(let message):
             Text("Couldn't load the catalog: \(message)")
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.danger)
                 .fixedSize(horizontal: false, vertical: true)
         case .ready:
             let shown = list.catalog.filter(matches)
             if shown.isEmpty {
                 Text(search.isEmpty ? "The catalog is empty. Use Custom instead." : "Nothing matches. Try Custom.")
-                    .font(.system(size: 13.5))
+                    .scaledFont(size: 13.5)
                     .foregroundStyle(Theme.secondaryInk)
             }
             VStack(spacing: 0) {
@@ -98,16 +98,16 @@ struct AppAddSheet: View {
     @ViewBuilder private func entryForm(_ entry: MCPCatalogEntry) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(entry.name)
-                .font(.system(size: 15, weight: .semibold))
+                .scaledFont(size: 15, weight: .semibold)
                 .foregroundStyle(Theme.ink)
             Text(entry.description)
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
         }
         if let place = entry.url ?? entry.command {
             Text(entry.url != nil ? "Connects to \(place)" : "Runs \(place) on the gateway's machine")
-                .font(.system(size: 12.5))
+                .scaledFont(size: 12.5)
                 .foregroundStyle(Theme.secondaryInk)
                 .textSelection(.enabled)
         }
@@ -118,7 +118,7 @@ struct AppAddSheet: View {
                         key.required ? key.prompt ?? key.name : "\(key.prompt ?? key.name) (optional)"),
                     text: Binding(get: { values[key.name] ?? "" }, set: { values[key.name] = $0 }))
                 Text(key.name)
-                    .font(.system(size: 11.5, design: .monospaced))
+                    .scaledFont(size: 11.5, design: .monospaced)
                     .foregroundStyle(Theme.secondaryInk)
                     .accessibilityHidden(true)
             }
@@ -168,7 +168,7 @@ struct AppAddSheet: View {
 
     private func note(_ text: LocalizedStringKey) -> some View {
         Text(text)
-            .font(.system(size: 12.5))
+            .scaledFont(size: 12.5)
             .foregroundStyle(Theme.secondaryInk)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -246,26 +246,26 @@ private struct CatalogRow: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(entry.name)
-                        .font(.system(size: 14))
+                        .scaledFont(size: 14)
                         .foregroundStyle(Theme.ink)
                     Text(entry.description)
-                        .font(.system(size: 12.5))
+                        .scaledFont(size: 12.5)
                         .foregroundStyle(Theme.secondaryInk)
                         .lineLimit(2)
                     if let needs {
                         Text(needs)
-                            .font(.system(size: 12))
+                            .scaledFont(size: 12)
                             .foregroundStyle(Theme.secondaryInk)
                     }
                 }
                 Spacer(minLength: 8)
                 if entry.installed {
                     Text("Added")
-                        .font(.system(size: 12))
+                        .scaledFont(size: 12)
                         .foregroundStyle(Theme.secondaryInk)
                 }
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
+                    .scaledFont(size: 11, weight: .semibold)
                     .foregroundStyle(Theme.secondaryInk)
                     .accessibilityHidden(true)
             }

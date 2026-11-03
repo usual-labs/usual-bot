@@ -344,12 +344,12 @@ struct ContactsSplitView<Footer: View>: View {
                     if let tryAgain {
                         Button("Try Again", action: tryAgain)
                             .buttonStyle(.clickable)
-                            .font(.system(size: 13, weight: .medium))
+                            .scaledFont(size: 13, weight: .medium)
                             .foregroundStyle(Theme.ink)
                             .frame(minHeight: 44)
                     }
                 }
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .padding(.horizontal, 16)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

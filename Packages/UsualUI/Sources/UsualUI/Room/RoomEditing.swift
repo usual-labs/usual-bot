@@ -120,14 +120,14 @@ struct RetryCard: View {
         VStack(alignment: .leading, spacing: 10) {
             Label {
                 Text(title)
-                    .font(.system(size: 13.5, weight: .semibold))
+                    .scaledFont(size: 13.5, weight: .semibold)
                     .foregroundStyle(Theme.ink)
             } icon: {
                 Image(systemName: "exclamationmark.arrow.circlepath")
                     .foregroundStyle(Theme.needsYouInk)
             }
             Text(detail)
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
             // Pills like every other card's, so they read as buttons.

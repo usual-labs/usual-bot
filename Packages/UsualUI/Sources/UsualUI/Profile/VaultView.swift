@@ -24,11 +24,11 @@ struct VaultView: View {
                     Text(message).multilineTextAlignment(.center)
                     Button("Try Again") { Task { await list.refresh() } }
                         .buttonStyle(.clickable)
-                        .font(.system(size: 13, weight: .medium))
+                        .scaledFont(size: 13, weight: .medium)
                         .foregroundStyle(Theme.ink)
                         .frame(minHeight: 44)
                 }
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .frame(maxWidth: .infinity)
             case .ready:
@@ -36,13 +36,13 @@ struct VaultView: View {
                 if !list.managers.isEmpty { managers }
                 if let problem = list.problem {
                     Text(problem)
-                        .font(.system(size: 12.5))
+                        .scaledFont(size: 12.5)
                         .foregroundStyle(Theme.danger)
                         .padding(.top, 10)
                 }
             }
             Text("\(agentName) signs in with these without seeing the passwords. They stay on the gateway, encrypted.")
-                .font(.system(size: 12.5))
+                .scaledFont(size: 12.5)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 14)
@@ -75,7 +75,7 @@ struct VaultView: View {
             let shown = list.items.filter(filter.includes)
             if shown.isEmpty {
                 Text(filter.emptyText)
-                    .font(.system(size: 13.5))
+                    .scaledFont(size: 13.5)
                     .foregroundStyle(Theme.secondaryInk)
                     .padding(.vertical, 8)
             }
@@ -94,9 +94,9 @@ struct VaultView: View {
         } label: {
             HStack(spacing: 4) {
                 Text("New Item")
-                Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold))
+                Image(systemName: "chevron.down").scaledFont(size: 10, weight: .semibold)
             }
-            .font(.system(size: 13.5, weight: .semibold))
+            .scaledFont(size: 13.5, weight: .semibold)
             .foregroundStyle(Theme.primaryInk)
             .padding(.horizontal, 14)
             .frame(minHeight: 34)
@@ -123,7 +123,7 @@ struct VaultView: View {
                             Text(list.items.filter(option.includes).count, format: .number)
                                 .foregroundStyle(Theme.secondaryInk)
                         }
-                        .font(.system(size: 13))
+                        .scaledFont(size: 13)
                         .padding(.horizontal, 10)
                         .frame(minHeight: 30)
                         .background(filter == option ? Theme.selection : .clear, in: Capsule())
@@ -150,7 +150,7 @@ struct VaultView: View {
 
     private func sectionTitle(_ title: LocalizedStringKey) -> some View {
         Text(title)
-            .font(.system(size: 12, weight: .semibold))
+            .scaledFont(size: 12, weight: .semibold)
             .foregroundStyle(Theme.secondaryInk)
             .accessibilityAddTraits(.isHeader)
     }
@@ -201,18 +201,18 @@ private struct VaultItemRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 14))
+                .scaledFont(size: 14)
                 .foregroundStyle(Theme.secondaryInk)
                 .frame(width: 20)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.label)
-                    .font(.system(size: 14))
+                    .scaledFont(size: 14)
                     .foregroundStyle(Theme.ink)
-                    .lineLimit(1)
+                    .lineLimit(1, accessibility: 3)
                 if !details.isEmpty {
                     Text(details)
-                        .font(.system(size: 12.5))
+                        .scaledFont(size: 12.5)
                         .foregroundStyle(Theme.secondaryInk)
                         .lineLimit(2)
                 }
@@ -230,7 +230,7 @@ private struct VaultItemRow: View {
                 .accessibilityLabel(Text("Remove \(item.label)"))
             } else {
                 Text(manager)
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 2)
@@ -273,11 +273,11 @@ private struct VaultSourceRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(source.displayName)
-                    .font(.system(size: 14))
+                    .scaledFont(size: 14)
                     .foregroundStyle(source.installed ? Theme.ink : Theme.secondaryInk)
-                    .lineLimit(1)
+                    .lineLimit(1, accessibility: 3)
                 Text(status)
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.secondaryInk)
             }
             Spacer(minLength: 8)
@@ -331,14 +331,14 @@ private struct VaultUnlockSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("It stays unlocked for a while on the gateway. The master password isn't kept.")
-                        .font(.system(size: 13))
+                        .scaledFont(size: 13)
                         .foregroundStyle(Theme.secondaryInk)
                         .fixedSize(horizontal: false, vertical: true)
                     VaultSecureField(title: "Master password", text: $password)
                     if list.isUnencrypted { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
                     if let problem = list.problem {
                         Text(problem)
-                            .font(.system(size: 12.5))
+                            .scaledFont(size: 12.5)
                             .foregroundStyle(Theme.danger)
                             .fixedSize(horizontal: false, vertical: true)
                     }

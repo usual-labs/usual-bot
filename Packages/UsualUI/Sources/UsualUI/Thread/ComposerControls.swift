@@ -150,9 +150,9 @@ struct ComposerLayout: Layout {
                             if chat.thread.takesReasoning(model) {
                                 Text(ModelControls.levelName(model.reasoning)).foregroundStyle(Theme.secondaryInk)
                             }
-                            Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
+                            Image(systemName: "chevron.right").scaledFont(size: 13, weight: .semibold)
                         }
-                        .font(.system(size: 17))
+                        .scaledFont(size: 17)
                         .lineLimit(1)
                         .contentShape(Rectangle())
                     }
@@ -162,7 +162,7 @@ struct ComposerLayout: Layout {
                         LevelSlider(level: model.reasoning) { chat.thread.setReasoning($0) }
                     } else {
                         Text("This model doesn't take a thinking level.")
-                            .font(.system(size: 14))
+                            .scaledFont(size: 14)
                             .foregroundStyle(Theme.secondaryInk)
                     }
                 }
@@ -296,7 +296,7 @@ struct ComposerLayout: Layout {
                 Menu(content: menu) {
                     HStack(spacing: 4) {
                         Text(value).lineLimit(1)
-                        Image(systemName: "chevron.up.chevron.down").font(.system(size: 12, weight: .semibold))
+                        Image(systemName: "chevron.up.chevron.down").scaledFont(size: 12, weight: .semibold)
                     }
                     .foregroundStyle(Theme.ink)
                 }

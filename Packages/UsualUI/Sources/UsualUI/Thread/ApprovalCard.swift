@@ -11,14 +11,14 @@ struct ApprovalCard: View {
         VStack(alignment: .leading, spacing: 10) {
             Label {
                 Text("\(agentName) wants to run a command")
-                    .font(.system(size: 13.5, weight: .medium))
+                    .scaledFont(size: 13.5, weight: .medium)
                     .foregroundStyle(Theme.ink)
             } icon: {
                 Image(systemName: "terminal")
                     .foregroundStyle(Theme.needsYouInk)
             }
             Text(approval.command)
-                .font(.system(size: 13, design: .monospaced))
+                .scaledFont(size: 13, design: .monospaced)
                 .foregroundStyle(Theme.ink)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -27,7 +27,7 @@ struct ApprovalCard: View {
                 .background(Theme.codeFill, in: RoundedRectangle(cornerRadius: 10))
             if !approval.description.isEmpty {
                 Text(approval.description)
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -47,7 +47,7 @@ struct ApprovalCard: View {
                 // No pointer for a tooltip, so what the wider allows cover is said here.
                 if order.contains(where: isWider) {
                     Text(scopes)
-                        .font(.system(size: 12.5))
+                        .scaledFont(size: 12.5)
                         .foregroundStyle(Theme.secondaryInk)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityHidden(true)

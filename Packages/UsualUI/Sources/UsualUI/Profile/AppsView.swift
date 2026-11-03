@@ -23,11 +23,11 @@ struct AppsView: View {
                     Text(message).multilineTextAlignment(.center)
                     Button("Try Again") { Task { await list.refresh() } }
                         .buttonStyle(.clickable)
-                        .font(.system(size: 13, weight: .medium))
+                        .scaledFont(size: 13, weight: .medium)
                         .foregroundStyle(Theme.ink)
                         .frame(minHeight: 44)
                 }
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .frame(maxWidth: .infinity)
             case .ready:
@@ -36,7 +36,7 @@ struct AppsView: View {
             Text(
                 "Apps connect \(agentName) to other services through MCP servers on your gateway. Hermes runs them, and \(agentName) uses their tools in chat."
             )
-            .font(.system(size: 12.5))
+            .scaledFont(size: 12.5)
             .foregroundStyle(Theme.secondaryInk)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.top, 14)
@@ -54,7 +54,7 @@ struct AppsView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Text("Connected")
-                    .font(.system(size: 12, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold)
                     .foregroundStyle(Theme.secondaryInk)
                     .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 8)
@@ -62,7 +62,7 @@ struct AppsView: View {
                     isAdding = true
                 } label: {
                     Label("New App", systemImage: "plus")
-                        .font(.system(size: 13.5, weight: .semibold))
+                        .scaledFont(size: 13.5, weight: .semibold)
                         .foregroundStyle(Theme.primaryInk)
                         .padding(.horizontal, 14)
                         .frame(minHeight: 34)
@@ -76,7 +76,7 @@ struct AppsView: View {
             if list.needsApply { ApplyNote(list: list, agentName: agentName).padding(.vertical, 8) }
             if list.servers.isEmpty {
                 Text("No apps yet. Add one to give \(agentName) more tools.")
-                    .font(.system(size: 13.5))
+                    .scaledFont(size: 13.5)
                     .foregroundStyle(Theme.secondaryInk)
                     .padding(.vertical, 8)
             }
@@ -86,14 +86,14 @@ struct AppsView: View {
             }
             if let notice = list.notice {
                 Text(notice)
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 10)
             }
             if let problem = list.problem {
                 Text(problem)
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.danger)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 10)
@@ -140,7 +140,7 @@ private struct ApplyNote: View {
                 .disabled(isApplying)
             }
         }
-        .font(.system(size: 12.5))
+        .scaledFont(size: 12.5)
         .fixedSize(horizontal: false, vertical: true)
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -159,18 +159,18 @@ private struct AppRow: View {
             Button(action: open) {
                 HStack(spacing: 12) {
                     Image(systemName: AppSymbol.name(for: server))
-                        .font(.system(size: 14))
+                        .scaledFont(size: 14)
                         .foregroundStyle(Theme.secondaryInk)
                         .frame(width: 20)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(server.name)
-                            .font(.system(size: 14))
+                            .scaledFont(size: 14)
                             .foregroundStyle(server.enabled ? Theme.ink : Theme.secondaryInk)
-                            .lineLimit(1)
+                            .lineLimit(1, accessibility: 3)
                         // A problem shows whole: it says what to do next.
                         statusLine
-                            .font(.system(size: 12.5))
+                            .scaledFont(size: 12.5)
                             .lineLimit(isProblem ? nil : 2)
                             .fixedSize(horizontal: false, vertical: isProblem)
                     }
@@ -183,7 +183,7 @@ private struct AppRow: View {
             .accessibilityHint(Text("Shows its tools and settings"))
             if server.isFromPlugin {
                 Text("Plugin")
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 2)

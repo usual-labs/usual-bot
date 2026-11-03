@@ -62,7 +62,7 @@ struct DeleteBotSheet: View {
                 Text(problem).foregroundStyle(Theme.danger)
             }
         }
-        .font(.system(size: 13.5))
+        .scaledFont(size: 13.5)
         .foregroundStyle(Theme.secondaryInk)
         .fixedSize(horizontal: false, vertical: true)
     }

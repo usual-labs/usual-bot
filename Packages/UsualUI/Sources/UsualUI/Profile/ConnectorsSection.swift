@@ -18,12 +18,12 @@ struct ConnectorsSection: View {
                 VStack(alignment: .leading, spacing: 4) {
                     header
                     Text(message)
-                        .font(.system(size: 12.5))
+                        .scaledFont(size: 12.5)
                         .foregroundStyle(Theme.secondaryInk)
                         .fixedSize(horizontal: false, vertical: true)
                     Button("Try Again") { Task { await list.refresh() } }
                         .buttonStyle(.clickable)
-                        .font(.system(size: 13, weight: .medium))
+                        .scaledFont(size: 13, weight: .medium)
                         .foregroundStyle(Theme.ink)
                         .frame(minHeight: 44)
                 }
@@ -49,7 +49,7 @@ struct ConnectorsSection: View {
 
     private var header: some View {
         Text("Connected accounts")
-            .font(.system(size: 12, weight: .semibold))
+            .scaledFont(size: 12, weight: .semibold)
             .foregroundStyle(Theme.secondaryInk)
             .accessibilityAddTraits(.isHeader)
     }
@@ -59,7 +59,7 @@ struct ConnectorsSection: View {
             header.padding(.bottom, 6)
             if list.connectors.isEmpty {
                 Text("No apps to connect yet.")
-                    .font(.system(size: 13.5))
+                    .scaledFont(size: 13.5)
                     .foregroundStyle(Theme.secondaryInk)
                     .padding(.vertical, 8)
             }
@@ -69,13 +69,13 @@ struct ConnectorsSection: View {
             }
             if let notice = list.notice {
                 Text(notice)
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.secondaryInk)
                     .padding(.top, 10)
             }
             if let problem = list.problem {
                 Text(problem)
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.danger)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 10)
@@ -83,7 +83,7 @@ struct ConnectorsSection: View {
             Text(
                 "These sign in through your Nous Portal account, which Hermes uses for \(agentName). \(agentName) can also ask to connect one from the chat."
             )
-            .font(.system(size: 12.5))
+            .scaledFont(size: 12.5)
             .foregroundStyle(Theme.secondaryInk)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.top, 14)
@@ -114,13 +114,13 @@ private struct ConnectorRow: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(connector.name)
-                    .font(.system(size: 14))
+                    .scaledFont(size: 14)
                     .foregroundStyle(Theme.ink)
-                    .lineLimit(1)
+                    .lineLimit(1, accessibility: 3)
                 if let status {
                     // A problem shows whole: it says what to do next.
                     Text(status)
-                        .font(.system(size: 12.5))
+                        .scaledFont(size: 12.5)
                         .foregroundStyle(isProblem ? Theme.danger : Theme.secondaryInk)
                         .lineLimit(isProblem ? nil : 2)
                         .fixedSize(horizontal: false, vertical: isProblem)

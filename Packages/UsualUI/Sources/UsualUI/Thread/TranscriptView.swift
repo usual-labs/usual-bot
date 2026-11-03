@@ -277,7 +277,7 @@ struct ItemView: View {
                     }
                     VStack(alignment: .leading, spacing: 4) {
                         Text(author?.name ?? id)
-                            .font(.system(size: 12.5, weight: .semibold))
+                            .scaledFont(size: 12.5, weight: .semibold)
                             .foregroundStyle(Theme.secondaryInk)
                         AgentBubble {
                             MarkdownView(text)
@@ -306,7 +306,7 @@ struct ItemView: View {
                     } icon: {
                         Image(systemName: "arrow.triangle.branch")
                     }
-                    .font(.system(size: 12.5, weight: .medium))
+                    .scaledFont(size: 12.5, weight: .medium)
                     .foregroundStyle(Theme.secondaryInk)
                     AgentBubble { MarkdownView(result) }
                 }
@@ -362,7 +362,7 @@ struct UserBubbleContent: View {
                     if let quote {
                         // The message this one replies to.
                         Text(quote)
-                            .font(.system(size: 13))
+                            .scaledFont(size: 13)
                             .foregroundStyle(Theme.userBubbleInk.opacity(0.7))
                             .lineLimit(2)
                             .padding(.leading, 9)
@@ -390,7 +390,7 @@ struct NoticeLine: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 13))
+            .scaledFont(size: 13)
             .foregroundStyle(Theme.secondaryInk)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
@@ -441,7 +441,7 @@ private struct StepRow: View {
                 }
             }
         }
-        .font(.system(size: 12.5, design: .monospaced))
+        .scaledFont(size: 12.5, design: .monospaced)
     }
 }
 
@@ -453,7 +453,7 @@ struct CommandOutput: View {
     var body: some View {
         ScrollView(.horizontal) {
             Text(text)
-                .font(.system(size: 12.5, design: .monospaced))
+                .scaledFont(size: 12.5, design: .monospaced)
                 .foregroundStyle(Theme.ink)
                 .fixedSize()
                 .textSelection(.enabled)

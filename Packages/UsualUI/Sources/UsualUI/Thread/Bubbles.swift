@@ -117,8 +117,8 @@ struct ShimmerText: View {
             // The band starts and ends off the text, so the words rest between passes.
             let band = time.truncatingRemainder(dividingBy: Self.period) / Self.period * 1.8 - 0.4
             Text(text)
-                .font(.system(size: 13))
-                .lineLimit(1)
+                .scaledFont(size: 13)
+                .lineLimit(1, accessibility: 3)
                 .foregroundStyle(reduceMotion ? AnyShapeStyle(Theme.secondaryInk) : AnyShapeStyle(fill(at: band)))
         }
     }

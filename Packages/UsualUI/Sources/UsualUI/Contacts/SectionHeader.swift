@@ -65,9 +65,9 @@ struct SectionHeader<Actions: View>: View {
     private var label: some View {
         HStack(spacing: 8) {
             Text(verbatim: title)
-                .font(Self.titleFont)
+                .scaledFont(size: Self.titleSize, weight: Self.titleWeight)
                 .foregroundStyle(Theme.secondaryInk)
-                .lineLimit(1)
+                .lineLimit(1, accessibility: 3)
             #if os(iOS)
                 // Grok's phone app: the arrow follows the name.
                 chevron
@@ -88,14 +88,15 @@ struct SectionHeader<Actions: View>: View {
 
     private var chevron: some View {
         Image(systemName: "chevron.down")
-            .font(.system(size: Self.chevronSize, weight: Self.chevronWeight))
+            .scaledFont(size: Self.chevronSize, weight: Self.chevronWeight)
             .foregroundStyle(Theme.secondaryInk.opacity(Self.chevronOpacity))
             .rotationEffect(.degrees(isFolded ? -90 : 0))
             .opacity(showsChevron ? 1 : 0)
             .accessibilityHidden(true)
     }
 
-    private static var titleFont: Font { SectionNameField.titleFont }
+    private static var titleSize: CGFloat { SectionNameField.titleSize }
+    private static var titleWeight: Font.Weight? { SectionNameField.titleWeight }
 
     #if os(macOS)
         private static var chevronSize: CGFloat { 10 }
@@ -143,7 +144,7 @@ struct SectionNameField: View {
                 // iPhone has no Esc.
                 Button("Cancel", action: dismiss)
                     .buttonStyle(.clickable)
-                    .font(.system(size: 15))
+                    .scaledFont(size: 15)
                     .foregroundStyle(Theme.secondaryInk)
             #endif
         }
@@ -155,7 +156,7 @@ struct SectionNameField: View {
     private var field: some View {
         TextField("Section name", text: $draft, selection: $selection)
             .textFieldStyle(.plain)
-            .font(Self.titleFont)
+            .scaledFont(size: Self.titleSize, weight: Self.titleWeight)
             .foregroundStyle(Theme.ink)
             .focused($isFocused)
             #if os(iOS)
@@ -193,9 +194,11 @@ struct SectionNameField: View {
     }
 
     #if os(macOS)
-        static var titleFont: Font { .system(size: 13, weight: .medium) }
+        static var titleSize: CGFloat { 13 }
+        static var titleWeight: Font.Weight? { .medium }
     #else
-        static var titleFont: Font { .system(size: 17) }
+        static var titleSize: CGFloat { 17 }
+        static var titleWeight: Font.Weight? { nil }
     #endif
 
     private static var menuCloseDelay: Int {

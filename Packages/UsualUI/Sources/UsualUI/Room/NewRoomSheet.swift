@@ -82,7 +82,7 @@ struct NewRoomSheet: View {
                 Text(agent.name).foregroundStyle(Theme.ink)
                 Spacer(minLength: 8)
                 Image(systemName: isPicked ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 17))
+                    .scaledFont(size: 17)
                     .foregroundStyle(isPicked ? Theme.ink : Theme.secondaryInk)
             }
             .frame(minHeight: 36)

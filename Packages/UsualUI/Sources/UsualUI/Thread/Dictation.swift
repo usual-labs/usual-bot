@@ -263,14 +263,14 @@ struct DictationProblem: View {
     var body: some View {
         HStack(spacing: 10) {
             Text(message)
-                .font(.system(size: 12.5))
+                .scaledFont(size: 12.5)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
             if showsSettings {
                 Button("Open Settings", action: Dictation.openSettings)
                     .buttonStyle(.clickable)
-                    .font(.system(size: 12.5, weight: .semibold))
+                    .scaledFont(size: 12.5, weight: .semibold)
                     .foregroundStyle(Theme.ink)
             }
             Button(action: dismiss) {

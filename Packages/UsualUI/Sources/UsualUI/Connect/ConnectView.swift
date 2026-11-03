@@ -31,10 +31,10 @@ struct ConnectView<Options: View>: View {
             mark
             VStack(spacing: 6) {
                 Text("Connect to Hermes")
-                    .font(.system(size: 22, weight: .semibold))
+                    .scaledFont(size: 22, weight: .semibold)
                     .foregroundStyle(Theme.ink)
                 Text("Sign in to your Hermes gateway to see your Bots.")
-                    .font(.system(size: 14))
+                    .scaledFont(size: 14)
                     .foregroundStyle(Theme.secondaryInk)
                     .multilineTextAlignment(.center)
             }
@@ -44,7 +44,7 @@ struct ConnectView<Options: View>: View {
                 form
             }
             Text("An independent app, not made by or affiliated with Nous Research.")
-                .font(.system(size: 12))
+                .scaledFont(size: 12)
                 .foregroundStyle(Theme.secondaryInk)
                 .multilineTextAlignment(.center)
         }
@@ -58,7 +58,7 @@ struct ConnectView<Options: View>: View {
                 "Gateway address", text: $model.gatewayInput, prompt: Text("100.64.0.1:9119 or hermes.example.com")
             )
             .textFieldStyle(.plain)
-            .font(.system(size: 15))
+            .scaledFont(size: 15)
             .autocorrectionDisabled()
             #if os(iOS)
                 .textInputAutocapitalization(.never)
@@ -67,7 +67,7 @@ struct ConnectView<Options: View>: View {
             .focused($addressFocused)
             .onSubmit(signIn)
             .padding(.horizontal, 16)
-            .frame(height: 44)
+            .frame(minHeight: 44)
             .background(Theme.pane, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border))
 
@@ -75,7 +75,7 @@ struct ConnectView<Options: View>: View {
 
             Button(action: signIn) {
                 Text("Sign in with browser")
-                    .font(.system(size: 15, weight: .semibold))
+                    .scaledFont(size: 15, weight: .semibold)
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .foregroundStyle(Theme.primaryInk)
                     .background(Theme.primary, in: Capsule())
@@ -87,7 +87,7 @@ struct ConnectView<Options: View>: View {
 
             if let problem = model.problem {
                 Text(problem)
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Theme.danger)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -101,12 +101,12 @@ struct ConnectView<Options: View>: View {
             ProgressView()
                 .controlSize(.small)
             Text("Finish signing in to \(gateway.displayName) in your browser.")
-                .font(.system(size: 14))
+                .scaledFont(size: 14)
                 .foregroundStyle(Theme.secondaryInk)
                 .multilineTextAlignment(.center)
             Button("Cancel", action: model.cancelSignIn)
                 .buttonStyle(.clickable)
-                .font(.system(size: 14, weight: .medium))
+                .scaledFont(size: 14, weight: .medium)
                 .foregroundStyle(Theme.ink)
                 .frame(minHeight: 44)
         }

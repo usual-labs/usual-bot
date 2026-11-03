@@ -62,7 +62,7 @@ struct VaultAddSheet: View {
                     if list.isUnencrypted { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
                     if let problem = list.problem {
                         Text(problem)
-                            .font(.system(size: 12.5))
+                            .scaledFont(size: 12.5)
                             .foregroundStyle(Theme.danger)
                             .fixedSize(horizontal: false, vertical: true)
                     }

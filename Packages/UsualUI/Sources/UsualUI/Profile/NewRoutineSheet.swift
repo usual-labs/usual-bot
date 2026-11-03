@@ -71,7 +71,7 @@ struct NewRoutineSheet: View {
                     ) { page = .blank }
                     VStack(alignment: .leading, spacing: 0) {
                         Text("Templates")
-                            .font(.system(size: 12, weight: .semibold))
+                            .scaledFont(size: 12, weight: .semibold)
                             .foregroundStyle(Theme.secondaryInk)
                             .accessibilityAddTraits(.isHeader)
                             .padding(.bottom, 4)
@@ -80,7 +80,7 @@ struct NewRoutineSheet: View {
                                 ProgressView().controlSize(.small)
                                 Text("Loading templates…")
                             }
-                            .font(.system(size: 13))
+                            .scaledFont(size: 13)
                             .foregroundStyle(Theme.secondaryInk)
                             .padding(.vertical, 12)
                             .accessibilityElement(children: .combine)
@@ -139,16 +139,16 @@ private struct ChoiceRow: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     title
-                        .font(.system(size: 14, weight: .medium))
+                        .scaledFont(size: 14, weight: .medium)
                         .foregroundStyle(Theme.ink)
                     Text(summary)
-                        .font(.system(size: 12.5))
+                        .scaledFont(size: 12.5)
                         .foregroundStyle(Theme.secondaryInk)
                         .lineLimit(Self.summaryLines)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold)
                     .foregroundStyle(Theme.secondaryInk)
                     .accessibilityHidden(true)
             }
@@ -174,12 +174,12 @@ struct CreatedFromTemplate: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Created. Look over what it does below, and use Edit to change anything.", systemImage: "checkmark")
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             ForEach(made.missingSkills, id: \.name) { skill in
                 Label(Self.advice(skill, agentName: agentName), systemImage: "exclamationmark.triangle")
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Theme.needsYouInk)
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)

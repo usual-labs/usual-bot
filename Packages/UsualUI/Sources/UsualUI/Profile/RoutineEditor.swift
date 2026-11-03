@@ -56,7 +56,7 @@ struct RoutineEditor: View {
                     results
                     if let problem {
                         Text(problem)
-                            .font(.system(size: 12.5))
+                            .scaledFont(size: 12.5)
                             .foregroundStyle(Theme.danger)
                             .textSelection(.enabled)
                             .fixedSize(horizontal: false, vertical: true)
@@ -73,7 +73,7 @@ struct RoutineEditor: View {
         if let routine, routine.worksWithoutPrompt, routine.prompt.trimmingCharacters(in: .whitespaces).isEmpty {
             field("What to do") {
                 Text("This routine runs a script or skills set up in Hermes. Change those in Hermes.")
-                    .font(.system(size: 13.5))
+                    .scaledFont(size: 13.5)
                     .foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -81,7 +81,7 @@ struct RoutineEditor: View {
             field("What to do") {
                 TextEditor(text: $draft.prompt)
                     .focused($writingPrompt)
-                    .font(.system(size: 14))
+                    .scaledFont(size: 14)
                     .scrollContentBackground(.hidden)
                     .padding(8)
                     .frame(minHeight: 110)
@@ -90,7 +90,7 @@ struct RoutineEditor: View {
                     .overlay(alignment: .topLeading) {
                         if draft.prompt.isEmpty {
                             Text("Say it as you would to \(agentName), like “Check our dependencies for updates”.")
-                                .font(.system(size: 14))
+                                .scaledFont(size: 14)
                                 .foregroundStyle(Theme.secondaryInk)
                                 .padding(.horizontal, 13)
                                 .padding(.vertical, 16)
@@ -132,12 +132,12 @@ struct RoutineEditor: View {
                 Text(
                     "Examples: “every 30m”, “every monday 9am”, “weekdays at 9am”, a cron expression like “0 9 * * 1-5”, or once with “in 2h”."
                 )
-                .font(.system(size: 12))
+                .scaledFont(size: 12)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
             } else if let expression = choice.expression {
                 Text(RoutineSchedule.plainWords(expression))
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.secondaryInk)
             }
         }
@@ -161,7 +161,7 @@ struct RoutineEditor: View {
                 .fixedSize()
             #endif
             Text(resultsHint)
-                .font(.system(size: 12))
+                .scaledFont(size: 12)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -225,7 +225,7 @@ struct RoutineEditor: View {
     private func field(_ label: LocalizedStringKey, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
-                .font(.system(size: 12, weight: .semibold))
+                .scaledFont(size: 12, weight: .semibold)
                 .foregroundStyle(Theme.secondaryInk)
                 .accessibilityAddTraits(.isHeader)
             content()

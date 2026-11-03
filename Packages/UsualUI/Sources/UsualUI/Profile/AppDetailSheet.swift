@@ -35,13 +35,13 @@ struct AppDetailSheet: View {
                     tools
                     if !server.envNames.isEmpty {
                         Text("Keys saved on the gateway: \(server.envNames.joined(separator: ", "))")
-                            .font(.system(size: 12.5))
+                            .scaledFont(size: 12.5)
                             .foregroundStyle(Theme.secondaryInk)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     if let problem = list.problem {
                         Text(problem)
-                            .font(.system(size: 12.5))
+                            .scaledFont(size: 12.5)
                             .foregroundStyle(Theme.danger)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -89,13 +89,13 @@ struct AppDetailSheet: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
                 Text(server.url ?? ([server.command ?? ""] + server.args).joined(separator: " "))
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.secondaryInk)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
                 if let plugin = server.plugin {
                     Text("Comes with the \(plugin) plugin, so it can't be changed or removed here.")
-                        .font(.system(size: 12.5))
+                        .scaledFont(size: 12.5)
                         .foregroundStyle(Theme.secondaryInk)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -110,7 +110,7 @@ struct AppDetailSheet: View {
                 set: { enabled in Task { await list.setEnabled(enabled, for: server) } })
         ) {
             Text("Available to \(agentName)")
-                .font(.system(size: 14))
+                .scaledFont(size: 14)
                 .foregroundStyle(Theme.ink)
         }
         .toggleStyle(.switch)
@@ -127,27 +127,27 @@ struct AppDetailSheet: View {
                 } icon: {
                     ProgressView().controlSize(.mini)
                 }
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
             case .waiting:
                 Text(
                     "Finish signing in on the page that opened in your browser, then come back here. This updates on its own."
                 )
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
                 Button("Cancel Sign-In") { Task { await list.cancelSignIn(server) } }
                     .buttonStyle(CardButtonStyle(primary: false))
             case .failed(let message):
                 Text(message)
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Theme.danger)
                     .fixedSize(horizontal: false, vertical: true)
                 signInButton("Try Again")
             case nil:
                 if case .passed = list.checks[server.id] {
                     Text("Signed in. The gateway keeps the sign-in, not this device.")
-                        .font(.system(size: 13))
+                        .scaledFont(size: 13)
                         .foregroundStyle(Theme.secondaryInk)
                         .fixedSize(horizontal: false, vertical: true)
                     signInButton("Sign In Again", primary: false)
@@ -155,7 +155,7 @@ struct AppDetailSheet: View {
                     Text(
                         "\(server.name) asks you to sign in with its provider. The gateway keeps the sign-in, not this device."
                     )
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
                     signInButton("Sign In")
@@ -188,22 +188,22 @@ struct AppDetailSheet: View {
                 } icon: {
                     ProgressView().controlSize(.mini)
                 }
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
             case .passed(let tools) where tools.isEmpty:
                 Text("It connected, but offers no tools.")
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Theme.secondaryInk)
             case .passed(let tools):
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(tools) { tool in
                         VStack(alignment: .leading, spacing: 2) {
                             Text(tool.name)
-                                .font(.system(size: 13.5, design: .monospaced))
+                                .scaledFont(size: 13.5, design: .monospaced)
                                 .foregroundStyle(Theme.ink)
                             if let description = tool.description, !description.isEmpty {
                                 Text(description)
-                                    .font(.system(size: 12.5))
+                                    .scaledFont(size: 12.5)
                                     .foregroundStyle(Theme.secondaryInk)
                                     .lineLimit(3)
                             }
@@ -215,7 +215,7 @@ struct AppDetailSheet: View {
                 }
             case .failed(let message):
                 Text(message)
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Theme.danger)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
@@ -224,7 +224,7 @@ struct AppDetailSheet: View {
                     server.enabled
                         ? "Test the connection to see its tools." : "It's off. Test the connection to see its tools."
                 )
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
             }
         }
@@ -232,7 +232,7 @@ struct AppDetailSheet: View {
 
     private func sectionTitle(_ title: LocalizedStringKey) -> some View {
         Text(title)
-            .font(.system(size: 12, weight: .semibold))
+            .scaledFont(size: 12, weight: .semibold)
             .foregroundStyle(Theme.secondaryInk)
             .accessibilityAddTraits(.isHeader)
     }

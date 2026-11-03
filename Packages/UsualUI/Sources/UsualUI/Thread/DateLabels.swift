@@ -62,7 +62,7 @@ struct DateLabel: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 12, weight: .medium))
+            .scaledFont(size: 12, weight: .medium)
             .foregroundStyle(Theme.secondaryInk)
             .frame(maxWidth: .infinity)
             .padding(.top, 8)

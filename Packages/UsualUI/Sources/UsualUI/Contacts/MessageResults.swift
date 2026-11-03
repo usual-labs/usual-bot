@@ -43,7 +43,7 @@ struct MessageSearchStatusLine: View {
     private struct StatusLook: ViewModifier {
         func body(content: Content) -> some View {
             content
-                .font(.system(size: 12.5))
+                .scaledFont(size: 12.5)
                 .foregroundStyle(Theme.secondaryInk)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityElement(children: .combine)
@@ -82,7 +82,7 @@ struct FindingNotice: View {
                     .frame(minWidth: 28, minHeight: 28)
             }
         }
-        .font(.system(size: 13))
+        .scaledFont(size: 13)
         .foregroundStyle(Theme.ink)
         .padding(.leading, 14)
         .padding(.trailing, 8)
@@ -108,6 +108,8 @@ struct MessageHitRow: View {
     let members: [Contact]
     var avatarSize: CGFloat = 32
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         HStack(spacing: 12) {
             switch contact.kind {
@@ -117,17 +119,17 @@ struct MessageHitRow: View {
             VStack(alignment: .leading, spacing: 1) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(contact.name)
-                        .font(.system(size: 14, weight: .medium))
+                        .scaledFont(size: 14, weight: .medium)
                         .foregroundStyle(Theme.ink)
                     Spacer(minLength: 0)
                     Text(hit.when)
-                        .font(.system(size: 12))
+                        .scaledFont(size: 12)
                         .foregroundStyle(Theme.secondaryInk.opacity(0.75))
                 }
-                Text(hit.styledSnippet(size: 12.5))
+                Text(hit.styledSnippet(size: Theme.scaled(12.5, for: dynamicTypeSize)))
                     .foregroundStyle(Theme.secondaryInk)
             }
-            .lineLimit(1)
+            .lineLimit(1, accessibility: 2)
             Spacer(minLength: 0)
         }
         .accessibilityElement(children: .ignore)

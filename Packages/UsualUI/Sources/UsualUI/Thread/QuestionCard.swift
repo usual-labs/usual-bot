@@ -14,6 +14,7 @@ struct QuestionCard: View {
     var answersFromBox = false
 
     @Environment(\.messageTextSize) private var messageSize
+    @ScaledMetric(relativeTo: .body) private var scaledChip: CGFloat = 24
     @State private var picked: [String: [String]] = [:]
     @State private var typed: [String: String] = [:]
 
@@ -51,7 +52,7 @@ struct QuestionCard: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel(Text("\(agentName) has a question"))
             Text("Or answer in the chat below")
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .padding(.leading, 14)
         }
@@ -118,7 +119,7 @@ struct QuestionCard: View {
                     set: { typed[question.id] = $0 }), axis: .vertical
             )
             .textFieldStyle(.plain)
-            .font(.system(size: 14))
+            .scaledFont(size: 14)
             .lineLimit(1...4)
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
@@ -127,14 +128,17 @@ struct QuestionCard: View {
         }
     }
 
+    /// Grows with the text beside it, but stays a badge.
+    private var chipSize: CGFloat { min(scaledChip, 40) }
+
     /// A, B, C… for a choice, filled when it's picked. Past Z, the number. Round, as a list
     /// marker: an outlined square read as a key to press, and typing a letter mustn't answer
     /// (your own answer in the box can start with one).
     private func letterChip(_ index: Int, isPicked: Bool) -> some View {
         Text(verbatim: index < 26 ? String(UnicodeScalar(UInt8(65 + index))) : "\(index + 1)")
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(size: chipSize / 2, weight: .semibold))
             .foregroundStyle(isPicked ? Theme.primaryInk : Theme.secondaryInk)
-            .frame(width: 24, height: 24)
+            .frame(width: chipSize, height: chipSize)
             .background(isPicked ? Theme.primary : Theme.pane, in: Circle())
             .accessibilityHidden(true)
     }
@@ -187,7 +191,7 @@ struct CardButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 13.5, weight: primary ? .semibold : .regular))
+            .scaledFont(size: 13.5, weight: primary ? .semibold : .regular)
             .foregroundStyle(primary ? Theme.primaryInk : Theme.ink)
             .padding(.horizontal, 14)
             .frame(maxWidth: fill ? .infinity : nil, minHeight: fill ? Self.fillHeight : Self.rowHeight)

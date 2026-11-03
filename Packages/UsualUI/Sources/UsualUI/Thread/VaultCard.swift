@@ -36,7 +36,7 @@ struct VaultCard: View {
         VStack(alignment: .leading, spacing: 10) {
             Label {
                 Text(title)
-                    .font(.system(size: 13.5, weight: .medium))
+                    .scaledFont(size: 13.5, weight: .medium)
                     .foregroundStyle(Theme.ink)
             } icon: {
                 Image(systemName: "lock")
@@ -44,7 +44,7 @@ struct VaultCard: View {
             }
             if let site {
                 Text(site)
-                    .font(.system(size: 13, design: .monospaced))
+                    .scaledFont(size: 13, design: .monospaced)
                     .foregroundStyle(Theme.ink)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -53,7 +53,7 @@ struct VaultCard: View {
                     .background(Theme.codeFill, in: RoundedRectangle(cornerRadius: 10))
             }
             Text(note)
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
             fields

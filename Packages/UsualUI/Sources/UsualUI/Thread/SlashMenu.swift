@@ -86,18 +86,18 @@ struct SuggestionMenu: View {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 // Skills and commands share the menu; the icon tells them apart.
                 Image(systemName: command.kind == .skill ? "sparkles" : "command")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledFont(size: 12, weight: .medium)
                     .foregroundStyle(Theme.secondaryInk)
                     .frame(width: 16)
                     .accessibilityLabel(Text(command.kind == .skill ? "Skill" : "Command"))
                 Text(command.name)
-                    .font(.system(size: 13.5, weight: .semibold))
+                    .scaledFont(size: 13.5, weight: .semibold)
                     .foregroundStyle(Theme.ink)
                     // The name stays whole; the description gives way.
                     .lineLimit(1)
                     .fixedSize()
                 Text(command.description)
-                    .font(.system(size: 13))
+                    .scaledFont(size: 13)
                     .foregroundStyle(Theme.secondaryInk)
                     .lineLimit(1)
                 Spacer(minLength: 0)
@@ -106,8 +106,8 @@ struct SuggestionMenu: View {
         case .mention(let mention):
             HStack(spacing: 8) {
                 AgentAvatar(contact: mention.contact, size: 22)
-                Text(mention.name).font(.system(size: 13.5, weight: .semibold)).foregroundStyle(Theme.ink)
-                Text("@\(mention.id)").font(.system(size: 13)).foregroundStyle(Theme.secondaryInk)
+                Text(mention.name).scaledFont(size: 13.5, weight: .semibold).foregroundStyle(Theme.ink)
+                Text("@\(mention.id)").scaledFont(size: 13).foregroundStyle(Theme.secondaryInk)
                 Spacer(minLength: 0)
             }
             .accessibilityElement(children: .combine)

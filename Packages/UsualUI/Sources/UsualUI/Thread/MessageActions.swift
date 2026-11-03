@@ -169,7 +169,7 @@ struct MessageRow<Content: View>: View {
                     actions?.react(reaction.emoji, item)
                 } label: {
                     Text(reaction.emoji)
-                        .font(.system(size: 14))
+                        .scaledFont(size: 14)
                         .padding(.horizontal, 7)
                         .frame(minHeight: 26)
                         .background(Theme.selection, in: Capsule())
@@ -239,13 +239,13 @@ struct MessageRow<Content: View>: View {
                 .help("More")
                 if !isMine, let date = item.date { sentTime(date) }
             }
-            .font(.system(size: 13, weight: .medium))
+            .scaledFont(size: 13, weight: .medium)
             .foregroundStyle(Theme.secondaryInk)
         }
 
         private func sentTime(_ date: Date) -> some View {
             Text(DateLabels.time(of: date))
-                .font(.system(size: 11.5))
+                .scaledFont(size: 11.5)
                 .monospacedDigit()
                 .fixedSize()
                 .padding(.horizontal, 4)
@@ -416,9 +416,9 @@ struct ReplyChip: View {
     var body: some View {
         HStack(spacing: 8) {
             Text(text)
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
-                .lineLimit(1)
+                .lineLimit(1, accessibility: 3)
             Spacer(minLength: 0)
             Button(action: cancel) {
                 Image(systemName: "xmark")

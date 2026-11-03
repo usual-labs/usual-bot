@@ -261,6 +261,7 @@ struct AttachmentTile: View {
     @State private var thumbnail: Image?
     @State private var failed = false
     @State private var viewing = false
+    @ScaledMetric(relativeTo: .footnote) private var nameWidth: CGFloat = 180
 
     private var data: Data? { imageData ?? loaded }
 
@@ -288,15 +289,16 @@ struct AttachmentTile: View {
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: kind == .image ? "photo" : "doc")
-                        .font(.system(size: 15))
+                        .scaledFont(size: 15)
                         .foregroundStyle(Theme.secondaryInk)
                     Text(name)
-                        .font(.system(size: 13))
+                        .scaledFont(size: 13)
                         .foregroundStyle(Theme.ink)
-                        .lineLimit(1)
+                        .lineLimit(1, accessibility: 3)
                         .truncationMode(.middle)
-                        // As wide as the name, up to a limit; longer names shorten in the middle.
-                        .frame(maxWidth: 180, alignment: .leading)
+                        // As wide as the name, up to a limit that grows with the text; longer names
+                        // shorten in the middle.
+                        .frame(maxWidth: min(nameWidth, 300), alignment: .leading)
                         .fixedSize(horizontal: true, vertical: false)
                 }
                 .padding(.horizontal, 12)

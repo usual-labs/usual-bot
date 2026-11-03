@@ -24,11 +24,16 @@ extension View {
 private struct PreferencesStyle: ViewModifier {
     @AppStorage(AppPreferences.appearanceKey) private var appearance = "system"
     @AppStorage(AppPreferences.textSizeKey) private var textSize = 0
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
+    /// The in-app setting picks the size at the default text size; Dynamic Type grows it from there.
     func body(content: Content) -> some View {
         content
             .preferredColorScheme(appearance == "dark" ? .dark : appearance == "light" ? .light : nil)
-            .environment(\.messageTextSize, Theme.messageSize + CGFloat(min(max(textSize, -2), 6)))
+            .environment(
+                \.messageTextSize,
+                Theme.scaled(Theme.messageSize + CGFloat(min(max(textSize, -2), 6)), for: dynamicTypeSize)
+            )
     }
 }
 

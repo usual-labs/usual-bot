@@ -71,3 +71,21 @@ struct AvatarStyleTests {
         }
     }
 }
+
+struct ScaledFontTests {
+    /// Every size the app sets is tuned at the default text size, so it must come back unchanged there.
+    @Test func keepsTodaysSizesAtTheDefaultTextSize() {
+        for size: CGFloat in [10, 11.5, 13, 15.5, 17, 22, 30] {
+            #expect(Theme.scaled(size, for: .large) == size)
+        }
+    }
+
+    @Test func followsDynamicTypeOnlyOnIPhone() {
+        #if os(iOS)
+            #expect(Theme.scaled(17, for: .accessibility5) > 40)
+            #expect(Theme.scaled(17, for: .xSmall) < 17)
+        #else
+            #expect(Theme.scaled(17, for: .accessibility5) == 17)
+        #endif
+    }
+}

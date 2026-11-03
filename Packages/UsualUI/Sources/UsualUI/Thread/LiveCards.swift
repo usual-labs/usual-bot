@@ -15,11 +15,11 @@ struct FoldedRow<Label: View, Rows: View>: View {
                 HStack(spacing: 6) {
                     label
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
+                        .scaledFont(size: 10, weight: .semibold)
                         .rotationEffect(.degrees(expanded ? 90 : 0))
                         .accessibilityHidden(true)
                 }
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .frame(minHeight: 28)
                 .contentShape(Rectangle())
@@ -161,7 +161,7 @@ private struct LiveRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: symbol)
-                .font(.system(size: 11))
+                .scaledFont(size: 11)
                 .foregroundStyle(tint)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
@@ -171,7 +171,7 @@ private struct LiveRow: View {
                 }
             }
         }
-        .font(.system(size: 12.5))
+        .scaledFont(size: 12.5)
         .accessibilityElement(children: .ignore)
     }
 }

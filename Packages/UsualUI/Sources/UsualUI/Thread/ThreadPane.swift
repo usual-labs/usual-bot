@@ -229,7 +229,7 @@ struct ThreadPane: View {
                     Text(message).multilineTextAlignment(.center)
                     Button("Try Again", action: open)
                         .buttonStyle(.clickable)
-                        .font(.system(size: 13, weight: .medium))
+                        .scaledFont(size: 13, weight: .medium)
                         .foregroundStyle(Theme.ink)
                         .frame(minHeight: 44)
                 }
@@ -246,7 +246,7 @@ struct ThreadPane: View {
 
     private func centred(@ViewBuilder _ content: () -> some View) -> some View {
         content()
-            .font(.system(size: 13))
+            .scaledFont(size: 13)
             .foregroundStyle(Theme.secondaryInk)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -323,15 +323,19 @@ struct NamePill: View {
             case .room: RoomAvatar(members: members, size: Self.avatar)
             }
             Text(contact.name)
-                .font(.system(size: Self.nameSize, weight: .medium))
+                .scaledFont(size: Self.nameSize, weight: .medium)
                 .foregroundStyle(Theme.ink)
         }
+        // Sits in the navigation bar between two fixed buttons, so it grows only a little, as the
+        // system's own titles do; touch and hold shows the name larger.
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .padding(.leading, Self.leading)
         .padding(.trailing, Self.trailing)
         .frame(height: Self.height)
         .floatingSurface(in: Capsule())
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
+        .accessibilityShowsLargeContentViewer()
     }
 }
 

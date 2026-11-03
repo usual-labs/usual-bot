@@ -90,9 +90,9 @@ struct RoutineDetail: View {
             if routine.lastRunFailed {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Last run failed")
-                        .font(.system(size: 12, weight: .semibold))
+                        .scaledFont(size: 12, weight: .semibold)
                     if let error = routine.lastError {
-                        Text(error).font(.system(size: 13)).textSelection(.enabled)
+                        Text(error).scaledFont(size: 13).textSelection(.enabled)
                     }
                 }
                 .foregroundStyle(Theme.danger)
@@ -101,8 +101,8 @@ struct RoutineDetail: View {
             } else if let error = routine.deliveryError {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("The last run worked, but its result wasn't posted")
-                        .font(.system(size: 12, weight: .semibold))
-                    Text(error).font(.system(size: 13)).textSelection(.enabled)
+                        .scaledFont(size: 12, weight: .semibold)
+                    Text(error).scaledFont(size: 13).textSelection(.enabled)
                 }
                 .foregroundStyle(Theme.danger)
                 .fixedSize(horizontal: false, vertical: true)
@@ -120,10 +120,10 @@ struct RoutineDetail: View {
     private func fact(_ label: LocalizedStringKey, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(label)
-                .font(.system(size: 12, weight: .semibold))
+                .scaledFont(size: 12, weight: .semibold)
                 .foregroundStyle(Theme.secondaryInk)
             Text(value)
-                .font(.system(size: 14))
+                .scaledFont(size: 14)
                 .foregroundStyle(Theme.ink)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
@@ -144,23 +144,23 @@ struct RoutineDetail: View {
                     ProgressView().controlSize(.small)
                     Text("Running now. This can take a few minutes; you can close this and keep going.")
                 }
-                .font(.system(size: 12.5))
+                .scaledFont(size: 12.5)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityElement(children: .combine)
             } else if let outcome = list.outcomes[routine.id] {
                 Text(outcome.message)
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(outcome.succeeded ? Theme.secondaryInk : Theme.danger)
                     .fixedSize(horizontal: false, vertical: true)
             } else if !routine.isOn && !routine.isFinished {
                 Text("It's paused. Running it now turns it back on.")
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.secondaryInk)
             }
             if let deleteProblem {
                 Text(deleteProblem)
-                    .font(.system(size: 12.5))
+                    .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.danger)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -186,14 +186,14 @@ struct RoutineDetail: View {
     private func pastRuns(_ routine: Routine) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Past Runs")
-                .font(.system(size: 12, weight: .semibold))
+                .scaledFont(size: 12, weight: .semibold)
                 .foregroundStyle(Theme.secondaryInk)
                 .accessibilityAddTraits(.isHeader)
                 .padding(.bottom, 4)
             if let runs {
                 if runs.isEmpty {
                     Text("It hasn't run yet.")
-                        .font(.system(size: 13.5))
+                        .scaledFont(size: 13.5)
                         .foregroundStyle(Theme.secondaryInk)
                         .padding(.vertical, 8)
                 }
@@ -206,11 +206,11 @@ struct RoutineDetail: View {
                     Text(runsProblem).foregroundStyle(Theme.secondaryInk)
                     Button("Try Again") { Task { await loadRuns(routine) } }
                         .buttonStyle(.clickable)
-                        .font(.system(size: 13, weight: .medium))
+                        .scaledFont(size: 13, weight: .medium)
                         .foregroundStyle(Theme.ink)
                         .frame(minHeight: 44)
                 }
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
             } else {
                 ProgressView().controlSize(.small).frame(maxWidth: .infinity).padding(.vertical, 16)
             }
@@ -264,21 +264,21 @@ private struct RunRow: View {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(run.started.formatted(date: .abbreviated, time: .shortened))
-                        .font(.system(size: 14))
+                        .scaledFont(size: 14)
                         .foregroundStyle(Theme.ink)
                     if let preview = run.preview {
                         Text(RoutineDescriptions.inline(preview))
-                            .font(.system(size: 12.5))
+                            .scaledFont(size: 12.5)
                             .foregroundStyle(Theme.secondaryInk)
                             .lineLimit(2)
                     }
                 }
                 Spacer(minLength: 8)
                 Text(RoutineDescriptions.status(run.status))
-                    .font(.system(size: 12.5, weight: .medium))
+                    .scaledFont(size: 12.5, weight: .medium)
                     .foregroundStyle(run.status == .failed ? Theme.danger : Theme.secondaryInk)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
+                    .scaledFont(size: 11, weight: .semibold)
                     .foregroundStyle(Theme.secondaryInk)
                     .accessibilityHidden(true)
             }

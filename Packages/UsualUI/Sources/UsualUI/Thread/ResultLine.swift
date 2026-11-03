@@ -33,17 +33,17 @@ struct ResultLine: View {
     private var label: some View {
         HStack(spacing: 6) {
             Image(systemName: "terminal")
-                .font(.system(size: 12))
+                .scaledFont(size: 12)
                 .accessibilityHidden(true)
             Text(title).lineLimit(1)
             if !detail.isEmpty {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
+                    .scaledFont(size: 10, weight: .semibold)
                     .rotationEffect(.degrees(expanded ? 90 : 0))
                     .accessibilityHidden(true)
             }
         }
-        .font(.system(size: 13))
+        .scaledFont(size: 13)
         .foregroundStyle(Theme.secondaryInk)
         .padding(.leading, 12)
         .frame(minHeight: 28)
@@ -53,7 +53,7 @@ struct ResultLine: View {
     /// Short reports show whole; long ones scroll inside a fixed height.
     private var report: some View {
         let text = Text(detail)
-            .font(.system(size: 12.5, design: .monospaced))
+            .scaledFont(size: 12.5, design: .monospaced)
             .foregroundStyle(Theme.ink)
             .textSelection(.enabled)
             .fixedSize(horizontal: false, vertical: true)

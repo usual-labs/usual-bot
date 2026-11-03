@@ -40,10 +40,10 @@ struct RoomPanel: View {
                 VStack(spacing: 6) {
                     RoomAvatar(members: members, size: 72)
                     Text(room.name)
-                        .font(.system(size: 20, weight: .semibold))
+                        .scaledFont(size: 20, weight: .semibold)
                         .foregroundStyle(Theme.ink)
                     Text("^[\(members.count) Bot](inflect: true)")
-                        .font(.system(size: 13))
+                        .scaledFont(size: 13)
                         .foregroundStyle(Theme.secondaryInk)
                 }
                 .frame(maxWidth: .infinity)
@@ -60,7 +60,7 @@ struct RoomPanel: View {
                 Text(
                     "Each Bot answers here with its default model. To change one, open that Bot's chat and choose Make Default in its model menu."
                 )
-                .font(.system(size: 12))
+                .scaledFont(size: 12)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -99,7 +99,7 @@ struct RoomPanel: View {
     private func action(_ title: LocalizedStringKey, tint: Color, perform: @escaping () -> Void) -> some View {
         Button(action: perform) {
             Text(title)
-                .font(.system(size: 14))
+                .scaledFont(size: 14)
                 .foregroundStyle(tint)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
@@ -112,12 +112,12 @@ struct RoomPanel: View {
             AgentAvatar(contact: still(member), size: 36)
             VStack(alignment: .leading, spacing: 2) {
                 Text(member.name)
-                    .font(.system(size: 14, weight: .medium))
+                    .scaledFont(size: 14, weight: .medium)
                     .foregroundStyle(Theme.ink)
                 Text(model(of: member))
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
-                    .lineLimit(1)
+                    .lineLimit(1, accessibility: 3)
             }
             Spacer(minLength: 0)
         }

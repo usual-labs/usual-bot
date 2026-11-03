@@ -135,11 +135,11 @@ public struct SettingsView: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(gatewayName)
-                        .font(.system(size: 17, weight: .medium))
+                        .scaledFont(size: 17, weight: .medium)
                         .foregroundStyle(Theme.ink)
-                        .lineLimit(1)
+                        .lineLimit(1, accessibility: 3)
                     Text(connectionStatus)
-                        .font(.system(size: 14))
+                        .scaledFont(size: 14)
                         .foregroundStyle(Theme.secondaryInk)
                         .lineLimit(2)
                 }

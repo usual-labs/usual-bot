@@ -60,7 +60,7 @@ struct CallBar: View {
             if let problem {
                 Divider().overlay(Theme.border)
                 Text(problem)
-                    .font(.system(size: 13.5))
+                    .scaledFont(size: 13.5)
                     .foregroundStyle(Theme.secondaryInk)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
@@ -254,16 +254,16 @@ private struct CallSettingsPanel: View {
             if live {
                 HStack {
                     Text("Voice")
-                        .font(.system(size: 14.5))
+                        .scaledFont(size: 14.5)
                         .foregroundStyle(Theme.ink)
                     Spacer()
                     Text(liveStatus.map { "\($0.voice) · \($0.model)" } ?? "")
-                        .font(.system(size: 13.5))
+                        .scaledFont(size: 13.5)
                         .foregroundStyle(Theme.secondaryInk)
                 }
                 .frame(minHeight: 40)
                 Text("GPT-Live's voice is set on the gateway. OpenAI bills the call's minutes.")
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.bottom, 4)
@@ -309,7 +309,7 @@ private struct CallSettingsPanel: View {
     private func row(_ title: LocalizedStringKey, @ViewBuilder picker: () -> some View) -> some View {
         HStack {
             Text(title)
-                .font(.system(size: 14.5))
+                .scaledFont(size: 14.5)
                 .foregroundStyle(Theme.ink)
             Spacer()
             picker()
@@ -330,7 +330,7 @@ private struct TranscriptPanel: View {
         Group {
             if call.transcript.isEmpty, call.heard.isEmpty {
                 Text("No speech transcribed yet")
-                    .font(.system(size: 14))
+                    .scaledFont(size: 14)
                     .foregroundStyle(Theme.secondaryInk)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 18)
@@ -357,10 +357,10 @@ private struct TranscriptPanel: View {
     private func row(_ who: String, _ text: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(who)
-                .font(.system(size: 12, weight: .semibold))
+                .scaledFont(size: 12, weight: .semibold)
                 .foregroundStyle(Theme.secondaryInk)
             Text(text)
-                .font(.system(size: 14))
+                .scaledFont(size: 14)
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
         }

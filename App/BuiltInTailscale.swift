@@ -86,10 +86,10 @@
             Toggle(isOn: Binding(get: { tailscale.isOn }, set: { tailscale.setOn($0) })) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Built-in Tailscale")
-                        .font(.system(size: 15))
+                        .scaledFont(size: 15)
                         .foregroundStyle(Theme.ink)
                     Text("Reach a gateway on your tailnet without the Tailscale VPN.")
-                        .font(.system(size: 13))
+                        .scaledFont(size: 13)
                         .foregroundStyle(Theme.secondaryInk)
                         .fixedSize(horizontal: false, vertical: true)
                 }

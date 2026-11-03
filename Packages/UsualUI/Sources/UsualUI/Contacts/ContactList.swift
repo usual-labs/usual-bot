@@ -38,7 +38,7 @@ struct ContactList: View {
                     searchesMessages
                         ? "No chats or messages match “\(term)”" : "No chats match “\(term)”"
                 )
-                .font(.system(size: 13))
+                .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
@@ -193,7 +193,7 @@ struct ContactList: View {
             Section {
                 if messages.isEmpty, status != .searching {
                     Text("No messages match “\(term)”")
-                        .font(.system(size: 13))
+                        .scaledFont(size: 13)
                         .foregroundStyle(Theme.secondaryInk)
                         .listRowBackground(Color.clear)
                 }
@@ -219,7 +219,7 @@ struct ContactList: View {
                 }
             } header: {
                 Text("Messages")
-                    .font(.system(size: 13, weight: .semibold))
+                    .scaledFont(size: 13, weight: .semibold)
                     .foregroundStyle(Theme.secondaryInk)
             }
             .listSectionSeparator(.hidden)
@@ -235,7 +235,7 @@ struct ContactList: View {
             case .phone: Text("Touch and hold a chat to move it here")
             }
         }
-        .font(.system(size: 13))
+        .scaledFont(size: 13)
         .foregroundStyle(Theme.secondaryInk)
         .padding(.horizontal, 10)
         .padding(.vertical, 8)

@@ -94,11 +94,11 @@ struct RoomPane: View {
                 Text(message).multilineTextAlignment(.center)
                 Button("Try Again") { Task { await room.sync() } }
                     .buttonStyle(.clickable)
-                    .font(.system(size: 13, weight: .medium))
+                    .scaledFont(size: 13, weight: .medium)
                     .foregroundStyle(Theme.ink)
                     .frame(minHeight: 44)
             }
-            .font(.system(size: 13))
+            .scaledFont(size: 13)
             .foregroundStyle(Theme.secondaryInk)
             .padding(.horizontal, 32)
             .frame(maxWidth: .infinity, maxHeight: .infinity)

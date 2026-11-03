@@ -42,7 +42,7 @@ struct RoutineTemplateForm: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Text(verbatim: template.summary)
-                        .font(.system(size: 13))
+                        .scaledFont(size: 13)
                         .foregroundStyle(Theme.secondaryInk)
                         .fixedSize(horizontal: false, vertical: true)
                     ForEach(template.questions) { field in
@@ -53,12 +53,12 @@ struct RoutineTemplateForm: View {
                     Text(
                         "\(agentName) gets instructions written from your answers. You can read and change them once it's created."
                     )
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
                     if let problem {
                         Text(problem)
-                            .font(.system(size: 12.5))
+                            .scaledFont(size: 12.5)
                             .foregroundStyle(Theme.danger)
                             .textSelection(.enabled)
                             .fixedSize(horizontal: false, vertical: true)
@@ -77,7 +77,7 @@ struct RoutineTemplateForm: View {
         let problem = blankAtStart ? nil : field.problem(with: value.wrappedValue)
         return VStack(alignment: .leading, spacing: 6) {
             Text(verbatim: field.label)
-                .font(.system(size: 12, weight: .semibold))
+                .scaledFont(size: 12, weight: .semibold)
                 .foregroundStyle(Theme.secondaryInk)
                 .accessibilityHidden(true)
             switch field.kind {
@@ -104,7 +104,7 @@ struct RoutineTemplateForm: View {
                     Text(verbatim: field.label)
                 }
                 .textFieldStyle(.plain)
-                .font(.system(size: 14))
+                .scaledFont(size: 14)
                 .padding(.horizontal, 12)
                 .frame(minHeight: 40)
                 .background(Theme.pane, in: RoundedRectangle(cornerRadius: 10))
@@ -113,11 +113,11 @@ struct RoutineTemplateForm: View {
             }
             if let problem {
                 Text(problem)
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Theme.danger)
             } else if !field.help.isEmpty, field.kind != .time {
                 Text(verbatim: Self.sentence(field.help))
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityHidden(field.kind == .text)  // Already the field's prompt.
@@ -133,10 +133,10 @@ struct RoutineTemplateForm: View {
             if words != expression {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("When")
-                        .font(.system(size: 12, weight: .semibold))
+                        .scaledFont(size: 12, weight: .semibold)
                         .foregroundStyle(Theme.secondaryInk)
                     Text(words)
-                        .font(.system(size: 14))
+                        .scaledFont(size: 14)
                         .foregroundStyle(Theme.ink)
                 }
                 .accessibilityElement(children: .combine)
@@ -147,7 +147,7 @@ struct RoutineTemplateForm: View {
     private var results: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Results")
-                .font(.system(size: 12, weight: .semibold))
+                .scaledFont(size: 12, weight: .semibold)
                 .foregroundStyle(Theme.secondaryInk)
                 .accessibilityAddTraits(.isHeader)
             Picker("Results", selection: $delivery) {

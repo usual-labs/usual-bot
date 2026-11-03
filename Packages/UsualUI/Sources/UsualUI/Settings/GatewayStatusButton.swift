@@ -32,10 +32,10 @@ struct GatewayStatusButton<More: View>: View {
                 }
             }
             #if os(macOS)
-                .font(.system(size: 12.5))
+                .scaledFont(size: 12.5)
                 .frame(minWidth: compact ? 44 : nil, minHeight: 28)
             #else
-                .font(.system(size: 15))
+                .scaledFont(size: 15)
                 .padding(.horizontal, 4)
                 // The navigation bar would otherwise squeeze the address down to "…".
                 .fixedSize()
