@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Open at the newest message, then follow it until the reader scrolls away. A `jump` from
-/// search shows its message instead, highlighted for a moment.
+/// Open at the newest message, then follow it until the reader scrolls away; a button then offers
+/// the way back. A `jump` from search shows its message instead, highlighted for a moment.
 struct ConversationScroll<Content: View>: View {
     var reload = 0
     var arrival: [Int] = []
@@ -87,6 +87,18 @@ struct ConversationScroll<Content: View>: View {
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { move(to: scroll.resume()) }
             }
+            .onChange(of: arrival, initial: true) { scroll.arrived(atReload: reload) }
+            // Over the scroll view, so it sits above the message box and stays put as you scroll.
+            .overlay(alignment: .bottom) {
+                ZStack {
+                    if scroll.isAwayFromEnd {
+                        JumpToLatestButton(hasNew: scroll.hasNewBelow) { move(to: scroll.jumpToEnd()) }
+                            .transition(reduceMotion ? .opacity : .scale(scale: 0.6).combined(with: .opacity))
+                    }
+                }
+                .padding(.bottom, 12)
+                .animation(.easeOut(duration: 0.18), value: scroll.isAwayFromEnd)
+            }
         }
     }
 
@@ -108,5 +120,44 @@ struct ConversationScroll<Content: View>: View {
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) { position.scrollTo(y: offset) }
+    }
+}
+
+/// Back to the newest message, shown while you're reading further up. A dot says more came in.
+private struct JumpToLatestButton: View {
+    let hasNew: Bool
+    let action: () -> Void
+    @Environment(\.chatContact) private var contact
+
+    #if os(iOS)
+        private static let size: CGFloat = 40
+    #else
+        private static let size: CGFloat = 36
+    #endif
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "arrow.down")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.ink)
+                .frame(width: Self.size, height: Self.size)
+                .floatingSurface(in: Circle())
+                .overlay(alignment: .topTrailing) {
+                    if hasNew {
+                        Circle()
+                            .fill(contact?.accent ?? Theme.primary)
+                            .stroke(Theme.surface, lineWidth: 2)
+                            .frame(width: 11, height: 11)
+                            .offset(x: 1, y: -1)
+                    }
+                }
+                // Reaches 44 pt on iPhone without a bigger circle.
+                .padding(2)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.clickable)
+        .help("Jump to latest message")
+        .accessibilityLabel(Text("Jump to latest message"))
+        .accessibilityValue(hasNew ? Text("New messages") : Text(""))
     }
 }

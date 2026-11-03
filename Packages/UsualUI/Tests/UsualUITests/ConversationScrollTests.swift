@@ -86,4 +86,57 @@ struct ConversationScrollTests {
         #expect(state.reload(2) == 5_300)
         #expect(state.followsEnd)
     }
+
+    @Test func theWayBackShowsOnlyAwayFromTheEndAndNotesWhatArrived() {
+        var state = ConversationScrollState()
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 4_300))
+        state.arrived(atReload: 0)
+        #expect(!state.isAwayFromEnd)
+        #expect(!state.hasNewBelow)
+        _ = state.scrollingByHand(true)
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 1_500))
+        _ = state.scrollingByHand(false)
+        #expect(state.isAwayFromEnd)
+        state.arrived(atReload: 0)
+        #expect(state.hasNewBelow)
+        // Taking the way back follows the end again and forgets what was new.
+        #expect(state.jumpToEnd() == 4_300)
+        #expect(state.followsEnd)
+        #expect(!state.hasNewBelow)
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 4_300))
+        #expect(!state.isAwayFromEnd)
+    }
+
+    @Test func scrollingBackDownByHandHidesTheWayBack() {
+        var state = ConversationScrollState()
+        _ = state.scrollingByHand(true)
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 1_500))
+        _ = state.scrollingByHand(false)
+        state.arrived(atReload: 0)
+        _ = state.scrollingByHand(true)
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 4_280))
+        _ = state.scrollingByHand(false)
+        #expect(state.followsEnd)
+        #expect(!state.isAwayFromEnd)
+        #expect(!state.hasNewBelow)
+    }
+
+    @Test func aMessageFoundBySearchOffersTheWayBack() {
+        var state = ConversationScrollState()
+        state.leaveEnd(atReload: 0)
+        _ = state.update(.init(contentHeight: 50_000, height: 700, offset: 1_200))
+        #expect(state.isAwayFromEnd)
+    }
+
+    @Test func historyLoadedForASearchResultIsntNewBelow() {
+        var state = ConversationScrollState()
+        state.arrived(atReload: 0)
+        state.leaveEnd(atReload: 1)
+        _ = state.update(.init(contentHeight: 50_000, height: 700, offset: 1_200))
+        // The longer transcript comes with the load, before or after the jump.
+        state.arrived(atReload: 1)
+        #expect(!state.hasNewBelow)
+        state.arrived(atReload: 1)
+        #expect(state.hasNewBelow)
+    }
 }

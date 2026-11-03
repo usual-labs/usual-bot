@@ -15,11 +15,22 @@ struct ConversationViewport: Equatable {
 
 /// Scroll intent is separate from geometry: changing a row's height isn't a user's scroll.
 struct ConversationScrollState {
-    private(set) var followsEnd = true
+    private(set) var followsEnd = true {
+        didSet { if followsEnd { hasNewBelow = false } }
+    }
     private(set) var isScrollingByHand = false
     private(set) var viewport: ConversationViewport?
+    /// Something arrived at the end while the reader was away from it.
+    private(set) var hasNewBelow = false
     /// The transcript load a search jumped into, which mustn't send the reader to the end.
     private var jumpedLoad: Int?
+    private var arrivalLoad: Int?
+
+    /// Away from the newest message, so a button offers the way back.
+    var isAwayFromEnd: Bool {
+        guard !followsEnd, let viewport else { return false }
+        return !viewport.isNearEnd
+    }
 
     mutating func update(_ viewport: ConversationViewport) -> CGFloat? {
         guard viewport.isUsable else { return nil }
@@ -54,6 +65,18 @@ struct ConversationScrollState {
 
     /// A gesture's final phase can be lost when the app stops being active.
     mutating func resume() -> CGFloat? { scrollingByHand(false) }
+
+    /// The conversation changed at its end. A change that came with a new load is history, not news.
+    mutating func arrived(atReload load: Int) {
+        defer { arrivalLoad = load }
+        if !followsEnd, load == arrivalLoad { hasNewBelow = true }
+    }
+
+    /// The jump-to-latest button: back to the newest message, and follow it again.
+    mutating func jumpToEnd() -> CGFloat? {
+        followsEnd = true
+        return correction
+    }
 
     private var correction: CGFloat? {
         guard let viewport, !isScrollingByHand else { return nil }

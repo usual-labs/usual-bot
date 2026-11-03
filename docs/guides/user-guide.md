@@ -96,7 +96,9 @@ A date such as "Yesterday 12:27 PM" sits above the first message and again after
 or an hour passes. Hover a message on the Mac to see its time, or long-press it on iPhone.
 
 A chat opens at its newest message and follows new replies while you’re at the end. Scroll up to
-read older messages without being pulled back down; scroll to the end to follow replies again.
+read older messages without being pulled back down. The round arrow button above the message box
+takes you back to the newest message and follows replies again; it has a dot when something new
+came in while you were away. Scrolling to the end does the same.
 
 - **Attachments.** Use **+**, drag and drop, or paste. On iPhone, pick from Photos, the camera or
   Files. Images up to 25 MB and other files up to 50 MB.
