@@ -120,6 +120,9 @@ All notable changes to Usual Bot are listed here. The format follows
 - **Messages arrive with a small animation,** which Reduce Motion turns off. On the Mac, the message
   box stays one line until your text wraps, and a message's actions sit right beside it.
 
+- **iPhone follows the system text size.** The chat list, chats, cards, the message box, profiles,
+  sheets and settings grow with it, with the in-app chat text size on top. At the largest sizes,
+  rows wrap instead of cutting text off, and the message box gives your text the full width.
 - **The app says "Bot" everywhere** for the agents you chat with, matching New, Rename and Delete Bot.
 - **Sheets look and work the same everywhere.** On iPhone, Cancel and the main action sit in the
   bar; on the Mac, Esc cancels and Return confirms. Start from scratch in New Routine has Back.
