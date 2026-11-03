@@ -53,6 +53,9 @@ struct ContactRow: View {
                     Spacer(minLength: 0)
                     ContactIndicator(needsYou: false, unreadCount: contact.unreadCount)
                 }
+                // The text's own height: the taller unread badge overhangs it rather than moving
+                // the row when a count appears.
+                .frame(height: Self.previewLineHeight)
             }
         }
         .padding(.vertical, 4)
@@ -75,11 +78,13 @@ struct ContactRow: View {
         private static let lineGap: CGFloat = 4
         private static let nameFont = Font.system(size: 17)
         private static let previewFont = Font.system(size: 15.5)
+        private static let previewLineHeight: CGFloat = 19
     #else
         private static let gap: CGFloat = 12
         private static let lineGap: CGFloat = 2
         private static let nameFont = Font.system(size: 15, weight: .medium)
         private static let previewFont = Font.system(size: 13)
+        private static let previewLineHeight: CGFloat = 16
     #endif
 
     @ViewBuilder private var avatar: some View {
