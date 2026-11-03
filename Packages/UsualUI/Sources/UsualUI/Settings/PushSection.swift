@@ -23,12 +23,12 @@ struct PushSection: View {
         Section {
             switch push.phase {
             case .loading:
-                Text("Checking your gateway…").foregroundStyle(.secondary)
+                Text("Checking your gateway…").foregroundStyle(Theme.secondaryInk)
             case .notInstalled:
                 Text("Your gateway doesn’t have the Usual Bot push plugin yet.")
                 Link("How to install it", destination: Self.guide)
             case .failed(let reason):
-                Text(reason).foregroundStyle(.red)
+                Text(reason).foregroundStyle(Theme.danger)
                 Button("Try Again") { Task { await push.refresh() } }
             case .ready:
                 form
@@ -55,33 +55,44 @@ struct PushSection: View {
         case .off:
             EmptyView()
         case .ntfy:
-            TextField("Server", text: $push.server).autocorrectionDisabled()
-            TextField("Topic", text: $push.topic).autocorrectionDisabled()
-            SecureField(
-                push.hasNtfyToken ? "Access token (saved)" : "Access token (optional)", text: $ntfyToken)
+            PushField("Server", text: $push.server, prompt: "https://ntfy.sh")
+            PushField("Topic", text: $push.topic, prompt: "Required")
+            PushField("Access token", text: $ntfyToken, prompt: push.hasNtfyToken ? "Saved" : "Optional", secret: true)
         case .pushover:
-            SecureField(push.hasUserKey ? "User key (saved)" : "User key", text: $userKey)
-            SecureField(push.hasToken ? "Application token (saved)" : "Application token", text: $token)
+            PushField("User key", text: $userKey, prompt: push.hasUserKey ? "Saved" : "Required", secret: true)
+            PushField("Application token", text: $token, prompt: push.hasToken ? "Saved" : "Required", secret: true)
         }
         if gatewayIsUnencrypted, push.service != .off {
             Text("Your gateway connection isn’t encrypted, so these could be read on the way there.")
-                .foregroundStyle(.orange)
+                .foregroundStyle(Theme.needsYouInk)
         }
-        HStack {
-            Button("Save") { run { try await save() } }
-            if push.service != .off {
-                Button("Send Test") {
-                    run {
-                        try await push.saveAndSendTest(changes)
-                        clearSecrets()
-                        result = String(localized: "Sent through \(serviceName). It should arrive in a moment.")
-                    }
-                }
+        #if os(iOS)
+            // Rows of their own: two buttons in one row of a list both run on a tap.
+            saveButton
+            if push.service != .off { testButton }
+        #else
+            HStack {
+                saveButton
+                if push.service != .off { testButton }
+            }
+        #endif
+        if let result { Text(result).foregroundStyle(Theme.secondaryInk) }
+        if let problem { Text(problem).foregroundStyle(Theme.danger) }
+    }
+
+    private var saveButton: some View {
+        Button("Save") { run { try await save() } }.disabled(isBusy)
+    }
+
+    private var testButton: some View {
+        Button("Send Test") {
+            run {
+                try await push.saveAndSendTest(changes)
+                clearSecrets()
+                result = String(localized: "Sent through \(serviceName). It should arrive in a moment.")
             }
         }
         .disabled(isBusy)
-        if let result { Text(result).foregroundStyle(.secondary) }
-        if let problem { Text(problem).foregroundStyle(.red) }
     }
 
     private var serviceName: String { push.service == .pushover ? "Pushover" : "ntfy" }
@@ -120,6 +131,44 @@ struct PushSection: View {
             } catch {
                 problem = AppModel.describe(error)
             }
+        }
+    }
+}
+
+/// A labelled field: on iPhone a bare field's name goes once something is typed in it.
+private struct PushField: View {
+    let label: LocalizedStringKey
+    @Binding var text: String
+    let prompt: LocalizedStringKey
+    var secret = false
+
+    init(_ label: LocalizedStringKey, text: Binding<String>, prompt: LocalizedStringKey, secret: Bool = false) {
+        self.label = label
+        _text = text
+        self.prompt = prompt
+        self.secret = secret
+    }
+
+    var body: some View {
+        #if os(iOS)
+            LabeledContent(label) {
+                field.multilineTextAlignment(.trailing)
+            }
+        #else
+            field
+        #endif
+    }
+
+    @ViewBuilder private var field: some View {
+        if secret {
+            SecureField(label, text: $text, prompt: Text(prompt))
+        } else {
+            TextField(label, text: $text, prompt: Text(prompt))
+                .autocorrectionDisabled()
+                #if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.URL)
+                #endif
         }
     }
 }

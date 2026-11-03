@@ -23,6 +23,18 @@ struct NotificationSettings: View {
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
+        if status == .denied {
+            Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Notifications are off")
+                        .font(.headline)
+                        .foregroundStyle(Theme.ink)
+                    Text("Turn them on for Usual Bot in \(Self.settingsName), or none of the alerts below can appear.")
+                        .foregroundStyle(Theme.secondaryInk)
+                }
+                Button("Open \(Self.settingsName)", action: openSystemSettings)
+            }
+        }
         Section {
             Toggle("Messages and replies", isOn: $messages)
             Toggle("When an agent needs you", isOn: $needsYou)
@@ -35,6 +47,12 @@ struct NotificationSettings: View {
             Text(
                 "Alerts appear when you’re not using Usual Bot. Hiding previews keeps what agents say and ask for out of new notifications."
             )
+        }
+        // On the top section: a list loads lower ones only when they scroll into view, and the
+        // row above needs the permission straight away.
+        .task { await refresh() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await refresh() } }
         }
         if isSignedIn {
             PushSection(
@@ -59,27 +77,29 @@ struct NotificationSettings: View {
             } else {
                 Button("Open Notification Settings", action: openSystemSettings)
             }
-            if let problem { Text(problem).foregroundStyle(.red) }
+            if let problem { Text(problem).foregroundStyle(Theme.danger) }
         }
         #if os(iOS)
             Section {
                 Text(
                     "Without push, iPhone alerts aren’t instant: the connection closes soon after you leave the app, and iOS decides when Usual Bot can check for new messages, which can take hours."
                 )
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.secondaryInk)
             }
         #endif
         Section {
             Text("Your device’s notification settings and Focus can also silence alerts.")
-                .foregroundStyle(.secondary)
-        }
-        .task { await refresh() }
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await refresh() } }
+                .foregroundStyle(Theme.secondaryInk)
         }
     }
 
     private var anyEnabled: Bool { messages || needsYou || tasks }
+
+    #if os(macOS)
+        private static let settingsName = String(localized: "System Settings")
+    #else
+        private static let settingsName = String(localized: "Settings")
+    #endif
 
     private var permissionLabel: String {
         switch status {

@@ -61,6 +61,19 @@ struct DemoTests {
         #expect(try await model.createRoom(named: "Billing", agents: agents) != id)
     }
 
+    /// Push's Save and Send Test work in the demo, as if the gateway had taken them.
+    @Test func demoPushSavesAndSendsATestWithoutAGateway() async throws {
+        let model = AppModel.demo()
+        let push = model.push
+        push.service = .pushover
+        try await push.save(
+            .init(token: "app-token", userKey: "user-key", messages: true, needsYou: true, previews: false))
+        #expect(push.hasToken && push.hasUserKey && !push.hasNtfyToken)
+        #expect(push.isActive)
+        try await push.saveAndSendTest(.init(messages: true, needsYou: false, previews: true))
+        #expect(push.service == .pushover && push.hasToken)
+    }
+
     @Test func demoShowsUsageForEveryBotThatAgreesAcrossPeriods() async {
         let model = AppModel.demo()
         await model.usage.refresh()

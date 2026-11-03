@@ -3,6 +3,7 @@
     import Carbon.HIToolbox
     import ServiceManagement
     import SwiftUI
+    import UsualUI
 
     struct DesktopSettings: View {
         let controller: QuickPanelController
@@ -20,7 +21,7 @@
                 if loginStatus == .requiresApproval {
                     Button("Approve in Login Items") { SMAppService.openSystemSettingsLoginItems() }
                 }
-                if let loginProblem { Text(loginProblem).foregroundStyle(.red) }
+                if let loginProblem { Text(loginProblem).foregroundStyle(Theme.danger) }
             } header: {
                 Text("Mac")
             } footer: {
@@ -37,10 +38,10 @@
                         .disabled(!controller.keyboardShortcut.isEnabled)
                 }
                 if let problem = controller.keyboardShortcut.problem {
-                    Text(problem).foregroundStyle(.red)
+                    Text(problem).foregroundStyle(Theme.danger)
                 } else if !controller.keyboardShortcut.isEnabled {
                     Text("Shortcut disabled. You can still open Quick Message from the menu bar.")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.secondaryInk)
                 }
             } header: {
                 Text("Quick Message")

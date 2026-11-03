@@ -47,6 +47,8 @@ public final class PushSettings {
     private var lastNames: [String: String]?
     private var reportedFocus: Bool?
     private var isReporting = false
+    /// Saves and tests stay here, as if the gateway took them.
+    private var isDemo = false
 
     private static let path = "/api/plugins/usual-push"
     private static let log = Logger(subsystem: "UsualBot", category: "push")
@@ -106,6 +108,7 @@ public final class PushSettings {
     }
 
     public func save(_ changes: Changes) async throws {
+        if isDemo { return saveDemo(changes) }
         guard let auth = auth() else { throw GatewayError.disconnected }
         let wire = Wire(
             service: service.rawValue, server: server, topic: topic, message: changes.messages,
@@ -118,8 +121,15 @@ public final class PushSettings {
     /// test of unsaved changes would go through the old service and still say it was sent.
     public func saveAndSendTest(_ changes: Changes) async throws {
         try await save(changes)
+        if isDemo { return }
         guard let auth = auth() else { throw GatewayError.disconnected }
         _ = try await auth.json(Done.self, path: "\(Self.path)/test", method: "POST")
+    }
+
+    private func saveDemo(_ changes: Changes) {
+        hasNtfyToken = hasNtfyToken || changes.ntfyToken != nil
+        hasToken = hasToken || changes.token != nil
+        hasUserKey = hasUserKey || changes.userKey != nil
     }
 
     private func adopt(_ wire: Wire) {
@@ -177,6 +187,7 @@ public final class PushSettings {
             service = .ntfy
             topic = "my-agents"
             phase = .ready
+            isDemo = true
         }
     #endif
 }
