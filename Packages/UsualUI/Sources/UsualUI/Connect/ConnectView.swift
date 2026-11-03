@@ -11,6 +11,22 @@ struct ConnectView<Options: View>: View {
     @FocusState private var addressFocused: Bool
 
     var body: some View {
+        // Scrolls so the keyboard can't hide the button or a problem under the field.
+        GeometryReader { proxy in
+            ScrollView {
+                content
+                    .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+            }
+            // Bouncing when it fits is what lets a drag put the iPhone keyboard away.
+            .scrollDismissesKeyboard(.interactively)
+            #if os(macOS)
+                .scrollBounceBehavior(.basedOnSize)
+            #endif
+        }
+        .background(Theme.window)
+    }
+
+    private var content: some View {
         VStack(spacing: 24) {
             mark
             VStack(spacing: 6) {
@@ -34,8 +50,6 @@ struct ConnectView<Options: View>: View {
         }
         .frame(maxWidth: 380)
         .padding(32)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Theme.window)
     }
 
     private var form: some View {
