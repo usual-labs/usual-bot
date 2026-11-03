@@ -42,6 +42,8 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 
 ## Lists and text
 
+- **`.font(.system(size:))` ignores Dynamic Type,** and `Font.custom(_:size:relativeTo:)` doesn't help with the system font. Use `scaledFont`, and don't scale a size twice: `messageTextSize` and `composerButtonSize` arrive scaled. A `Spacer` in an `AnyLayout` that switches from a row to a column at accessibility sizes stretches the column; add it only in the row.
+- **A scaled glyph overflows a fixed frame.** At the largest size a 13 pt symbol is about 44 pt, so a symbol in a fixed 28 pt circle keeps a fixed size, or the circle scales with it through a capped `@ScaledMetric`.
 - **Style inline runs explicitly when the view sets a font.** `Text` draws an `AttributedString`'s strong and emphasized intents only with no explicit font, so `MarkdownView.styled` sets one per run.
 - **Don't overlay transcript rows.** Replies run the full column width, so an overlay covers text; `MessageRow` puts the bar in a fixed slot beside the message.
 - **Size reply images from their own pixels, and let them shrink.** A `maxWidth`/`maxHeight` frame around `scaledToFit` takes the whole width, so the border runs past the picture. A fixed size pushes the iPhone column off-screen. `ReplyImage` uses `.aspectRatio(size, contentMode: .fit)` with `.frame(maxWidth: size.width)`.

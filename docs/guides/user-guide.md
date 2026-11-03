@@ -389,7 +389,8 @@ connection indicator. On iPhone the gear sits at the top of the list, with a dot
 and Settings opens with your gateway at the top. Preferences stay on this device.
 
 - **General:** follow the system appearance or choose light or dark, and change chat text size.
-  On Mac, choose Return or ⌘Return to send messages, and whether to launch at login.
+  On iPhone the whole app also follows the text size in the system's Display & Brightness or
+  Accessibility settings, with chat text size on top of it. On Mac, choose Return or ⌘Return to send messages, and whether to launch at login.
 - **Quick Message (Mac):** in General, click the keyboard shortcut and press a new combination
   including Control, Option or Command. Esc cancels. A shortcut macOS refuses leaves your previous
   choice in place. **Disable Shortcut** keeps Quick Message available from the menu bar;
