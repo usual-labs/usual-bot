@@ -17,11 +17,34 @@ struct DemoTests {
         #expect(model.thread(for: try #require(contacts.first { $0.id == "atlas" })).state.items.count == 5)
 
         let ops = model.thread(for: try #require(contacts.first { $0.id == "ops" }))
-        #expect(ops.secrets.count == 1)
         #expect(!ops.isLinkUnencrypted)
         let ledger = model.thread(for: try #require(contacts.first { $0.id == "ledger" }))
         #expect(ledger.secrets.first?.kind == .sudo(command: "sudo systemctl restart invoice-worker"))
+        #expect(ledger.secrets.count == 2)
         #expect(ledger.isLinkUnencrypted)
+        let scribe = model.thread(for: try #require(contacts.first { $0.id == "scribe" }))
+        #expect(scribe.questions.count == 1)
+        #expect(scribe.connection != nil)
+    }
+
+    @Test func demoListMixesIdleUnreadWorkingAndNeedsYou() throws {
+        let contacts = AppModel.demo().sidebarContacts
+        let activity = Dictionary(uniqueKeysWithValues: contacts.map { ($0.name, $0.activity) })
+        #expect(
+            activity == [
+                "Forge": .needsYou, "Atlas": .idle, "Scribe": .needsYou, "Ops": .working, "Ledger": .needsYou,
+                "Launch crew": .idle,
+            ])
+        #expect(contacts.first { $0.id == "atlas" }?.unreadCount == 1)
+        #expect(contacts.first { $0.id == "ops" }?.preview == "Find what's filling the disk on db-1.")
+    }
+
+    @Test func stoppingTheDemosRunningReplyEndsIt() throws {
+        let model = AppModel.demo()
+        let ops = model.thread(for: try #require(model.sidebarContacts.first { $0.id == "ops" }))
+        ops.stop()
+        #expect(!ops.state.isRunning)
+        #expect(ops.state.items.last?.content == .notice("Stopped"))
     }
 
     @Test func demoShowsUsageForEveryBotThatAgreesAcrossPeriods() async {

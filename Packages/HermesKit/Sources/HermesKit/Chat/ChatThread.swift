@@ -492,6 +492,15 @@ public final class ChatThread {
 
     /// Asks the agent to stop the running turn. The gateway confirms with an "interrupted" reply.
     public func stop() {
+        #if DEBUG
+            // The demo's running reply has no gateway to interrupt it.
+            if playsDemoReplies, state.isRunning, channel() == nil {
+                apply(
+                    GatewayEvent(
+                        type: "message.complete", sessionID: "sample", seq: nil, payload: ["status": "interrupted"]))
+                return
+            }
+        #endif
         guard state.isRunning, let sessionID, let channel = channel() else { return }
         Task {
             do {

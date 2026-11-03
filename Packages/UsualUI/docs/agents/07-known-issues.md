@@ -64,7 +64,7 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **Unverified: ⌘. for Stop.** A hidden button in `MessageBox`, as ⌘K is in `RootView`; automation couldn't press it without taking the keyboard.
 - **Unverified: Mac paste.** ⌘V uses `onPasteCommand(of: [.fileURL, .image])`. Plain text paste wasn't checked by automation. If it breaks, drop the modifier and keep drag-and-drop and the paperclip.
 - **Unverified: the iPhone sign-in sheet closes itself.** `SignInPage` cancels the task running `WebAuthenticationSession.authenticate` once Hermes says the app connected, relying on task cancellation to dismiss the sheet. Not yet run on a device or Simulator; if the sheet stays, keep an `ASWebAuthenticationSession` and call `cancel()` instead.
-- **The demo's Connect card and Apps page don't share state.** Connecting Notion in Atlas's chat leaves it unconnected on the Apps page; each fakes its own result.
+- **The demo's Connect card and Apps page don't share state.** Connecting Notion in Scribe's chat leaves it unconnected on the Apps page; each fakes its own result.
 - **Demo mode can't show a thinking level change.** `ChatThread.setReasoning` needs a live session, so the slider snaps back there.
 
 ## Audio and video

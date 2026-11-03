@@ -109,7 +109,7 @@
                     "scribe", "Scribe", preview: "Two headline options for the launch post", minutesAgo: 95,
                     about: "Drafts posts, release notes and emails in the house style."),
                 agent(
-                    "ops", "Ops", preview: "Here's the summary as a voice memo.", minutesAgo: 4,
+                    "ops", "Ops", preview: Self.opsTask, minutesAgo: 1,
                     about: "Watches servers, backups and costs, and reports each morning.",
                     section: Self.backOffice),
                 agent(
@@ -161,20 +161,22 @@
                     answer: .answered(
                         "About **40,000 pages**, re-indexed nightly. Turbopuffer stores them for ~$6 a month."))
             ]
-            threads["atlas"]?.showDemo(DemoConnections.request)
+            // The list shows a mix, not only Bots that need you: Atlas's last reply is unread
+            // and Ops is in the middle of one.
+            threads["atlas"]?.unreadCount = 1
             threads["ops"] = ChatThread.sample(
                 "ops",
                 state: ThreadState(
                     history: dated(opsChat, from: ago(6 * 60 + 4), to: ago(6 * 60))
                         + dated(DemoMedia.voiceMemoTurn, from: ago(5), to: ago(4)), running: false))
-            threads["ops"]?.receive(
-                SecretPrompt(
-                    id: "demo-secret", sessionID: "sample",
-                    kind: .secret(
-                        name: "STATUSPAGE_API_KEY", message: "The status-report skill needs a Statuspage API key.")))
             threads["ops"]?.state.addBackgroundResult(
                 task: "Check last night's backups on all three servers",
                 result: "All three backups finished between 02:10 and 02:40 and **restore-tested** clean.")
+            threads["ops"]?.state.sendLocally(Self.opsTask)
+            threads["ops"]?.apply(
+                GatewayEvent(
+                    type: "tool.start", sessionID: "sample", seq: nil,
+                    payload: ["tool_id": "demo-du", "name": "terminal", "context": "ssh db-1 du -sh /var/* | sort -h"]))
             threads["ops"]?.usage = ChatUsage(
                 context: .init(used: 172_000, max: 200_000, percent: 86, estimated: false), input: 2_340_000,
                 output: 96_000, calls: 212, compressions: 2)
@@ -216,10 +218,16 @@
                             choices: ["Search that keeps up", "Find anything in your docs", "Something else"],
                             allowsMultiple: false)
                     ]))
+            threads["scribe"]?.showDemo(DemoConnections.request)
+            // Ledger holds the rest of what can need you, so only three Bots do.
             threads["ledger"]?.receive(
                 SecretPrompt(
                     id: "demo-sudo", sessionID: "sample", kind: .sudo(command: "sudo systemctl restart invoice-worker"))
             )
+            threads["ledger"]?.receive(
+                SecretPrompt(
+                    id: "demo-secret", sessionID: "sample",
+                    kind: .secret(name: "STRIPE_API_KEY", message: "The invoicing skill needs a Stripe API key.")))
             for prompt in Demo.vaultPrompts { threads["ledger"]?.receive(prompt) }
             // Shows the warning a gateway on plain http gets.
             threads["ledger"]?.gateway = { try? GatewayAddress(parsing: "http://192.168.1.20:9119") }
@@ -306,6 +314,8 @@
         ]
 
         static let chartPath = "/home/hermes/.hermes/profiles/ops/cache/cpu-overnight.png"
+        /// What Ops is working on when the demo opens.
+        static let opsTask = "Find what's filling the disk on db-1."
 
         private var opsChat: [HistoryMessage] {
             [
@@ -491,7 +501,7 @@
                     minutesAgo: 31),
                 event("message.member", from: member("scribe"), DemoMedia.clipReply, minutesAgo: 30),
             ]
-            return RoomThread.sample(roomSummary, events: events, retries: ["demo-retry"])
+            return RoomThread.sample(roomSummary, events: events)
         }
 
         private var roomSummary: RoomSummary {

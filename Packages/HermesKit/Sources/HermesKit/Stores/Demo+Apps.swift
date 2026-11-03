@@ -18,7 +18,7 @@
         }
     }
 
-    /// The demo's connected apps: a Connect card in Atlas's chat and the Apps page's hosted apps.
+    /// The demo's connected apps: a Connect card in Scribe's chat and the Apps page's hosted apps.
     /// Its links go nowhere; the demo connects without opening them.
     enum DemoConnections {
         static let request = ConnectionRequest(
