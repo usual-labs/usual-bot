@@ -98,7 +98,8 @@ struct VideoMessage: View {
             }
             .overlay(alignment: .bottomTrailing) {
                 Text(PlayableText.time(video.duration))
-                    .scaledFont(size: 11.5, weight: .semibold).monospacedDigit()
+                    // On a fixed-size video, so it doesn't grow with the text.
+                    .font(.system(size: 11.5, weight: .semibold).monospacedDigit())
                     .foregroundStyle(.white)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
