@@ -114,8 +114,9 @@ read older messages without being pulled back down; scroll to the end to follow 
   hands work to helpers, a line such as "2 of 5 done" or "2 helpers working" shows that; click it to
   see each one. A helper left working in the background stays listed after the reply until it
   finishes.
-- **Stop and steer.** While a reply runs, the send button becomes Stop. Or just send another
-  message: it steers the running turn instead of waiting for it.
+- **Stop and steer.** While a reply runs, the send button becomes Stop, and ⌘. stops it even once
+  you've started typing. Or just send another message: it steers the running turn instead of
+  waiting for it.
 - **React, reply, copy.** Hover or right-click a message on the Mac, or long-press it on iPhone.
   **More Reactions** has the full set. Reply quotes the message above the box. With VoiceOver,
   each message starts with who wrote it, and these are in its actions.
@@ -432,6 +433,7 @@ On the Mac these are also in the menu bar: File, View and Go.
 | Return | Message box | Send by default, or pick from the open `/` or `@` menu |
 | ⌘Return | Mac message box | Send when chosen in Settings |
 | Shift-Return | Message box | New line |
+| ⌘. | Chat or room, while a reply runs | Stop the reply |
 | ↑ / ↓, Tab | `/` or `@` menu | Move, pick |
 | Esc | `/` or `@` menu, reply, edit | Close the menu or cancel |
 | ⇧⌘H | Voice call | End the call |

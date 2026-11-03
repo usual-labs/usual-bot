@@ -144,6 +144,16 @@ struct MessageBox: View {
             .padding(Self.inset)
             .floatingSurface(in: RoundedRectangle(cornerRadius: Self.cornerRadius))
         }
+        .background {
+            // ⌘. stops the reply even after Send has taken Stop's place.
+            if isRunning {
+                Button(stopLabel, action: stop)
+                    .keyboardShortcut(".", modifiers: .command)
+                    .opacity(0)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+        }
         .environment(\.composerButtonSize, Self.buttonSize)
         .animation(.smooth(duration: 0.25), value: expanded)
         .animation(.smooth(duration: 0.2), value: pickingLevel)
