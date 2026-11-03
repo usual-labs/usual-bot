@@ -74,7 +74,7 @@ private struct SkillRow: View {
             }
             .toggleStyle(.switch)
             .labelsHidden()
-            .tint(Theme.ink)
+            .tint(Theme.switchOn)
         }
         .padding(.vertical, 11)
         .help(origin)

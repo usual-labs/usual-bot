@@ -199,7 +199,7 @@ private struct AppRow: View {
                 }
                 .toggleStyle(.switch)
                 .labelsHidden()
-                .tint(Theme.ink)
+                .tint(Theme.switchOn)
             }
         }
         .padding(.vertical, 9)

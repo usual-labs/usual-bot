@@ -114,7 +114,7 @@ struct AppDetailSheet: View {
                 .foregroundStyle(Theme.ink)
         }
         .toggleStyle(.switch)
-        .tint(Theme.ink)
+        .tint(Theme.switchOn)
     }
 
     @ViewBuilder private var signIn: some View {

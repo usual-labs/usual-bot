@@ -69,7 +69,7 @@ struct UnencryptedConsent: View {
             Toggle("Send it anyway", isOn: $isAllowed)
                 .font(.system(size: 13))
                 .foregroundStyle(Theme.ink)
-                .tint(Theme.ink)
+                .tint(Theme.switchOn)
         }
         .padding(10)
         .background(Theme.needsYouFill, in: RoundedRectangle(cornerRadius: 10))

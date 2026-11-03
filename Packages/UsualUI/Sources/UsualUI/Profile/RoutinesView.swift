@@ -149,7 +149,7 @@ private struct RoutineRow: View {
             }
             .toggleStyle(.switch)
             .labelsHidden()
-            .tint(Theme.ink)
+            .tint(Theme.switchOn)
             .disabled(routine.isFinished)
         }
         .padding(.vertical, 11)

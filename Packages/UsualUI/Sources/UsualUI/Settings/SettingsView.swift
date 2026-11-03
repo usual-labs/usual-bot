@@ -72,6 +72,9 @@ public struct SettingsView: View {
             .frame(width: 760, height: 600)
             .toolbar(removing: .title)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+            // The app's ink, as in the main window, not the system's blue and green.
+            .tint(Theme.ink)
+            .toggleStyle(.ink)
             .appPreferences()
         #else
             // Grok's phone settings: a close button at the top left, the account (here, the
@@ -108,6 +111,8 @@ public struct SettingsView: View {
                     }
                 }
             }
+            .tint(Theme.ink)
+            .toggleStyle(.ink)
             .appPreferences()
         #endif
     }

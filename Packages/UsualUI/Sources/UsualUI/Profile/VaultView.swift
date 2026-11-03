@@ -299,7 +299,7 @@ private struct VaultSourceRow: View {
             }
             .toggleStyle(.switch)
             .labelsHidden()
-            .tint(Theme.ink)
+            .tint(Theme.switchOn)
             .disabled(!source.installed)
         }
         .padding(.vertical, 9)
