@@ -134,6 +134,9 @@ in the chat with what it wants to run and why:
 | **Always allow** | Adds it to the agent's permanent allow list. |
 | **Deny** | Refuses; the agent is told and carries on. |
 
+Deny sits beside Allow once, and the wider allows apart from it. On the Mac, point at a button to
+see what it covers; on iPhone the card says so under its buttons.
+
 When an agent asks you a question with choices, the same kind of card shows the options; pick one
 or type your own answer. When it asks one thing with one answer, the card is lighter: tap a choice,
 or type your answer in the message box, which says **Answer** while the question waits. **✕** skips
