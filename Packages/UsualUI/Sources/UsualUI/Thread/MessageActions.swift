@@ -419,6 +419,7 @@ struct ReplyChip: View {
                     .foregroundStyle(Theme.secondaryInk)
                     .frame(width: 24, height: 24)
                     .contentShape(Rectangle())
+                    .touchTarget(width: 24, height: 24)
             }
             .buttonStyle(.clickable)
             .keyboardShortcut(.cancelAction)

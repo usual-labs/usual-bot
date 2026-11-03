@@ -37,6 +37,7 @@ struct QuestionCard: View {
                             .foregroundStyle(Theme.secondaryInk)
                             .frame(width: 28, height: 28)
                             .contentShape(Rectangle())
+                            .touchTarget(width: 28, height: 28)
                     }
                     .buttonStyle(.clickable)
                     .accessibilityLabel(Text("Skip the question"))
@@ -75,7 +76,7 @@ struct QuestionCard: View {
             }
             .font(.system(size: messageSize))
             .padding(.horizontal, 4)
-            .frame(minHeight: 34)
+            .frame(minHeight: CardButtonStyle.rowHeight)
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.clickable)
@@ -176,12 +177,21 @@ struct CardButtonStyle: ButtonStyle {
     /// Takes the full width, for buttons stacked in a narrow card.
     var fill = false
 
+    /// iPhone's buttons, and a question's choices, are at least a fingertip tall.
+    #if os(iOS)
+        static let rowHeight: CGFloat = 44
+        static let fillHeight: CGFloat = 44
+    #else
+        static let rowHeight: CGFloat = 34
+        static let fillHeight: CGFloat = 40
+    #endif
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 13.5, weight: primary ? .semibold : .regular))
             .foregroundStyle(primary ? Theme.primaryInk : Theme.ink)
             .padding(.horizontal, 14)
-            .frame(maxWidth: fill ? .infinity : nil, minHeight: fill ? 40 : 34)
+            .frame(maxWidth: fill ? .infinity : nil, minHeight: fill ? Self.fillHeight : Self.rowHeight)
             .background(primary ? Theme.primary : Color.clear, in: Capsule())
             .overlay { if !primary { Capsule().strokeBorder(Theme.border) } }
             .opacity(configuration.isPressed ? 0.7 : 1)

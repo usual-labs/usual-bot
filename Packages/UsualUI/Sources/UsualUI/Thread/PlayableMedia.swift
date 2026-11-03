@@ -71,6 +71,7 @@ struct SaveShareMenu: View {
                 .foregroundStyle(Theme.secondaryInk)
                 .frame(width: 26, height: 22)
                 .contentShape(Rectangle())
+                .touchTarget(width: 26, height: 22)
         }
         #if os(macOS)
             // `.button` draws a bezel on the Mac.

@@ -25,6 +25,7 @@ struct SideQuestionCard: View {
                         .foregroundStyle(Theme.secondaryInk)
                         .frame(width: 22, height: 22)
                         .contentShape(Rectangle())
+                        .touchTarget(width: 22, height: 22)
                 }
                 .buttonStyle(.clickable)
                 .accessibilityLabel(Text("Dismiss the side question"))

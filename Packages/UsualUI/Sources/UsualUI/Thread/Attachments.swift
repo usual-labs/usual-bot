@@ -226,16 +226,24 @@ struct AttachmentChips: View {
                                     .background(Theme.primary, in: Circle())
                                     .padding(4)
                                     .contentShape(Circle())
+                                    .touchTarget(width: 26, height: 26)
                             }
                             .buttonStyle(.clickable)
                             .accessibilityLabel(Text("Remove \(attachment.name)"))
                         }
                 }
             }
-            .padding(.horizontal, 4)
-            .padding(.top, 4)
+            .padding(.horizontal, Self.margin)
+            .padding(.top, Self.margin)
         }
     }
+
+    #if os(iOS)
+        /// Inside the scroll view, where the remove buttons' hit areas reach past the tiles.
+        private static let margin: CGFloat = 10
+    #else
+        private static let margin: CGFloat = 4
+    #endif
 }
 
 /// One attachment: an image as a thumbnail that opens full size, anything else as a named file.
