@@ -53,6 +53,10 @@ public enum Theme {
     /// Code blocks, which sit on a bubble, and the expanded tool-step list.
     public static let codeFill = Color(light: 0xFAFAFA, dark: 0x1A1A1A)
     public static let online = Color(hex: 0x1FA971)
+    /// Behind a message search jumped to: a pale fill text reads on, ringed by `foundBorder`, which
+    /// stands out from the pane at 3:1 or more in both appearances.
+    static let foundFill = Color(light: 0xFFF0C2, dark: 0x3D3212)
+    static let foundBorder = Color(light: 0xB87A00, dark: 0xE0B04A)
 
     /// Avatar colours for agents whose profile doesn't set one.
     static let agentColors: [RGB] = [0x6E7BFF, 0x1FA971, 0xF2A30F, 0xF0565E, 0x8B5CF6, 0x0EA5E9].map(RGB.init)

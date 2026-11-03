@@ -234,10 +234,14 @@ struct ItemView: View {
             .background {
                 if highlighted == item.id {
                     RoundedRectangle(cornerRadius: 14)
-                        .fill(Color.yellow.opacity(0.22))
+                        .fill(Theme.foundFill)
+                        .strokeBorder(Theme.foundBorder, lineWidth: 2)
                         .padding(-6)
                         .transition(.opacity)
                 }
+            }
+            .onChange(of: highlighted == item.id, initial: true) { _, found in
+                if found { TranscriptAnnouncement.post(TranscriptAnnouncement.found(item)) }
             }
     }
 
