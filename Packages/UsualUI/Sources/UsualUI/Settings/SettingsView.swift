@@ -35,6 +35,7 @@ public struct SettingsView: View {
     /// The app's own connection settings, such as iPhone's built-in Tailscale.
     private let connectionControls: AnyView?
     @State private var page: Page? = .general
+    @State private var confirmsSignOut = false
     @Environment(\.dismiss) private var dismiss
 
     public init(model: AppModel, desktopControls: AnyView? = nil, connectionControls: AnyView? = nil) {
@@ -205,9 +206,10 @@ public struct SettingsView: View {
             .task { await model.loadGatewayDetails() }
             if let connectionControls { connectionControls }
             Section {
-                Button("Sign Out", role: .destructive) { model.signOut() }
+                Button("Sign Out…", role: .destructive) { confirmsSignOut = true }
+                    .signOutConfirmation(isPresented: $confirmsSignOut, gateway: gateway, signOut: model.signOut)
             } footer: {
-                Text("Signing out removes this gateway’s saved sign-in and cached chats from this device.")
+                SignOutNote()
             }
         } else {
             Section { Text("You’re not connected to a gateway. Sign in from the main window.") }

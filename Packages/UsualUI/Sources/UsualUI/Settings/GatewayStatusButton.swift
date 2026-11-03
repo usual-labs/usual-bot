@@ -10,6 +10,7 @@ struct GatewayStatusButton<More: View>: View {
     var compact = false
     let signOut: () -> Void
     @ViewBuilder let more: () -> More
+    @State private var confirmsSignOut = false
 
     var body: some View {
         Menu {
@@ -17,7 +18,7 @@ struct GatewayStatusButton<More: View>: View {
                 Text(statusText)
             }
             more()
-            Button("Sign Out", role: .destructive, action: signOut)
+            Button("Sign Out…", role: .destructive) { confirmsSignOut = true }
         } label: {
             HStack(spacing: 8) {
                 Circle().fill(dotColor).frame(width: 8, height: 8)
@@ -46,6 +47,7 @@ struct GatewayStatusButton<More: View>: View {
         .clickable()
         .menuIndicator(.hidden)
         .accessibilityLabel(Text("Gateway \(gateway.displayName), \(statusText)"))
+        .signOutConfirmation(isPresented: $confirmsSignOut, gateway: gateway, signOut: signOut)
     }
 
     private var label: String {
@@ -59,6 +61,28 @@ struct GatewayStatusButton<More: View>: View {
     private var statusText: String { link.statusText }
 
     private var dotColor: Color { link.dotColor }
+}
+
+extension View {
+    /// Asks before signing out: it can't be undone, and the chats come back only from the gateway.
+    func signOutConfirmation(
+        isPresented: Binding<Bool>, gateway: GatewayAddress, signOut: @escaping () -> Void
+    ) -> some View {
+        confirmationDialog(
+            "Sign out of \(gateway.displayName)?", isPresented: isPresented, titleVisibility: .visible
+        ) {
+            Button("Sign Out", role: .destructive, action: signOut)
+        } message: {
+            SignOutNote()
+        }
+    }
+}
+
+/// What signing out does, under the button and in its confirmation.
+struct SignOutNote: View {
+    var body: some View {
+        Text("Signing out removes this gateway’s saved sign-in and cached chats from this device.")
+    }
 }
 
 extension AppModel.Link {

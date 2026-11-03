@@ -388,7 +388,8 @@ and Settings opens with your gateway at the top. Preferences stay on this device
 - **Voice:** choose the call engine and the language, voice and speed for on-device speech. These
   preferences are shared with the controls inside a call; GPT-Live’s voice stays on the gateway.
 - **Connection:** see the gateway address, status, version and identity when available, or sign out.
-  Signing out removes the saved sign-in and cached chats for that gateway from this device.
+  Signing out removes the saved sign-in and cached chats for that gateway from this device, so the
+  app asks first.
 - **Usage:** see where your Bots' tokens went over the last 7, 30 or 90 days: a chart per day,
   the total, the cost when Hermes knows it, and the share each Bot used. On iPhone it's the row
   under your gateway. **Where the tokens went** splits them into what the model wrote, what was
