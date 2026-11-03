@@ -22,6 +22,10 @@ struct ConversationScroll<Content: View>: View {
     /// A message just jumped to, shown again after the next layout: a move to the end that the
     /// same update queued (history arriving with the jump) lands after `scrollTo` and would win.
     @State private var jumpShown: Int?
+    #if os(iOS)
+        /// A message's words, shown to select part of.
+        @State private var selecting: SelectingText?
+    #endif
 
     var body: some View {
         // `ScrollPosition.scrollTo(id:anchor:)` ignores the anchor on iOS 18 and leaves the message
@@ -102,6 +106,10 @@ struct ConversationScroll<Content: View>: View {
                 .padding(.bottom, 12)
                 .animation(.easeOut(duration: 0.18), value: scroll.isAwayFromEnd)
             }
+            #if os(iOS)
+                .environment(\.selectText) { selecting = SelectingText(text: $0) }
+                .sheet(item: $selecting) { SelectTextSheet(text: $0.text) }
+            #endif
         }
     }
 

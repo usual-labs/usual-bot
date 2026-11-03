@@ -89,6 +89,7 @@ struct MessageRow<Content: View>: View {
     @ViewBuilder let content: Content
 
     @Environment(\.messageActions) private var actions
+    @Environment(\.selectText) private var selectText
     /// The pointer is over the message, or left it a moment ago (on its way to the bar).
     @State private var overMessage = false
     @State private var overBar = false
@@ -300,6 +301,12 @@ struct MessageRow<Content: View>: View {
         }
         Button("Reply", systemImage: "arrowshape.turn.up.left") { actions.reply(item) }
         Button("Copy", systemImage: "doc.on.doc", action: copy)
+        // Only iPhone provides this: the Mac selects within the message itself.
+        if let selectText, !text.isEmpty {
+            Button("Select Text", systemImage: "selection.pin.in.out") {
+                selectText(SelectableText.plain(text))
+            }
+        }
         rewindButtons(actions)
         #if os(iOS)
             if let date = item.date {

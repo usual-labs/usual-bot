@@ -120,8 +120,10 @@ came in while you were away. Scrolling to the end, or sending a message, does th
   you've started typing. Or just send another message: it steers the running turn instead of
   waiting for it.
 - **React, reply, copy.** Hover or right-click a message on the Mac, or long-press it on iPhone.
-  **More Reactions** has the full set. Reply quotes the message above the box. With VoiceOver,
-  each message starts with who wrote it, and these are in its actions.
+  **More Reactions** has the full set. Reply quotes the message above the box. To copy part of a
+  message, drag across its text on the Mac; on iPhone, long-press it, choose **Select Text**, and
+  select what you want in the sheet that opens. With VoiceOver, each message starts with who wrote
+  it, and these are in its actions.
 - **Edit and undo.** On your last message, **Edit** puts it back in the box; send it to replace the
   exchange and get a fresh answer. **Undo** takes the last exchange back.
 
