@@ -104,7 +104,7 @@ struct VaultView: View {
             .contentShape(Capsule())
         }
         .menuStyle(.button)
-        .buttonStyle(.clickable)
+        .buttonStyle(.plain)
         .clickable()
         .menuIndicator(.hidden)
         .fixedSize()

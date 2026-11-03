@@ -201,7 +201,7 @@ struct MessageRow<Content: View>: View {
                     Image(systemName: "ellipsis").frame(width: 28, height: 28).contentShape(Rectangle())
                 }
                 .menuStyle(.button)
-                .buttonStyle(.clickable)
+                .buttonStyle(.plain)
                 .clickable()
                 .menuIndicator(.hidden)
                 .help("More")

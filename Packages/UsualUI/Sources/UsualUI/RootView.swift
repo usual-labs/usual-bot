@@ -353,7 +353,9 @@ struct ContactsSplitView<Footer: View>: View {
                     }
                     newButton
                         .labelStyle(.iconOnly)
-                        .buttonStyle(.clickable)
+                        // Not `.clickable`: a menu ignores that style and draws a grey box.
+                        .buttonStyle(.plain)
+                        .clickable()
                         .font(.system(size: 17))
                         .foregroundStyle(Theme.secondaryInk)
                         .frame(width: 44, height: 44)
