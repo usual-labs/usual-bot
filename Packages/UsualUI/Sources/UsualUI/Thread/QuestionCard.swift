@@ -127,16 +127,15 @@ struct QuestionCard: View {
         }
     }
 
-    /// A, B, C… for a choice, filled when it's picked. Past Z, the number.
+    /// A, B, C… for a choice, filled when it's picked. Past Z, the number. Round, as a list
+    /// marker: an outlined square read as a key to press, and typing a letter mustn't answer
+    /// (your own answer in the box can start with one).
     private func letterChip(_ index: Int, isPicked: Bool) -> some View {
         Text(verbatim: index < 26 ? String(UnicodeScalar(UInt8(65 + index))) : "\(index + 1)")
-            .font(.system(size: 12, weight: .medium))
+            .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(isPicked ? Theme.primaryInk : Theme.secondaryInk)
             .frame(width: 24, height: 24)
-            .background(isPicked ? Theme.primary : .clear, in: RoundedRectangle(cornerRadius: 7))
-            .overlay {
-                if !isPicked { RoundedRectangle(cornerRadius: 7).strokeBorder(Theme.border) }
-            }
+            .background(isPicked ? Theme.primary : Theme.pane, in: Circle())
             .accessibilityHidden(true)
     }
 
