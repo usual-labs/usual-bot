@@ -147,13 +147,14 @@ private struct ChoiceRow: View {
             }
             .padding(.vertical, 10)
             .contentShape(Rectangle())
+            // On the label, not the button: wrapping the button made an element VoiceOver couldn't
+            // press.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(title)
+            // The whole line, which the row cuts short.
+            .accessibilityValue(Text(summary))
         }
         .buttonStyle(.clickable)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(title)
-        // The whole line, which the row cuts short.
-        .accessibilityValue(Text(summary))
-        .accessibilityAddTraits(.isButton)
     }
 }
 
