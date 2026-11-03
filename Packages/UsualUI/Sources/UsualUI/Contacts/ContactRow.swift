@@ -18,7 +18,7 @@ struct ContactRow: View {
                 .padding(.vertical, 4)
                 .help(contact.name)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(accessibilityName))
+                .accessibilityLabel(Text(verbatim: SidebarSpeech.row(contact, preview: "", stamp: nil)))
         } else {
             row
         }
@@ -56,7 +56,17 @@ struct ContactRow: View {
             }
         }
         .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: SidebarSpeech.row(contact, preview: previewText, stamp: spokenStamp)))
+    }
+
+    /// The phone's list says when each chat was last active; the Mac's sidebar doesn't.
+    private var spokenStamp: String? {
+        #if os(iOS)
+            contact.lastActive.map { Self.stamp(for: $0) }
+        #else
+            nil
+        #endif
     }
 
     // Grok's phone list is roomier than the Mac's sidebar: larger type, more space around the avatar.
@@ -101,12 +111,6 @@ struct ContactRow: View {
                 .background(Capsule().fill(Theme.primary))
                 .overlay(Capsule().strokeBorder(Theme.window, lineWidth: 2))
         }
-    }
-
-    private var accessibilityName: String {
-        if contact.activity == .needsYou { return String(localized: "\(contact.name), needs you") }
-        if contact.unreadCount > 0 { return String(localized: "\(contact.name), \(contact.unreadCount) unread") }
-        return contact.name
     }
 
     private var previewText: String {

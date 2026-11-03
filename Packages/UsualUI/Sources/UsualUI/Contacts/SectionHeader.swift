@@ -29,7 +29,7 @@ struct SectionHeader<Actions: View>: View {
                     toggle()
                 }
                 .accessibilityLabel(Text(verbatim: title))
-                .accessibilityValue(isFolded ? Text("Folded") : Text("Open"))
+                .accessibilityValue(Text(verbatim: spokenValue))
                 .accessibilityHint(Text("Touch and hold for the section's options"))
                 .accessibilityAddTraits(.isHeader)
             } else {
@@ -42,8 +42,13 @@ struct SectionHeader<Actions: View>: View {
         Button(action: toggle) { label }
             .buttonStyle(.clickable)
             .accessibilityLabel(Text(verbatim: title))
-            .accessibilityValue(isFolded ? Text("Folded") : Text("Open"))
+            .accessibilityValue(Text(verbatim: spokenValue))
             .accessibilityAddTraits(.isHeader)
+    }
+
+    /// "Folded, needs you, 3 unread": what the folded heading's indicator shows, and the rest.
+    private var spokenValue: String {
+        SidebarSpeech.section(block, isFolded: isFolded)
     }
 
     private var label: some View {
