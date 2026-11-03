@@ -351,18 +351,9 @@ private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
         #if os(macOS)
             // 9 pt centres the name on the line of the window buttons and the sidebar's buttons;
             // the message box sits a little further from the bottom edge.
-            conversation
-                // Text fades on its way under the name.
-                .overlay(alignment: .top) {
-                    LinearGradient(colors: [Theme.pane, Theme.pane.opacity(0)], startPoint: .top, endPoint: .bottom)
-                        .frame(height: 64)
-                        .ignoresSafeArea(.container, edges: .top)
-                        .allowsHitTesting(false)
-                }
-                .safeAreaInset(edge: .top, spacing: 0) { top.padding(.top, 9).padding(.bottom, 8) }
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    bottom.padding(.top, 8).padding(.bottom, bottomPadding ?? 14)
-                }
+            macBars(conversation, top.padding(.top, 9).padding(.bottom, 8)) {
+                bottom.padding(.top, 8).padding(.bottom, bottomPadding ?? 14)
+            }
         #else
             iPhoneBottomBar(conversation, bottom.padding(.top, 8).padding(.bottom, iPhoneBottomPadding))
                 // A view that reaches past the safe area measures it.
@@ -379,6 +370,30 @@ private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
                 .principalToolbarItem(top)
         #endif
     }
+
+    #if os(macOS)
+        /// Solid pane colour reaches the name's bottom edge and then fades, so no text shows beside
+        /// the name. macOS 26's soft scroll edge left the text there readable, over a hairline.
+        private func macBars(
+            _ conversation: some View, _ top: some View, @ViewBuilder bottom: () -> some View
+        ) -> some View {
+            conversation
+                .overlay(alignment: .top) {
+                    LinearGradient(
+                        stops: [
+                            .init(color: Theme.pane, location: 0), .init(color: Theme.pane, location: 0.6),
+                            .init(color: Theme.pane.opacity(0), location: 1),
+                        ], startPoint: .top, endPoint: .bottom
+                    )
+                    // The name's bottom edge is 45 pt down (9 pt margin, 36 pt pill).
+                    .frame(height: 75)
+                    .ignoresSafeArea(.container, edges: .top)
+                    .allowsHitTesting(false)
+                }
+                .safeAreaInset(edge: .top, spacing: 0) { top }
+                .safeAreaInset(edge: .bottom, spacing: 0, content: bottom)
+        }
+    #endif
 
     #if os(iOS)
         /// On iOS 26 the box is a bar the conversation scrolls under, softly blurred and faded as in
