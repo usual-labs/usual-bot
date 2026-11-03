@@ -32,4 +32,19 @@ struct QuickMessageTests {
         #expect(connect?.title == "Atlas wants to connect Notion and Google Drive")
         if case .open = connect?.action {} else { Issue.record("A connection request should open its chat") }
     }
+
+    @Test func aQuickMessageWaitsForItsChatOrSaysWhyItCant() {
+        #expect(QuickSend.readiness(canSend: true, link: .online(.legacy), failure: nil) == .ready)
+        #expect(QuickSend.readiness(canSend: false, link: .online(.legacy), failure: nil) == .opening)
+        #expect(QuickSend.readiness(canSend: false, link: .connecting, failure: nil) == .opening)
+        #expect(
+            QuickSend.readiness(canSend: false, link: .offline("No route to host"), failure: nil)
+                == .blocked("You're offline, so this didn't send. Send it again once Usual Bot reconnects."))
+        #expect(
+            QuickSend.readiness(canSend: false, link: .online(.legacy), failure: "Chat isn't supported yet.")
+                == .blocked("Chat isn't supported yet."))
+        #expect(
+            QuickSend.readiness(canSend: false, link: .online(.legacy), failure: nil, roomServiceStopped: true)
+                == .blocked("The gateway's room service isn't running, so agents won't answer."))
+    }
 }

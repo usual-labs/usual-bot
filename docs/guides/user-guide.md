@@ -343,7 +343,9 @@ Press **⌥Space**, or the shortcut you chose in Settings, to open a small panel
 you’re doing.
 
 - Pick the agent along the top (Tab moves to the next), type, and press Return to send. The answer
-  shows in the panel.
+  shows in the panel. If that chat is still opening, the message waits and sends once it's open;
+  **Cancel** puts it back in the box. If it can't send, for example while you're offline, it stays
+  in the box and the panel says why.
 - ⌘Return opens the full chat; Esc closes the panel.
 - **Waiting on you** lists what every agent and room is waiting for: approvals, with Allow and
   Deny; room replies that stopped partway, with Try Again; and questions, passwords, sign-ins and

@@ -22,12 +22,21 @@ public struct QuickMessageView: View {
     /// The conversation you started from the panel; `nil` while writing a new message.
     @State private var sent: Sent?
     @State private var text = ""
+    /// A message held until its chat opens.
+    @State private var queued: Queued?
+    /// Why the last message didn't send; it's still in the box.
+    @State private var problem: String?
     @FocusState private var fieldFocused: Bool
 
     /// Where a conversation stood when you sent into it: the answer shows what came after.
     struct Sent: Equatable {
         let contactID: Contact.ID
         let start: Int
+    }
+
+    struct Queued: Equatable {
+        let contactID: Contact.ID
+        let text: String
     }
 
     public var body: some View {
@@ -58,6 +67,14 @@ public struct QuickMessageView: View {
         .background(Color.clear.contentShape(Rectangle()).onTapGesture(perform: close))
         .onAppear(perform: appeared)
         .onChange(of: shownAt) { appeared() }
+        .onChange(of: queuedReadiness) { _, readiness in sendQueued(readiness) }
+        .onChange(of: model.link) { _, link in
+            guard case .online = link else { return }
+            problem = nil
+            // Chats open only while online, so one asked for while connecting opens now.
+            if let contact = queuedContact, model.room(for: contact) == nil { model.openThread(for: contact) }
+        }
+        .onChange(of: recipientID) { problem = nil }
         .appPreferences()
         .environment(\.botPictures, model.pictures)
         .environment(\.media, model.media)
@@ -107,6 +124,16 @@ public struct QuickMessageView: View {
     }
 
     private func messageField(placeholder: String) -> some View {
+        VStack(spacing: 0) {
+            messageBox(placeholder: placeholder)
+            QuickSendStatus(waitingFor: queuedContact?.name, problem: problem) {
+                if text.isEmpty, let queued { text = queued.text }
+                queued = nil
+            }
+        }
+    }
+
+    private func messageBox(placeholder: String) -> some View {
         HStack(spacing: 8) {
             TextField(placeholder, text: $text)
                 .textFieldStyle(.plain)
@@ -208,28 +235,72 @@ public struct QuickMessageView: View {
 
     // MARK: - Sending
 
+    /// One message waits for its chat at a time.
     private var canSubmit: Bool {
-        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && queued == nil
     }
 
     private func submit() {
         let message = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !message.isEmpty,
+        guard canSubmit,
             let contact = sent.flatMap({ sent in contacts.first { $0.id == sent.contactID } }) ?? recipient
         else { return }
+        problem = nil
+        if model.room(for: contact) == nil { model.openThread(for: contact) }
+        switch readiness(of: contact) {
+        case .ready: send(message, to: contact)
+        case .opening: queued = Queued(contactID: contact.id, text: message)
+        case .blocked(let reason):
+            problem = reason
+            AccessibilityNotification.Announcement(reason).post()
+            return
+        }
+        recipientID = contact.id
+        text = ""
+    }
+
+    private func send(_ message: String, to contact: Contact) {
         if let room = model.room(for: contact) {
-            guard room.canSend else { return }
             if sent == nil { sent = Sent(contactID: contact.id, start: room.state.items.count) }
             room.send(message)
         } else {
             let thread = model.thread(for: contact)
-            model.openThread(for: contact)
-            guard thread.canSend else { return }
             if sent == nil { sent = Sent(contactID: contact.id, start: thread.state.items.count) }
             thread.send(message)
         }
-        recipientID = contact.id
-        text = ""
+    }
+
+    private func readiness(of contact: Contact) -> QuickSend {
+        if let room = model.room(for: contact) {
+            return QuickSend.readiness(
+                canSend: room.canSend, link: model.link, failure: room.phase.failure,
+                roomServiceStopped: !room.driverRunning)
+        }
+        let thread = model.thread(for: contact)
+        return QuickSend.readiness(canSend: thread.canSend, link: model.link, failure: thread.phase.failure)
+    }
+
+    private var queuedContact: Contact? {
+        queued.flatMap { queued in contacts.first { $0.id == queued.contactID } }
+    }
+
+    /// Watched while a message waits, so it goes as soon as its chat opens.
+    private var queuedReadiness: QuickSend? {
+        queuedContact.map(readiness(of:))
+    }
+
+    private func sendQueued(_ readiness: QuickSend?) {
+        guard let queued, let contact = queuedContact, let readiness else { return }
+        switch readiness {
+        case .opening: return
+        case .ready: send(queued.text, to: contact)
+        case .blocked(let reason):
+            // Back in the box, with why.
+            if text.isEmpty { text = queued.text }
+            problem = reason
+            AccessibilityNotification.Announcement(reason).post()
+        }
+        self.queued = nil
     }
 
     /// The panel closed: what played in it stops. (It's hidden, not removed, so its views don't
