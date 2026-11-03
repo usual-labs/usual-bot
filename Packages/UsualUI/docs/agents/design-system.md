@@ -12,6 +12,8 @@
 
 **Motion.** New items use `AnyTransition.rise` (your message) or `.settle` (everything else); a reply taking over from its streaming draft uses `.identity`, so it doesn't flicker. `ConversationScroll` animates only when `arrival` changes in a chat that has finished loading, otherwise opening a chat replays every message. Each chat and room's transcript is keyed with `.id(contact.id)`: item IDs restart at 0 in every chat, so without it a switch animates one chat's messages into the next. `WorkingRow`, `ShimmerText` and `Breathing` all stand still under Reduce Motion, and any new motion must too.
 
+**Cards sit where they appeared.** In a chat, the cards that wait for you stay after the message that was newest when they came, and what you send while one waits comes after them, with the reply and "Thinking…". Pinned to the end, a tall card (Connect) pushed your message and the reply out of sight on iPhone. "Thinking…" stays hidden while a card has nothing after it: the agent is waiting for you then. Rooms keep their approvals at the end, under replies from the members that aren't waiting.
+
 Native SwiftUI layout and NavigationSplitView provide platform adaptation.
 
 Source anchors: `Package.swift`, `Sources/UsualUI/RootView.swift`, `Sources/UsualUI/Theme/Theme.swift`, `Sources/UsualUI/Thread/Bubbles.swift`, `Sources/UsualUI/Thread/Composer.swift`, `Sources/UsualUI/Thread/ApprovalCard.swift`, `Sources/UsualUI/Room/RoomPane.swift`.

@@ -139,4 +139,26 @@ struct ConversationScrollTests {
         state.arrived(atReload: 1)
         #expect(state.hasNewBelow)
     }
+
+    @Test func sendingBringsTheEndBackWhereverYouHadScrolled() {
+        var state = ConversationScrollState()
+        #expect(state.sent(.init(load: 1, count: 3)) == nil)
+        _ = state.scrollingByHand(true)
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 1_500))
+        _ = state.scrollingByHand(false)
+        #expect(!state.followsEnd)
+        #expect(state.sent(.init(load: 1, count: 4)) == 4_300)
+        #expect(state.followsEnd)
+    }
+
+    @Test func aReloadOrAnUndoIsntSending() {
+        var state = ConversationScrollState()
+        _ = state.sent(.init(load: 1, count: 3))
+        state.leaveEnd(atReload: 2)
+        _ = state.update(.init(contentHeight: 50_000, height: 700, offset: 1_200))
+        // History loaded for a search result holds more of your messages; the result stays put.
+        #expect(state.sent(.init(load: 2, count: 40)) == nil)
+        #expect(state.sent(.init(load: 2, count: 39)) == nil)
+        #expect(!state.followsEnd)
+    }
 }

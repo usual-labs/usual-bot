@@ -98,7 +98,7 @@ or an hour passes. Hover a message on the Mac to see its time, or long-press it 
 A chat opens at its newest message and follows new replies while you’re at the end. Scroll up to
 read older messages without being pulled back down. The round arrow button above the message box
 takes you back to the newest message and follows replies again; it has a dot when something new
-came in while you were away. Scrolling to the end does the same.
+came in while you were away. Scrolling to the end, or sending a message, does the same.
 
 - **Attachments.** Use **+**, drag and drop, or paste. On iPhone, pick from Photos, the camera or
   Files. Images up to 25 MB and other files up to 50 MB.
@@ -144,7 +144,8 @@ When an agent asks you a question with choices, the same kind of card shows the 
 or type your own answer. When it asks one thing with one answer, the card is lighter: tap a choice,
 or type your answer in the message box, which says **Answer** while the question waits. **✕** skips
 it. Approvals also wait in the ⌥Space panel on the Mac, so you can answer
-without opening the chat.
+without opening the chat. A card stays where it appeared: a message you send while it waits, and
+the reply, come after it.
 
 When a skill needs a secret, such as an API key, or a command needs your sudo password, a card asks
 for it in a masked field. **Send** gives it to your gateway, and **Skip** lets the agent carry on

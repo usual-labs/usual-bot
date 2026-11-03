@@ -5,6 +5,8 @@ import SwiftUI
 struct ConversationScroll<Content: View>: View {
     var reload = 0
     var arrival: [Int] = []
+    /// Your messages: one more brings the end back into view.
+    var sent = SentMessages()
     var jump: MessageJump? = nil
     /// Told the jump was taken, so it isn't taken again.
     var jumped: () -> Void = {}
@@ -88,6 +90,7 @@ struct ConversationScroll<Content: View>: View {
                 if phase == .active { move(to: scroll.resume()) }
             }
             .onChange(of: arrival, initial: true) { scroll.arrived(atReload: reload) }
+            .onChange(of: sent, initial: true) { move(to: scroll.sent(sent)) }
             // Over the scroll view, so it sits above the message box and stays put as you scroll.
             .overlay(alignment: .bottom) {
                 ZStack {

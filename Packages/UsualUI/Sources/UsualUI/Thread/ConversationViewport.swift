@@ -25,6 +25,8 @@ struct ConversationScrollState {
     /// The transcript load a search jumped into, which mustn't send the reader to the end.
     private var jumpedLoad: Int?
     private var arrivalLoad: Int?
+    /// Your messages as last counted, to tell one you sent from a reload.
+    private var lastSent: SentMessages?
 
     /// Away from the newest message, so a button offers the way back.
     var isAwayFromEnd: Bool {
@@ -78,6 +80,15 @@ struct ConversationScrollState {
         return correction
     }
 
+    /// You sent a message: show it and what comes back, wherever you'd scrolled to. Another load
+    /// holds other messages, so it says nothing about sending.
+    mutating func sent(_ messages: SentMessages) -> CGFloat? {
+        defer { lastSent = messages }
+        guard let lastSent, lastSent.load == messages.load, messages.count > lastSent.count else { return nil }
+        followsEnd = true
+        return correction
+    }
+
     private var correction: CGFloat? {
         guard let viewport, !isScrollingByHand else { return nil }
         if followsEnd, abs(viewport.offset - viewport.end) > 1 { return viewport.end }
@@ -85,4 +96,10 @@ struct ConversationScrollState {
         if viewport.offset < -1 { return 0 }
         return nil
     }
+}
+
+/// How many of the conversation's messages are yours, in which transcript load.
+struct SentMessages: Equatable {
+    var load = 0
+    var count = 0
 }

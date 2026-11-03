@@ -8,11 +8,17 @@ struct TranscriptView: View {
     let agentName: String
     var jump: MessageJump? = nil
     var jumped: () -> Void = {}
+    /// The last item there was when the waiting cards appeared; `-1` for none, `nil` with no cards.
+    @State private var cardsAfter: Int?
 
     var body: some View {
         // A reloaded transcript numbers its items afresh, so a position kept by item would now
         // point at an older message: start over at the newest one.
-        ConversationScroll(reload: thread.transcriptLoad, arrival: arrival, jump: jump, jumped: jumped) {
+        ConversationScroll(
+            reload: thread.transcriptLoad, arrival: arrival,
+            sent: SentMessages(load: thread.transcriptLoad, count: thread.state.items.count(where: \.isYours)),
+            jump: jump, jumped: jumped
+        ) {
             if let banner = thread.banner {
                 NoticeLine(text: banner)
             }
@@ -22,58 +28,123 @@ struct TranscriptView: View {
             }
             let items = thread.state.items
             let dates = DateLabels.labels(for: items)
-            ForEach(Array(zip(items.indices, items)), id: \.1.id) { index, item in
-                if let date = dates[item.id] { DateLabel(text: date) }
-                // A date between two replies parts them.
-                let isLast = index + 1 == items.count
-                ItemView(
-                    item: Self.shown(items, at: index), agentName: agentName,
-                    joinsAbove: item.isReply && index > 0 && items[index - 1].isReply && dates[item.id] == nil,
-                    joinsBelow: item.isReply
-                        && (isLast
-                            ? !thread.state.draft.isEmpty
-                            : items[index + 1].isReply && dates[items[index + 1].id] == nil),
-                    spokenTexts: Self.spokenTexts(in: items, at: index)
-                )
-                .transition(item.arrival)
-                .accessibilityElement(children: .contain)
+            // One ForEach, so an item or card keeps its view (and what you typed in a card) as the
+            // cards move.
+            ForEach(Self.rows(of: items, cardsAt: cardsIndex), id: \.id) { row in
+                switch row {
+                case .item(let index, _): self.row(items[index], at: index, in: items, dates: dates)
+                case .live: live
+                case .cards: cards
+                }
             }
-            if !thread.state.draft.isEmpty {
-                // Becomes a transcript item when it ends, so it leaves without a fade.
-                AgentBubble(joinsAbove: items.last?.isReply == true) { MarkdownView(thread.state.draft) }
-                    .joined(items.last?.isReply == true)
-                    .transition(.asymmetric(insertion: .settle, removal: .identity))
+        }
+        .onChange(of: hasCards, initial: true) { cardsAfter = hasCards ? items.last?.id ?? -1 : nil }
+        .onChange(of: thread.transcriptLoad) { if hasCards { cardsAfter = items.last?.id ?? -1 } }
+    }
+
+    private var items: [TranscriptItem] { thread.state.items }
+    private var cardsIndex: Int { Self.cardsIndex(in: items, after: cardsAfter) }
+
+    /// A part of the transcript: an item, the reply being written with what the turn is doing, or
+    /// the cards waiting for you.
+    enum Row: Equatable {
+        case item(index: Int, id: Int)
+        case live
+        case cards
+
+        /// An item's ID, not its index, which shifts when one is inserted earlier. Item IDs start at 0.
+        var id: Int {
+            switch self {
+            case .item(_, let id): id
+            case .live: -1
+            case .cards: -2
             }
-            LiveCards(live: thread.state.live)
-            if thread.state.draft.isEmpty, thread.state.isRunning, !lastItemIsLiveActivity, thread.approvals.isEmpty,
-                thread.questions.isEmpty, thread.secrets.isEmpty, thread.vaultPrompts.isEmpty, thread.connection == nil
-            {
-                let live = thread.state.live
-                WorkingRow(text: live.status ?? live.thought ?? String(localized: "Thinking…")).transition(.settle)
-            }
-            VaultCards(thread: thread, agentName: agentName).transition(.settle)
-            if let card = thread.connection {
-                ConnectCard(thread: thread, card: card, agentName: agentName).transition(.settle)
-            }
-            ForEach(thread.approvals) { approval in
-                ApprovalCard(approval: approval, agentName: agentName) { thread.answer(approval, with: $0) }
-                    .transition(.settle)
-            }
-            ForEach(thread.questions) { prompt in
-                QuestionCard(
-                    prompt: prompt, agentName: agentName, answer: { thread.answer(prompt, with: $0) },
-                    skip: { thread.skip(prompt) },
-                    answersFromBox: thread.questionTheBoxAnswers?.id == prompt.id
-                )
+        }
+    }
+
+    /// The items in order with the cards at `split`. What's live follows the newest message, so
+    /// it sits above cards nothing has followed yet.
+    nonisolated static func rows(of items: [TranscriptItem], cardsAt split: Int) -> [Row] {
+        let rows = items.indices.map { Row.item(index: $0, id: items[$0].id) }
+        let tail: [Row] = split < items.count ? [.cards] + rows[split...] + [.live] : [.live, .cards]
+        return Array(rows[..<split]) + tail
+    }
+
+    @ViewBuilder private func row(
+        _ item: TranscriptItem, at index: Int, in items: [TranscriptItem], dates: [Int: String]
+    ) -> some View {
+        if let date = dates[item.id] { DateLabel(text: date) }
+        // A date between two replies parts them.
+        let isLast = index + 1 == items.count
+        ItemView(
+            item: Self.shown(items, at: index), agentName: agentName,
+            joinsAbove: item.isReply && index > 0 && items[index - 1].isReply && dates[item.id] == nil,
+            joinsBelow: item.isReply
+                && (isLast
+                    ? !thread.state.draft.isEmpty
+                    : items[index + 1].isReply && dates[items[index + 1].id] == nil),
+            spokenTexts: Self.spokenTexts(in: items, at: index)
+        )
+        .transition(item.arrival)
+        .accessibilityElement(children: .contain)
+    }
+
+    /// The reply being written and what the turn is doing, after the newest message.
+    @ViewBuilder private var live: some View {
+        if !thread.state.draft.isEmpty {
+            // Becomes a transcript item when it ends, so it leaves without a fade.
+            AgentBubble(joinsAbove: items.last?.isReply == true) { MarkdownView(thread.state.draft) }
+                .joined(items.last?.isReply == true)
+                .transition(.asymmetric(insertion: .settle, removal: .identity))
+        }
+        LiveCards(live: thread.state.live)
+        // A card with nothing after it is what the agent waits for, so it isn't thinking. Once you
+        // write after the card, the agent is working on that.
+        if thread.state.draft.isEmpty, thread.state.isRunning, !lastItemIsLiveActivity,
+            !hasCards || cardsIndex < items.count
+        {
+            let live = thread.state.live
+            WorkingRow(text: live.status ?? live.thought ?? String(localized: "Thinking…")).transition(.settle)
+        }
+    }
+
+    /// What the agent waits on you for.
+    private var hasCards: Bool {
+        !thread.vaultPrompts.isEmpty || thread.connection != nil || !thread.approvals.isEmpty
+            || !thread.questions.isEmpty || !thread.secrets.isEmpty
+    }
+
+    /// Where the waiting cards sit: after the items there were when they appeared, so a message you
+    /// send while one waits, and the answer, come after it like any other message.
+    nonisolated static func cardsIndex(in items: [TranscriptItem], after anchor: Int?) -> Int {
+        guard let anchor else { return items.count }
+        // Undo can remove the anchor itself; an item from another device can land before it.
+        return items.lastIndex { $0.id <= anchor }.map { $0 + 1 } ?? 0
+    }
+
+    @ViewBuilder private var cards: some View {
+        VaultCards(thread: thread, agentName: agentName).transition(.settle)
+        if let card = thread.connection {
+            ConnectCard(thread: thread, card: card, agentName: agentName).transition(.settle)
+        }
+        ForEach(thread.approvals) { approval in
+            ApprovalCard(approval: approval, agentName: agentName) { thread.answer(approval, with: $0) }
                 .transition(.settle)
-            }
-            ForEach(thread.secrets) { prompt in
-                SecretCard(
-                    prompt: prompt, agentName: agentName, isUnencrypted: thread.isLinkUnencrypted,
-                    answer: { thread.answer(prompt, with: $0) }, skip: { thread.skip(prompt) }
-                )
-                .transition(.settle)
-            }
+        }
+        ForEach(thread.questions) { prompt in
+            QuestionCard(
+                prompt: prompt, agentName: agentName, answer: { thread.answer(prompt, with: $0) },
+                skip: { thread.skip(prompt) },
+                answersFromBox: thread.questionTheBoxAnswers?.id == prompt.id
+            )
+            .transition(.settle)
+        }
+        ForEach(thread.secrets) { prompt in
+            SecretCard(
+                prompt: prompt, agentName: agentName, isUnencrypted: thread.isLinkUnencrypted,
+                answer: { thread.answer(prompt, with: $0) }, skip: { thread.skip(prompt) }
+            )
+            .transition(.settle)
         }
     }
 
@@ -122,6 +193,11 @@ extension TranscriptItem {
     /// An agent's message, which joins up with those beside it.
     fileprivate var isReply: Bool {
         if case .assistant = content { true } else { false }
+    }
+
+    /// A message you wrote.
+    var isYours: Bool {
+        if case .user = content { true } else { false }
     }
 
     /// How the item comes in. A reply was on screen as a draft, so it swaps in without a move.

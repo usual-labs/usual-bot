@@ -143,6 +143,8 @@ struct RoomPane: View {
     private var transcript: some View {
         ConversationScroll(
             arrival: [room.state.items.count, room.pending.count, room.working.count, room.retries.count],
+            // A message stays the same count from sending to the room confirming it.
+            sent: SentMessages(count: room.state.items.count(where: \.isYours) + room.pending.count),
             jump: jump, jumped: jumped
         ) {
             if !room.driverRunning {
