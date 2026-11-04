@@ -213,14 +213,14 @@ struct MediaFile: View {
             AttachmentTile(kind: .file, name: name)
             if let file {
                 ShareLink(item: file) { Image(systemName: "square.and.arrow.up") }
-                    .buttonStyle(.clickable)
-                    .foregroundStyle(Theme.secondaryInk)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
                     .help("Share \(name)")
             } else {
                 Button("Get File", systemImage: "arrow.down.circle") { Task { await fetch() } }
                     .labelStyle(.iconOnly)
-                    .buttonStyle(.clickable)
-                    .foregroundStyle(Theme.secondaryInk)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
                     .help(problem ?? String(localized: "Get \(name) from the gateway"))
             }
         }
@@ -250,29 +250,7 @@ struct MediaViewer: View {
     #endif
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 14) {
-                Text(name)
-                    .scaledFont(size: 13, weight: .medium)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .lineLimit(1, accessibility: 3)
-                    .truncationMode(.middle)
-                Spacer()
-                if let file {
-                    ShareLink(item: file) { Image(systemName: "square.and.arrow.up") }
-                        .help("Share")
-                }
-                #if os(macOS)
-                    Button("Save…") { saving = true }
-                #endif
-                Button("Done") { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-            }
-            .buttonStyle(.clickable)
-            .scaledFont(size: 14, weight: .medium)
-            .foregroundStyle(Theme.ink)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 14)
+        NavigationStack {
             ZStack {
                 if let image {
                     image.resizable().scaledToFit()
@@ -282,7 +260,29 @@ struct MediaViewer: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding([.horizontal, .bottom], 18)
+            .navigationTitle(name)
+            #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                        .keyboardShortcut(.cancelAction)
+                }
+                if let file {
+                    ToolbarItem(placement: .primaryAction) {
+                        ShareLink(item: file) { Label("Share", systemImage: "square.and.arrow.up") }
+                            .help("Share")
+                    }
+                }
+                #if os(macOS)
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Save…", systemImage: "square.and.arrow.down") { saving = true }
+                    }
+                #endif
+            }
         }
+        .tint(Theme.ink)
         #if os(macOS)
             .frame(minWidth: 520, idealWidth: 900, minHeight: 420, idealHeight: 700)
             .fileExporter(
@@ -291,7 +291,6 @@ struct MediaViewer: View {
                 defaultFilename: name
             ) { _ in }
         #endif
-        .background(Theme.pane)
         .task {
             image = MediaLoading.image(data, maxPixels: 4096)
             file = MediaLoading.temporaryFile(data, name: name)

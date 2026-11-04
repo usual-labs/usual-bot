@@ -53,13 +53,13 @@ extension EnvironmentValues {
         var body: some View {
             NavigationStack {
                 SelectableTextView(text: text, size: messageSize)
-                    .background(Theme.pane)
                     .navigationTitle("Select Text")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
                     }
             }
+            .tint(Theme.ink)
             .presentationDetents([.medium, .large])
         }
     }

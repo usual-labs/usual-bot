@@ -90,6 +90,7 @@ struct MessageRow<Content: View>: View {
 
     @Environment(\.messageActions) private var actions
     @Environment(\.selectText) private var selectText
+    @Environment(\.chatContact) private var chatContact
     /// The pointer is over the message, or left it a moment ago (on its way to the bar).
     @State private var overMessage = false
     @State private var overBar = false
@@ -162,22 +163,19 @@ struct MessageRow<Content: View>: View {
 
     // MARK: Reactions under the message
 
+    /// System capsules; yours in the chat's colour, as your messages are.
     private var reactionPills: some View {
         HStack(spacing: 4) {
             ForEach(Array(item.reactions.enumerated()), id: \.offset) { _, reaction in
                 Button {
                     actions?.react(reaction.emoji, item)
                 } label: {
-                    Text(reaction.emoji)
-                        .scaledFont(size: 14)
-                        .padding(.horizontal, 7)
-                        .frame(minHeight: 26)
-                        .background(Theme.selection, in: Capsule())
-                        .overlay {
-                            if !reaction.byAgent { Capsule().strokeBorder(Theme.ink.opacity(0.25)) }
-                        }
+                    Text(reaction.emoji).scaledFont(size: 14)
                 }
-                .buttonStyle(.clickable)
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+                .controlSize(.small)
+                .tint(reaction.byAgent ? Theme.ink : chatContact?.accent ?? Theme.ink)
                 .disabled(actions.map { !$0.canReact(item) } ?? true)
                 .help(reaction.byAgent ? String(localized: "From \(agentName)") : String(localized: "Your reaction"))
                 .accessibilityLabel(
@@ -217,8 +215,15 @@ struct MessageRow<Content: View>: View {
             }
         }
 
+        /// Glass buttons, as it floats beside the message over the transcript.
         private func bar(_ actions: MessageActions) -> some View {
-            HStack(spacing: 2) {
+            GlassEffectContainer(spacing: 4) {
+                barButtons(actions)
+            }
+        }
+
+        private func barButtons(_ actions: MessageActions) -> some View {
+            HStack(spacing: 4) {
                 // Grok shows when a message was sent only while you point at it.
                 if isMine, let date = item.date { sentTime(date) }
                 if canReact(actions) {
@@ -230,7 +235,10 @@ struct MessageRow<Content: View>: View {
                     Button("Copy", systemImage: "doc.on.doc", action: copy)
                     rewindButtons(actions)
                 } label: {
-                    Image(systemName: "ellipsis").frame(width: 28, height: 28).contentShape(Rectangle())
+                    // A Mac menu takes no `.glass` button style, so its label carries the glass.
+                    Image(systemName: "ellipsis")
+                        .frame(width: 28, height: 28)
+                        .glassEffect(.regular.interactive(), in: Circle())
                 }
                 .menuStyle(.button)
                 .buttonStyle(.plain)
@@ -239,13 +247,13 @@ struct MessageRow<Content: View>: View {
                 .help("More")
                 if !isMine, let date = item.date { sentTime(date) }
             }
-            .scaledFont(size: 13, weight: .medium)
-            .foregroundStyle(Theme.secondaryInk)
+            .scaledFont(size: 12, weight: .medium)
         }
 
         private func sentTime(_ date: Date) -> some View {
             Text(DateLabels.time(of: date))
                 .scaledFont(size: 11.5)
+                .foregroundStyle(Theme.secondaryInk)
                 .monospacedDigit()
                 .fixedSize()
                 .padding(.horizontal, 4)
@@ -254,9 +262,10 @@ struct MessageRow<Content: View>: View {
 
         private func barButton(_ systemImage: String, _ label: String, action: @escaping () -> Void) -> some View {
             Button(action: action) {
-                Image(systemName: systemImage).frame(width: 28, height: 28).contentShape(Rectangle())
+                Image(systemName: systemImage).frame(width: 18, height: 18)
             }
-            .buttonStyle(.clickable)
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
             .help(label)
             .accessibilityLabel(Text(label))
         }
@@ -365,11 +374,11 @@ private struct ReactionPicker: View {
                 } label: {
                     Image(systemName: showsMore ? "chevron.up" : "plus")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Theme.secondaryInk)
                         .frame(width: Self.size, height: Self.size)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.clickable)
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
                 .help(showsMore ? "Fewer" : "More reactions")
                 .accessibilityLabel(Text(showsMore ? "Fewer reactions" : "More reactions"))
             }
@@ -389,7 +398,7 @@ private struct ReactionPicker: View {
             Text(emoji).font(.system(size: 22)).frame(width: Self.size, height: Self.size)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.clickable)
+        .buttonStyle(.borderless)
         .accessibilityLabel(Text("React \(emoji)"))
     }
 }
@@ -423,18 +432,18 @@ struct ReplyChip: View {
             Button(action: cancel) {
                 Image(systemName: "xmark")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Theme.secondaryInk)
                     .frame(width: 24, height: 24)
                     .contentShape(Rectangle())
                     .touchTarget(width: 24, height: 24)
             }
-            .buttonStyle(.clickable)
+            .buttonStyle(.borderless)
+            .foregroundStyle(.secondary)
             .keyboardShortcut(.cancelAction)
             .accessibilityLabel(Text(cancelLabel))
         }
         .padding(.leading, 12)
         .padding(.trailing, 4)
         .frame(minHeight: 34)
-        .background(Theme.selection, in: RoundedRectangle(cornerRadius: 12))
+        .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }

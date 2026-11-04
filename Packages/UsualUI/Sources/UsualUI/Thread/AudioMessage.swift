@@ -75,10 +75,9 @@ struct AudioMessage: View {
             Task { await togglePlay() }
         } label: {
             ZStack {
-                Circle().fill(Theme.primary)
                 switch phase {
                 case .loading:
-                    ProgressView().controlSize(.small).tint(Theme.primaryInk)
+                    ProgressView().controlSize(.small)
                 case .failed:
                     Image(systemName: "arrow.clockwise")
                 case .unplayable:
@@ -88,11 +87,10 @@ struct AudioMessage: View {
                 }
             }
             .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(Theme.primaryInk)
-            .frame(width: 34, height: 34)
-            .contentShape(Circle())
+            .frame(width: 20, height: 20)
         }
-        .buttonStyle(.clickable)
+        .prominentButton()
+        .buttonBorderShape(.circle)
         .disabled(phase == .loading || phase.isUnplayable)
         .accessibilityLabel(Text(playLabel))
         .help(playLabel)
@@ -118,12 +116,10 @@ struct AudioMessage: View {
         } label: {
             Text(speedText)
                 .scaledFont(size: 11.5, weight: .semibold).monospacedDigit()
-                .foregroundStyle(Theme.secondaryInk)
-                .padding(.horizontal, 6)
-                .frame(minHeight: 20)
-                .background(Theme.selection, in: Capsule())
         }
-        .buttonStyle(.clickable)
+        .buttonStyle(.bordered)
+        .buttonBorderShape(.capsule)
+        .controlSize(.mini)
         .accessibilityLabel(Text("Playback speed \(speedText)"))
         .help("Playback speed")
     }
@@ -135,7 +131,7 @@ struct AudioMessage: View {
             Button(showsTranscript ? "Hide transcript" : "Show transcript") {
                 withAnimation(.easeOut(duration: 0.15)) { showsTranscript.toggle() }
             }
-            .buttonStyle(.clickable)
+            .buttonStyle(.borderless)
             .scaledFont(size: 12.5, weight: .medium)
             .foregroundStyle(Theme.secondaryInk)
             if showsTranscript {

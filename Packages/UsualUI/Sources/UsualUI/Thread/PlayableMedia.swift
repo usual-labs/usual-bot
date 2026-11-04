@@ -78,7 +78,7 @@ struct SaveShareMenu: View {
             .menuStyle(.borderlessButton)
         #else
             .menuStyle(.button)
-            .buttonStyle(.clickable)
+            .buttonStyle(.borderless)
         #endif
         .menuIndicator(.hidden)
         .fixedSize()
