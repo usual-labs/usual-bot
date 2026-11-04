@@ -7,6 +7,8 @@ struct VaultView: View {
     let list: VaultList
     let agentName: String
     let isOnline: Bool
+    /// The Mac panel's Bot and tabs, above the page.
+    var top: AnyView? = nil
 
     /// What New Item is adding.
     @State private var adding: VaultDraft.Kind?
@@ -15,39 +17,17 @@ struct VaultView: View {
     @State private var removing: VaultItem?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        ProfileForm(top: top) {
             switch list.phase {
             case .loading:
-                ProgressView().controlSize(.small).frame(maxWidth: .infinity).padding(.vertical, 20)
+                Section { ProfileLoading() }
             case .failed(let message):
-                VStack(spacing: 8) {
-                    Text(message).multilineTextAlignment(.center)
-                    Button("Try Again") { Task { await list.refresh() } }
-                        .buttonStyle(.clickable)
-                        .scaledFont(size: 13, weight: .medium)
-                        .foregroundStyle(Theme.ink)
-                        .frame(minHeight: 44)
-                }
-                .scaledFont(size: 13)
-                .foregroundStyle(Theme.secondaryInk)
-                .frame(maxWidth: .infinity)
+                Section { ProfileFailure(message: message) { await list.refresh() } }
             case .ready:
                 items
                 if !list.managers.isEmpty { managers }
-                if let problem = list.problem {
-                    Text(problem)
-                        .scaledFont(size: 12.5)
-                        .foregroundStyle(Theme.danger)
-                        .padding(.top, 10)
-                }
             }
-            Text("\(agentName) signs in with these without seeing the passwords. They stay on the gateway, encrypted.")
-                .scaledFont(size: 12.5)
-                .foregroundStyle(Theme.secondaryInk)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 14)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .task(id: "\(list.profile) \(isOnline)") { await list.refresh() }
         .sheet(item: $adding) { VaultAddSheet(list: list, kind: $0) }
         .sheet(item: $unlocking) { VaultUnlockSheet(list: list, source: $0) }
@@ -63,26 +43,26 @@ struct VaultView: View {
     }
 
     private var items: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                sectionTitle("Saved")
-                Spacer(minLength: 8)
-                newItemMenu
+        Section {
+            Picker("Show", selection: $filter) {
+                ForEach(Filter.allCases, id: \.self) { option in
+                    Text("\(Text(option.title)) (\(list.items.filter(option.includes).count))").tag(option)
+                }
             }
-            .padding(.bottom, 10)
-            filters
-                .padding(.bottom, 4)
             let shown = list.items.filter(filter.includes)
             if shown.isEmpty {
-                Text(filter.emptyText)
-                    .scaledFont(size: 13.5)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .padding(.vertical, 8)
+                Text(filter.emptyText).foregroundStyle(.secondary)
             }
             ForEach(shown) { item in
                 VaultItemRow(item: item, managers: list.sources) { removing = item }
-                Divider().overlay(Theme.border)
             }
+            if let problem = list.problem {
+                Text(problem).foregroundStyle(Theme.danger)
+            }
+        } header: {
+            ProfileSectionHeader("Saved") { newItemMenu }
+        } footer: {
+            if list.managers.isEmpty { footnote }
         }
     }
 
@@ -92,67 +72,24 @@ struct VaultView: View {
             Button("Card", systemImage: "creditcard") { adding = .payment }
             Button("Address", systemImage: "mappin.and.ellipse") { adding = .address }
         } label: {
-            HStack(spacing: 4) {
-                Text("New Item")
-                Image(systemName: "chevron.down").scaledFont(size: 10, weight: .semibold)
-            }
-            .scaledFont(size: 13.5, weight: .semibold)
-            .foregroundStyle(Theme.primaryInk)
-            .padding(.horizontal, 14)
-            .frame(minHeight: 34)
-            .background(Theme.primary, in: Capsule())
-            .contentShape(Capsule())
-        }
-        .menuStyle(.button)
-        .buttonStyle(.plain)
-        .clickable()
-        .menuIndicator(.hidden)
-        .fixedSize()
-    }
-
-    /// The kinds of item, each with how many there are.
-    private var filters: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 2) {
-                ForEach(Filter.allCases, id: \.self) { option in
-                    Button {
-                        filter = option
-                    } label: {
-                        HStack(spacing: 5) {
-                            Text(option.title).foregroundStyle(Theme.ink)
-                            Text(list.items.filter(option.includes).count, format: .number)
-                                .foregroundStyle(Theme.secondaryInk)
-                        }
-                        .scaledFont(size: 13)
-                        .padding(.horizontal, 10)
-                        .frame(minHeight: 30)
-                        .background(filter == option ? Theme.selection : .clear, in: Capsule())
-                        .contentShape(Capsule())
-                    }
-                    .buttonStyle(.clickable)
-                    .accessibilityAddTraits(filter == option ? .isSelected : [])
-                }
-            }
+            Label("New Item", systemImage: "plus")
         }
     }
 
     private var managers: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            sectionTitle("Password managers")
-                .padding(.top, 18)
-                .padding(.bottom, 4)
+        Section {
             ForEach(list.managers) { source in
                 VaultSourceRow(source: source, list: list) { unlocking = source }
-                Divider().overlay(Theme.border)
             }
+        } header: {
+            Text("Password managers")
+        } footer: {
+            footnote
         }
     }
 
-    private func sectionTitle(_ title: LocalizedStringKey) -> some View {
-        Text(title)
-            .scaledFont(size: 12, weight: .semibold)
-            .foregroundStyle(Theme.secondaryInk)
-            .accessibilityAddTraits(.isHeader)
+    private var footnote: some View {
+        Text("\(agentName) signs in with these without seeing the passwords. They stay on the gateway, encrypted.")
     }
 }
 
@@ -201,43 +138,31 @@ private struct VaultItemRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .scaledFont(size: 14)
-                .foregroundStyle(Theme.secondaryInk)
+                .foregroundStyle(.secondary)
                 .frame(width: 20)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.label)
-                    .scaledFont(size: 14)
-                    .foregroundStyle(Theme.ink)
                     .lineLimit(1, accessibility: 3)
                 if !details.isEmpty {
                     Text(details)
-                        .scaledFont(size: 12.5)
-                        .foregroundStyle(Theme.secondaryInk)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
             }
             Spacer(minLength: 8)
             if item.isRemovable {
-                Button(action: remove) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Theme.secondaryInk)
-                        .frame(width: 32, height: 32)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.clickable)
-                .accessibilityLabel(Text("Remove \(item.label)"))
+                Button("Remove \(item.label)", systemImage: "trash", role: .destructive, action: remove)
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
             } else {
                 Text(manager)
-                    .scaledFont(size: 12)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 2)
-                    .background(Theme.selection, in: Capsule())
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
         }
-        .padding(.vertical, 9)
     }
 
     private var icon: String {
@@ -273,22 +198,23 @@ private struct VaultSourceRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(source.displayName)
-                    .scaledFont(size: 14)
                     .foregroundStyle(source.installed ? Theme.ink : Theme.secondaryInk)
                     .lineLimit(1, accessibility: 3)
                 Text(status)
-                    .scaledFont(size: 12.5)
-                    .foregroundStyle(Theme.secondaryInk)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)
             if source.installed && source.enabled {
-                if source.unlocked {
-                    Button("Lock") { Task { await list.lock(source) } }
-                        .buttonStyle(CardButtonStyle(primary: false))
-                } else {
-                    Button("Unlock", action: unlock)
-                        .buttonStyle(CardButtonStyle(primary: false))
+                Group {
+                    if source.unlocked {
+                        Button("Lock") { Task { await list.lock(source) } }
+                    } else {
+                        Button("Unlock", action: unlock)
+                    }
                 }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
             Toggle(
                 isOn: Binding(
@@ -297,12 +223,9 @@ private struct VaultSourceRow: View {
             ) {
                 Text(source.displayName)
             }
-            .toggleStyle(.switch)
             .labelsHidden()
-            .tint(Theme.switchOn)
             .disabled(!source.installed)
         }
-        .padding(.vertical, 9)
     }
 
     private var status: String {

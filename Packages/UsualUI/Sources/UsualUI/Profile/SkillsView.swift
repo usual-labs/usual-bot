@@ -5,49 +5,32 @@ import SwiftUI
 struct SkillsView: View {
     let list: SkillList
     let agentName: String
+    /// The Mac panel's Bot and tabs, above the page.
+    var top: AnyView? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            switch list.phase {
-            case .loading:
-                ProgressView().controlSize(.small).frame(maxWidth: .infinity).padding(.vertical, 20)
-            case .failed(let message):
-                VStack(spacing: 8) {
-                    Text(message).multilineTextAlignment(.center)
-                    Button("Try Again") { Task { await list.refresh() } }
-                        .buttonStyle(.clickable)
-                        .scaledFont(size: 13, weight: .medium)
-                        .foregroundStyle(Theme.ink)
-                        .frame(minHeight: 44)
+        ProfileForm(top: top) {
+            Section {
+                switch list.phase {
+                case .loading:
+                    ProfileLoading()
+                case .failed(let message):
+                    ProfileFailure(message: message) { await list.refresh() }
+                case .ready:
+                    if list.skills.isEmpty {
+                        Text("No skills yet.").foregroundStyle(.secondary)
+                    }
+                    ForEach(list.skills) { skill in
+                        SkillRow(skill: skill, list: list)
+                    }
+                    if let problem = list.problem {
+                        Text(problem).foregroundStyle(Theme.danger)
+                    }
                 }
-                .scaledFont(size: 13)
-                .foregroundStyle(Theme.secondaryInk)
-                .frame(maxWidth: .infinity)
-            case .ready:
-                if list.skills.isEmpty {
-                    Text("No skills yet.")
-                        .scaledFont(size: 13.5)
-                        .foregroundStyle(Theme.secondaryInk)
-                        .padding(.vertical, 8)
-                }
-                ForEach(list.skills) { skill in
-                    SkillRow(skill: skill, list: list)
-                    Divider().overlay(Theme.border)
-                }
-                if let problem = list.problem {
-                    Text(problem)
-                        .scaledFont(size: 12.5)
-                        .foregroundStyle(Theme.danger)
-                        .padding(.top, 10)
-                }
+            } footer: {
+                Text("Type / in the chat to use a skill. \(agentName) also picks them up on its own when they fit.")
             }
-            Text("Type / in the chat to use a skill. \(agentName) also picks them up on its own when they fit.")
-                .scaledFont(size: 12.5)
-                .foregroundStyle(Theme.secondaryInk)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 14)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .task(id: list.profile) { await list.refresh() }
     }
 }
@@ -57,26 +40,11 @@ private struct SkillRow: View {
     let list: SkillList
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(skill.name)
-                    .scaledFont(size: 14)
-                    .foregroundStyle(skill.enabled ? Theme.ink : Theme.secondaryInk)
-                    .lineLimit(1, accessibility: 3)
-                Text(skill.description)
-                    .scaledFont(size: 12.5)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .lineLimit(2)
-            }
-            Spacer(minLength: 8)
-            Toggle(isOn: Binding(get: { skill.enabled }, set: { list.setEnabled($0, for: skill) })) {
-                Text(skill.name)
-            }
-            .toggleStyle(.switch)
-            .labelsHidden()
-            .tint(Theme.switchOn)
+        // The form styles the second line as the row's subtitle.
+        Toggle(isOn: Binding(get: { skill.enabled }, set: { list.setEnabled($0, for: skill) })) {
+            Text(skill.name)
+            Text(skill.description).lineLimit(2)
         }
-        .padding(.vertical, 11)
         .help(origin)
     }
 

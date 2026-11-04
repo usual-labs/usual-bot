@@ -7,6 +7,8 @@ struct AppsView: View {
     let list: MCPServerList
     var connectors: ConnectorList? = nil
     let agentName: String
+    /// The Mac panel's Bot and tabs, above the page.
+    var top: AnyView? = nil
 
     @State private var selected: MCPServer?
     @State private var isAdding = false
@@ -14,90 +16,53 @@ struct AppsView: View {
     @State private var openAfterAdding: MCPServer.ID?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            switch list.phase {
-            case .loading:
-                ProgressView().controlSize(.small).frame(maxWidth: .infinity).padding(.vertical, 20)
-            case .failed(let message):
-                VStack(spacing: 8) {
-                    Text(message).multilineTextAlignment(.center)
-                    Button("Try Again") { Task { await list.refresh() } }
-                        .buttonStyle(.clickable)
-                        .scaledFont(size: 13, weight: .medium)
-                        .foregroundStyle(Theme.ink)
-                        .frame(minHeight: 44)
+        ProfileForm(top: top) {
+            Section {
+                switch list.phase {
+                case .loading:
+                    ProfileLoading()
+                case .failed(let message):
+                    ProfileFailure(message: message) { await list.refresh() }
+                case .ready:
+                    servers
                 }
-                .scaledFont(size: 13)
-                .foregroundStyle(Theme.secondaryInk)
-                .frame(maxWidth: .infinity)
-            case .ready:
-                servers
+            } header: {
+                ProfileSectionHeader("Connected") {
+                    Button("New App", systemImage: "plus") { isAdding = true }
+                        .disabled(list.phase != .ready)
+                }
+            } footer: {
+                Text(
+                    "Apps connect \(agentName) to other services through MCP servers on your gateway. Hermes runs them, and \(agentName) uses their tools in chat."
+                )
             }
-            Text(
-                "Apps connect \(agentName) to other services through MCP servers on your gateway. Hermes runs them, and \(agentName) uses their tools in chat."
-            )
-            .scaledFont(size: 12.5)
-            .foregroundStyle(Theme.secondaryInk)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, 14)
             if let connectors { ConnectorsSection(list: connectors, agentName: agentName) }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .task(id: list.profile) { await list.refresh() }
+        .task(id: list.profile) {
+            // The connected accounts' section can be empty, with nothing to hang its own load on.
+            async let servers: Void = list.refresh()
+            async let accounts: Void? = connectors?.refresh()
+            _ = await (servers, accounts)
+        }
         .sheet(item: $selected) { AppDetailSheet(list: list, server: $0, agentName: agentName) }
         .sheet(isPresented: $isAdding, onDismiss: openAddedServer) {
             AppAddSheet(list: list) { openAfterAdding = $0 }
         }
     }
 
-    private var servers: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Connected")
-                    .scaledFont(size: 12, weight: .semibold)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .accessibilityAddTraits(.isHeader)
-                Spacer(minLength: 8)
-                Button {
-                    isAdding = true
-                } label: {
-                    Label("New App", systemImage: "plus")
-                        .scaledFont(size: 13.5, weight: .semibold)
-                        .foregroundStyle(Theme.primaryInk)
-                        .padding(.horizontal, 14)
-                        .frame(minHeight: 34)
-                        .background(Theme.primary, in: Capsule())
-                        .contentShape(Capsule())
-                }
-                .buttonStyle(.clickable)
-                .fixedSize()
-            }
-            .padding(.bottom, 6)
-            if list.needsApply { ApplyNote(list: list, agentName: agentName).padding(.vertical, 8) }
-            if list.servers.isEmpty {
-                Text("No apps yet. Add one to give \(agentName) more tools.")
-                    .scaledFont(size: 13.5)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .padding(.vertical, 8)
-            }
-            ForEach(list.servers) { server in
-                AppRow(server: server, list: list) { selected = server }
-                Divider().overlay(Theme.border)
-            }
-            if let notice = list.notice {
-                Text(notice)
-                    .scaledFont(size: 12.5)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 10)
-            }
-            if let problem = list.problem {
-                Text(problem)
-                    .scaledFont(size: 12.5)
-                    .foregroundStyle(Theme.danger)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 10)
-            }
+    @ViewBuilder private var servers: some View {
+        if list.needsApply { ApplyNote(list: list, agentName: agentName) }
+        if list.servers.isEmpty {
+            Text("No apps yet. Add one to give \(agentName) more tools.").foregroundStyle(.secondary)
+        }
+        ForEach(list.servers) { server in
+            AppRow(server: server, list: list) { selected = server }
+        }
+        if let notice = list.notice {
+            Text(notice).foregroundStyle(.secondary)
+        }
+        if let problem = list.problem {
+            Text(problem).foregroundStyle(Theme.danger)
         }
     }
 
@@ -118,12 +83,12 @@ private struct ApplyNote: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Saved on the gateway. \(agentName) gets the change in its next session.")
-                .foregroundStyle(Theme.ink)
             if list.canApplyNow {
                 Text(
                     "To use it in the open chat now, apply it. \(agentName)'s next reply costs more, since the whole conversation is sent again."
                 )
-                .foregroundStyle(Theme.secondaryInk)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
                 Button {
                     isApplying = true
                     Task {
@@ -136,16 +101,11 @@ private struct ApplyNote: View {
                         Text("Apply to the Open Chat")
                     }
                 }
-                .buttonStyle(CardButtonStyle(primary: false))
+                .buttonStyle(.bordered)
                 .disabled(isApplying)
             }
         }
-        .scaledFont(size: 12.5)
         .fixedSize(horizontal: false, vertical: true)
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.pane, in: RoundedRectangle(cornerRadius: 12))
-        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border))
     }
 }
 
@@ -156,21 +116,20 @@ private struct AppRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // Plain, so a tap on the switch doesn't open the app too.
             Button(action: open) {
                 HStack(spacing: 12) {
                     Image(systemName: AppSymbol.name(for: server))
-                        .scaledFont(size: 14)
-                        .foregroundStyle(Theme.secondaryInk)
+                        .foregroundStyle(.secondary)
                         .frame(width: 20)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(server.name)
-                            .scaledFont(size: 14)
                             .foregroundStyle(server.enabled ? Theme.ink : Theme.secondaryInk)
                             .lineLimit(1, accessibility: 3)
                         // A problem shows whole: it says what to do next.
                         statusLine
-                            .scaledFont(size: 12.5)
+                            .font(.subheadline)
                             .lineLimit(isProblem ? nil : 2)
                             .fixedSize(horizontal: false, vertical: isProblem)
                     }
@@ -183,11 +142,8 @@ private struct AppRow: View {
             .accessibilityHint(Text("Shows its tools and settings"))
             if server.isFromPlugin {
                 Text("Plugin")
-                    .scaledFont(size: 12)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 2)
-                    .background(Theme.selection, in: Capsule())
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                     .help(Text("Comes with the \(server.plugin ?? "") plugin, so it can't be changed here"))
             } else {
                 Toggle(
@@ -197,12 +153,9 @@ private struct AppRow: View {
                 ) {
                     Text(server.name)
                 }
-                .toggleStyle(.switch)
                 .labelsHidden()
-                .tint(Theme.switchOn)
             }
         }
-        .padding(.vertical, 9)
     }
 
     /// Where it runs, then how it's doing: off, its tool count, or what went wrong.

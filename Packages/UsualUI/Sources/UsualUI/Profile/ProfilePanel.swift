@@ -6,8 +6,8 @@ import SwiftUI
 #endif
 
 /// The agent's card beside the chat: who it is, its routines, skills, apps and vault, and the machine it runs on.
-/// A trailing column with tabs on the Mac; on iPhone a sheet of rows that open each page, as in
-/// Grok's phone app.
+/// A trailing column with tabs on the Mac; on iPhone a page of rows that open each page, as in
+/// Settings.
 struct ProfilePanel: View {
     enum Tab: Hashable, CaseIterable {
         case routines, skills, apps, vault, machine
@@ -52,45 +52,26 @@ struct ProfilePanel: View {
 
     var body: some View {
         #if os(macOS)
-            ScrollView {
-                VStack(spacing: 18) {
-                    header
-                    // Centred when the tabs fit; scrolling sideways when they don't.
-                    ViewThatFits(in: .horizontal) {
-                        tabs
-                        ScrollView(.horizontal, showsIndicators: false) { tabs }
-                    }
-                    page(tab)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 28)
-                .padding(.bottom, 20)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Theme.window)
-            .botEditor($botEdit)
+            // One form per tab, with the Bot and the tabs scrolling at its top.
+            page(tab, top: AnyView(macTop))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .botEditor($botEdit)
         #else
-            // Grok's phone profile: a page pushed from the chat, who it is, then one card of rows,
-            // each pushing its page.
-            ScrollView {
-                VStack(spacing: 24) {
-                    header
-                    PhoneProfileRows(
-                        contact: contact, routines: routines, skills: skills, apps: apps, vault: vault
-                    ) { tab in
-                        ScrollView {
-                            page(tab).padding(20)
-                        }
-                        .background(Theme.groupedPage)
+            // Pushed from the chat: who it is, then a row for each page, as in Settings.
+            List {
+                Section {
+                } header: {
+                    header.textCase(nil).padding(.bottom, 8)
+                }
+                PhoneProfileRows(
+                    contact: contact, routines: routines, skills: skills, apps: apps, vault: vault
+                ) { tab in
+                    page(tab)
                         .navigationTitle(tab.title)
                         .navigationBarTitleDisplayMode(.inline)
-                    }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 20)
             }
-            .background(Theme.groupedPage)
+            .listStyle(.insetGrouped)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if let botEditing {
@@ -115,23 +96,23 @@ struct ProfilePanel: View {
         #endif
     }
 
-    @ViewBuilder private func page(_ tab: Tab) -> some View {
+    @ViewBuilder private func page(_ tab: Tab, top: AnyView? = nil) -> some View {
         switch tab {
         case .routines:
-            RoutinesView(list: routines, agentName: contact.name)
+            RoutinesView(list: routines, agentName: contact.name, top: top)
         case .skills:
-            SkillsView(list: skills, agentName: contact.name)
+            SkillsView(list: skills, agentName: contact.name, top: top)
         case .apps:
-            AppsView(list: apps, connectors: connectors, agentName: contact.name)
+            AppsView(list: apps, connectors: connectors, agentName: contact.name, top: top)
                 .id(apps.profile)
         case .vault:
             // Per Bot, so nothing typed for one agent can carry over to the next.
-            VaultView(list: vault, agentName: contact.name, isOnline: isOnline)
+            VaultView(list: vault, agentName: contact.name, isOnline: isOnline, top: top)
                 .id(vault.profile)
         case .machine:
             MachineView(
                 details: contact.details, gateway: gateway, link: link, gatewayDetails: gatewayDetails,
-                load: loadGatewayDetails)
+                load: loadGatewayDetails, top: top)
         }
     }
 
@@ -139,6 +120,25 @@ struct ProfilePanel: View {
         if case .online = link { return true }
         return false
     }
+
+    #if os(macOS)
+        /// The Bot and the tabs, as the first section of each page's form.
+        private var macTop: some View {
+            Section {
+            } header: {
+                VStack(spacing: 16) {
+                    header
+                    Picker("Page", selection: $tab) {
+                        ForEach(Tab.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .controlSize(.small)
+                }
+                .padding(.top, 8)
+            }
+        }
+    #endif
 
     private var header: some View {
         VStack(spacing: 6) {
@@ -169,15 +169,11 @@ struct ProfilePanel: View {
                         BotMenuItems(contact: contact, editing: botEditing, edit: $botEdit)
                     } label: {
                         Label("Edit Bot", systemImage: "ellipsis")
-                            .labelStyle(.iconOnly)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Theme.secondaryInk)
-                            .frame(width: 28, height: 28)
-                            .background(Theme.selection, in: Circle())
-                            .contentShape(Circle())
                     }
                     .menuStyle(.button)
-                    .buttonStyle(.plain)
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.circle)
+                    .labelStyle(.iconOnly)
                     .menuIndicator(.hidden)
                     .fixedSize()
                     .help("Edit Bot")
@@ -188,39 +184,74 @@ struct ProfilePanel: View {
         .frame(maxWidth: .infinity)
     }
 
-    private var tabs: some View {
-        // Tight enough for all five in the Mac's side panel.
-        HStack(spacing: 0) {
-            tabButton("Routines", .routines)
-            tabButton("Skills", .skills)
-            tabButton("Apps", .apps)
-            tabButton("Vault", .vault)
-            tabButton("Machine", .machine)
-        }
-    }
-
-    private func tabButton(_ title: LocalizedStringKey, _ value: Tab) -> some View {
-        Button {
-            tab = value
-        } label: {
-            Text(title)
-                .scaledFont(size: 13, weight: .medium)
-                .foregroundStyle(tab == value ? Theme.ink : Theme.secondaryInk)
-                .fixedSize()
-                .padding(.horizontal, 8)
-                .frame(minHeight: 32)
-                .background(tab == value ? Theme.selection : .clear, in: Capsule())
-                .contentShape(Capsule())
-        }
-        .buttonStyle(.clickable)
-        .accessibilityAddTraits(tab == value ? .isSelected : [])
-    }
-
     /// The panel's big avatar never pulses.
     private var contactWithoutActivity: Contact {
         var copy = contact
         copy.activity = .idle
         return copy
+    }
+}
+
+/// A profile page: a grouped form whose switches keep the app's legible grey, under what the Mac
+/// panel puts at the top of every page (the Bot and its tabs).
+struct ProfileForm<Content: View>: View {
+    let top: AnyView?
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        Form {
+            if let top { top }
+            content()
+        }
+        .formStyle(.grouped)
+        .toggleStyle(.ink)
+    }
+}
+
+/// A page section's title, with its main action at the trailing end (New Routine, New App).
+struct ProfileSectionHeader<Action: View>: View {
+    let title: LocalizedStringKey
+    @ViewBuilder let action: () -> Action
+
+    init(_ title: LocalizedStringKey, @ViewBuilder action: @escaping () -> Action) {
+        self.title = title
+        self.action = action
+    }
+
+    var body: some View {
+        HStack {
+            Text(title).accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 8)
+            // As `.inkProminent`, which a menu (New Item) doesn't take.
+            action()
+                .buttonStyle(.borderedProminent)
+                .menuStyle(.button)
+                .tint(Theme.primary)
+                .foregroundStyle(Theme.primaryInk)
+                .controlSize(.small)
+                .textCase(nil)
+                .fixedSize()
+        }
+    }
+}
+
+/// A page's list while it loads.
+struct ProfileLoading: View {
+    var body: some View {
+        ProgressView().controlSize(.small).frame(maxWidth: .infinity)
+    }
+}
+
+/// Why a page's list didn't load, and Try Again.
+struct ProfileFailure: View {
+    let message: String
+    let retry: () async -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(message).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Button("Try Again") { Task { await retry() } }.buttonStyle(.bordered)
+        }
     }
 }
 
@@ -232,16 +263,17 @@ private struct MachineView: View {
     let link: AppModel.Link
     let gatewayDetails: GatewayDetails?
     let load: () async -> Void
+    var top: AnyView?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            section("Bot") {
+        ProfileForm(top: top) {
+            Section("Bot") {
                 row("Profile", details?.profile)
                 row("Model", details?.model)
                 row("Provider", details?.provider)
                 row("Skills", details?.skillCount.map { String($0) })
             }
-            section("Gateway") {
+            Section("Gateway") {
                 row("Address", gateway.displayName)
                 row("Version", gatewayDetails?.version)
                 row("Status", statusText)
@@ -249,12 +281,13 @@ private struct MachineView: View {
             }
             #if os(macOS)
                 if let settings = Self.hermesSettings {
-                    Button("Open Hermes for advanced settings") { NSWorkspace.shared.open(settings) }
-                        .buttonStyle(CardButtonStyle(primary: false))
+                    Section {
+                        Button("Open Hermes for advanced settings") { NSWorkspace.shared.open(settings) }
+                            .buttonStyle(.bordered)
+                    }
                 }
             #endif
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .task { await load() }
     }
 
@@ -269,25 +302,11 @@ private struct MachineView: View {
         }
     }
 
-    private func section(_ title: LocalizedStringKey, @ViewBuilder rows: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .scaledFont(size: 12, weight: .semibold)
-                .foregroundStyle(Theme.secondaryInk)
-                .accessibilityAddTraits(.isHeader)
-            Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 14, verticalSpacing: 8) {
-                rows()
-            }
-        }
-    }
-
     @ViewBuilder private func row(_ label: LocalizedStringKey, _ value: String?) -> some View {
         if let value, !value.isEmpty {
-            GridRow {
-                Text(label).foregroundStyle(Theme.secondaryInk)
-                Text(value).foregroundStyle(Theme.ink).textSelection(.enabled)
+            LabeledContent(label) {
+                Text(value).textSelection(.enabled)
             }
-            .scaledFont(size: 13.5)
         }
     }
 

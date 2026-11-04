@@ -14,13 +14,13 @@ extension Contact.Activity {
 
 #if os(iOS)
     extension Theme {
-        /// Grok's grouped look for the phone profile: a grey page with lighter cards, like Settings.
+        /// A grey page with lighter cards, like Settings, for the phone's room panel.
         static let groupedPage = Color(light: 0xF2F2F2, dark: 0x1F1F1F)
         static let groupedCard = Color(light: 0xFFFFFF, dark: 0x2A2A2A)
         static let groupedBorder = Color(light: 0xE6E6E6, dark: 0x363636)
     }
 
-    /// The phone profile's card: a row for each page, with what's in it at a glance.
+    /// The phone profile's rows: one for each page, with what's in it at a glance.
     struct PhoneProfileRows<Destination: View>: View {
         let contact: Contact
         let routines: RoutineList
@@ -29,59 +29,22 @@ extension Contact.Activity {
         let vault: VaultList
         @ViewBuilder let destination: (ProfilePanel.Tab) -> Destination
 
-        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-        @ScaledMetric(relativeTo: .body) private var iconWidth: CGFloat = 26
-
         var body: some View {
-            VStack(spacing: 0) {
-                ForEach(Array(ProfilePanel.Tab.allCases.enumerated()), id: \.element) { index, tab in
-                    if index > 0 { Divider().padding(.leading, iconWidth + 30) }
+            Section {
+                ForEach(ProfilePanel.Tab.allCases, id: \.self) { tab in
                     // A link to its view, not a value: no destination to register on the chat's stack.
                     NavigationLink {
                         destination(tab)
                     } label: {
-                        row(tab)
-                    }
-                    .buttonStyle(.clickable)
-                }
-            }
-            .background(Theme.groupedCard, in: RoundedRectangle(cornerRadius: 22))
-            .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(Theme.groupedBorder))
-        }
-
-        private func row(_ tab: ProfilePanel.Tab) -> some View {
-            HStack(spacing: 14) {
-                Image(systemName: icon(tab))
-                    .scaledFont(size: 18)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .frame(width: iconWidth)
-                    .accessibilityHidden(true)
-                // At accessibility text sizes what's in the page goes under its name.
-                let text =
-                    dynamicTypeSize.isAccessibilitySize
-                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
-                    : AnyLayout(HStackLayout(spacing: 0))
-                text {
-                    Text(tab.title)
-                        .scaledFont(size: 17)
-                        .foregroundStyle(Theme.ink)
-                    if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 8) }
-                    if let value = value(tab) {
-                        Text(value)
-                            .scaledFont(size: 17)
-                            .foregroundStyle(Theme.secondaryInk)
+                        // The list moves the value under the name at accessibility sizes.
+                        LabeledContent {
+                            if let value = value(tab) { Text(value) }
+                        } label: {
+                            Label(tab.title, systemImage: icon(tab))
+                        }
                     }
                 }
-                if dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
-                Image(systemName: "chevron.right")
-                    .scaledFont(size: 14, weight: .semibold)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .accessibilityHidden(true)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .frame(minHeight: 52)
-            .contentShape(Rectangle())
         }
 
         private func icon(_ tab: ProfilePanel.Tab) -> String {

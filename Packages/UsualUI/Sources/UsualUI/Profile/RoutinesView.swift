@@ -6,65 +6,42 @@ import SwiftUI
 struct RoutinesView: View {
     let list: RoutineList
     let agentName: String
+    /// The Mac panel's Bot and tabs, above the page.
+    var top: AnyView? = nil
 
     @State private var sheet: RoutineSheet?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Scheduled")
-                    .scaledFont(size: 12, weight: .semibold)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .accessibilityAddTraits(.isHeader)
-                Spacer(minLength: 8)
-                Button("New Routine") { sheet = .new }
-                    .buttonStyle(CardButtonStyle(primary: true))
-                    .disabled(list.phase != .ready)
+        ProfileForm(top: top) {
+            Section {
+                switch list.phase {
+                case .loading:
+                    ProfileLoading()
+                case .failed(let message):
+                    ProfileFailure(message: message) { await list.refresh() }
+                case .ready:
+                    if list.routines.isEmpty {
+                        Text(
+                            "No routines yet. A routine has \(agentName) do something on a schedule, like every weekday at 9."
+                        )
+                        .foregroundStyle(.secondary)
+                    }
+                    ForEach(list.routines) { routine in
+                        RoutineRow(routine: routine, list: list) { sheet = .routine(routine.id) }
+                    }
+                    if let problem = list.problem {
+                        Text(problem).foregroundStyle(Theme.danger)
+                    }
+                }
+            } header: {
+                ProfileSectionHeader("Scheduled") {
+                    Button("New Routine", systemImage: "plus") { sheet = .new }
+                        .disabled(list.phase != .ready)
+                }
+            } footer: {
+                Text("You can also ask \(agentName) in chat, like “every Monday at 9, check our dependencies”.")
             }
-            .padding(.bottom, 6)
-            switch list.phase {
-            case .loading:
-                ProgressView().controlSize(.small).frame(maxWidth: .infinity).padding(.vertical, 20)
-            case .failed(let message):
-                VStack(spacing: 8) {
-                    Text(message).multilineTextAlignment(.center)
-                    Button("Try Again") { Task { await list.refresh() } }
-                        .buttonStyle(.clickable)
-                        .scaledFont(size: 13, weight: .medium)
-                        .foregroundStyle(Theme.ink)
-                        .frame(minHeight: 44)
-                }
-                .scaledFont(size: 13)
-                .foregroundStyle(Theme.secondaryInk)
-                .frame(maxWidth: .infinity)
-            case .ready:
-                if list.routines.isEmpty {
-                    Text(
-                        "No routines yet. A routine has \(agentName) do something on a schedule, like every weekday at 9."
-                    )
-                    .scaledFont(size: 13.5)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.vertical, 8)
-                }
-                ForEach(list.routines) { routine in
-                    RoutineRow(routine: routine, list: list) { sheet = .routine(routine.id) }
-                    Divider().overlay(Theme.border)
-                }
-                if let problem = list.problem {
-                    Text(problem)
-                        .scaledFont(size: 12.5)
-                        .foregroundStyle(Theme.danger)
-                        .padding(.top, 10)
-                }
-            }
-            Text("You can also ask \(agentName) in chat, like “every Monday at 9, check our dependencies”.")
-                .scaledFont(size: 12.5)
-                .foregroundStyle(Theme.secondaryInk)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 14)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         // Next-run times move on, and jobs can change from chat: keep the list fresh while it shows.
         .task(id: list.profile) {
             while !Task.isCancelled {
@@ -128,14 +105,15 @@ private struct RoutineRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            // Plain, so a tap on the switch doesn't open the routine too: a list row runs every
+            // bordered button in it.
             Button(action: open) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(routine.name)
-                        .scaledFont(size: 14)
                         .foregroundStyle(Theme.ink)
                         .lineLimit(2)
                     RoutineStatus.text(for: routine, isRunning: list.running.contains(routine.id))
-                        .scaledFont(size: 12.5)
+                        .font(.subheadline)
                         .lineLimit(3)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -147,12 +125,9 @@ private struct RoutineRow: View {
             Toggle(isOn: Binding(get: { routine.isOn }, set: { list.setOn($0, for: routine) })) {
                 Text(routine.name)
             }
-            .toggleStyle(.switch)
             .labelsHidden()
-            .tint(Theme.switchOn)
             .disabled(routine.isFinished)
         }
-        .padding(.vertical, 11)
     }
 }
 

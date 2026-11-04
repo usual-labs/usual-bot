@@ -2,91 +2,41 @@ import HermesKit
 import SwiftUI
 
 /// The apps the agent reaches through your Nous Portal account (Hermes's hosted connectors), on
-/// the Apps page under its MCP servers. Shown only when the gateway offers them.
+/// the Apps page under its MCP servers. Shown only when the gateway offers them. The Apps page
+/// loads it: a section can be empty, with no view to hang a load on.
 struct ConnectorsSection: View {
     let list: ConnectorList
     let agentName: String
 
-    @State private var confirming: ConnectorList.Connector?
-
     var body: some View {
-        Group {
-            switch list.phase {
-            case .loading, .unavailable:
-                EmptyView()
-            case .failed(let message):
-                VStack(alignment: .leading, spacing: 4) {
-                    header
-                    Text(message)
-                        .scaledFont(size: 12.5)
-                        .foregroundStyle(Theme.secondaryInk)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Button("Try Again") { Task { await list.refresh() } }
-                        .buttonStyle(.clickable)
-                        .scaledFont(size: 13, weight: .medium)
-                        .foregroundStyle(Theme.ink)
-                        .frame(minHeight: 44)
+        switch list.phase {
+        case .loading, .unavailable:
+            EmptyView()
+        case .failed(let message):
+            Section("Connected accounts") {
+                ProfileFailure(message: message) { await list.refresh() }
+            }
+        case .ready:
+            Section {
+                if list.connectors.isEmpty {
+                    Text("No apps to connect yet.").foregroundStyle(.secondary)
                 }
-                .padding(.top, 22)
-            case .ready:
-                rows.padding(.top, 22)
+                ForEach(list.connectors) { connector in
+                    ConnectorRow(connector: connector, list: list)
+                }
+                if let notice = list.notice {
+                    Text(notice).foregroundStyle(.secondary)
+                }
+                if let problem = list.problem {
+                    Text(problem).foregroundStyle(Theme.danger)
+                }
+            } header: {
+                Text("Connected accounts")
+            } footer: {
+                Text(
+                    "These sign in through your Nous Portal account, which Hermes uses for \(agentName). \(agentName) can also ask to connect one from the chat."
+                )
             }
-        }
-        .task(id: list.profile) { await list.refresh() }
-        .confirmationDialog(
-            confirming.map { "Disconnect \($0.name)?" } ?? "", isPresented: isConfirming, titleVisibility: .visible,
-            presenting: confirming
-        ) { connector in
-            Button("Disconnect", role: .destructive) { Task { await list.disconnect(connector) } }
-        } message: { _ in
-            Text("The account is removed from your Nous Portal, so every Bot that uses it loses it.")
-        }
-    }
-
-    private var isConfirming: Binding<Bool> {
-        Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } })
-    }
-
-    private var header: some View {
-        Text("Connected accounts")
-            .scaledFont(size: 12, weight: .semibold)
-            .foregroundStyle(Theme.secondaryInk)
-            .accessibilityAddTraits(.isHeader)
-    }
-
-    private var rows: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header.padding(.bottom, 6)
-            if list.connectors.isEmpty {
-                Text("No apps to connect yet.")
-                    .scaledFont(size: 13.5)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .padding(.vertical, 8)
-            }
-            ForEach(list.connectors) { connector in
-                ConnectorRow(connector: connector, list: list) { confirming = connector }
-                Divider().overlay(Theme.border)
-            }
-            if let notice = list.notice {
-                Text(notice)
-                    .scaledFont(size: 12.5)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .padding(.top, 10)
-            }
-            if let problem = list.problem {
-                Text(problem)
-                    .scaledFont(size: 12.5)
-                    .foregroundStyle(Theme.danger)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 10)
-            }
-            Text(
-                "These sign in through your Nous Portal account, which Hermes uses for \(agentName). \(agentName) can also ask to connect one from the chat."
-            )
-            .scaledFont(size: 12.5)
-            .foregroundStyle(Theme.secondaryInk)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.top, 14)
         }
     }
 }
@@ -94,14 +44,13 @@ struct ConnectorsSection: View {
 private struct ConnectorRow: View {
     let connector: ConnectorList.Connector
     let list: ConnectorList
-    let disconnect: () -> Void
 
+    @State private var confirmsDisconnect = false
     private var page = SignInPage()
 
-    init(connector: ConnectorList.Connector, list: ConnectorList, disconnect: @escaping () -> Void) {
+    init(connector: ConnectorList.Connector, list: ConnectorList) {
         self.connector = connector
         self.list = list
-        self.disconnect = disconnect
     }
 
     var body: some View {
@@ -114,13 +63,11 @@ private struct ConnectorRow: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(connector.name)
-                    .scaledFont(size: 14)
-                    .foregroundStyle(Theme.ink)
                     .lineLimit(1, accessibility: 3)
                 if let status {
                     // A problem shows whole: it says what to do next.
                     Text(status)
-                        .scaledFont(size: 12.5)
+                        .font(.subheadline)
                         .foregroundStyle(isProblem ? Theme.danger : Theme.secondaryInk)
                         .lineLimit(isProblem ? nil : 2)
                         .fixedSize(horizontal: false, vertical: isProblem)
@@ -128,31 +75,37 @@ private struct ConnectorRow: View {
             }
             .accessibilityElement(children: .combine)
             Spacer(minLength: 8)
-            action
+            action.controlSize(.small)
         }
-        .padding(.vertical, 9)
         .onChange(of: connector.isConnected) { page.close() }
         .onChange(of: list.connecting[connector.id] == nil) { page.close() }
+        .confirmationDialog(
+            "Disconnect \(connector.name)?", isPresented: $confirmsDisconnect, titleVisibility: .visible
+        ) {
+            Button("Disconnect", role: .destructive) { Task { await list.disconnect(connector) } }
+        } message: {
+            Text("The account is removed from your Nous Portal, so every Bot that uses it loses it.")
+        }
     }
 
     @ViewBuilder private var action: some View {
         switch list.connecting[connector.id] {
         case .starting:
-            ProgressView().controlSize(.small).accessibilityLabel(Text("Connecting \(connector.name)"))
+            ProgressView().accessibilityLabel(Text("Connecting \(connector.name)"))
         case .waiting:
             Button("Stop") { Task { await list.cancelConnecting(connector) } }
-                .buttonStyle(CardButtonStyle(primary: false))
+                .buttonStyle(.bordered)
                 .accessibilityLabel(Text("Stop connecting \(connector.name)"))
         case .failed, nil:
             if list.disconnecting.contains(connector.id) {
-                ProgressView().controlSize(.small).accessibilityLabel(Text("Disconnecting \(connector.name)"))
+                ProgressView().accessibilityLabel(Text("Disconnecting \(connector.name)"))
             } else if connector.isConnected {
-                Button("Disconnect", action: disconnect)
-                    .buttonStyle(CardButtonStyle(primary: false))
+                Button("Disconnect") { confirmsDisconnect = true }
+                    .buttonStyle(.bordered)
                     .accessibilityLabel(Text("Disconnect \(connector.name)"))
             } else {
                 Button("Connect") { Task { await list.connect(connector) { page.open($0) } } }
-                    .buttonStyle(CardButtonStyle(primary: true))
+                    .buttonStyle(.inkProminent)
                     .accessibilityLabel(Text("Connect \(connector.name)"))
             }
         }
