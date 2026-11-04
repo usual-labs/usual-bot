@@ -367,6 +367,38 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   needs no global-event routing. Disconnect removes every live account of that app from the Nous
   Portal, so it says it affects every agent. Hidden when `available` is false or the gate says 4031.
 
+## Built-in Tailscale
+
+- **The iPhone joins the tailnet itself, inside the app.** TailscaleKit (`swift/` in
+  `tailscale/libtailscale`, BSD-3) runs a userspace node with a SOCKS5 proxy on loopback, and
+  `AppModel(session:)` sends every gateway request and the socket through it while the switch is on.
+  The system's network is untouched, so the Tailscale app's VPN can stay off. The no-code
+  alternative is Tailscale's VPN On Demand, which starts the VPN when a `*.ts.net` name is looked
+  up.
+- **iPhone only.** On the Mac it would need a universal macOS slice (Tailscale's `make macos` builds
+  Apple silicon only, and the Mac release is universal) and would put about 20 MB of Go code into
+  the notarized release. `Packages/Tailnet` depends on TailscaleKit for iOS only.
+- **The framework comes from a release, by URL and checksum.** Tailscale publishes no prebuilt
+  TailscaleKit, and the one prebuilt found (`indiagrams/tunnelless`, a patched fork without
+  attestation) says not to depend on it. Committing the framework (69 MB per version) or building it
+  with Go in every build were rejected. The public `usual-labs/tailscalekit-build` repository's
+  manually run workflow builds a libtailscale commit, zips it with libtailscale's licence, attests
+  it and publishes an immutable release. To update Tailscale, run that workflow and copy the new URL
+  and checksum into `Packages/Tailnet/Package.swift`.
+- **The node stops whenever the app lets go of the gateway in the background:** `BackgroundLink`
+  calls `suspend` after the grace period for a running reply, and after an app-refresh check-in. iOS
+  cuts a suspended app's sockets, and a node that lived through that never recovered: its UDP
+  receivers and link monitor stayed dead, and it fell back to DERP with errors in a loop. With saved
+  keys, the next gateway request starts it again in about a second.
+- **Gateway sign-in happens in an in-app web view through the proxy** while the switch is on
+  (`TailnetSignInPresenter`), because `ASWebAuthenticationSession` loads pages outside the app,
+  where the tailnet isn't reachable. Google refuses sign-in inside apps (`disallowed_useragent`). A
+  sign-in that heads to `accounts.google.com` therefore ends with an alert, and that gateway gets
+  the system sheet from then on, which needs the Tailscale VPN for that sign-in; tokens then refresh
+  through the built-in device. Avoiding the VPN there would mean posing as Safari, which Google's
+  policy forbids. An MCP server's sign-in opens the system browser too (see Apps), so on a tailnet
+  gateway it also needs the VPN.
+
 ## Not verified
 
 - These live activity cases have only run from fakes, never from a real turn: provider waits,
@@ -380,6 +412,11 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 - Agent defaults against a live gateway; they're left out of shakedowns because they change an
   agent's default model everywhere.
 - iPhone on a real device beyond sign-in: calls, dictation and GPT-Live audio routing.
+- Built-in Tailscale ran on one iPhone (iOS 27.0.1) with the VPN off before main's push
+  notifications, search, routines and MCP servers were merged in: Tailscale sign-in, gateway sign-in
+  in the web view, chats and the socket over the app's own device, and two trips to the background.
+  Not yet run: the current build on a device, the grace period and check-ins with the device on, a
+  gateway that signs in through Google, and an MCP server's sign-in on a tailnet gateway.
 - Notifications on a real gateway. A reply, a question and a room reply ran through the plugin on a
   live throwaway dashboard, with a fake ntfy service and the session token, not the app's own
   sign-in. Send Test from the app has reached an iPhone through real Pushover and real ntfy; ntfy's

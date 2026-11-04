@@ -4,6 +4,8 @@
 
 - `Packages/HermesKit/` — Gateway auth, transport and domain state
 - `Packages/UsualUI/` — Native screens and reusable UI
+- `Packages/Tailnet/` — the iPhone's built-in Tailscale device; TailscaleKit comes from a
+  `usual-labs/tailscalekit-build` release by URL and checksum
 
 - `App/UsualBotApp.swift` — application entry
 - `App/SignInPresenters.swift` — browser/web-auth presenters
