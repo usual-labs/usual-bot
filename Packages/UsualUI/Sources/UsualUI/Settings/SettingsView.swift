@@ -34,7 +34,9 @@ public struct SettingsView: View {
     private let desktopControls: AnyView?
     /// The app's own connection settings, such as iPhone's built-in Tailscale.
     private let connectionControls: AnyView?
-    @State private var page: Page? = .general
+    #if os(macOS)
+        @State private var page = Page.general
+    #endif
     @State private var confirmsSignOut = false
     @Environment(\.dismiss) private var dismiss
 
@@ -46,33 +48,19 @@ public struct SettingsView: View {
 
     public var body: some View {
         #if os(macOS)
-            HStack(spacing: 0) {
-                List(Page.allCases, selection: $page) { page in
-                    Label(page.title, systemImage: page.icon).tag(page)
-                        .padding(.vertical, 5)
+            // The system's Settings window: a tab for each page, each a grouped form.
+            TabView(selection: $page) {
+                ForEach(Page.allCases) { page in
+                    Tab(value: page) {
+                        content(page)
+                    } label: {
+                        Label(page.title, systemImage: page.icon)
+                    }
                 }
-                .listStyle(.sidebar)
-                .scrollContentBackground(.hidden)
-                .padding(.top, 44)
-                .frame(width: 190)
-                .background(Theme.window)
-                Divider()
-                VStack(alignment: .leading, spacing: 0) {
-                    Text((page ?? .general).title)
-                        .font(.title2.weight(.semibold))
-                        .padding(.horizontal, 24)
-                        .padding(.top, 24)
-                    content(page ?? .general)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Theme.pane)
             }
-            // The panes run up behind the window buttons, with no title across them.
-            .ignoresSafeArea(.container, edges: .top)
-            .frame(width: 760, height: 600)
-            .toolbar(removing: .title)
-            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-            // The app's ink, as in the main window, not the system's blue and green.
+            .frame(width: 640, height: 560)
+            // The app's ink, as in the main window, not the system's blue. Switches keep a grey
+            // that their white knob shows on in dark mode (`Theme.switchOn`).
             .tint(Theme.ink)
             .toggleStyle(.ink)
             .appPreferences()
@@ -102,12 +90,7 @@ public struct SettingsView: View {
                 }
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Image(systemName: "xmark")
-                        }
-                        .accessibilityLabel(Text("Close"))
+                        Button(role: .close) { dismiss() }
                     }
                 }
             }
@@ -184,7 +167,6 @@ public struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
     }
 
     @ViewBuilder private var connection: some View {

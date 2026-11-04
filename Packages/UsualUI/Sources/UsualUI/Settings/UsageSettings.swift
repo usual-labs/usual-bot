@@ -136,7 +136,6 @@ private struct UsagePage: ViewModifier {
         let online = model.link.isOnline
         content
             .formStyle(.grouped)
-            .scrollContentBackground(.hidden)
             .environment(\.botPictures, model.pictures)
             .task(id: RefreshKey(period: usage.period, online: online)) {
                 if online { await usage.refresh() }
