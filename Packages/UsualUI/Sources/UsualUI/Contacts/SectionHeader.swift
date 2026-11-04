@@ -80,9 +80,14 @@ struct SectionHeader<Actions: View>: View {
                 chevron
             #endif
         }
-        .padding(.horizontal, 10)
-        .frame(minHeight: 30)
-        .hoverHighlight(in: RoundedRectangle(cornerRadius: 10))
+        #if os(macOS)
+            .padding(.horizontal, 10)
+            .frame(minHeight: 30)
+            .hoverHighlight(in: RoundedRectangle(cornerRadius: 10))
+        #else
+            // The list's header insets place it.
+            .frame(minHeight: 30)
+        #endif
         .contentShape(RoundedRectangle(cornerRadius: 10))
     }
 
@@ -143,9 +148,7 @@ struct SectionNameField: View {
             #if os(iOS)
                 // iPhone has no Esc.
                 Button("Cancel", action: dismiss)
-                    .buttonStyle(.clickable)
-                    .scaledFont(size: 15)
-                    .foregroundStyle(Theme.secondaryInk)
+                    .buttonStyle(.borderless)
             #endif
         }
         .padding(.horizontal, 10)

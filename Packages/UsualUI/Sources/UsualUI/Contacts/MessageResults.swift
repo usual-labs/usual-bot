@@ -78,7 +78,7 @@ struct FindingNotice: View {
                 Text(reason)
                 Button("Dismiss", systemImage: "xmark", action: dismiss)
                     .labelStyle(.iconOnly)
-                    .buttonStyle(.clickable)
+                    .buttonStyle(.borderless)
                     .frame(minWidth: 28, minHeight: 28)
             }
         }
@@ -87,9 +87,7 @@ struct FindingNotice: View {
         .padding(.leading, 14)
         .padding(.trailing, 8)
         .padding(.vertical, 8)
-        .background(Theme.pane, in: Capsule())
-        .overlay(Capsule().strokeBorder(Theme.border))
-        .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+        .glassEffect(.regular, in: Capsule())
         .padding(.horizontal, 20)
         .accessibilityElement(children: .contain)
     }

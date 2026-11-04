@@ -34,15 +34,14 @@ struct ContactList: View {
         let matching = contacts.filter { Self.matches($0, query) }
         Group {
             if matching.isEmpty, messages.isEmpty, status != .searching, !contacts.isEmpty {
-                Text(
-                    searchesMessages
-                        ? "No chats or messages match “\(term)”" : "No chats match “\(term)”"
-                )
-                .scaledFont(size: 13)
-                .foregroundStyle(Theme.secondaryInk)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                ContentUnavailableView {
+                    Label("No Results", systemImage: "magnifyingglass")
+                } description: {
+                    Text(
+                        searchesMessages
+                            ? "No chats or messages match “\(term)”" : "No chats match “\(term)”"
+                    )
+                }
             } else {
                 list(blocks(of: matching), byID: byID)
             }
@@ -161,29 +160,17 @@ struct ContactList: View {
                             ForEach(block.contacts) { contact in
                                 ContactRow(contact: contact, members: Self.members(of: contact, in: byID))
                                     .tag(contact.id)
-                                    // No lines between chats, as in Grok.
-                                    .listRowSeparator(.hidden)
-                                    .listRowBackground(Color.clear)
-                                    .listRowInsets(EdgeInsets(top: 14, leading: 22, bottom: 14, trailing: 22))
                                     .contextMenu { rowMenu(contact) }
                             }
                         }
                     } header: {
-                        if showsHeadings {
-                            heading(block).listRowInsets(EdgeInsets(top: 6, leading: 10, bottom: 2, trailing: 10))
-                        }
+                        if showsHeadings { heading(block) }
                     }
-                    .listSectionSeparator(.hidden)
-                    .listSectionSpacing(6)
                 }
                 if searchesMessages { messageSection(byID: byID) }
             }
-            // Full-width rows on the chat colour, like a messenger's chat list.
+            // Full-width rows, like Messages' list of conversations.
             .listStyle(.plain)
-            .environment(\.defaultMinListHeaderHeight, 0)
-            .scrollContentBackground(.hidden)
-            .background(Theme.pane)
-            .softScrollEdges()
         #endif
     }
 
@@ -192,10 +179,7 @@ struct ContactList: View {
         private func messageSection(byID: [Contact.ID: Contact]) -> some View {
             Section {
                 if messages.isEmpty, status != .searching {
-                    Text("No messages match “\(term)”")
-                        .scaledFont(size: 13)
-                        .foregroundStyle(Theme.secondaryInk)
-                        .listRowBackground(Color.clear)
+                    Text("No messages match “\(term)”").foregroundStyle(.secondary)
                 }
                 ForEach(messages) { hit in
                     if let contact = byID[hit.contactID] {
@@ -207,22 +191,13 @@ struct ContactList: View {
                                 avatarSize: 44
                             )
                             .padding(.vertical, 4)
-                            .contentShape(Rectangle())
                         }
-                        .buttonStyle(.clickable)
-                        .listRowBackground(Color.clear)
                     }
                 }
-                if status != .idle {
-                    MessageSearchStatusLine(status: status)
-                        .listRowBackground(Color.clear)
-                }
+                if status != .idle { MessageSearchStatusLine(status: status) }
             } header: {
                 Text("Messages")
-                    .scaledFont(size: 13, weight: .semibold)
-                    .foregroundStyle(Theme.secondaryInk)
             }
-            .listSectionSeparator(.hidden)
         }
     #endif
 
@@ -237,10 +212,11 @@ struct ContactList: View {
         }
         .scaledFont(size: 13)
         .foregroundStyle(Theme.secondaryInk)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        #if os(macOS)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+        #endif
         .frame(maxWidth: .infinity, alignment: .leading)
-        .listRowBackground(Color.clear)
     }
 
     /// A section's name, or in the middle of renaming it, a field. Other isn't a section, so

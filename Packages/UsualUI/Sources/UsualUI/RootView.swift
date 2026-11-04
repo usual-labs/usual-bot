@@ -112,33 +112,33 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
     }
 
     private var settingsButton: some View {
-        Button(action: showSettings) {
-            Image(systemName: "gearshape")
+        Button("Settings", systemImage: "gearshape", action: showSettings)
+            .labelStyle(.iconOnly)
+            #if os(macOS)
+                .buttonStyle(.borderless)
+                .foregroundStyle(Theme.secondaryInk)
                 .frame(width: 32, height: 32)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.clickable)
-        .foregroundStyle(Theme.secondaryInk)
-        .accessibilityLabel(Text("Settings"))
-        .help("Settings")
+            #else
+                // It floats over the connect screen.
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .controlSize(.large)
+            #endif
+            .help("Settings")
     }
 
     #if os(iOS)
+        /// A toolbar item, which the bar draws in glass; the gateway's state is its dot.
         private var phoneSettingsButton: some View {
             Button(action: showSettings) {
-                // Sized like the + beside it, so the bar draws both as the same circle.
                 Image(systemName: "gearshape")
-                    .font(.system(size: 19, weight: .regular))
-                    .foregroundStyle(Theme.ink)
                     .overlay(alignment: .bottomTrailing) {
                         Circle()
                             .fill(model.link.dotColor)
-                            .frame(width: 9, height: 9)
-                            .overlay(Circle().strokeBorder(Theme.pane, lineWidth: 1.5))
-                            .offset(x: 4, y: 4)
+                            .frame(width: 8, height: 8)
+                            .offset(x: 3, y: 3)
                     }
             }
-            .buttonStyle(.clickable)
             .accessibilityLabel(Text("Settings"))
             .accessibilityValue(Text(model.link.statusText))
         }
@@ -290,11 +290,12 @@ struct ContactsSplitView<Footer: View>: View {
                 detailPane
             }
             .animation(.smooth(duration: 0.25), value: showsRail)
-            // Search and New Room ride in the window's toolbar, beside the window buttons; the
-            // toolbar also gives the title area its height. Anything drawn under it is hidden.
+            // Search and New ride in the window's toolbar, beside the window buttons; the toolbar
+            // also gives the title area its height. Anything drawn under it is hidden.
             .sidebarToolbar(
-                leading: max(0, sidebarWidth - (showsToggleInToolbar ? 229 : 197)), search: searchButton,
-                newRoom: newButton, toggle: showsToggleInToolbar ? sidebarToggle : nil, shown: !showsRail
+                leading: max(0, sidebarWidth - (showsToggleInToolbar ? Self.toolbarGroupWidth : Self.toolbarPairWidth)),
+                search: searchButton, newRoom: newButton, toggle: showsToggleInToolbar ? sidebarToggle : nil,
+                shown: !showsRail
             )
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             // Room for the open panel too: without it, a narrow window's panel pushes the sidebar
@@ -322,11 +323,11 @@ struct ContactsSplitView<Footer: View>: View {
                 sidebar(compact: false)
                     .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 380)
                     .searchable(text: $query)
-                    // No title: the bar holds only the gateway status and New Room.
-                    .navigationBarTitleDisplayMode(.inline)
+                    .navigationTitle("Chats")
+                    .navigationBarTitleDisplayMode(.large)
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) { footer(false) }
-                        ToolbarItem(placement: .primaryAction) { newButton }
+                        ToolbarItem(placement: .topBarTrailing) { newButton }
                     }
             } detail: {
                 // A stack of its own, so a chat can push its agent's profile.
@@ -339,20 +340,15 @@ struct ContactsSplitView<Footer: View>: View {
     private func sidebar(compact: Bool) -> some View {
         VStack(spacing: 0) {
             if contacts.isEmpty {
-                VStack(spacing: 10) {
-                    Text(verbatim: emptyText).multilineTextAlignment(.center)
+                ContentUnavailableView {
+                    EmptyView()
+                } description: {
+                    Text(verbatim: emptyText)
+                } actions: {
                     if let tryAgain {
-                        Button("Try Again", action: tryAgain)
-                            .buttonStyle(.clickable)
-                            .scaledFont(size: 13, weight: .medium)
-                            .foregroundStyle(Theme.ink)
-                            .frame(minHeight: 44)
+                        Button("Try Again", action: tryAgain).buttonStyle(.bordered)
                     }
                 }
-                .scaledFont(size: 13)
-                .foregroundStyle(Theme.secondaryInk)
-                .padding(.horizontal, 16)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ContactList(
                     contacts: contacts, sections: sections, query: query, compact: compact, selection: $selection,
@@ -360,26 +356,15 @@ struct ContactsSplitView<Footer: View>: View {
             }
             #if os(macOS)
                 if compact {
-                    if canLeaveRail {
-                        sidebarToggle
-                            .frame(width: 44, height: 44)
+                    VStack(spacing: 0) {
+                        if canLeaveRail { sidebarToggle.frame(width: 44, height: 44) }
+                        searchButton.frame(width: 44, height: 44)
+                        newButton.menuStyle(.button).fixedSize().frame(width: 44, height: 44)
                     }
-                    searchButton
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.clickable)
-                        .font(.system(size: 17))
-                        .foregroundStyle(Theme.secondaryInk)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                    newButton
-                        .labelStyle(.iconOnly)
-                        // Not `.clickable`: a menu ignores that style and draws a grey box.
-                        .buttonStyle(.plain)
-                        .clickable()
-                        .font(.system(size: 17))
-                        .foregroundStyle(Theme.secondaryInk)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .controlSize(.large)
+                    .foregroundStyle(Theme.secondaryInk)
                 }
                 footer(compact)
                     .padding(.horizontal, compact ? 0 : 14)
@@ -388,9 +373,6 @@ struct ContactsSplitView<Footer: View>: View {
         }
         #if os(macOS)
             .background(Theme.window)
-        #else
-            // On iPhone the list is a screen of its own, in the chat's colour.
-            .background(Theme.pane)
         #endif
     }
 
@@ -452,23 +434,23 @@ struct ContactsSplitView<Footer: View>: View {
         }
 
         private var sidebarToggle: some View {
-            Button(action: toggleSidebar) {
-                Image(systemName: "sidebar.left")
-                    .font(.system(size: 15))
-                    .foregroundStyle(Theme.secondaryInk)
-                    .frame(width: 24, height: 24)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.clickable)
+            Button(
+                showsRail ? "Expand Sidebar" : "Collapse Sidebar", systemImage: "sidebar.left",
+                action: toggleSidebar
+            )
             .help(showsRail ? "Expand Sidebar (⌃⌘S)" : "Collapse Sidebar (⌃⌘S)")
-            .accessibilityLabel(showsRail ? Text("Expand Sidebar") : Text("Collapse Sidebar"))
         }
 
         /// A window too narrow for the list keeps the rail, so a button there would do nothing.
         private var canLeaveRail: Bool { windowWidth - Self.fullWidth - panelWidth >= Self.chatMinWidth }
 
         /// The toolbar's row doesn't fit it in the narrowest list.
-        private var showsToggleInToolbar: Bool { sidebarWidth >= 229 }
+        private var showsToggleInToolbar: Bool { sidebarWidth >= Self.toolbarGroupWidth }
+
+        /// What the window buttons and the toolbar's glass group take from the list's width, with
+        /// and without the sidebar toggle. Measured from screenshots.
+        private static var toolbarGroupWidth: Double { 229 }
+        private static var toolbarPairWidth: Double { 197 }
 
         /// The sidebar's edge: drag it to resize. Let go narrower than a list fits and it settles
         /// on the rail; pull the rail out far enough and it opens to the full list.
@@ -623,7 +605,6 @@ struct ContactsSplitView<Footer: View>: View {
             } label: {
                 Label("New", systemImage: "plus")
             }
-            .menuStyle(.button)
             .menuIndicator(.hidden)
             .help("New Bot or Room")
         } else if createRoom != nil {
@@ -644,68 +625,37 @@ struct ContactsSplitView<Footer: View>: View {
 
 #if os(macOS)
     extension View {
-        /// Search and New Room at the list's right edge, level with the window buttons: one toolbar
-        /// item that starts with a clear stretch as wide as the list leaves. In the rail only the
-        /// item stays, empty, keeping the title area's height.
-        @ViewBuilder fileprivate func sidebarToolbar(
+        /// Search and New at the list's right edge, level with the window buttons, in the toolbar's
+        /// own glass. A clear item as wide as the list leaves pushes them there; it has no glass of
+        /// its own. In the rail only that item stays, empty, keeping the title area's height.
+        fileprivate func sidebarToolbar(
             leading: CGFloat, search: some View, newRoom: some View, toggle: (some View)?, shown: Bool
         ) -> some View {
-            let row = HStack(spacing: 8) {
-                Color.clear.frame(width: shown ? leading : 0, height: 1)
+            toolbar {
+                ToolbarItem(placement: .navigation) {
+                    Color.clear.frame(width: shown ? leading : 0, height: 1).accessibilityHidden(true)
+                }
+                .sharedBackgroundVisibility(.hidden)
                 if shown {
-                    if let toggle { toggle }
-                    search.sidebarCircleButton()
-                    newRoom.sidebarCircleButton()
+                    ToolbarItemGroup(placement: .navigation) {
+                        if let toggle { toggle }
+                        search
+                        newRoom
+                    }
                 }
             }
-            .labelStyle(.iconOnly)
-            // The buttons bring their own surface; the toolbar shouldn't wrap them in glass.
-            toolbar { ToolbarItem(placement: .navigation) { row }.sharedBackgroundVisibility(.hidden) }
         }
 
         /// The open profile panel's close button, at the window's top right over the panel and level
-        /// with the window buttons; macOS 26 draws it as a glass circle.
-        @ViewBuilder fileprivate func profileCloseButton(shown: Bool, close: @escaping () -> Void) -> some View {
-            let button = Button("Close Profile", systemImage: "xmark", action: close)
-                .help("Close Profile")
-                .sidebarCircleButton()
+        /// with the window buttons.
+        fileprivate func profileCloseButton(shown: Bool, close: @escaping () -> Void) -> some View {
             toolbar {
                 if shown {
                     ToolbarSpacer(.flexible)
-                    ToolbarItem { button }.sharedBackgroundVisibility(.hidden)
+                    ToolbarItem {
+                        Button("Close Profile", systemImage: "xmark", action: close).help("Close Profile")
+                    }
                 }
-            }
-        }
-
-        /// A round button, on the surface the name pill beside it uses.
-        fileprivate func sidebarCircleButton() -> some View {
-            buttonStyle(CircleButtonStyle())
-        }
-    }
-#endif
-
-#if os(macOS)
-    /// The sidebar's Search and New Room: an icon on a circle that answers a press.
-    private struct CircleButtonStyle: ButtonStyle {
-        func makeBody(configuration: Configuration) -> some View {
-            FloatingCircle(configuration: configuration)
-        }
-
-        private struct FloatingCircle: View {
-            let configuration: Configuration
-            @Environment(\.isEnabled) private var isEnabled
-
-            var body: some View {
-                configuration.label
-                    .labelStyle(.iconOnly)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Theme.ink)
-                    .frame(width: 36, height: 36)
-                    .floatingSurface(in: Circle())
-                    .contentShape(Circle())
-                    .scaleEffect(configuration.isPressed ? 0.94 : 1)
-                    .opacity(isEnabled ? 1 : 0.45)
-                    .clickable()
             }
         }
     }

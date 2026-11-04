@@ -81,9 +81,8 @@
                 }
             }
             .frame(width: 574)
-            .background(Theme.pane, in: RoundedRectangle(cornerRadius: 20))
-            .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(Theme.border))
-            .shadow(color: .black.opacity(0.3), radius: 24, y: 8)
+            // Floats over the window, as Spotlight does.
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
             .accessibilityAddTraits(.isModal)
         }
 

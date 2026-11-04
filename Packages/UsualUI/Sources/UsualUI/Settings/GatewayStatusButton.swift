@@ -43,6 +43,7 @@ struct GatewayStatusButton<More: View>: View {
             .contentShape(Rectangle())
         }
         .menuStyle(.button)
+        // Plain: a Mac menu in a system style flattens its label to a title, losing the dot.
         .buttonStyle(.plain)
         .clickable()
         .menuIndicator(.hidden)
