@@ -46,27 +46,26 @@ struct RoutineEditor: View {
                 title: routine == nil ? "Create" : "Save", isEnabled: canSave, isDefault: !writingPrompt, perform: save),
             busy: isSaving ? (routine == nil ? "Creating…" : "Saving…") : nil
         ) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    field("Name") {
-                        VaultTextField(title: "Optional, like Morning brief", text: $draft.name)
-                    }
-                    whatToDo
-                    when
-                    results
-                    if let problem {
+            Form {
+                field("Name") {
+                    TextField("Name", text: $draft.name, prompt: Text("Optional, like Morning brief"))
+                        .labelsHidden()
+                }
+                whatToDo
+                when
+                results
+                if let problem {
+                    Section {
                         Text(problem)
-                            .scaledFont(size: 12.5)
                             .foregroundStyle(Theme.danger)
                             .textSelection(.enabled)
-                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                .padding(20)
             }
         }
-        .frame(minWidth: 340, idealWidth: 460, maxWidth: 560, minHeight: 460)
-        .background(Theme.window)
+        #if os(macOS)
+            .frame(width: 460, height: 560)
+        #endif
     }
 
     @ViewBuilder private var whatToDo: some View {
@@ -83,17 +82,15 @@ struct RoutineEditor: View {
                     .focused($writingPrompt)
                     .scaledFont(size: 14)
                     .scrollContentBackground(.hidden)
-                    .padding(8)
                     .frame(minHeight: 110)
-                    .background(Theme.pane, in: RoundedRectangle(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.border))
                     .overlay(alignment: .topLeading) {
                         if draft.prompt.isEmpty {
+                            // TextEditor has no prompt of its own.
                             Text("Say it as you would to \(agentName), like “Check our dependencies for updates”.")
                                 .scaledFont(size: 14)
-                                .foregroundStyle(Theme.secondaryInk)
-                                .padding(.horizontal, 13)
-                                .padding(.vertical, 16)
+                                .foregroundStyle(.tertiary)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 8)
                                 .allowsHitTesting(false)
                                 .accessibilityHidden(true)
                         }
@@ -105,14 +102,12 @@ struct RoutineEditor: View {
 
     private var when: some View {
         field("When") {
-            Picker("When", selection: $choice.preset) {
+            Picker("Repeats", selection: $choice.preset) {
                 ForEach(RoutineSchedule.Preset.allCases) { preset in
                     Text(Self.title(preset)).tag(preset)
                 }
             }
-            .labelsHidden()
             .pickerStyle(.menu)
-            .fixedSize()
             if choice.preset == .weekly {
                 Picker("Day", selection: $choice.weekday) {
                     // Monday first, as most calendars here start the week.
@@ -121,11 +116,9 @@ struct RoutineEditor: View {
                     }
                 }
                 .pickerStyle(.menu)
-                .fixedSize()
             }
             if choice.preset.hasTime {
                 DatePicker("Time", selection: time, displayedComponents: .hourAndMinute)
-                    .fixedSize()
             }
             if choice.preset == .custom {
                 VaultTextField(title: "Like every 2h or weekdays at 9am", text: $custom, isLiteral: true)
@@ -158,7 +151,6 @@ struct RoutineEditor: View {
                 .pickerStyle(.radioGroup)
             #else
                 .pickerStyle(.menu)
-                .fixedSize()
             #endif
             Text(resultsHint)
                 .scaledFont(size: 12)
@@ -223,12 +215,10 @@ struct RoutineEditor: View {
     }
 
     private func field(_ label: LocalizedStringKey, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(label)
-                .scaledFont(size: 12, weight: .semibold)
-                .foregroundStyle(Theme.secondaryInk)
-                .accessibilityAddTraits(.isHeader)
+        Section {
             content()
+        } header: {
+            Text(label)
         }
     }
 

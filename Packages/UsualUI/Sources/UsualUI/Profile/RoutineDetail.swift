@@ -42,25 +42,25 @@ struct RoutineDetail: View {
                 // Deleted here or somewhere else while open.
                 VStack(spacing: 12) {
                     Text("This routine is gone.").foregroundStyle(Theme.secondaryInk)
-                    Button("Close") { dismiss() }.buttonStyle(CardButtonStyle(primary: false))
+                    Button("Close") { dismiss() }.buttonStyle(.bordered)
                 }
                 .padding(40)
             }
         }
-        .frame(minWidth: 340, idealWidth: 460, maxWidth: 560, minHeight: 460)
-        .background(Theme.window)
+        #if os(macOS)
+            .frame(width: 460, height: 560)
+        #endif
     }
 
     private func overview(_ routine: Routine) -> some View {
         SheetForm(title: Text(routine.name), action: SheetAction(title: "Done") { dismiss() }) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    if let created { CreatedFromTemplate(made: created, agentName: agentName) }
-                    facts(routine)
-                    actions(routine)
-                    pastRuns(routine)
+            Form {
+                if let created {
+                    Section { CreatedFromTemplate(made: created, agentName: agentName) }
                 }
-                .padding(20)
+                Section { facts(routine) }
+                Section { actions(routine) }
+                pastRuns(routine)
             }
         }
         .task(id: routine.lastRun) {
@@ -78,8 +78,8 @@ struct RoutineDetail: View {
         }
     }
 
-    private func facts(_ routine: Routine) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+    @ViewBuilder private func facts(_ routine: Routine) -> some View {
+        Group {
             fact("When", RoutineSchedule.plainWords(routine.schedule) + statusSuffix(routine))
             if let prompt = routine.prompt.nonEmpty {
                 fact("What to do", prompt)
@@ -109,7 +109,6 @@ struct RoutineDetail: View {
                 .accessibilityElement(children: .combine)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func statusSuffix(_ routine: Routine) -> String {
@@ -169,50 +168,30 @@ struct RoutineDetail: View {
 
     @ViewBuilder private func buttons(_ routine: Routine, isRunning: Bool) -> some View {
         Button(isRunning ? "Running…" : "Run Now") { list.runNow(routine) }
-            .buttonStyle(CardButtonStyle(primary: true))
+            .prominentButton()
             .disabled(isRunning)
             .accessibilityHint(Text("Runs it once now, as if it were time"))
         Button("Edit") { page = .editing }
-            .buttonStyle(CardButtonStyle(primary: false))
-        Button(role: .destructive) {
-            confirmingDelete = true
-        } label: {
-            // Inside the label, or the button style's ink wins.
-            Text("Delete").foregroundStyle(Theme.danger)
-        }
-        .buttonStyle(CardButtonStyle(primary: false))
+            .buttonStyle(.bordered)
+        Button("Delete…", role: .destructive) { confirmingDelete = true }
+            .buttonStyle(.bordered)
     }
 
     private func pastRuns(_ routine: Routine) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Past Runs")
-                .scaledFont(size: 12, weight: .semibold)
-                .foregroundStyle(Theme.secondaryInk)
-                .accessibilityAddTraits(.isHeader)
-                .padding(.bottom, 4)
+        Section("Past Runs") {
             if let runs {
                 if runs.isEmpty {
                     Text("It hasn't run yet.")
-                        .scaledFont(size: 13.5)
                         .foregroundStyle(Theme.secondaryInk)
-                        .padding(.vertical, 8)
                 }
                 ForEach(runs) { run in
                     RunRow(run: run) { page = .run(run) }
-                    Divider().overlay(Theme.border)
                 }
             } else if let runsProblem {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(runsProblem).foregroundStyle(Theme.secondaryInk)
-                    Button("Try Again") { Task { await loadRuns(routine) } }
-                        .buttonStyle(.clickable)
-                        .scaledFont(size: 13, weight: .medium)
-                        .foregroundStyle(Theme.ink)
-                        .frame(minHeight: 44)
-                }
-                .scaledFont(size: 13)
+                Text(runsProblem).foregroundStyle(Theme.secondaryInk)
+                Button("Try Again") { Task { await loadRuns(routine) } }
             } else {
-                ProgressView().controlSize(.small).frame(maxWidth: .infinity).padding(.vertical, 16)
+                ProgressView().controlSize(.small).frame(maxWidth: .infinity)
             }
         }
     }
@@ -282,9 +261,9 @@ private struct RunRow: View {
                     .foregroundStyle(Theme.secondaryInk)
                     .accessibilityHidden(true)
             }
-            .padding(.vertical, 10)
             .contentShape(Rectangle())
         }
+        // A row that opens the run, as a list's navigation row: no button chrome.
         .buttonStyle(.clickable)
         .accessibilityElement(children: .combine)
     }

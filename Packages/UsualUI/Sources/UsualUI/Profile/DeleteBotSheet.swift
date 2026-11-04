@@ -21,50 +21,48 @@ struct DeleteBotSheet: View {
                 title: "Delete Bot", role: .destructive, isEnabled: canDelete, isDefault: false, perform: submit),
             busy: isDeleting ? "Deleting…" : nil
         ) {
-            #if os(macOS)
-                content.padding(20)
-            #else
-                ScrollView { content.padding(20) }
-            #endif
+            form
         }
         #if os(macOS)
-            .frame(width: 440)
-            .presentationBackground(Theme.pane)
+            .frame(width: 440, height: 400)
         #else
             .presentationDetents([.medium, .large])
         #endif
     }
 
-    private var content: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(
-                "This deletes \(contact.name)'s Hermes profile from the gateway, with everything in it: its chats, routines, skills, memory, vault, keys and apps. It goes from every app, and it can't be undone."
-            )
-            if let note = Self.activityNote(for: contact) {
-                Text(note)
-            }
-            if !rooms.isEmpty {
+    private var form: some View {
+        Form {
+            Section {
                 Text(
-                    "It stays listed in \(rooms.map(\.name).formatted(.list(type: .and))), but can't answer there any more. Delete a room to be rid of it."
+                    "This deletes \(contact.name)'s Hermes profile from the gateway, with everything in it: its chats, routines, skills, memory, vault, keys and apps. It goes from every app, and it can't be undone."
                 )
+                if let note = Self.activityNote(for: contact) {
+                    Text(note)
+                }
+                if !rooms.isEmpty {
+                    Text(
+                        "It stays listed in \(rooms.map(\.name).formatted(.list(type: .and))), but can't answer there any more. Delete a room to be rid of it."
+                    )
+                }
             }
-            TextField("Type \(contact.name) to confirm", text: $typed)
-                .textFieldStyle(.roundedBorder)
-                // What you type, in ink: the sentences around it are grey.
-                .foregroundStyle(Theme.ink)
-                .autocorrectionDisabled()
-                #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                #endif
-                .disabled(isDeleting)
-                .accessibilityLabel(Text("Type the Bot's name, \(contact.name), to confirm"))
-            if let problem {
-                Text(problem).foregroundStyle(Theme.danger)
+            .foregroundStyle(.secondary)
+            Section {
+                TextField("Name", text: $typed, prompt: Text(contact.name))
+                    .labelsHidden()
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                    #endif
+                    .disabled(isDeleting)
+                    .accessibilityLabel(Text("Type the Bot's name, \(contact.name), to confirm"))
+            } header: {
+                Text("Type \(contact.name) to confirm")
+            } footer: {
+                if let problem {
+                    Text(problem).foregroundStyle(Theme.danger)
+                }
             }
         }
-        .scaledFont(size: 13.5)
-        .foregroundStyle(Theme.secondaryInk)
-        .fixedSize(horizontal: false, vertical: true)
     }
 
     /// What deleting it now would cut short, if anything.

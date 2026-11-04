@@ -5,7 +5,7 @@ import SwiftUI
 /// goes when it's saved or closed.
 struct VaultAddSheet: View {
     /// Everything the form holds, cleared in one go.
-    private struct Form {
+    private struct Typed {
         var label = ""
         var origin = ""
         var identifierType = VaultDraft.IdentifierType.email
@@ -29,7 +29,7 @@ struct VaultAddSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var kind: VaultDraft.Kind
-    @State private var form = Form()
+    @State private var form = Typed()
     @State private var allowsUnencrypted = false
     @State private var isSaving = false
 
@@ -44,8 +44,8 @@ struct VaultAddSheet: View {
             action: SheetAction(title: "Add", isEnabled: canSave, perform: save),
             busy: isSaving ? "Adding…" : nil
         ) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
+            Form {
+                Section {
                     Picker("Kind", selection: $kind) {
                         Text("Login").tag(VaultDraft.Kind.login)
                         Text("Card").tag(VaultDraft.Kind.payment)
@@ -54,28 +54,31 @@ struct VaultAddSheet: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     VaultTextField(title: "Name", text: $form.label)
+                }
+                Section {
                     switch kind {
                     case .login: login
                     case .payment: card
                     case .address: address
                     }
-                    if list.isUnencrypted { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
-                    if let problem = list.problem {
-                        Text(problem)
-                            .scaledFont(size: 12.5)
-                            .foregroundStyle(Theme.danger)
-                            .fixedSize(horizontal: false, vertical: true)
+                }
+                if list.isUnencrypted {
+                    Section { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
+                }
+                if let problem = list.problem {
+                    Section {
+                        Text(problem).foregroundStyle(Theme.danger)
                     }
                 }
-                .padding(20)
             }
         }
-        .frame(minWidth: 340, idealWidth: 420, maxWidth: 480, minHeight: 420)
-        .background(Theme.window)
+        #if os(macOS)
+            .frame(width: 440, height: 500)
+        #endif
     }
 
     private func cancel() {
-        form = Form()
+        form = Typed()
         dismiss()
     }
 
@@ -140,7 +143,7 @@ struct VaultAddSheet: View {
         Task {
             // A failure keeps the form to fix and try again, unless you cancel.
             if await list.add(draft, allowingUnencrypted: allowsUnencrypted) {
-                form = Form()
+                form = Typed()
                 dismiss()
             }
             isSaving = false

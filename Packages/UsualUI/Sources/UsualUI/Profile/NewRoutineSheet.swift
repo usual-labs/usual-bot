@@ -63,42 +63,34 @@ struct NewRoutineSheet: View {
 
     private var chooser: some View {
         SheetForm(title: Text("New Routine"), cancel: done) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+            Form {
+                Section {
                     ChoiceRow(
                         icon: "square.and.pencil", title: Text("Start from scratch"),
                         summary: String(localized: "Say what \(agentName) should do and when.")
                     ) { page = .blank }
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("Templates")
-                            .scaledFont(size: 12, weight: .semibold)
-                            .foregroundStyle(Theme.secondaryInk)
-                            .accessibilityAddTraits(.isHeader)
-                            .padding(.bottom, 4)
-                        if list.templatePhase == .loading {
-                            HStack(spacing: 8) {
-                                ProgressView().controlSize(.small)
-                                Text("Loading templates…")
-                            }
-                            .scaledFont(size: 13)
-                            .foregroundStyle(Theme.secondaryInk)
-                            .padding(.vertical, 12)
-                            .accessibilityElement(children: .combine)
+                }
+                Section("Templates") {
+                    if list.templatePhase == .loading {
+                        HStack(spacing: 8) {
+                            ProgressView().controlSize(.small)
+                            Text("Loading templates…")
                         }
-                        ForEach(list.templates) { template in
-                            ChoiceRow(
-                                icon: Self.icon(template.category), title: Text(verbatim: template.title),
-                                summary: template.summary
-                            ) { page = .template(template) }
-                            Divider().overlay(Theme.border)
-                        }
+                        .foregroundStyle(Theme.secondaryInk)
+                        .accessibilityElement(children: .combine)
+                    }
+                    ForEach(list.templates) { template in
+                        ChoiceRow(
+                            icon: Self.icon(template.category), title: Text(verbatim: template.title),
+                            summary: template.summary
+                        ) { page = .template(template) }
                     }
                 }
-                .padding(20)
             }
         }
-        .frame(minWidth: 340, idealWidth: 460, maxWidth: 560, minHeight: 460)
-        .background(Theme.window)
+        #if os(macOS)
+            .frame(width: 460, height: 560)
+        #endif
         .task { await list.loadTemplates() }
     }
 
@@ -134,8 +126,7 @@ private struct ChoiceRow: View {
                     .font(.system(size: 15))
                     .foregroundStyle(Theme.ink)
                     .frame(width: 32, height: 32)
-                    .background(Theme.pane, in: RoundedRectangle(cornerRadius: 8))
-                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.border))
+                    .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     title
@@ -152,7 +143,7 @@ private struct ChoiceRow: View {
                     .foregroundStyle(Theme.secondaryInk)
                     .accessibilityHidden(true)
             }
-            .padding(.vertical, 10)
+            .padding(.vertical, 2)
             .contentShape(Rectangle())
             // On the label, not the button: wrapping the button made an element VoiceOver couldn't
             // press.
@@ -161,6 +152,7 @@ private struct ChoiceRow: View {
             // The whole line, which the row cuts short.
             .accessibilityValue(Text(summary))
         }
+        // A row that opens the next page, as a list's navigation row: no button chrome.
         .buttonStyle(.clickable)
     }
 }

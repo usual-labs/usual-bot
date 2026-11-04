@@ -29,32 +29,33 @@ struct AppAddSheet: View {
                 ? SheetAction(title: "Add", isEnabled: canAdd, perform: add) : nil,
             busy: isAdding ? "Adding…" : nil
         ) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
+            Form {
+                Section {
                     Picker("Add from", selection: $source) {
                         Text("Catalog").tag(Source.catalog)
                         Text("Custom").tag(Source.custom)
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
-                    switch source {
-                    case .catalog:
-                        if let entry { entryForm(entry) } else { catalog }
-                    case .custom: custom
-                    }
-                    if list.isUnencrypted && sendsSecret { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
-                    if let problem = list.problem {
-                        Text(problem)
-                            .scaledFont(size: 12.5)
-                            .foregroundStyle(Theme.danger)
-                            .fixedSize(horizontal: false, vertical: true)
+                }
+                switch source {
+                case .catalog:
+                    if let entry { entryForm(entry) } else { catalog }
+                case .custom: custom
+                }
+                if list.isUnencrypted && sendsSecret {
+                    Section { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
+                }
+                if let problem = list.problem {
+                    Section {
+                        Text(problem).foregroundStyle(Theme.danger)
                     }
                 }
-                .padding(20)
             }
         }
-        .frame(minWidth: 340, idealWidth: 420, maxWidth: 480, minHeight: 460)
-        .background(Theme.window)
+        #if os(macOS)
+            .frame(width: 440, height: 540)
+        #endif
         .task {
             list.clearMessages()
             await list.loadCatalog()
@@ -64,26 +65,24 @@ struct AppAddSheet: View {
     // MARK: - Catalog
 
     @ViewBuilder private var catalog: some View {
-        VaultTextField(title: "Search the catalog", text: $search, isLiteral: true)
-        switch list.catalogPhase {
-        case .loading:
-            ProgressView().controlSize(.small).frame(maxWidth: .infinity).padding(.vertical, 20)
-        case .failed(let message):
-            Text("Couldn't load the catalog: \(message)")
-                .scaledFont(size: 13)
-                .foregroundStyle(Theme.danger)
-                .fixedSize(horizontal: false, vertical: true)
-        case .ready:
-            let shown = list.catalog.filter(matches)
-            if shown.isEmpty {
-                Text(search.isEmpty ? "The catalog is empty. Use Custom instead." : "Nothing matches. Try Custom.")
-                    .scaledFont(size: 13.5)
-                    .foregroundStyle(Theme.secondaryInk)
-            }
-            VStack(spacing: 0) {
+        Section {
+            VaultTextField(title: "Search the catalog", text: $search, isLiteral: true)
+        }
+        Section {
+            switch list.catalogPhase {
+            case .loading:
+                ProgressView().controlSize(.small).frame(maxWidth: .infinity)
+            case .failed(let message):
+                Text("Couldn't load the catalog: \(message)")
+                    .foregroundStyle(Theme.danger)
+            case .ready:
+                let shown = list.catalog.filter(matches)
+                if shown.isEmpty {
+                    Text(search.isEmpty ? "The catalog is empty. Use Custom instead." : "Nothing matches. Try Custom.")
+                        .foregroundStyle(Theme.secondaryInk)
+                }
                 ForEach(shown) { entry in
                     CatalogRow(entry: entry) { pick(entry) }
-                    Divider().overlay(Theme.border)
                 }
             }
         }
@@ -96,81 +95,92 @@ struct AppAddSheet: View {
     }
 
     @ViewBuilder private func entryForm(_ entry: MCPCatalogEntry) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(entry.name)
-                .scaledFont(size: 15, weight: .semibold)
-                .foregroundStyle(Theme.ink)
-            Text(entry.description)
-                .scaledFont(size: 13)
-                .foregroundStyle(Theme.secondaryInk)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        if let place = entry.url ?? entry.command {
-            Text(entry.url != nil ? "Connects to \(place)" : "Runs \(place) on the gateway's machine")
-                .scaledFont(size: 12.5)
-                .foregroundStyle(Theme.secondaryInk)
-                .textSelection(.enabled)
-        }
-        ForEach(entry.requiredEnv) { key in
+        Section {
             VStack(alignment: .leading, spacing: 4) {
-                VaultSecureField(
-                    title: LocalizedStringKey(
-                        key.required ? key.prompt ?? key.name : "\(key.prompt ?? key.name) (optional)"),
-                    text: Binding(get: { values[key.name] ?? "" }, set: { values[key.name] = $0 }))
-                Text(key.name)
-                    .scaledFont(size: 11.5, design: .monospaced)
+                Text(entry.name)
+                    .scaledFont(size: 15, weight: .semibold)
+                    .foregroundStyle(Theme.ink)
+                Text(entry.description)
+                    .scaledFont(size: 13)
                     .foregroundStyle(Theme.secondaryInk)
-                    .accessibilityHidden(true)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let place = entry.url ?? entry.command {
+                Text(entry.url != nil ? "Connects to \(place)" : "Runs \(place) on the gateway's machine")
+                    .scaledFont(size: 12.5)
+                    .foregroundStyle(Theme.secondaryInk)
+                    .textSelection(.enabled)
+            }
+        } footer: {
+            VStack(alignment: .leading, spacing: 6) {
+                if entry.usesSignIn { Text("After adding it, sign in with its provider in your browser.") }
+                if entry.needsInstall { Text("The gateway fetches and builds it first, which can take a few minutes.") }
+                if entry.installed { Text("It's already added. Adding it again replaces its settings.") }
             }
         }
         if !entry.requiredEnv.isEmpty {
-            note("Keys go to the gateway and are saved there. This device doesn't keep them.")
+            Section {
+                ForEach(entry.requiredEnv) { key in
+                    VStack(alignment: .leading, spacing: 4) {
+                        VaultSecureField(
+                            title: LocalizedStringKey(
+                                key.required ? key.prompt ?? key.name : "\(key.prompt ?? key.name) (optional)"),
+                            text: Binding(get: { values[key.name] ?? "" }, set: { values[key.name] = $0 }))
+                        Text(key.name)
+                            .scaledFont(size: 11.5, design: .monospaced)
+                            .foregroundStyle(Theme.secondaryInk)
+                            .accessibilityHidden(true)
+                    }
+                }
+            } header: {
+                Text("Keys")
+            } footer: {
+                Text("Keys go to the gateway and are saved there. This device doesn't keep them.")
+            }
         }
-        if entry.usesSignIn { note("After adding it, sign in with its provider in your browser.") }
-        if entry.needsInstall { note("The gateway fetches and builds it first, which can take a few minutes.") }
-        if entry.installed { note("It's already added. Adding it again replaces its settings.") }
     }
 
     // MARK: - Custom
 
     @ViewBuilder private var custom: some View {
-        VaultTextField(title: "Name, like docs", text: $draft.name, isLiteral: true)
-        Picker("Kind", selection: $draft.kind) {
-            Text("Web address").tag(MCPServerDraft.Kind.web)
-            Text("Program").tag(MCPServerDraft.Kind.program)
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        switch draft.kind {
-        case .web:
-            VaultTextField(title: "Address, like https://example.com/mcp", text: $draft.url, isLiteral: true)
-            Picker("Sign-in", selection: $draft.auth) {
-                Text("None").tag(MCPServerDraft.Auth.none)
-                Text("Token").tag(MCPServerDraft.Auth.token)
-                Text("Provider page").tag(MCPServerDraft.Auth.signIn)
+        Section {
+            VaultTextField(title: "Name, like docs", text: $draft.name, isLiteral: true)
+            Picker("Kind", selection: $draft.kind) {
+                Text("Web address").tag(MCPServerDraft.Kind.web)
+                Text("Program").tag(MCPServerDraft.Kind.program)
             }
             .pickerStyle(.segmented)
-            switch draft.auth {
-            case .token:
-                VaultSecureField(title: "Token", text: $draft.token)
-                note("The token goes to the gateway and is saved there. This device doesn't keep it.")
-            case .signIn:
-                note("After adding it, sign in with its provider in your browser.")
-            case .none:
-                EmptyView()
+            switch draft.kind {
+            case .web:
+                VaultTextField(title: "Address, like https://example.com/mcp", text: $draft.url, isLiteral: true)
+            case .program:
+                VaultTextField(title: "Command, like npx", text: $draft.command, isLiteral: true)
+                VaultTextField(title: "Arguments, separated by spaces", text: $draft.arguments, isLiteral: true)
             }
-        case .program:
-            VaultTextField(title: "Command, like npx", text: $draft.command, isLiteral: true)
-            VaultTextField(title: "Arguments, separated by spaces", text: $draft.arguments, isLiteral: true)
-            note("The gateway runs this program on its machine, with Hermes's permissions. Add only one you trust.")
+        } footer: {
+            if draft.kind == .program {
+                Text("The gateway runs this program on its machine, with Hermes's permissions. Add only one you trust.")
+            }
         }
-    }
-
-    private func note(_ text: LocalizedStringKey) -> some View {
-        Text(text)
-            .scaledFont(size: 12.5)
-            .foregroundStyle(Theme.secondaryInk)
-            .fixedSize(horizontal: false, vertical: true)
+        if draft.kind == .web {
+            Section {
+                Picker("Sign-in", selection: $draft.auth) {
+                    Text("None").tag(MCPServerDraft.Auth.none)
+                    Text("Token").tag(MCPServerDraft.Auth.token)
+                    Text("Provider page").tag(MCPServerDraft.Auth.signIn)
+                }
+                .pickerStyle(.segmented)
+                if draft.auth == .token {
+                    VaultSecureField(title: "Token", text: $draft.token)
+                }
+            } footer: {
+                switch draft.auth {
+                case .token: Text("The token goes to the gateway and is saved there. This device doesn't keep it.")
+                case .signIn: Text("After adding it, sign in with its provider in your browser.")
+                case .none: EmptyView()
+                }
+            }
+        }
     }
 
     // MARK: - Adding
@@ -269,9 +279,9 @@ private struct CatalogRow: View {
                     .foregroundStyle(Theme.secondaryInk)
                     .accessibilityHidden(true)
             }
-            .padding(.vertical, 9)
             .contentShape(Rectangle())
         }
+        // A row that opens the entry, as a list's navigation row: no button chrome.
         .buttonStyle(.clickable)
         .accessibilityElement(children: .combine)
     }

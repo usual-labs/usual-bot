@@ -27,13 +27,9 @@ struct NewRoomSheet: View {
             busy: isCreating ? "Creating…" : nil
         ) {
             form
-                #if os(macOS)
-                    .scrollContentBackground(.hidden)
-                #endif
         }
         #if os(macOS)
             .frame(width: 420, height: 560)
-            .presentationBackground(Theme.pane)
         #endif
     }
 
@@ -62,7 +58,6 @@ struct NewRoomSheet: View {
                 }
             }
         }
-        .formStyle(.grouped)
         .disabled(isCreating)
     }
 

@@ -18,10 +18,11 @@ struct SheetBack {
     let perform: () -> Void
 }
 
-/// Every sheet's frame, so they all look and work alike. iPhone: a navigation bar with the title,
-/// Cancel (or Back) leading and the main action trailing, out of the keyboard's way. Mac: the title
-/// at the top; Back at the bottom left, Cancel and the main action at the bottom right, with Esc and
-/// Return. `content` scrolls itself. `busy` names what's under way, such as "Creating…".
+/// Every sheet's frame, from the system's own parts: `content` is a `Form`, grouped here, which
+/// scrolls itself, and the buttons are toolbar items in the cancellation and confirmation slots.
+/// iPhone draws them in its glass bar, the confirmation prominent; the Mac puts them at the
+/// bottom right, with Esc and Return. A destructive action's role colours it red. `busy` names
+/// what's under way, such as "Creating…".
 struct SheetForm<Content: View, Extra: View>: View {
     let title: Text
     var back: SheetBack? = nil
@@ -34,111 +35,127 @@ struct SheetForm<Content: View, Extra: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        #if os(macOS)
-            VStack(spacing: 0) {
-                title
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
-                    .lineLimit(1)
-                    .accessibilityAddTraits(.isHeader)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .frame(height: 52)
-                Divider().overlay(Theme.border)
-                content()
-                    .frame(maxHeight: .infinity)
-                Divider().overlay(Theme.border)
-                footer
-            }
-            // A sheet sits outside the window's tint.
-            .tint(Theme.ink)
-        #else
-            NavigationStack {
-                content()
-                    .navigationTitle(title)
+        NavigationStack {
+            content()
+                .formStyle(.grouped)
+                .navigationTitle(title)
+                #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) { leadingItem }
-                        ToolbarItem(placement: .confirmationAction) { trailingItem }
-                    }
-            }
-            .tint(Theme.ink)
-            .interactiveDismissDisabled(busy != nil)
-        #endif
+                #endif
+                .toolbar { bar }
+        }
+        // A sheet sits outside the window's tint.
+        .tint(Theme.ink)
+        .interactiveDismissDisabled(busy != nil)
     }
 
-    #if os(macOS)
-        private var footer: some View {
-            HStack(spacing: 8) {
+    @ToolbarContentBuilder private var bar: some ToolbarContent {
+        #if os(iOS)
+            // One leading slot: Back where there's somewhere to go back to, else Cancel. A swipe
+            // down still closes the sheet.
+            ToolbarItem(placement: .cancellationAction) {
                 if let back {
-                    Button("Back", action: back.perform)
-                        .buttonStyle(CardButtonStyle(primary: false))
-                        .accessibilityLabel(back.label)
-                        .disabled(busy != nil)
+                    backButton(back)
+                } else if let cancel {
+                    cancelButton(cancel)
                 }
-                extra()
-                if let busy {
-                    ProgressView().controlSize(.small)
-                    Text(busy).font(.system(size: 13)).foregroundStyle(Theme.secondaryInk)
-                }
-                Spacer(minLength: 0)
+            }
+        #else
+            // Back at the top left, as a window's; Cancel stays beside the action.
+            if let back {
+                ToolbarItem(placement: .navigation) { backButton(back) }
+            }
+            ToolbarItem(placement: .cancellationAction) {
                 if let cancel {
-                    Button("Cancel", role: .cancel, action: cancel)
-                        .buttonStyle(CardButtonStyle(primary: false))
-                        .keyboardShortcut(.cancelAction)
-                        .disabled(busy != nil)
-                } else if let action {
+                    cancelButton(cancel)
+                } else if back == nil, let action {
                     // Esc closes a sheet with no Cancel, as its action does.
                     Button("Close", action: action.perform)
                         .keyboardShortcut(.cancelAction)
-                        .opacity(0)
-                        .frame(width: 0, height: 0)
+                        .hidden()
                         .accessibilityHidden(true)
                 }
-                if let action {
-                    let enabled = action.isEnabled && busy == nil
-                    Group {
-                        if action.role == .destructive {
-                            Button(action.title, role: .destructive, action: action.perform)
-                                .buttonStyle(DangerButtonStyle())
-                        } else {
-                            Button(action.title, role: action.role, action: action.perform)
-                                .buttonStyle(CardButtonStyle(primary: true))
-                        }
+            }
+        #endif
+        #if os(macOS)
+            if hasExtra {
+                ToolbarItem(placement: .destructiveAction) { extra() }
+            }
+            if let busy {
+                ToolbarItem(placement: .status) {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text(busy).foregroundStyle(.secondary)
                     }
-                    .keyboardShortcut(action.isDefault ? .defaultAction : nil)
-                    .disabled(!enabled)
-                    .opacity(enabled ? 1 : 0.4)
+                    .accessibilityElement(children: .combine)
                 }
             }
-            .padding(.horizontal, 20)
-            .frame(height: 60)
-        }
-    #else
-        @ViewBuilder private var leadingItem: some View {
-            if let back {
-                Button(action: back.perform) {
-                    Label("Back", systemImage: "chevron.backward")
-                }
-                .accessibilityLabel(back.label)
-                .disabled(busy != nil)
-            } else if let cancel {
-                Button("Cancel", role: .cancel, action: cancel)
-                    .disabled(busy != nil)
+        #endif
+        if let action {
+            ToolbarItem(placement: placement(action)) {
+                #if os(iOS)
+                    if busy != nil {
+                        ProgressView()
+                    } else {
+                        mainButton(action)
+                    }
+                #else
+                    mainButton(action)
+                #endif
             }
         }
+    }
 
-        @ViewBuilder private var trailingItem: some View {
-            if busy != nil {
-                ProgressView()
-            } else if let action {
-                Button(action.title, role: action.role, action: action.perform)
-                    .fontWeight(.semibold)
-                    .disabled(!action.isEnabled)
-                    .tint(action.role == .destructive ? Theme.danger : Theme.ink)
+    /// The Mac may make a confirmation item the default button, so an action Return mustn't press
+    /// (Delete Bot) takes the destructive slot there.
+    private func placement(_ action: SheetAction) -> ToolbarItemPlacement {
+        #if os(macOS)
+            action.isDefault ? .confirmationAction : .destructiveAction
+        #else
+            .confirmationAction
+        #endif
+    }
+
+    private func backButton(_ back: SheetBack) -> some View {
+        Button("Back", systemImage: "chevron.backward", action: back.perform)
+            .accessibilityLabel(back.label)
+            // Esc goes back where there's no Cancel to take it.
+            .keyboardShortcut(cancel == nil ? .cancelAction : nil)
+            .disabled(busy != nil)
+    }
+
+    /// iPhone's is the system's ✕; the Mac's says Cancel.
+    private func cancelButton(_ cancel: @escaping () -> Void) -> some View {
+        #if os(iOS)
+            Button(role: .cancel, action: cancel)
+                .disabled(busy != nil)
+        #else
+            Button("Cancel", role: .cancel, action: cancel)
+                .keyboardShortcut(.cancelAction)
+                .disabled(busy != nil)
+        #endif
+    }
+
+    /// Keeps its word (Create, Add, Delete Bot): a checkmark wouldn't say which. On iPhone the bar
+    /// draws it as a plain glass button, so it's made prominent here; a destructive one stays
+    /// plain, its role colouring it red.
+    @ViewBuilder private func mainButton(_ action: SheetAction) -> some View {
+        let button = Button(action.title, role: action.role, action: action.perform)
+            .keyboardShortcut(action.isDefault ? .defaultAction : nil)
+            .disabled(!action.isEnabled || busy != nil)
+        #if os(iOS)
+            if action.role == .destructive {
+                button
+            } else {
+                // Glass picks a label that reads on the ink, unlike `.borderedProminent`.
+                button.buttonStyle(.glassProminent)
             }
-        }
-    #endif
+        #else
+            button.tint(Theme.prominent)
+        #endif
+    }
+
+    private var hasExtra: Bool { Extra.self != EmptyView.self }
 }
 
 extension SheetForm where Extra == EmptyView {
@@ -151,21 +168,3 @@ extension SheetForm where Extra == EmptyView {
             content: content)
     }
 }
-
-#if os(macOS)
-    /// Red, so a destructive action can't pass for the usual primary button.
-    struct DangerButtonStyle: ButtonStyle {
-        func makeBody(configuration: Configuration) -> some View {
-            configuration.label
-                .font(.system(size: 13.5, weight: .semibold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 14)
-                .frame(minHeight: 34)
-                // Deeper than `Theme.danger` in dark mode, which white text doesn't read on.
-                .background(Color(light: 0xB42318, dark: 0xD92D20), in: Capsule())
-                .opacity(configuration.isPressed ? 0.7 : 1)
-                .contentShape(Capsule())
-                .clickable()
-        }
-    }
-#endif

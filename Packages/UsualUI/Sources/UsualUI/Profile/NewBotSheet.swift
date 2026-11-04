@@ -31,13 +31,9 @@ struct NewBotSheet: View {
             busy: isCreating ? "Creating…" : nil
         ) {
             form
-                #if os(macOS)
-                    .scrollContentBackground(.hidden)
-                #endif
         }
         #if os(macOS)
             .frame(width: 420, height: 560)
-            .presentationBackground(Theme.pane)
         #endif
     }
 
@@ -52,7 +48,7 @@ struct NewBotSheet: View {
                             Button("Remove", role: .destructive) { picture = nil }
                         }
                     }
-                    .buttonStyle(CardButtonStyle(primary: false))
+                    .buttonStyle(.bordered)
                 }
                 .frame(maxWidth: .infinity)
                 .listRowBackground(Color.clear)
@@ -90,7 +86,6 @@ struct NewBotSheet: View {
                 }
             }
         }
-        .formStyle(.grouped)
         .disabled(isCreating || made != nil)
         .botPicturePicker(isPresented: $choosingPicture, picked: use)
     }

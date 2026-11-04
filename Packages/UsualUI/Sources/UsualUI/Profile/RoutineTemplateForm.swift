@@ -39,54 +39,47 @@ struct RoutineTemplateForm: View {
             action: SheetAction(title: "Create", isEnabled: canCreate, perform: create),
             busy: isSaving ? "Creating…" : nil
         ) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text(verbatim: template.summary)
-                        .scaledFont(size: 13)
-                        .foregroundStyle(Theme.secondaryInk)
-                        .fixedSize(horizontal: false, vertical: true)
+            Form {
+                Section {
                     ForEach(template.questions) { field in
                         question(field)
                     }
-                    schedule
-                    if template.hasDelivery { results }
+                } header: {
+                    Text(verbatim: template.summary)
+                        .textCase(nil)
+                        .font(.subheadline)
+                }
+                schedule
+                if template.hasDelivery { results }
+                Section {
+                    if let problem {
+                        Text(problem)
+                            .foregroundStyle(Theme.danger)
+                            .textSelection(.enabled)
+                    }
+                } footer: {
                     Text(
                         "\(agentName) gets instructions written from your answers. You can read and change them once it's created."
                     )
-                    .scaledFont(size: 12)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .fixedSize(horizontal: false, vertical: true)
-                    if let problem {
-                        Text(problem)
-                            .scaledFont(size: 12.5)
-                            .foregroundStyle(Theme.danger)
-                            .textSelection(.enabled)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
                 }
-                .padding(20)
             }
         }
-        .frame(minWidth: 340, idealWidth: 460, maxWidth: 560, minHeight: 460)
-        .background(Theme.window)
+        #if os(macOS)
+            .frame(width: 460, height: 520)
+        #endif
     }
 
+    /// A row per question: its label and control, with what's wrong or what it's for under it.
     private func question(_ field: RoutineTemplate.Field) -> some View {
         let value = binding(field.name)
         let blankAtStart = field.defaultValue.isEmpty && !touched.contains(field.name)
         let problem = blankAtStart ? nil : field.problem(with: value.wrappedValue)
         return VStack(alignment: .leading, spacing: 6) {
-            Text(verbatim: field.label)
-                .scaledFont(size: 12, weight: .semibold)
-                .foregroundStyle(Theme.secondaryInk)
-                .accessibilityHidden(true)
             switch field.kind {
             case .time:
                 DatePicker(selection: time(value), displayedComponents: .hourAndMinute) {
                     Text(verbatim: field.label)
                 }
-                .labelsHidden()
-                .fixedSize()
             case .choice, .days:
                 Picker(selection: value) {
                     // The current value stays a choice even if the list leaves it out.
@@ -96,31 +89,31 @@ struct RoutineTemplateForm: View {
                 } label: {
                     Text(verbatim: field.label)
                 }
-                .labelsHidden()
                 .pickerStyle(.menu)
-                .fixedSize()
             case .text:
-                TextField(text: value, prompt: Text(verbatim: Self.sentence(field.help))) {
+                #if os(iOS)
+                    // An iPhone form shows a field's prompt, not its label, so the label goes above.
                     Text(verbatim: field.label)
-                }
-                .textFieldStyle(.plain)
-                .scaledFont(size: 14)
-                .padding(.horizontal, 12)
-                .frame(minHeight: 40)
-                .background(Theme.pane, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10).strokeBorder(problem == nil ? Theme.border : Theme.danger))
+                        .accessibilityHidden(true)
+                    TextField(text: value, prompt: Text(verbatim: Self.sentence(field.help))) {
+                        Text(verbatim: field.label)
+                    }
+                #else
+                    TextField(text: value, prompt: Text(verbatim: Self.sentence(field.help))) {
+                        Text(verbatim: field.label)
+                    }
+                #endif
             }
             if let problem {
                 Text(problem)
                     .scaledFont(size: 12)
                     .foregroundStyle(Theme.danger)
-            } else if !field.help.isEmpty, field.kind != .time {
+            } else if !field.help.isEmpty, field.kind != .time, field.kind != .text || !value.wrappedValue.isEmpty {
+                // A blank field's prompt already says it.
                 Text(verbatim: Self.sentence(field.help))
                     .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityHidden(field.kind == .text)  // Already the field's prompt.
             }
         }
     }
@@ -131,35 +124,23 @@ struct RoutineTemplateForm: View {
             let words = RoutineSchedule.plainWords(expression)
             // A cron expression the app can't put in words says nothing useful here.
             if words != expression {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("When")
-                        .scaledFont(size: 12, weight: .semibold)
-                        .foregroundStyle(Theme.secondaryInk)
-                    Text(words)
-                        .scaledFont(size: 14)
-                        .foregroundStyle(Theme.ink)
+                Section {
+                    LabeledContent("When", value: words)
                 }
-                .accessibilityElement(children: .combine)
             }
         }
     }
 
     private var results: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Results")
-                .scaledFont(size: 12, weight: .semibold)
-                .foregroundStyle(Theme.secondaryInk)
-                .accessibilityAddTraits(.isHeader)
+        Section {
             Picker("Results", selection: $delivery) {
                 Text("Post in this chat").tag(RoutineDelivery.thisChat)
                 Text("Keep in past runs only").tag(RoutineDelivery.pastRunsOnly)
             }
-            .labelsHidden()
             #if os(macOS)
                 .pickerStyle(.radioGroup)
             #else
                 .pickerStyle(.menu)
-                .fixedSize()
             #endif
         }
     }

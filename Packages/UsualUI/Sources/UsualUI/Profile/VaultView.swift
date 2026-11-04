@@ -328,26 +328,25 @@ private struct VaultUnlockSheet: View {
             action: SheetAction(title: "Unlock", isEnabled: canSend, perform: send),
             busy: isSending ? "Unlocking…" : nil
         ) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("It stays unlocked for a while on the gateway. The master password isn't kept.")
-                        .scaledFont(size: 13)
-                        .foregroundStyle(Theme.secondaryInk)
-                        .fixedSize(horizontal: false, vertical: true)
+            Form {
+                Section {
                     VaultSecureField(title: "Master password", text: $password)
-                    if list.isUnencrypted { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
-                    if let problem = list.problem {
-                        Text(problem)
-                            .scaledFont(size: 12.5)
-                            .foregroundStyle(Theme.danger)
-                            .fixedSize(horizontal: false, vertical: true)
+                } footer: {
+                    Text("It stays unlocked for a while on the gateway. The master password isn't kept.")
+                }
+                if list.isUnencrypted {
+                    Section { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
+                }
+                if let problem = list.problem {
+                    Section {
+                        Text(problem).foregroundStyle(Theme.danger)
                     }
                 }
-                .padding(20)
             }
         }
-        .frame(minWidth: 320, idealWidth: 400, maxWidth: 420, minHeight: 300)
-        .background(Theme.window)
+        #if os(macOS)
+            .frame(width: 420, height: 300)
+        #endif
         .presentationDetents([.medium])
     }
 

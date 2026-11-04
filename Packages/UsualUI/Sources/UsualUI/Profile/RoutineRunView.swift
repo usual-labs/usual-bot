@@ -14,11 +14,15 @@ struct RoutineRunView: View {
     @State private var problem: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-            Divider().overlay(Theme.border)
+        // A transcript, not a form: the sheet's bar with Back, over the run's messages.
+        SheetForm(title: Text(routine.name), back: SheetBack(label: Text("Back to \(routine.name)"), perform: back)) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
+                    Text(
+                        "\(run.started.formatted(date: .abbreviated, time: .shortened)) · \(RoutineDescriptions.status(run.status))"
+                    )
+                    .scaledFont(size: 12.5)
+                    .foregroundStyle(run.status == .failed ? Theme.danger : Theme.secondaryInk)
                     content
                 }
                 .padding(20)
@@ -26,36 +30,6 @@ struct RoutineRunView: View {
             }
         }
         .task(id: run.id) { await load() }
-    }
-
-    private var header: some View {
-        HStack(spacing: 10) {
-            Button(action: back) {
-                Label("Back", systemImage: "chevron.left")
-                    .scaledFont(size: 13.5, weight: .medium)
-                    .foregroundStyle(Theme.ink)
-                    .frame(minHeight: 34)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.clickable)
-            .keyboardShortcut(.cancelAction)
-            .accessibilityLabel(Text("Back to \(routine.name)"))
-            VStack(alignment: .leading, spacing: 1) {
-                Text(routine.name)
-                    .scaledFont(size: 14, weight: .semibold)
-                    .foregroundStyle(Theme.ink)
-                    .lineLimit(1, accessibility: 3)
-                    .accessibilityAddTraits(.isHeader)
-                Text(
-                    "\(run.started.formatted(date: .abbreviated, time: .shortened)) · \(RoutineDescriptions.status(run.status))"
-                )
-                .scaledFont(size: 12.5)
-                .foregroundStyle(run.status == .failed ? Theme.danger : Theme.secondaryInk)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
     }
 
     @ViewBuilder private var content: some View {
@@ -83,10 +57,7 @@ struct RoutineRunView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(problem).foregroundStyle(Theme.secondaryInk)
                 Button("Try Again") { Task { await load() } }
-                    .buttonStyle(.clickable)
-                    .scaledFont(size: 13, weight: .medium)
-                    .foregroundStyle(Theme.ink)
-                    .frame(minHeight: 44)
+                    .buttonStyle(.bordered)
             }
             .scaledFont(size: 13)
         } else {
