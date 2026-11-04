@@ -43,7 +43,7 @@ struct ScreenView: View {
                 if let close {
                     Button("Close", systemImage: "xmark", action: close)
                         .labelStyle(.iconOnly)
-                        .buttonStyle(.clickable)
+                        .buttonStyle(.borderless)
                         .frame(width: 32, height: 32)
                 }
                 controlPill
@@ -92,18 +92,18 @@ struct ScreenView: View {
                     showsKeyboard.toggle()
                 }
                 .labelStyle(.iconOnly)
-                .buttonStyle(.clickable)
+                .buttonStyle(.borderless)
                 .frame(width: 32, height: 32)
             }
         #endif
         if screen.control == .you {
             Button("Hand Back") { Task { await screen.handBack() } }
-                .buttonStyle(CardButtonStyle(primary: false))
+                .buttonStyle(.bordered)
                 .disabled(screen.isBusy || !isOnline)
                 .accessibilityHint(Text("Gives control of the computer back to \(contact.name)"))
         } else {
             Button("Take Over") { Task { await screen.takeOver() } }
-                .buttonStyle(CardButtonStyle(primary: true))
+                .buttonStyle(.inkProminent)
                 .disabled(screen.isBusy || !isOnline || screen.connection != .live)
                 .accessibilityHint(Text("Lets you use the computer; \(contact.name) waits until you hand it back"))
         }
@@ -155,7 +155,7 @@ struct ScreenView: View {
                 .foregroundStyle(Theme.secondaryInk)
                 .multilineTextAlignment(.center)
                 Button("Turn On") { Task { await screen.start() } }
-                    .buttonStyle(CardButtonStyle(primary: true))
+                    .buttonStyle(.inkProminent)
                     .disabled(screen.isBusy || status.blocker != nil || !isOnline)
                 if screen.isBusy { ProgressView().controlSize(.small) }
             }
@@ -191,11 +191,11 @@ struct ScreenView: View {
             VStack(spacing: 10) {
                 Text(reason).multilineTextAlignment(.center)
                 Button("Try Again") { screen.connect() }
-                    .buttonStyle(CardButtonStyle(primary: true))
+                    .buttonStyle(.inkGlassProminent)
                     .disabled(!isOnline)
             }
             .padding(20)
-            .background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 14))
+            .glassEffect(.regular.tint(.black.opacity(0.4)), in: RoundedRectangle(cornerRadius: 14))
             .foregroundStyle(.white)
             .scaledFont(size: 13)
         case .idle where screen.status == nil:
@@ -205,7 +205,7 @@ struct ScreenView: View {
                 Text("Checking the computer…")
             }
         case .idle:
-            Button("Watch") { screen.connect() }.buttonStyle(CardButtonStyle(primary: true)).disabled(!isOnline)
+            Button("Watch") { screen.connect() }.buttonStyle(.inkGlassProminent).disabled(!isOnline)
         case .live:
             EmptyView()
         }
@@ -220,7 +220,7 @@ struct ScreenView: View {
         .foregroundStyle(.white.opacity(0.85))
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .background(.black.opacity(0.6), in: Capsule())
+        .glassEffect(.regular.tint(.black.opacity(0.4)), in: Capsule())
         .accessibilityElement(children: .combine)
     }
 

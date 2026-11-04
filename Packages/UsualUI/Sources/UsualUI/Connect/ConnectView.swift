@@ -11,89 +11,79 @@ struct ConnectView<Options: View>: View {
     @FocusState private var addressFocused: Bool
 
     var body: some View {
-        // Scrolls so the keyboard can't hide the button or a problem under the field.
-        GeometryReader { proxy in
-            ScrollView {
-                content
-                    .frame(maxWidth: .infinity, minHeight: proxy.size.height)
-            }
-            // Bouncing when it fits is what lets a drag put the iPhone keyboard away.
-            .scrollDismissesKeyboard(.interactively)
-            #if os(macOS)
-                .scrollBounceBehavior(.basedOnSize)
-            #endif
-        }
-        .background(Theme.window)
-    }
-
-    private var content: some View {
-        VStack(spacing: 24) {
-            mark
-            VStack(spacing: 6) {
-                Text("Connect to Hermes")
-                    .scaledFont(size: 22, weight: .semibold)
-                    .foregroundStyle(Theme.ink)
-                Text("Sign in to your Hermes gateway to see your Bots.")
-                    .scaledFont(size: 14)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .multilineTextAlignment(.center)
+        // A form scrolls, so the keyboard can't hide the button or a problem under the field.
+        Form {
+            Section {
+            } header: {
+                heading
             }
             if case .signingIn(let gateway) = model.session {
-                waiting(for: gateway)
+                Section { waiting(for: gateway) }
             } else {
-                form
+                Section {
+                    TextField(
+                        "Gateway address", text: $model.gatewayInput,
+                        prompt: Text("100.64.0.1:9119 or hermes.example.com")
+                    )
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                    #endif
+                    .focused($addressFocused)
+                    .onSubmit(signIn)
+                    options()
+                } footer: {
+                    if let problem = model.problem {
+                        Text(problem).foregroundStyle(Theme.danger)
+                    }
+                }
+                Section {
+                } footer: {
+                    signInButton
+                }
             }
-            Text("An independent app, not made by or affiliated with Nous Research.")
-                .scaledFont(size: 12)
+            Section {
+            } footer: {
+                Text("An independent app, not made by or affiliated with Nous Research.")
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .formStyle(.grouped)
+        .scrollDismissesKeyboard(.interactively)
+        .frame(maxWidth: 480)
+        .frame(maxWidth: .infinity)
+        .onAppear { addressFocused = true }
+    }
+
+    private var heading: some View {
+        VStack(spacing: 6) {
+            HermesMark().frame(width: 96, height: 96).padding(.bottom, 18)
+            Text("Connect to Hermes")
+                .scaledFont(size: 22, weight: .semibold)
+                .foregroundStyle(Theme.ink)
+            Text("Sign in to your Hermes gateway to see your Bots.")
+                .scaledFont(size: 14)
                 .foregroundStyle(Theme.secondaryInk)
                 .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: 380)
-        .padding(32)
+        .textCase(nil)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 32)
+        .padding(.bottom, 8)
     }
 
-    private var form: some View {
-        VStack(spacing: 12) {
-            TextField(
-                "Gateway address", text: $model.gatewayInput, prompt: Text("100.64.0.1:9119 or hermes.example.com")
-            )
-            .textFieldStyle(.plain)
-            .scaledFont(size: 15)
-            .autocorrectionDisabled()
-            #if os(iOS)
-                .textInputAutocapitalization(.never)
-                .keyboardType(.URL)
-            #endif
-            .focused($addressFocused)
-            .onSubmit(signIn)
-            .padding(.horizontal, 16)
-            .frame(minHeight: 44)
-            .background(Theme.pane, in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.border))
-
-            options()
-
-            Button(action: signIn) {
-                Text("Sign in with browser")
-                    .scaledFont(size: 15, weight: .semibold)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .foregroundStyle(Theme.primaryInk)
-                    .background(Theme.primary, in: Capsule())
-                    .contentShape(Capsule())
-            }
-            .buttonStyle(.clickable)
-            .disabled(model.gatewayInput.trimmingCharacters(in: .whitespaces).isEmpty)
-            .opacity(model.gatewayInput.trimmingCharacters(in: .whitespaces).isEmpty ? 0.4 : 1)
-
-            if let problem = model.problem {
-                Text(problem)
-                    .scaledFont(size: 13)
-                    .foregroundStyle(Theme.danger)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+    private var signInButton: some View {
+        Button(action: signIn) {
+            Text("Sign in with browser")
+                .font(.body.weight(.semibold))
+                .frame(maxWidth: .infinity)
         }
-        .onAppear { addressFocused = true }
+        .buttonStyle(.inkProminent)
+        .buttonBorderShape(.capsule)
+        .controlSize(.large)
+        .disabled(model.gatewayInput.trimmingCharacters(in: .whitespaces).isEmpty)
     }
 
     private func waiting(for gateway: GatewayAddress) -> some View {
@@ -101,19 +91,13 @@ struct ConnectView<Options: View>: View {
             ProgressView()
                 .controlSize(.small)
             Text("Finish signing in to \(gateway.displayName) in your browser.")
-                .scaledFont(size: 14)
-                .foregroundStyle(Theme.secondaryInk)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Cancel", action: model.cancelSignIn)
-                .buttonStyle(.clickable)
-                .scaledFont(size: 14, weight: .medium)
-                .foregroundStyle(Theme.ink)
-                .frame(minHeight: 44)
+                .buttonStyle(.bordered)
         }
-    }
-
-    private var mark: some View {
-        HermesMark().frame(width: 96, height: 96)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
     }
 
     private func signIn() {
