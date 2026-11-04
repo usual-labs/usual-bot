@@ -60,33 +60,16 @@ extension View {
     @ViewBuilder func cardButton(prominent: Bool = false, fill: Bool = false) -> some View {
         let sized = controlSize(cardButtonSize(fill: fill))
         if prominent {
-            sized.prominentButton()
+            sized.buttonStyle(.inkProminent)
         } else {
             sized.buttonStyle(.bordered)
         }
-    }
-
-    /// `.borderedProminent` in the app's ink. The system draws its label white, which vanishes on
-    /// ink in dark mode (near white). iPhone takes ink's own contrast colour for the label; the
-    /// Mac can't, since a window in the background draws the button unfilled with that label, so
-    /// it fills dark mode with a grey white reads on (6:1).
-    @ViewBuilder func prominentButton() -> some View {
-        #if os(iOS)
-            buttonStyle(.borderedProminent).foregroundStyle(Theme.primaryInk)
-        #else
-            buttonStyle(.borderedProminent).tint(Theme.prominent)
-        #endif
     }
 
     /// A faint fill under the pointer, on the Mac.
     func hoverHighlight(in shape: some Shape) -> some View {
         modifier(HoverHighlight(shape: shape))
     }
-}
-
-extension Theme {
-    /// A Mac prominent button's fill: ink, and in dark mode a grey white text reads on.
-    static let prominent = Color(light: 0x1C1C1C, dark: 0x636366)
 }
 
 private func cardButtonSize(fill: Bool) -> ControlSize {

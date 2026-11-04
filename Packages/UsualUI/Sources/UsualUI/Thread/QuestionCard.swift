@@ -165,32 +165,3 @@ struct QuestionCard: View {
         prompt.questions.allSatisfy { !(answers[$0.id] ?? []).isEmpty }
     }
 }
-
-/// The pill buttons cards used before they took the system's bordered buttons (`cardButton`).
-struct CardButtonStyle: ButtonStyle {
-    let primary: Bool
-    /// Takes the full width, for buttons stacked in a narrow card.
-    var fill = false
-
-    /// iPhone's buttons, and a question's choices, are at least a fingertip tall.
-    #if os(iOS)
-        static let rowHeight: CGFloat = 44
-        static let fillHeight: CGFloat = 44
-    #else
-        static let rowHeight: CGFloat = 34
-        static let fillHeight: CGFloat = 40
-    #endif
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaledFont(size: 13.5, weight: primary ? .semibold : .regular)
-            .foregroundStyle(primary ? Theme.primaryInk : Theme.ink)
-            .padding(.horizontal, 14)
-            .frame(maxWidth: fill ? .infinity : nil, minHeight: fill ? Self.fillHeight : Self.rowHeight)
-            .background(primary ? Theme.primary : Color.clear, in: Capsule())
-            .overlay { if !primary { Capsule().strokeBorder(Theme.border) } }
-            .opacity(configuration.isPressed ? 0.7 : 1)
-            .contentShape(Capsule())
-            .clickable()
-    }
-}

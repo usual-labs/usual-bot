@@ -89,7 +89,7 @@ struct AudioMessage: View {
             .font(.system(size: 13, weight: .bold))
             .frame(width: 20, height: 20)
         }
-        .prominentButton()
+        .buttonStyle(.inkProminent)
         .buttonBorderShape(.circle)
         .disabled(phase == .loading || phase.isUnplayable)
         .accessibilityLabel(Text(playLabel))

@@ -182,14 +182,3 @@ struct InkSwitchStyle: ToggleStyle {
 extension ToggleStyle where Self == InkSwitchStyle {
     static var ink: InkSwitchStyle { InkSwitchStyle() }
 }
-
-extension View {
-    /// The surface of what floats over a conversation, the name pill and the message box: solid, so
-    /// text passing behind stays out of the way, with a hairline border and a soft shadow.
-    func floatingSurface(in shape: some InsettableShape) -> some View {
-        background(Theme.surface, in: shape)
-            .overlay(shape.strokeBorder(Theme.border))
-            .shadow(color: .black.opacity(0.06), radius: 5, y: 2)
-    }
-
-}

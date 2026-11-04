@@ -89,6 +89,13 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Changed
 
+- **The system's own controls and Liquid Glass, on Mac and iPhone.** The chat's top bar, its
+  buttons, the message box, the jump-to-latest button and the call bar float in glass; the chat
+  list, profile pages, Settings and sign-in are the system's lists and forms; cards and sheets use
+  the system's buttons and fields. Bubbles, avatars and the Bot's colour on your messages and Send
+  stay. On the Mac, Settings opens in the standard Settings window, and the ⌥Space panel is glass.
+- **On iPhone, a Bot's Computer button sits at the top right,** beside "…", which holds View
+  Profile and Voice Call. Sheets put ✕ at the top left and the main button at the top right.
 - **Usual Bot now needs macOS 26 and iOS 26,** for the system's own controls and Liquid Glass.
   It also no longer fails to open on iOS 18.
 - **Search is now a palette.** ⌘K or the Search button finds chats and rooms, and opens New Room,

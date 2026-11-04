@@ -168,7 +168,7 @@ struct RoutineDetail: View {
 
     @ViewBuilder private func buttons(_ routine: Routine, isRunning: Bool) -> some View {
         Button(isRunning ? "Running…" : "Run Now") { list.runNow(routine) }
-            .prominentButton()
+            .buttonStyle(.inkProminent)
             .disabled(isRunning)
             .accessibilityHint(Text("Runs it once now, as if it were time"))
         Button("Edit") { page = .editing }
