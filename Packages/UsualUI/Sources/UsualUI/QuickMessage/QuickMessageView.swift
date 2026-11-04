@@ -56,10 +56,11 @@ public struct QuickMessageView: View {
                 }
             }
             .frame(width: 640)
-            .floatingSurface(in: RoundedRectangle(cornerRadius: 24))
-            .shadow(color: .black.opacity(0.18), radius: 30, y: 16)
+            // Liquid Glass over whatever's behind the panel, as Spotlight floats.
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 24))
             Spacer(minLength: 0)
         }
+        .tint(Theme.ink)
         .padding(.horizontal, 40)
         .padding(.top, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -171,24 +172,26 @@ public struct QuickMessageView: View {
         .padding(.leading, 18)
         .padding(.trailing, 6)
         .padding(.vertical, 6)
-        .background(Theme.pane, in: Capsule())
-        .overlay(Capsule().strokeBorder(Theme.border))
+        // A field on the glass, not glass on glass.
+        .background(.fill.tertiary, in: Capsule())
         .padding(.horizontal, 16)
         .padding(.top, 10)
         .padding(.bottom, 14)
     }
 
     private var keyHints: some View {
-        HStack(spacing: 18) {
-            KeyHint(key: "⇥", label: String(localized: "Next contact"))
-            KeyHint(key: "↵", label: String(localized: "Send"))
-            KeyHint(key: "⌘↵", label: String(localized: "Open chat"))
-            Spacer()
-            KeyHint(key: "esc", label: String(localized: "Close"))
+        VStack(spacing: 0) {
+            Divider()
+            HStack(spacing: 18) {
+                KeyHint(key: "⇥", label: String(localized: "Next contact"))
+                KeyHint(key: "↵", label: String(localized: "Send"))
+                KeyHint(key: "⌘↵", label: String(localized: "Open chat"))
+                Spacer()
+                KeyHint(key: "esc", label: String(localized: "Close"))
+            }
+            .padding(.horizontal, 22)
+            .padding(.vertical, 10)
         }
-        .padding(.horizontal, 22)
-        .padding(.vertical, 10)
-        .overlay(alignment: .top) { Theme.border.frame(height: 1) }
     }
 
     // MARK: - Answering
@@ -218,19 +221,14 @@ public struct QuickMessageView: View {
                     Text("Open chat")
                     KeyCap(key: "⌘↵")
                 }
-                .scaledFont(size: 13)
-                .foregroundStyle(Theme.ink)
-                .padding(.horizontal, 12)
-                .frame(height: 32)
-                .overlay(Capsule().strokeBorder(Theme.border))
-                .contentShape(Capsule())
             }
-            .buttonStyle(.clickable)
+            .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
         }
         .padding(.leading, 20)
         .padding(.trailing, 14)
         .padding(.vertical, 14)
-        .overlay(alignment: .bottom) { Theme.border.frame(height: 1) }
+        .overlay(alignment: .bottom) { Divider() }
     }
 
     // MARK: - Sending
@@ -474,7 +472,7 @@ private struct KeyCap: View {
             .foregroundStyle(Theme.ink)
             .padding(.horizontal, 6)
             .padding(.vertical, 1)
-            .background(Theme.codeFill, in: RoundedRectangle(cornerRadius: 5))
+            .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 5))
     }
 }
 

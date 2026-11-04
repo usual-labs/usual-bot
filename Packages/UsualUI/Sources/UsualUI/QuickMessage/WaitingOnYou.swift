@@ -23,7 +23,7 @@ struct WaitingOnYou: View {
             .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 14)
-            .overlay(alignment: .top) { Theme.border.frame(height: 1) }
+            .overlay(alignment: .top) { Divider() }
         }
     }
 
@@ -120,39 +120,30 @@ struct WaitingRow: View {
                 }
             }
             Spacer(minLength: 8)
-            switch row.action {
-            case .approve(let answer):
-                pill(String(localized: "Deny"), primary: false) { answer(.deny) }
-                pill(String(localized: "Allow once"), primary: true) { answer(.once) }
-            case .retry(let retry):
-                pill(String(localized: "Open"), primary: false) { openChat(row.contact.id) }
-                pill(String(localized: "Try Again"), primary: true, action: retry)
-            case .open:
-                pill(String(localized: "Open"), primary: true) { openChat(row.contact.id) }
+            Group {
+                switch row.action {
+                case .approve(let answer):
+                    Button("Deny") { answer(.deny) }.buttonStyle(.bordered)
+                    Button("Allow once") { answer(.once) }.buttonStyle(.inkProminent)
+                case .retry(let retry):
+                    Button("Open") { openChat(row.contact.id) }.buttonStyle(.bordered)
+                    Button("Try Again", action: retry).buttonStyle(.inkProminent)
+                case .open:
+                    Button("Open") { openChat(row.contact.id) }.buttonStyle(.inkProminent)
+                }
             }
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
         }
         .padding(.vertical, 10)
         .padding(.leading, 12)
         .padding(.trailing, 10)
-        .background(Theme.codeFill, in: RoundedRectangle(cornerRadius: 16))
+        // A row on the panel's glass.
+        .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var isApproval: Bool {
         if case .approve = row.action { return true }
         return false
-    }
-
-    private func pill(_ title: String, primary: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 13, weight: primary ? .semibold : .regular))
-                .foregroundStyle(primary ? Theme.primaryInk : Theme.ink)
-                .padding(.horizontal, primary ? 14 : 12)
-                .frame(height: 32)
-                .background(primary ? Theme.primary : Theme.pane, in: Capsule())
-                .overlay(Capsule().strokeBorder(primary ? .clear : Theme.border))
-                .contentShape(Capsule())
-        }
-        .buttonStyle(.clickable)
     }
 }
