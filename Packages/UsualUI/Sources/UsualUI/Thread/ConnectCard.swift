@@ -11,6 +11,13 @@ struct ConnectCard: View {
 
     private var page = SignInPage()
 
+    // Written out: Xcode 26's memberwise initializer takes the private `page` and so is private too.
+    init(thread: ChatThread, card: ConnectionCard, agentName: String) {
+        self.thread = thread
+        self.card = card
+        self.agentName = agentName
+    }
+
     private var request: ConnectionRequest { card.request }
     private var canAnswer: Bool { thread.isAttached }
 
