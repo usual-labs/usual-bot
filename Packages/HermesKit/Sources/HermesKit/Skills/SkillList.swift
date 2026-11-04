@@ -59,8 +59,10 @@ public final class SkillList {
         defer { refreshing = false }
         do {
             let loaded = try await auth.json([Skill].self, path: "/api/skills?profile=\(escaped)")
-            skills = loaded.sorted { ($0.usage ?? 0, $1.name) > ($1.usage ?? 0, $0.name) }
-            phase = .ready
+            let sorted = loaded.sorted { ($0.usage ?? 0, $1.name) > ($1.usage ?? 0, $0.name) }
+            // Each tab reloads as it opens: an unchanged list mustn't redraw every row.
+            if sorted != skills { skills = sorted }
+            if phase != .ready { phase = .ready }
         } catch {
             if phase != .ready { phase = .failed(AppModel.describe(error)) }
         }

@@ -14,6 +14,34 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   histories, a running reply and reading older messages. `--demo-long-chat` supplies that fixture.
   Group accessibility per message, not around the whole transcript, so Mac accessibility can
   expose the messages without traversing one enormous group.
+- **The non-lazy transcript costs every built message on every layout.** A 165-message demo chat
+  took about 800 ms to open and 37 ms per resize step even in Release. `TranscriptWindow` builds the
+  newest page and adds a page when the reader nears the top; `ConversationScrollState` then moves
+  the offset by the growth, even mid-gesture, so the same message stays put. A search jump keeps
+  its target in the window. The offscreen harness that measured this hosted `TranscriptView` in an
+  `NSHostingView` and timed `layoutSubtreeIfNeeded()`; the continuity of a reveal during a real
+  trackpad scroll was seen once, not frame by frame.
+- **The Mac's grouped `Form` builds every row.** 120 switch rows took about 450 ms, against 60 ms in
+  a `LazyVStack` inside the section, so the Skills page lays its rows out itself on the Mac.
+  iPhone's form is lazy already.
+- **Judge speed on a Release build.** A Debug app (`-Onone`, the previews debug dylib) used 25–38%
+  CPU to animate one working avatar that Release draws for nothing, and resized about six times
+  slower. Profile and dogfood Release.
+- **Selectable text costs an AppKit view per `Text` on the Mac,** and SwiftUI hit-tests them on
+  every pointer move: about half that work in a long chat. `MarkdownView` joins a reply's
+  paragraphs and headings into one `Text`. `Text` ignores `NSParagraphStyle` spacing and indents,
+  so the gaps are blank lines in a 2 pt (5 pt before a heading) font, tuned against
+  `messageFont()`'s 4 pt `lineSpacing`: change either and compare a reply before and after.
+  Lists, quotes and code stay separate views.
+- **Anything that asks a scroll view its size measures every message in it.** `safeAreaBar`
+  asks for the conversation's minimum on each update, and so does the window for its minimum size:
+  about a fifth of switching chats. `ConversationScroll` sits in `TakesOfferedSize`, which answers
+  with the space offered and measures only for an ideal size.
+- **`onHover` on a message hit-tests the text inside it on every pointer move.** Crossing a long
+  chat kept the app busy for up to half a second at a time. `MessageRow` follows the pointer with
+  an AppKit tracking area (`PointerTracking`) instead.
+- **Build `NSRegularExpression`s once.** Compiling the image-path pattern per paragraph was most of
+  the Markdown parsing cost.
 
 - **`ScrollPosition.scrollTo(id:anchor:)` left a search jump at the top on iOS 18.4** (Simulator),
   under the navigation bar, whatever the anchor. `ConversationScroll` jumps with a

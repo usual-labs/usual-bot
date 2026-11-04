@@ -60,8 +60,10 @@ public final class RoutineList {
         refreshing = true
         defer { refreshing = false }
         do {
-            routines = try await backend.list()
-            phase = .ready
+            let loaded = try await backend.list()
+            // Reloaded as the tab opens and every 30 seconds: an unchanged list mustn't redraw.
+            if loaded != routines { routines = loaded }
+            if phase != .ready { phase = .ready }
         } catch GatewayError.disconnected {
             // Not signed in yet: nothing to say until there's a gateway to ask.
         } catch {

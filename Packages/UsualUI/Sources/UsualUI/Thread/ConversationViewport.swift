@@ -27,6 +27,8 @@ struct ConversationScrollState {
     private var arrivalLoad: Int?
     /// Your messages as last counted, to tell one you sent from a reload.
     private var lastSent: SentMessages?
+    /// The content's height when earlier messages were added above it, until they're measured.
+    private var heightBeforeAbove: CGFloat?
 
     /// Away from the newest message, so a button offers the way back.
     var isAwayFromEnd: Bool {
@@ -37,7 +39,24 @@ struct ConversationScrollState {
     mutating func update(_ viewport: ConversationViewport) -> CGFloat? {
         guard viewport.isUsable else { return nil }
         self.viewport = viewport
+        if let before = heightBeforeAbove, viewport.contentHeight != before {
+            heightBeforeAbove = nil
+            // Even mid-gesture: what grew is above the reader, so this keeps them where they were.
+            if !followsEnd { return viewport.offset + viewport.contentHeight - before }
+        }
         return correction
+    }
+
+    /// Within a screen of the top, where earlier messages should be ready. Following the end,
+    /// that's a conversation too short to fill two screens.
+    var nearsTop: Bool {
+        guard let viewport, heightBeforeAbove == nil else { return false }
+        return (followsEnd ? viewport.end : viewport.offset) < viewport.height
+    }
+
+    /// Earlier messages are being added above what's shown.
+    mutating func addingAbove() {
+        heightBeforeAbove = viewport?.contentHeight
     }
 
     mutating func scrollingByHand(_ scrolling: Bool) -> CGFloat? {

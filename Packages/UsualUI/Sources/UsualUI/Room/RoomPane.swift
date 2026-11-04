@@ -19,6 +19,10 @@ struct RoomPane: View {
     /// The message you're replying to; a reply to an agent goes to that agent only.
     @State private var replyTo: QuotedMessage?
     @State private var showsInfo = false
+    /// As in a chat: the newest messages, and earlier ones as you scroll up.
+    @State private var window = TranscriptWindow()
+    /// A message a search jumped to, kept in what's shown.
+    @State private var jumpedTo: MessageJump?
 
     var body: some View {
         content
@@ -96,12 +100,15 @@ struct RoomPane: View {
         }
     }
 
+    private var target: Int? { jumpedTo?.contactID == contact.id ? jumpedTo?.itemID : nil }
+
     private var transcript: some View {
         ConversationScroll(
             arrival: [room.state.items.count, room.pending.count, room.working.count, room.retries.count],
             // A message stays the same count from sending to the room confirming it.
             sent: SentMessages(count: room.state.items.count(where: \.isYours) + room.pending.count),
-            jump: jump, jumped: jumped
+            jump: jump, jumped: jumped,
+            earlier: { window.showEarlier(in: room.state.items, including: target) }
         ) {
             if !room.driverRunning {
                 NoticeLine(
@@ -112,7 +119,8 @@ struct RoomPane: View {
                     .padding(.top, 40)
             }
             let dates = DateLabels.labels(for: room.state.items)
-            ForEach(room.state.items) { item in
+            let start = window.start(in: room.state.items, including: target)
+            ForEach(room.state.items[start...]) { item in
                 if let date = dates[item.id] { DateLabel(text: date) }
                 ItemView(item: item, agentName: contact.name, author: author)
                     .transition(.settle)
@@ -148,6 +156,10 @@ struct RoomPane: View {
                     dismiss: { room.dismiss(taskID) })
             }
         }
+        // Each room's transcript is its own view, so this runs as each one opens.
+        .onAppear { window.reset(room.state.items) }
+        .onChange(of: room.state.items.isEmpty) { window.reset(room.state.items) }
+        .onChange(of: jump, initial: true) { if let jump { jumpedTo = jump } }
         .onChange(of: room.approvals.count) { old, new in
             guard let asking = room.approvals.last,
                 let text = TranscriptAnnouncement.appeared(

@@ -147,6 +147,11 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Fixed
 
+- **Long chats open and resize faster.** A chat or room builds its newest messages and adds earlier
+  ones as you scroll up to them, keeping your place, instead of laying out its whole history on
+  every open and every step of a window resize. Replies are no longer parsed again on each update,
+  and the Mac's Skills page builds only the skills in sight. On the Mac, a reply's paragraphs
+  select together, and pointing at messages no longer slows a long chat down.
 - **Small controls and cards.** The context, model and thinking controls under the message box are
   easier to read and click, and VoiceOver stops on each once. A short card in a chat no longer
   drifts away from its edge. Windows behind others no longer react as the pointer passes.

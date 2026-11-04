@@ -48,6 +48,11 @@ public enum SpokenAudio {
     /// of a turn gets any file the turn's calls made that it doesn't name. History keeps only the
     /// calls' arguments, so there only the bare paths can be found.
     public static func delivered(_ text: String, in items: [TranscriptItem], replyAt index: Int) -> String {
+        // Most replies name no speech file and end no turn that made one: they stay as they are.
+        // The chat asks for every reply it shows on each update, so this skips reading each line.
+        if !text.contains("tts_"), !isLastReplyOfTurn(items, index) || turnFiles(items, before: index).isEmpty {
+            return text
+        }
         var lines: [String] = []
         var named = Set<String>()
         var inFence = false

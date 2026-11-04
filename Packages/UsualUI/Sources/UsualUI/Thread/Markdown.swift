@@ -16,6 +16,18 @@ enum MarkdownBlock: Equatable {
     /// A Markdown image from the web.
     case image(URL, alt: String)
 
+    /// `parse`, remembered: a chat's views are made again on every change to it (each word of a
+    /// reply being written), and parsing every message each time made long chats slow.
+    @MainActor static func blocks(of markdown: String) -> [MarkdownBlock] {
+        if let blocks = parsed[markdown] { return blocks }
+        let blocks = parse(markdown)
+        if parsed.count >= 500 { parsed.removeAll(keepingCapacity: true) }
+        parsed[markdown] = blocks
+        return blocks
+    }
+
+    @MainActor private static var parsed: [String: [MarkdownBlock]] = [:]
+
     /// Splits a reply into blocks: `MEDIA:` lines (Hermes's line-level file delivery) become media
     /// blocks, and everything between them is Markdown.
     static func parse(_ markdown: String) -> [MarkdownBlock] {
@@ -130,8 +142,7 @@ enum MarkdownBlock: Equatable {
 
     /// Absolute paths to image files in `text`, in order, each once: `/home/…/chart.png`.
     static func imagePaths(in text: String) -> [String] {
-        let pattern = #"(?<![\w.~/:])/(?!/)[^\s`'"<>()\[\]]+\.(?:png|jpe?g|gif|webp|bmp|heic)\b"#
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { return [] }
+        guard let regex = imagePathPattern else { return [] }
         var seen: Set<String> = []
         return regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { match in
             guard let range = Range(match.range, in: text) else { return nil }
@@ -139,6 +150,10 @@ enum MarkdownBlock: Equatable {
             return seen.insert(path).inserted ? path : nil
         }
     }
+
+    private static let imagePathPattern = try? NSRegularExpression(
+        pattern: #"(?<![\w.~/:])/(?!/)[^\s`'"<>()\[\]]+\.(?:png|jpe?g|gif|webp|bmp|heic)\b"#,
+        options: .caseInsensitive)
 
     /// Takes the images out of a paragraph: web images load directly, local paths from the gateway.
     private static func splitImages(_ text: AttributedString) -> (AttributedString, [MarkdownBlock]) {
@@ -188,15 +203,20 @@ struct MarkdownView: View {
     let blocks: [MarkdownBlock]
     @Environment(\.messageTextSize) private var messageSize
 
-    init(_ markdown: String) {
-        blocks = MarkdownBlock.parse(markdown)
+    /// A reply still being written changes with each word, so it isn't remembered.
+    init(_ markdown: String, isBeingWritten: Bool = false) {
+        blocks = isBeingWritten ? MarkdownBlock.parse(markdown) : MarkdownBlock.blocks(of: markdown)
     }
 
     var body: some View {
         // As wide as its text, for a bubble around it.
         VStack(alignment: .leading, spacing: 10) {
-            ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
-                view(for: block)
+            ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
+                switch part {
+                case .text(let text, let headed):
+                    Text(text).fixedSize(horizontal: false, vertical: true).padding(.top, headed ? 4 : 0)
+                case .block(let block): view(for: block)
+                }
             }
         }
         .messageFont()
@@ -204,12 +224,58 @@ struct MarkdownView: View {
         .textSelection(.enabled)
     }
 
+    /// What the reply draws: paragraphs and headings in a row as one text, so dragging selects
+    /// across them, and the Mac makes one selectable view for them instead of one per paragraph.
+    /// Those views were checked on every move of the pointer, which slowed long chats down.
+    private enum Part {
+        /// `headed`: it starts with a heading, which gets a little more room above it.
+        case text(AttributedString, headed: Bool)
+        case block(MarkdownBlock)
+    }
+
+    private var parts: [Part] {
+        var parts: [Part] = []
+        for block in blocks {
+            let piece: AttributedString
+            // A blank line in a tiny font: Text ignores paragraph spacing. With the message font's
+            // 4 pt line spacing on both line breaks, 2 pt makes the 10 pt the stack puts between
+            // blocks, and 5 pt the extra room above a heading.
+            let gap: CGFloat
+            switch block {
+            case .paragraph(let text):
+                piece = styled(text)
+                gap = 2
+            case .heading(let level, let text):
+                let size = headingSize(level)
+                var heading = text
+                heading.font = .system(size: size, weight: .semibold)
+                piece = styled(heading, size: size, weight: .semibold)
+                gap = 5
+            default:
+                parts.append(.block(block))
+                continue
+            }
+            if case .text(let previous, let headed) = parts.last {
+                var blank = AttributedString("\n\n")
+                blank.font = .system(size: gap)
+                parts[parts.count - 1] = .text(previous + blank + piece, headed: headed)
+            } else {
+                parts.append(.text(piece, headed: gap == 5))
+            }
+        }
+        return parts
+    }
+
+    private func headingSize(_ level: Int) -> CGFloat {
+        messageSize + (level == 1 ? 5 : level == 2 ? 2 : 0)
+    }
+
     @ViewBuilder private func view(for block: MarkdownBlock) -> some View {
         switch block {
         case .paragraph(let text):
             Text(styled(text)).fixedSize(horizontal: false, vertical: true)
         case .heading(let level, let text):
-            let size = messageSize + (level == 1 ? 5 : level == 2 ? 2 : 0)
+            let size = headingSize(level)
             Text(styled(text, size: size, weight: .semibold))
                 .font(.system(size: size, weight: .semibold))
                 .padding(.top, 4)

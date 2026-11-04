@@ -10,6 +10,8 @@ struct ConversationScroll<Content: View>: View {
     var jump: MessageJump? = nil
     /// Told the jump was taken, so it isn't taken again.
     var jumped: () -> Void = {}
+    /// Adds earlier messages above as the reader nears the top; `false` when there are no more.
+    var earlier: () -> Bool = { false }
     @ViewBuilder let content: Content
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -30,6 +32,12 @@ struct ConversationScroll<Content: View>: View {
     var body: some View {
         // `ScrollPosition.scrollTo(id:anchor:)` ignores the anchor on iOS 18 and leaves the message
         // at the top, under the bar; the reader centres it on both platforms.
+        TakesOfferedSize {
+            scrollView
+        }
+    }
+
+    private var scrollView: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 // Lazy row-height estimates can leave a long transcript parked in blank space.
@@ -57,6 +65,7 @@ struct ConversationScroll<Content: View>: View {
                     offset: geometry.contentOffset.y + geometry.contentInsets.top)
             } action: { _, viewport in
                 move(to: scroll.update(viewport))
+                if scroll.nearsTop, earlier() { scroll.addingAbove() }
                 if let pendingJump {
                     show(pendingJump, with: proxy)
                 } else if let shown = jumpShown {
@@ -131,6 +140,22 @@ struct ConversationScroll<Content: View>: View {
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) { position.scrollTo(y: offset) }
+    }
+}
+
+/// Fills the space it's offered without measuring the conversation. A scroll view asked its size
+/// measures every message inside it, and the bars pinned over a chat (`safeAreaBar`) and the
+/// window's minimum size ask on every update: that was about a fifth of switching chats.
+struct TakesOfferedSize: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let width = proposal.width, let height = proposal.height else {
+            return subviews.first?.sizeThatFits(proposal) ?? .zero  // an ideal size: only the content knows
+        }
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
     }
 }
 

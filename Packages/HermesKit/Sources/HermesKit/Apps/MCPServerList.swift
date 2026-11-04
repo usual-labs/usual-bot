@@ -82,8 +82,9 @@ public final class MCPServerList {
         defer { refreshing = false }
         struct Listing: Decodable, Sendable { let servers: [MCPServer] }
         do {
-            servers = try await auth.json(Listing.self, path: path("/api/mcp/servers")).servers
-            phase = .ready
+            let loaded = try await auth.json(Listing.self, path: path("/api/mcp/servers")).servers
+            if loaded != servers { servers = loaded }
+            if phase != .ready { phase = .ready }
         } catch {
             if phase != .ready { phase = .failed(AppModel.describe(error)) }
         }

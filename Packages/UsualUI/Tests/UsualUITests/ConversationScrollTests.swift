@@ -4,6 +4,32 @@ import Testing
 @testable import UsualUI
 
 struct ConversationScrollTests {
+    @Test func earlierMessagesAddedAboveKeepTheReaderOnTheSameMessage() {
+        var state = ConversationScrollState()
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 4_300))
+        _ = state.scrollingByHand(true)
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 500))
+        #expect(state.nearsTop)
+        state.addingAbove()
+        // Asked once: the next page waits for this one's layout.
+        #expect(!state.nearsTop)
+        // Still scrolling: the same message stays put, 3,000 points further down.
+        #expect(state.update(.init(contentHeight: 8_000, height: 700, offset: 480)) == 3_480)
+        #expect(state.update(.init(contentHeight: 8_000, height: 700, offset: 3_480)) == nil)
+        #expect(!state.nearsTop)
+    }
+
+    @Test func aShortConversationFollowingTheEndFillsUpWithEarlierMessages() {
+        var state = ConversationScrollState()
+        _ = state.update(.init(contentHeight: 1_000, height: 700, offset: 300))
+        #expect(state.nearsTop)
+        state.addingAbove()
+        // Following the end, the end is where it goes.
+        #expect(state.update(.init(contentHeight: 4_000, height: 700, offset: 300)) == 3_300)
+        _ = state.update(.init(contentHeight: 4_000, height: 700, offset: 3_300))
+        #expect(!state.nearsTop)
+    }
+
     @Test func aLateLayoutChangeCannotLeaveTheViewportBeyondTheMessages() {
         var state = ConversationScrollState()
         _ = state.update(.init(contentHeight: 10_000, height: 700, offset: 9_300))

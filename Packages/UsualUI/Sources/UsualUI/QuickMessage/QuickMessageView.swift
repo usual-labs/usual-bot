@@ -359,7 +359,7 @@ private struct QuickAnswer: View {
                 spokenTexts: TranscriptView.spokenTexts(in: items, at: index))
         }
         if !thread.state.draft.isEmpty {
-            AgentBubble { MarkdownView(thread.state.draft) }
+            AgentBubble { MarkdownView(thread.state.draft, isBeingWritten: true) }
         } else if thread.state.isRunning, thread.approvals.isEmpty, thread.questions.isEmpty, thread.secrets.isEmpty,
             thread.vaultPrompts.isEmpty, thread.connection == nil
         {

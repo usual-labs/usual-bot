@@ -10,6 +10,9 @@ struct TranscriptView: View {
     var jumped: () -> Void = {}
     /// The last item there was when the waiting cards appeared; `-1` for none, `nil` with no cards.
     @State private var cardsAfter: Int?
+    @State private var window = TranscriptWindow()
+    /// A message a search jumped to, kept in what's shown.
+    @State private var target: Int?
 
     var body: some View {
         // A reloaded transcript numbers its items afresh, so a position kept by item would now
@@ -17,7 +20,8 @@ struct TranscriptView: View {
         ConversationScroll(
             reload: thread.transcriptLoad, arrival: arrival,
             sent: SentMessages(load: thread.transcriptLoad, count: thread.state.items.count(where: \.isYours)),
-            jump: jump, jumped: jumped
+            jump: jump, jumped: jumped,
+            earlier: { window.showEarlier(in: items, including: target) }
         ) {
             if let banner = thread.banner {
                 NoticeLine(text: banner)
@@ -30,7 +34,8 @@ struct TranscriptView: View {
             let dates = DateLabels.labels(for: items)
             // One ForEach, so an item or card keeps its view (and what you typed in a card) as the
             // cards move.
-            ForEach(Self.rows(of: items, cardsAt: cardsIndex), id: \.id) { row in
+            let start = window.start(in: items, including: target)
+            ForEach(Self.rows(of: items, cardsAt: cardsIndex, from: start), id: \.id) { row in
                 switch row {
                 case .item(let index, _): self.row(items[index], at: index, in: items, dates: dates)
                 case .live: live
@@ -38,6 +43,9 @@ struct TranscriptView: View {
                 }
             }
         }
+        .onChange(of: thread.transcriptLoad, initial: true) { window.reset(items) }
+        .onChange(of: items.isEmpty) { window.reset(items) }
+        .onChange(of: jump, initial: true) { if let jump { target = jump.itemID } }
         .onChange(of: hasCards, initial: true) { cardsAfter = hasCards ? items.last?.id ?? -1 : nil }
         .onChange(of: thread.transcriptLoad) { if hasCards { cardsAfter = items.last?.id ?? -1 } }
         // A card may be out of sight, or VoiceOver elsewhere in the chat.
@@ -68,12 +76,14 @@ struct TranscriptView: View {
         }
     }
 
-    /// The items in order with the cards at `split`. What's live follows the newest message, so
-    /// it sits above cards nothing has followed yet.
-    nonisolated static func rows(of items: [TranscriptItem], cardsAt split: Int) -> [Row] {
+    /// The items from `start` in order with the cards at `split`. What's live follows the newest
+    /// message, so it sits above cards nothing has followed yet. The cards show wherever they sit.
+    nonisolated static func rows(of items: [TranscriptItem], cardsAt split: Int, from start: Int = 0) -> [Row] {
         let rows = items.indices.map { Row.item(index: $0, id: items[$0].id) }
         let tail: [Row] = split < items.count ? [.cards] + rows[split...] + [.live] : [.live, .cards]
-        return Array(rows[..<split]) + tail
+        return (Array(rows[..<split]) + tail).filter {
+            if case .item(let index, _) = $0 { index >= start } else { true }
+        }
     }
 
     @ViewBuilder private func row(
@@ -82,14 +92,15 @@ struct TranscriptView: View {
         if let date = dates[item.id] { DateLabel(text: date) }
         // A date between two replies parts them.
         let isLast = index + 1 == items.count
+        let shown = Self.shown(items, at: index)
         ItemView(
-            item: Self.shown(items, at: index), agentName: agentName,
+            item: shown, agentName: agentName,
             joinsAbove: item.isReply && index > 0 && items[index - 1].isReply && dates[item.id] == nil,
             joinsBelow: item.isReply
                 && (isLast
                     ? !thread.state.draft.isEmpty
                     : items[index + 1].isReply && dates[items[index + 1].id] == nil),
-            spokenTexts: Self.spokenTexts(in: items, at: index)
+            spokenTexts: Self.spokenTexts(of: shown, in: items, at: index)
         )
         .transition(item.arrival)
         .accessibilityElement(children: .contain)
@@ -99,9 +110,11 @@ struct TranscriptView: View {
     @ViewBuilder private var live: some View {
         if !thread.state.draft.isEmpty {
             // Becomes a transcript item when it ends, so it leaves without a fade.
-            AgentBubble(joinsAbove: items.last?.isReply == true) { MarkdownView(thread.state.draft) }
-                .joined(items.last?.isReply == true)
-                .transition(.asymmetric(insertion: .settle, removal: .identity))
+            AgentBubble(joinsAbove: items.last?.isReply == true) {
+                MarkdownView(thread.state.draft, isBeingWritten: true)
+            }
+            .joined(items.last?.isReply == true)
+            .transition(.asymmetric(insertion: .settle, removal: .identity))
         }
         LiveCards(live: thread.state.live)
         // A card with nothing after it is what the agent waits for, so it isn't thinking. Once you
@@ -177,7 +190,14 @@ struct TranscriptView: View {
 
     /// The voice memo transcripts for a reply's audio; empty for the rest.
     nonisolated static func spokenTexts(in items: [TranscriptItem], at index: Int) -> [String: String] {
-        guard case .assistant(let text) = shown(items, at: index).content, text.contains("MEDIA:") else { return [:] }
+        spokenTexts(of: shown(items, at: index), in: items, at: index)
+    }
+
+    /// `spokenTexts(in:at:)` for the item as already `shown`.
+    nonisolated static func spokenTexts(
+        of shown: TranscriptItem, in items: [TranscriptItem], at index: Int
+    ) -> [String: String] {
+        guard case .assistant(let text) = shown.content, text.contains("MEDIA:") else { return [:] }
         let audio = MarkdownBlock.parse(text).compactMap { block -> String? in
             guard case .media(let path, _) = block, MediaLoading.kind(of: path) == .audio else { return nil }
             return path

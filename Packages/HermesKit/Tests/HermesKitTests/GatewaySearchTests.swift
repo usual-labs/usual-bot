@@ -178,6 +178,8 @@ struct GatewaySearchTests {
 
     @Test func anAnswerToAnOlderQueryIsDropped() async throws {
         let model = model()
+        // Not about the pause in typing: its 350 ms ate most of the wait below on a busy runner.
+        model.gatewaySearch.delay = .zero
         let (gate, open) = AsyncStream<Void>.makeStream()
         let asked = Mutex<[String]>([])
         model.gatewaySearch.fetch = { _, query in

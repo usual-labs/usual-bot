@@ -20,9 +20,21 @@ struct SkillsView: View {
                     if list.skills.isEmpty {
                         Text("No skills yet.").foregroundStyle(.secondary)
                     }
-                    ForEach(list.skills) { skill in
-                        SkillRow(skill: skill, list: list)
-                    }
+                    #if os(macOS)
+                        // The Mac's grouped form builds every row as the tab opens, which held a
+                        // Bot with a hundred skills up for half a second; this builds the rows in
+                        // sight. iPhone's form is already lazy.
+                        LazyVStack(alignment: .leading, spacing: 0) {
+                            ForEach(list.skills) { skill in
+                                SkillRow(skill: skill, list: list).padding(.vertical, 6)
+                                if skill.id != list.skills.last?.id { Divider() }
+                            }
+                        }
+                    #else
+                        ForEach(list.skills) { skill in
+                            SkillRow(skill: skill, list: list)
+                        }
+                    #endif
                     if let problem = list.problem {
                         Text(problem).foregroundStyle(Theme.danger)
                     }
@@ -40,12 +52,29 @@ private struct SkillRow: View {
     let list: SkillList
 
     var body: some View {
-        // The form styles the second line as the row's subtitle.
-        Toggle(isOn: Binding(get: { skill.enabled }, set: { list.setEnabled($0, for: skill) })) {
-            Text(skill.name)
-            Text(skill.description).lineLimit(2)
-        }
-        .help(origin)
+        #if os(macOS)
+            // In the lazy stack, outside the form's rows: laid out as one.
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(skill.name)
+                    Text(skill.description).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .combine)
+                Toggle(isOn: isOn) { Text(skill.name) }.labelsHidden()
+            }
+            .help(origin)
+        #else
+            // The form styles the second line as the row's subtitle.
+            Toggle(isOn: isOn) {
+                Text(skill.name)
+                Text(skill.description).lineLimit(2)
+            }
+        #endif
+    }
+
+    private var isOn: Binding<Bool> {
+        Binding(get: { skill.enabled }, set: { list.setEnabled($0, for: skill) })
     }
 
     /// Where the skill came from, in words.

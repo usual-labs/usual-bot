@@ -107,22 +107,19 @@ struct MessageRow<Content: View>: View {
     @ViewBuilder private var row: some View {
         #if os(macOS)
             // As in Grok Bot, the bar sits beside the message: right of a reply, left of your
-            // bubble. Its slot is always there, so nothing moves when it appears.
-            HStack(alignment: .center, spacing: 6) {
-                if isMine {
-                    Spacer(minLength: 64)
-                    barSlot
-                }
+            // bubble. Its slot is always there, so nothing moves when it appears. Padding and an
+            // overlay rather than a stack with a spacer: a stack measures each message several
+            // ways to share out the room, which made opening a long chat slow.
+            let slot: CGFloat = actions == nil ? 0 : Self.barWidth + 6
+            message
                 // Only the message itself shows the bar, not the empty row around it.
-                message
-                    .contentShape(Rectangle())
-                    .onHover(perform: hoverMessage)
-                    .contextMenu { if let actions { menu(actions) } }
-                if !isMine {
-                    barSlot
-                    Spacer(minLength: 0)
-                }
-            }
+                .contentShape(Rectangle())
+                .background { PointerTracking(changed: hoverMessage) }
+                .contextMenu { if let actions { menu(actions) } }
+                .padding(isMine ? .leading : .trailing, slot)
+                .overlay(alignment: isMine ? .leading : .trailing) { barSlot }
+                .padding(isMine ? .leading : .trailing, isMine ? 70 : 6)
+                .frame(maxWidth: .infinity, alignment: isMine ? .trailing : .leading)
         #else
             message
                 // Your bubbles leave the agent's side clear, as in any messenger.
@@ -187,17 +184,26 @@ struct MessageRow<Content: View>: View {
     // MARK: Mac: the hover bar
 
     #if os(macOS)
+        private static var barWidth: CGFloat { 164 }
+
         @ViewBuilder private var barSlot: some View {
             if let actions {
                 // A window behind others still tracks the pointer passing over it.
                 let shown = picking || (appearsActive && (overMessage || overBar))
-                bar(actions)
-                    .onHover { overBar = $0 }
-                    .opacity(shown ? 1 : 0)
-                    .animation(.easeOut(duration: 0.12), value: shown)
-                    .allowsHitTesting(shown)
-                    // Room for all three buttons and the time, so every reply wraps at the same width.
-                    .frame(width: 164, alignment: isMine ? .trailing : .leading)
+                ZStack {
+                    // Made only while shown: its glass, menu and popover for every message held up
+                    // opening a long chat.
+                    if shown {
+                        bar(actions)
+                            .onHover { overBar = $0 }
+                            .transition(.opacity)
+                    }
+                }
+                .animation(.easeOut(duration: 0.12), value: shown)
+                // Room for all three buttons and the time, so every reply wraps at the same width.
+                // A fixed size, so the bar coming and going as the pointer passes doesn't lay the
+                // conversation out again.
+                .frame(width: Self.barWidth, height: 28, alignment: isMine ? .trailing : .leading)
             }
         }
 
