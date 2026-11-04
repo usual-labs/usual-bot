@@ -249,8 +249,8 @@ text:
 
 Some Bots have a computer of their own: a Linux desktop Hermes runs for the Bot's profile,
 where it browses and uses apps. When a Bot has one, its chat shows a **Computer** button (a
-display, at the top right on the Mac; in the chat's **…** menu on iPhone). A green dot on it means
-the Bot is using the computer right now, and on iPhone the button then sits beside **…**.
+display) at the top right, beside **…** on iPhone. A green dot on it means the Bot is using the
+computer right now.
 
 - **Watch.** The Mac opens the screen in a window of its own, so you can keep chatting; iPhone shows
   it full screen, and you pinch to zoom. The bar at the top says who's in control.

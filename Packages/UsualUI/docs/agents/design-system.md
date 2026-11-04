@@ -2,7 +2,9 @@
 
 ## Implemented today
 
-`Theme.swift` centralizes colours: neutral surfaces, ink, border, selection and the agent palette. `window` sits behind `pane`, a reply sits on `bubble`, and `surface` is anything floating. Glass is gone on purpose: `floatingSurface` is solid, so bubbles and cards keep their contrast over whatever scrolls behind them.
+`Theme.swift` centralizes colours: neutral surfaces, ink, border, selection and the agent palette. `window` sits behind `pane` and a reply sits on `bubble`.
+
+**Glass for what floats, solid for what you read.** The developer chose the system's controls and Liquid Glass on Mac and iPhone (November 2026, after Grok's app), over the earlier solid floating surfaces. What floats over the scrolling conversation is glass: toolbar items (iOS groups a bar's buttons in one capsule), `.glass` buttons, and `.glassEffect` for custom floating shapes (the name capsule, the message box, the menus above it, the call bar), in a `GlassEffectContainer` where several sit together. Nothing floating gets a hand-made fill, hairline or shadow. The conversation scrolls under the bars (`safeAreaBar`), and the system's scroll edge effect keeps the bars readable: soft on iPhone, hard under the Mac's name, where text beside it stayed readable otherwise. Bubbles, avatars and cards stay custom and solid, so their text keeps its contrast. Buttons in content are `.bordered` (`.borderedProminent` for the primary action, `role: .destructive` for destructive ones). Only Send, and the call button in its spot, take the Bot's colour (`.glassProminent` tinted with `Contact.accent`, ink in a room); other controls keep the app's ink tint.
 
 **Text.** Chat text (replies, your bubbles, quotes, list items) gets its typography from `messageFont()`: `messageTextSize` in the environment (15 pt on the Mac, 16 pt on iPhone by default, adjusted by the Chat text size setting and, on iPhone, Dynamic Type) with 4 pt line spacing, regular weight in both modes. Markdown headings are that size plus 5, 2 or 0. Markdown blocks sit 10 pt apart so paragraphs stay distinct from the line spacing. Don't add per-view `.lineSpacing`.
 
@@ -18,4 +20,4 @@
 
 Native SwiftUI layout and NavigationSplitView provide platform adaptation.
 
-Source anchors: `Package.swift`, `Sources/UsualUI/RootView.swift`, `Sources/UsualUI/Theme/Theme.swift`, `Sources/UsualUI/Thread/Bubbles.swift`, `Sources/UsualUI/Thread/Composer.swift`, `Sources/UsualUI/Thread/ApprovalCard.swift`, `Sources/UsualUI/Room/RoomPane.swift`.
+Source anchors: `Package.swift`, `Sources/UsualUI/RootView.swift`, `Sources/UsualUI/Theme/Theme.swift`, `Sources/UsualUI/Thread/Bubbles.swift`, `Sources/UsualUI/Thread/Composer.swift`, `Sources/UsualUI/Thread/ComposerGlass.swift`, `Sources/UsualUI/Thread/ThreadPane.swift`, `Sources/UsualUI/Thread/ApprovalCard.swift`, `Sources/UsualUI/Room/RoomPane.swift`.

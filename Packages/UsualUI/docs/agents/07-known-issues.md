@@ -27,13 +27,16 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   your messages at once, so the jump-to-latest dot and "you sent, follow the end" compare counts only
   within one `transcriptLoad`. Rooms have no load count, so a page of older room history would read
   as sending.
-- **macOS 26's soft scroll edge doesn't hide text under the Mac name pill:** text stays readable
-  beside it, over a hairline. The Mac keeps its own fade, solid down to the pill's bottom edge.
+- **macOS 26's soft scroll edge doesn't hide text beside the Mac's name:** it stays readable, over
+  a hairline. The Mac's top bar uses the hard edge, which needs the bar as a `safeAreaBar`, not a
+  `safeAreaInset`. In dark mode the hard edge is translucent: a white chart under it still shows
+  faintly.
 
 ## macOS window and sidebar
 
 - **macOS 26's sidebar width can't be set.** Its floating sidebar keeps a 140 pt floor and ignores `navigationSplitViewColumnWidth`, `NSSplitView.setPosition` and pinned item thickness. Don't drive sidebar widths through NavigationSplitView or its AppKit split view; ContactsSplitView lays the Mac sidebar out itself. Dragging the edge wasn't verified by automation.
 - **Views under the toolbar strip don't show,** because the title bar container covers that strip. Search and New Room are a `.navigation` toolbar item after a spacer sized from the sidebar, with the toolbar's shared glass hidden and each button drawn by `CircleButtonStyle`. The toolbar also gives the window buttons their room.
+- **The chat's name and buttons can't be window toolbar items.** Tried on macOS 26: a `.principal` item centres on the window, not on the chat beside ContactsSplitView's sidebar (140 pt off with the full list), the scroll edge doesn't reach under it, and a glass button there gets the toolbar's glass as well as its own. They float in the chat's own `safeAreaBar` instead.
 - **Trailing toolbar items land on the leading side.** `.primaryAction` is the leading edge on macOS. On macOS 26, put `ToolbarSpacer(.flexible)` before a plain `ToolbarItem` (`profileCloseButton`).
 
 - **An inspector doesn't shrink to its minimum, and it doesn't fit itself into the window.** Opened in a narrow window, the profile or room panel pushed the sidebar and the chat off both sides, and at 560 pt the room's pill seemed to do nothing. The split view keeps an inspector near its ideal width, so the window's minimum width counts the open panel's ideal (`OpenPanelWidth`), and SwiftUI then grows the window to fit. Keep the preference's value in step with `inspectorColumnWidth`'s ideal.
@@ -66,6 +69,10 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **Replacing `text` keeps the old selection.** Go through `MessageBox.replaceText(with:)` so the cursor lands at the end.
 - **Moving a view between stacks resets it.** The field would lose focus and `+` would drop an open picker. `ComposerLayout` repositions the same subviews; keep views that hold focus or presentation state in one place in the hierarchy.
 - **The bottom safe area doesn't separate the keyboard from the home indicator.** In the iOS 26.5 Simulator, readers ignoring `.container` and `.keyboard` both report 34 pt with the keyboard down and 335 pt up. `ChatBars` treats 50 pt or less as the home indicator; keep that threshold above 34 pt and below any keyboard height.
+- **The Mac draws Send grey in a window you aren't at.** macOS greys tinted glass while its window
+  isn't key: `.glassProminent`, and `.glassEffect(.regular.tint(_:))` too; `appearsActive` and
+  `controlActiveState` set to active didn't change it. Automation launches the demo in the
+  background, so screenshots show it grey. Unverified: the Bot's colour in a key window.
 - **Unverified: ⌘. for Stop.** A hidden button in `MessageBox`, as ⌘K is in `RootView`; automation couldn't press it without taking the keyboard.
 - **Unverified: Mac paste.** ⌘V uses `onPasteCommand(of: [.fileURL, .image])`. Plain text paste wasn't checked by automation. If it breaks, drop the modifier and keep drag-and-drop and the paperclip.
 - **Unverified: the iPhone sign-in sheet closes itself.** `SignInPage` cancels the task running `WebAuthenticationSession.authenticate` once Hermes says the app connected, relying on task cancellation to dismiss the sheet. Not yet run on a device or Simulator; if the sheet stays, keep an `ASWebAuthenticationSession` and call `cancel()` instead.
