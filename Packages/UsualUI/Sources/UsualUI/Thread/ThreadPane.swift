@@ -45,8 +45,9 @@ struct ThreadPane: View {
             .environment(\.sentImages, thread?.sentImages ?? [:])
             .environment(\.mediaProfile, contact.details?.profile ?? contact.id)
             .environment(\.messageActions, actions)
-            // The call bar floats under the name; the conversation scrolls on behind it.
-            .safeAreaInset(edge: .top, spacing: 0) {
+            // The call bar floats under the name; the conversation scrolls on behind it, faded by
+            // the scroll edge as under the bars.
+            .safeAreaBar(edge: .top, spacing: 0) {
                 if calling, let thread {
                     CallBar(contact: contact, thread: thread) { calling = false }
                         .padding(.top, 4)
@@ -58,12 +59,11 @@ struct ThreadPane: View {
             // On the Mac the model menus under the box bring their own space, so the bar's margin
             // shrinks. iPhone shows them inside the box.
             .chatBars(bottomPadding: thread?.model == nil ? nil : ModelControls.gap) {
-                #if os(macOS)
-                    namePill.frame(maxWidth: .infinity).overlay(alignment: .trailing) {
-                        computerButton.padding(.trailing, Self.composerMargin)
-                    }
-                #else
-                    namePill
+                namePill
+            } actions: {
+                computerButton
+                #if os(iOS)
+                    moreMenu
                 #endif
             } bottom: {
                 if let thread, thread.phase == .ready {
@@ -93,12 +93,6 @@ struct ThreadPane: View {
                 }
             }
             #if os(iOS)
-                .toolbar {
-                    if screen?.hasScreen == true, thread?.state.isUsingComputer == true {
-                        ToolbarItem(placement: .topBarTrailing) { computerButton }
-                    }
-                    ToolbarItem(placement: .topBarTrailing) { moreMenu }
-                }
                 .fullScreenCover(isPresented: $showsComputer) {
                     if let screen {
                         ScreenView(contact: contact, screen: screen, thread: thread) { showsComputer = false }
@@ -144,37 +138,28 @@ struct ThreadPane: View {
             })
     }
 
+    /// The name opens the profile, as a contact's name does in Messages.
     @ViewBuilder private var namePill: some View {
         if let toggleProfile {
-            Button(action: toggleProfile) { NamePill(contact: contact, members: members) }
-                .buttonStyle(.clickable)
+            NamePill(contact: contact, members: members, action: toggleProfile)
                 .accessibilityHint(Text("Shows routines and details"))
-                #if os(iOS)
-                    // The Mac's is in the View menu.
-                    .keyboardShortcut("i", modifiers: .command)
-                #endif
         } else {
             NamePill(contact: contact, members: members)
         }
     }
 
     #if os(iOS)
-        /// Grok's "…" at the chat's top right: the chat's other ways in.
+        /// Grok's "…" at the chat's top right, beside the computer: the chat's other ways in. The
+        /// message box has the call too, so the bar doesn't show it as a button of its own.
         private var moreMenu: some View {
-            Menu {
+            Menu("More", systemImage: "ellipsis") {
                 if let toggleProfile {
                     Button("View Profile", systemImage: "person.crop.circle", action: toggleProfile)
                 }
                 if thread?.phase == .ready, !calling {
                     Button("Voice Call", systemImage: "waveform") { calling = true }
                 }
-                if screen?.hasScreen == true {
-                    Button("Computer", systemImage: "display") { showsComputer = true }
-                }
-            } label: {
-                Image(systemName: "ellipsis")
             }
-            .accessibilityLabel(Text("More"))
         }
     #endif
 
@@ -198,19 +183,23 @@ struct ThreadPane: View {
                 Label("Computer", systemImage: "display")
                     .labelStyle(.iconOnly)
                     #if os(macOS)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Theme.ink)
-                        .frame(width: 36, height: 36)
-                        .floatingSurface(in: Circle())
-                        .contentShape(Circle())
+                        // Level with the name, and as tall as it: glass adds 4 pt around the label.
+                        .frame(width: 28, height: 28)
                     #endif
                     .overlay(alignment: .topTrailing) {
                         if working {
-                            Circle().fill(Theme.online).frame(width: 9, height: 9).accessibilityHidden(true)
+                            Circle().fill(Theme.online).frame(width: 9, height: 9)
+                                .offset(x: 3, y: -3)
+                                .accessibilityHidden(true)
                         }
                     }
             }
-            .buttonStyle(.clickable)
+            #if os(macOS)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Theme.ink)
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+            #endif
             .help(working ? "\(contact.name) is using its computer" : "\(contact.name)'s computer")
             .accessibilityLabel(Text("\(contact.name)'s Computer"))
             .accessibilityValue(working ? Text("In use") : Text(""))
@@ -228,10 +217,7 @@ struct ThreadPane: View {
                 VStack(spacing: 10) {
                     Text(message).multilineTextAlignment(.center)
                     Button("Try Again", action: open)
-                        .buttonStyle(.clickable)
-                        .scaledFont(size: 13, weight: .medium)
-                        .foregroundStyle(Theme.ink)
-                        .frame(minHeight: 44)
+                        .buttonStyle(.bordered)
                 }
                 .padding(.horizontal, 32)
             }
@@ -264,13 +250,15 @@ extension View {
             #endif
     }
 
-    /// Pins `top` (the name) and `bottom` (the message box) over a conversation that scrolls
-    /// beneath them. On iPhone the name rides in the navigation bar, beside the back button.
-    /// `bottomPadding` replaces the usual margin under `bottom`.
+    /// Pins `top` (the name), `actions` and `bottom` (the message box) over a conversation that
+    /// scrolls beneath them. On iPhone the name and actions ride in the navigation bar, which the
+    /// system draws in Liquid Glass; on the Mac they float over the conversation in glass of their
+    /// own. `bottomPadding` replaces the Mac's usual margin under `bottom`.
     func chatBars(
-        bottomPadding: CGFloat? = nil, @ViewBuilder top: () -> some View, @ViewBuilder bottom: () -> some View
+        bottomPadding: CGFloat? = nil, @ViewBuilder top: () -> some View,
+        @ViewBuilder actions: () -> some View = { EmptyView() }, @ViewBuilder bottom: () -> some View
     ) -> some View {
-        modifier(ChatBars(top: top(), bottom: bottom(), bottomPadding: bottomPadding))
+        modifier(ChatBars(top: top(), actions: actions(), bottom: bottom(), bottomPadding: bottomPadding))
     }
 
     #if os(iOS)
@@ -279,21 +267,19 @@ extension View {
         func softScrollEdges() -> some View {
             scrollEdgeEffectStyle(.soft, for: .all)
         }
-
-        /// The pill keeps its own glass instead of sitting in the bar's shared background.
-        func principalToolbarItem(_ item: some View) -> some View {
-            toolbar { ToolbarItem(placement: .principal) { item }.sharedBackgroundVisibility(.hidden) }
-        }
     #endif
 }
 
-/// The floating, centred pill at the top of a thread: avatar and name.
+/// The name at the top of a chat or room, in a glass capsule: avatar and name, which opens the
+/// profile or the room's details when there's an `action`. On iPhone it's the navigation bar's
+/// title item.
 struct NamePill: View {
     let contact: Contact
     let members: [Contact]
+    var action: (() -> Void)?
 
-    // On the Mac as tall as the sidebar's Search and New Room, on the same line as them; on iPhone
-    // as tall as the back and "…" buttons beside it, as in Grok's phone app.
+    // On iPhone as tall as the bar's glass buttons beside it; on the Mac as tall as the sidebar's
+    // Search and New Room, on the same line as them.
     #if os(iOS)
         private static let height: CGFloat = 44
         private static let avatar: CGFloat = 32
@@ -309,30 +295,51 @@ struct NamePill: View {
     #endif
 
     var body: some View {
+        Group {
+            if let action {
+                Button(action: action) { label }
+                    #if os(iOS)
+                        // The Mac's is in the View menu.
+                        .keyboardShortcut("i", modifiers: .command)
+                    #else
+                        .buttonStyle(.clickable)
+                    #endif
+            } else {
+                label
+            }
+        }
+        // Sits in the navigation bar between two fixed buttons, so it grows only a little, as the
+        // system's own titles do; touch and hold shows the name larger.
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
+        .accessibilityAddTraits(.isHeader)
+        .accessibilityShowsLargeContentViewer()
+    }
+
+    private var label: some View {
         HStack(spacing: 8) {
             switch contact.kind {
             case .agent: AgentAvatar(contact: contact, size: Self.avatar)
             case .room: RoomAvatar(members: members, size: Self.avatar)
             }
             Text(contact.name)
-                .scaledFont(size: Self.nameSize, weight: .medium)
+                .scaledFont(size: Self.nameSize, weight: .semibold)
                 .foregroundStyle(Theme.ink)
+                .lineLimit(1)
         }
-        // Sits in the navigation bar between two fixed buttons, so it grows only a little, as the
-        // system's own titles do; touch and hold shows the name larger.
-        .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .padding(.leading, Self.leading)
         .padding(.trailing, Self.trailing)
         .frame(height: Self.height)
-        .floatingSurface(in: Capsule())
+        .contentShape(Capsule())
+        // Liquid Glass of its own: iOS draws a bar's title item without any, and a plain name
+        // was hard to read over a dark bubble scrolling under it. It answers a press as a button.
+        .glassEffect(action == nil ? .regular : .regular.interactive(), in: Capsule())
         .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isHeader)
-        .accessibilityShowsLargeContentViewer()
     }
 }
 
-private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
+private struct ChatBars<Top: View, Actions: View, Bottom: View>: ViewModifier {
     let top: Top
+    let actions: Actions
     let bottom: Bottom
     /// The Mac's margin under `bottom`, in place of the usual one.
     let bottomPadding: CGFloat?
@@ -347,7 +354,7 @@ private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
         #if os(macOS)
             // 9 pt centres the name on the line of the window buttons and the sidebar's buttons;
             // the message box sits a little further from the bottom edge.
-            macBars(conversation, top.padding(.top, 9).padding(.bottom, 8)) {
+            macBars(conversation) {
                 bottom.padding(.top, 8).padding(.bottom, bottomPadding ?? 14)
             }
         #else
@@ -363,31 +370,28 @@ private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
                         }
                 }
                 .navigationBarTitleDisplayMode(.inline)
-                .principalToolbarItem(top)
+                // The system groups the actions in one glass capsule; the name brings its own.
+                .toolbar {
+                    ToolbarItem(placement: .principal) { top }.sharedBackgroundVisibility(.hidden)
+                    ToolbarItemGroup(placement: .topBarTrailing) { actions }
+                }
         #endif
     }
 
     #if os(macOS)
-        /// Solid pane colour reaches the name's bottom edge and then fades, so no text shows beside
-        /// the name. macOS 26's soft scroll edge left the text there readable, over a hairline.
-        private func macBars(
-            _ conversation: some View, _ top: some View, @ViewBuilder bottom: () -> some View
-        ) -> some View {
+        /// The name and actions float in glass over the conversation, which the system's hard
+        /// scroll edge hides under them. Not window toolbar items: those centre on the window, not
+        /// the chat beside the sidebar (see known issues).
+        private func macBars(_ conversation: some View, @ViewBuilder bottom: () -> some View) -> some View {
             conversation
-                .overlay(alignment: .top) {
-                    LinearGradient(
-                        stops: [
-                            .init(color: Theme.pane, location: 0), .init(color: Theme.pane, location: 0.6),
-                            .init(color: Theme.pane.opacity(0), location: 1),
-                        ], startPoint: .top, endPoint: .bottom
-                    )
-                    // The name's bottom edge is 45 pt down (9 pt margin, 36 pt pill).
-                    .frame(height: 75)
-                    .ignoresSafeArea(.container, edges: .top)
-                    .allowsHitTesting(false)
+                .safeAreaBar(edge: .top, spacing: 0) {
+                    top.frame(maxWidth: .infinity)
+                        .overlay(alignment: .trailing) { actions.padding(.trailing, ThreadPane.composerMargin) }
+                        .padding(.top, 9)
+                        .padding(.bottom, 8)
                 }
-                .safeAreaInset(edge: .top, spacing: 0) { top }
-                .safeAreaInset(edge: .bottom, spacing: 0, content: bottom)
+                .safeAreaBar(edge: .bottom, spacing: 0, content: bottom)
+                .scrollEdgeEffectStyle(.hard, for: .top)
         }
     #endif
 

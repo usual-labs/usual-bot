@@ -47,8 +47,8 @@ struct CallBar: View {
                     label: call.muted ? String(localized: "Unmute") : String(localized: "Mute"), active: call.muted
                 ) { call.muted.toggle() }
                 CallBarButton(
-                    systemImage: "xmark", label: String(localized: "End call"), active: false, tint: Theme.danger,
-                    ink: .white, shortcut: "⇧⌘H", action: hangUp
+                    systemImage: "phone.down.fill", label: String(localized: "End call"), active: false,
+                    role: .destructive, shortcut: "⇧⌘H", action: hangUp
                 )
                 // Not Esc, which also closes menus and cancels a reply: a missed one would hang up.
                 .keyboardShortcut("h", modifiers: [.command, .shift])
@@ -82,7 +82,7 @@ struct CallBar: View {
             if let live = call as? LiveCall { LiveCallHost(webView: live.webView) }
         }
         .frame(maxWidth: 680)
-        .floatingSurface(in: RoundedRectangle(cornerRadius: 30))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 30))
         .padding(.horizontal, 16)
         .animation(.smooth(duration: 0.2), value: panel)
         .task { await begin() }
@@ -199,34 +199,49 @@ private struct VoiceDots: View {
     }
 }
 
+/// The call's round glass buttons. One that's on (an open panel, mute) is filled with ink; End is
+/// the system's red.
 private struct CallBarButton: View {
     let systemImage: String
     let label: String
     let active: Bool
-    var tint: Color? = nil
-    var ink: Color? = nil
+    var role: ButtonRole?
     /// Its keyboard shortcut, shown in the tooltip.
     var shortcut: String? = nil
     let action: () -> Void
 
+    // The label's side; glass adds its padding around it, to 44 pt on the Mac and 40 on iPhone.
     #if os(macOS)
-        private static let size: CGFloat = 44
+        private static let side: CGFloat = 36
     #else
-        private static let size: CGFloat = 40
+        private static let side: CGFloat = 26
     #endif
 
     var body: some View {
-        Button(action: action) {
+        Button(role: role, action: action) {
             Image(systemName: systemImage)
                 .font(.system(size: 17, weight: .medium))
-                .foregroundStyle(ink ?? (active ? Theme.pane : Theme.ink))
-                .frame(width: Self.size, height: Self.size)
-                .background(tint ?? (active ? Theme.ink : Theme.selection), in: Circle())
-                .contentShape(Circle())
+                .foregroundStyle(role == .destructive ? .white : active ? Theme.primaryInk : Theme.ink)
+                .frame(width: Self.side, height: Self.side)
         }
-        .buttonStyle(.clickable)
+        .modifier(Style(prominent: active || role == .destructive, tint: role == .destructive ? .red : Theme.primary))
+        .buttonBorderShape(.circle)
         .help(shortcut.map { "\(label) (\($0))" } ?? label)
         .accessibilityLabel(Text(label))
+        .accessibilityAddTraits(active ? .isSelected : [])
+    }
+
+    private struct Style: ViewModifier {
+        let prominent: Bool
+        let tint: Color
+
+        func body(content: Content) -> some View {
+            if prominent {
+                content.buttonStyle(.glassProminent).tint(tint)
+            } else {
+                content.buttonStyle(.glass)
+            }
+        }
     }
 }
 

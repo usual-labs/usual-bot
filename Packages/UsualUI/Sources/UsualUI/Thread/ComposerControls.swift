@@ -96,26 +96,35 @@ struct ComposerLayout: Layout {
                     ContextMeter(thread: thread, usage: usage, context: context, compact: true)
                 }
                 if let model = thread.model {
+                    // Glass like the box's other buttons; ink while its picker is open.
                     Button {
                         pickingLevel.toggle()
                     } label: {
-                        // A grey circle like the box's other buttons; filled while its picker is open.
                         Image(systemName: Self.gauge(model.reasoning, reasons: thread.takesReasoning(model)))
                             .font(.system(size: size * 15 / 28))
                             .foregroundStyle(pickingLevel ? Theme.primaryInk : Theme.ink)
-                            .frame(width: size, height: size)
-                            .background(pickingLevel ? Theme.primary : Theme.selection, in: Circle())
-                            .contentShape(Circle())
+                            .frame(width: size - ComposerGlass.inset * 2, height: size - ComposerGlass.inset * 2)
                     }
-                    .buttonStyle(.clickable)
+                    .modifier(GaugeStyle(open: pickingLevel))
                     .accessibilityLabel(Text("Model and thinking"))
+                    .accessibilityAddTraits(pickingLevel ? .isSelected : [])
                     .accessibilityValue(
                         Text("\(ModelControls.short(model.name)), \(ModelControls.levelName(model.reasoning))"))
                 }
             }
-            .menuStyle(.button)
-            .buttonStyle(.clickable)
-            .menuIndicator(.hidden)
+        }
+
+        /// The gauge is plain glass, and ink while its picker is open.
+        private struct GaugeStyle: ViewModifier {
+            let open: Bool
+
+            func body(content: Content) -> some View {
+                if open {
+                    content.buttonStyle(.glassProminent).tint(Theme.primary).buttonBorderShape(.circle)
+                } else {
+                    content.composerGlass()
+                }
+            }
         }
 
         /// A gauge whose needle rises with the thinking level; the middle for the provider's default.
@@ -169,7 +178,7 @@ struct ComposerLayout: Layout {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 14)
                 .frame(maxWidth: .infinity)
-                .floatingSurface(in: RoundedRectangle(cornerRadius: 28))
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 28))
             }
         }
     }

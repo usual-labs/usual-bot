@@ -140,35 +140,27 @@ private struct JumpToLatestButton: View {
     let action: () -> Void
     @Environment(\.chatContact) private var contact
 
-    #if os(iOS)
-        private static let size: CGFloat = 40
-    #else
-        private static let size: CGFloat = 36
-    #endif
-
     var body: some View {
-        Button(action: action) {
-            Image(systemName: "arrow.down")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(Theme.ink)
-                .frame(width: Self.size, height: Self.size)
-                .floatingSurface(in: Circle())
-                .overlay(alignment: .topTrailing) {
-                    if hasNew {
-                        Circle()
-                            .fill(contact?.accent ?? Theme.primary)
-                            .stroke(Theme.surface, lineWidth: 2)
-                            .frame(width: 11, height: 11)
-                            .offset(x: 1, y: -1)
-                    }
+        Button("Jump to latest message", systemImage: "arrow.down", action: action)
+            .labelStyle(.iconOnly)
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(Theme.ink)
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            #if os(iOS)
+                .controlSize(.large)
+            #endif
+            .overlay(alignment: .topTrailing) {
+                if hasNew {
+                    Circle()
+                        .fill(contact?.accent ?? Theme.primary)
+                        .frame(width: 11, height: 11)
+                        .offset(x: 1, y: -1)
+                        .allowsHitTesting(false)
                 }
-                // Reaches 44 pt on iPhone without a bigger circle.
-                .padding(2)
-                .contentShape(Circle())
-        }
-        .buttonStyle(.clickable)
-        .help("Jump to latest message")
-        .accessibilityLabel(Text("Jump to latest message"))
-        .accessibilityValue(hasNew ? Text("New messages") : Text(""))
+            }
+            .help("Jump to latest message")
+            .accessibilityLabel(Text("Jump to latest message"))
+            .accessibilityValue(hasNew ? Text("New messages") : Text(""))
     }
 }

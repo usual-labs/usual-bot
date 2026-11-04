@@ -82,6 +82,61 @@ struct MessageBox: View {
     }
 
     var body: some View {
+        // One container: the menus above the box, the box and its glass buttons are drawn together.
+        GlassEffectContainer(spacing: 0) { stack }
+            .background {
+                // ⌘. stops the reply even after Send has taken Stop's place.
+                if isRunning {
+                    Button(stopLabel, action: stop)
+                        .keyboardShortcut(".", modifiers: .command)
+                        .opacity(0)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+            .environment(\.composerButtonSize, buttonSize)
+            .animation(.smooth(duration: 0.25), value: expanded)
+            .animation(.smooth(duration: 0.2), value: pickingLevel)
+            .animation(.snappy(duration: 0.16), value: isEmpty)
+            #if os(macOS)
+                .onAppear { focused = true }
+                .onChange(of: text) { if text.isEmpty { hasWrapped = false } }
+            #else
+                // The level picker closes as you type on, put the keyboard away, or tap the chat.
+                .onChange(of: text) { pickingLevel = false }
+                .onChange(of: focused) { _, focused in if !focused { pickingLevel = false } }
+                .sheet(isPresented: $choosingModel) {
+                    if let chat { ModelSheet(chat: chat) }
+                }
+            #endif
+            .onDisappear { dictation.stop() }
+            // The menu reads the gateway's list each time it opens.
+            .onChange(of: slashQuery != nil) { _, open in if open { commands?.load() } }
+            // Clicking or tapping the conversation closes the menus, like Escape.
+            .onChange(of: conversationTaps) {
+                closeMenu()
+                pickingLevel = false
+            }
+            .onChange(of: menuText) { _, text in
+                highlighted = 0
+                if text != dismissedText { dismissedText = nil }
+            }
+            // Ahead of anything typed since, so neither is lost.
+            .onChange(of: unsent?.wrappedValue, initial: true) { _, unsent in
+                guard let unsent else { return }
+                replaceText(with: isEmpty ? unsent : unsent + "\n\n" + text)
+                self.unsent?.wrappedValue = nil
+                focused = true
+            }
+            .onChange(of: commands?.prefill) { _, prefill in
+                guard let prefill else { return }
+                replaceText(with: prefill)
+                commands?.prefill = nil
+                focused = true
+            }
+    }
+
+    private var stack: some View {
         VStack(alignment: .leading, spacing: 8) {
             if !menu.isEmpty {
                 SuggestionMenu(
@@ -146,57 +201,7 @@ struct MessageBox: View {
                 }
             }
             .padding(Self.inset)
-            .floatingSurface(in: RoundedRectangle(cornerRadius: cornerRadius))
-        }
-        .background {
-            // ⌘. stops the reply even after Send has taken Stop's place.
-            if isRunning {
-                Button(stopLabel, action: stop)
-                    .keyboardShortcut(".", modifiers: .command)
-                    .opacity(0)
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
-            }
-        }
-        .environment(\.composerButtonSize, buttonSize)
-        .animation(.smooth(duration: 0.25), value: expanded)
-        .animation(.smooth(duration: 0.2), value: pickingLevel)
-        .animation(.snappy(duration: 0.16), value: isEmpty)
-        #if os(macOS)
-            .onAppear { focused = true }
-            .onChange(of: text) { if text.isEmpty { hasWrapped = false } }
-        #else
-            // The level picker closes as you type on, put the keyboard away, or tap the chat.
-            .onChange(of: text) { pickingLevel = false }
-            .onChange(of: focused) { _, focused in if !focused { pickingLevel = false } }
-            .sheet(isPresented: $choosingModel) {
-                if let chat { ModelSheet(chat: chat) }
-            }
-        #endif
-        .onDisappear { dictation.stop() }
-        // The menu reads the gateway's list each time it opens.
-        .onChange(of: slashQuery != nil) { _, open in if open { commands?.load() } }
-        // Clicking or tapping the conversation closes the menus, like Escape.
-        .onChange(of: conversationTaps) {
-            closeMenu()
-            pickingLevel = false
-        }
-        .onChange(of: menuText) { _, text in
-            highlighted = 0
-            if text != dismissedText { dismissedText = nil }
-        }
-        // Ahead of anything typed since, so neither is lost.
-        .onChange(of: unsent?.wrappedValue, initial: true) { _, unsent in
-            guard let unsent else { return }
-            replaceText(with: isEmpty ? unsent : unsent + "\n\n" + text)
-            self.unsent?.wrappedValue = nil
-            focused = true
-        }
-        .onChange(of: commands?.prefill) { _, prefill in
-            guard let prefill else { return }
-            replaceText(with: prefill)
-            commands?.prefill = nil
-            focused = true
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius))
         }
     }
 
@@ -337,7 +342,7 @@ struct MessageBox: View {
                 .frame(width: buttonSize, height: buttonSize)
                 .accessibilityLabel(Text("Uploading"))
         } else if isRunning, isEmpty, !hasAttachments, !dictation.isListening {
-            RoundButton(systemImage: "stop.fill", label: stopLabel, action: stop)
+            RoundButton(systemImage: "stop.fill", label: stopLabel, prominent: false, action: stop)
         } else if !inCall, dictation.isListening || (isEmpty && !hasAttachments) {
             // An empty box offers the mic; in a chat, the call button beside it holds the spot
             // Send takes over once there's something to send.
@@ -353,7 +358,6 @@ struct MessageBox: View {
         } else {
             RoundButton(systemImage: "arrow.up", label: String(localized: "Send"), action: submit)
                 .disabled(!canSubmit)
-                .opacity(canSubmit ? 1 : 0.35)
         }
     }
 
@@ -435,23 +439,18 @@ struct MessageBox: View {
     }
 }
 
+/// Send, in the Bot's colour, and Stop, in plain glass.
 private struct RoundButton: View {
     let systemImage: String
     let label: String
+    var prominent = true
     let action: () -> Void
-    @Environment(\.composerButtonSize) private var size
-    @Environment(\.chatContact) private var contact
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: size * 12 / 28, weight: .bold))
-                .foregroundStyle(contact == nil ? Theme.primaryInk : Theme.userBubbleInk)
-                .frame(width: size, height: size)
-                .background(contact?.accent ?? Theme.primary, in: Circle())
-                .contentShape(Circle())
+            ComposerGlyph(systemImage: systemImage, scale: 12, weight: .bold, prominent: prominent)
         }
-        .buttonStyle(.clickable)
+        .composerGlass(prominent: prominent)
         .accessibilityLabel(Text(label))
     }
 }

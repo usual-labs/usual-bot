@@ -87,7 +87,6 @@ enum AttachmentLoader {
 /// Photos, the camera and Files.
 struct AttachButton: View {
     let add: ([Attachment]) -> Void
-    @Environment(\.composerButtonSize) private var size
 
     @State private var choosingFiles = false
     #if os(iOS)
@@ -118,7 +117,7 @@ struct AttachButton: View {
             } label: {
                 icon
             }
-            .buttonStyle(.clickable)
+            .composerGlass()
             .help("Attach Files")
             .accessibilityLabel(Text("Attach Files"))
         }
@@ -133,6 +132,8 @@ struct AttachButton: View {
             } label: {
                 icon
             }
+            .menuStyle(.button)
+            .composerGlass()
             .accessibilityLabel(Text("Attach"))
             .photosPicker(isPresented: $choosingPhotos, selection: $photos, maxSelectionCount: 10, matching: .images)
             .onChange(of: photos) { _, items in
@@ -158,13 +159,7 @@ struct AttachButton: View {
     #endif
 
     private var icon: some View {
-        // A grey circle the size of Send, as in the mockups.
-        Image(systemName: "plus")
-            .font(.system(size: size * 13 / 28, weight: .semibold))
-            .foregroundStyle(Theme.ink)
-            .frame(width: size, height: size)
-            .background(Theme.selection, in: Circle())
-            .contentShape(Circle())
+        ComposerGlyph(systemImage: "plus")
     }
 }
 

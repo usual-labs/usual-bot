@@ -24,17 +24,8 @@ struct RoomPane: View {
         content
             .environment(\.messageActions, actions)
             .chatBars {
-                Button {
-                    showsInfo.toggle()
-                } label: {
-                    NamePill(contact: contact, members: members)
-                }
-                .buttonStyle(.clickable)
-                .accessibilityHint(Text("Shows the room's members"))
-                #if os(iOS)
-                    // The Mac's is in the View menu.
-                    .keyboardShortcut("i", modifiers: .command)
-                #endif
+                NamePill(contact: contact, members: members) { showsInfo.toggle() }
+                    .accessibilityHint(Text("Shows the room's members"))
             } bottom: {
                 if room.phase == .ready {
                     MessageBox(
@@ -93,10 +84,7 @@ struct RoomPane: View {
             VStack(spacing: 10) {
                 Text(message).multilineTextAlignment(.center)
                 Button("Try Again") { Task { await room.sync() } }
-                    .buttonStyle(.clickable)
-                    .scaledFont(size: 13, weight: .medium)
-                    .foregroundStyle(Theme.ink)
-                    .frame(minHeight: 44)
+                    .buttonStyle(.bordered)
             }
             .scaledFont(size: 13)
             .foregroundStyle(Theme.secondaryInk)

@@ -42,28 +42,21 @@ struct ModelControls: View {
                         Text("Thinking: \(model.reasoning.map(Self.name(of:)) ?? String(localized: "Default"))"))
                 }
             }
+            // The system's borderless menus: quiet settings of the box above, not more buttons.
             .menuStyle(.button)
-            .buttonStyle(.clickable)
-            .clickable()
-            .menuIndicator(.hidden)
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+            .foregroundStyle(Theme.secondaryInk)
+            .frame(height: Self.height)
             .fixedSize()
             .task(id: thread.isAttached) { await thread.loadModelsAndUsage() }
             .modelPickingAlerts(picking, thread: thread)
         }
     }
 
-    /// Quiet text with a chevron, so the two read as settings of the box above.
+    /// Quiet text, with the system's chevron, so the two read as settings of the box above.
     private func label(_ text: String) -> some View {
-        HStack(spacing: 2) {
-            Text(text).lineLimit(1)
-            // Hidden, or VoiceOver stops on the menu a second time.
-            Image(systemName: "chevron.down").scaledFont(size: 7, weight: .semibold).accessibilityHidden(true)
-        }
-        .scaledFont(size: 11)
-        .foregroundStyle(Theme.secondaryInk)
-        .padding(.horizontal, 6)
-        .frame(height: Self.height)
-        .contentShape(Rectangle())
+        Text(text).lineLimit(1)
     }
 
     /// A model ID without its vendor folder: `x-ai/grok-5` reads `grok-5`.
@@ -307,18 +300,16 @@ struct ContextMeter: View {
             .disabled(!thread.canCompress)
         } label: {
             if compact {
-                // The number keeps a part-filled ring from reading as a spinner. A grey pill, like
-                // the box's round buttons.
+                // The number keeps a part-filled ring from reading as a spinner. In glass, like the
+                // box's round buttons.
                 HStack(spacing: 5) {
                     ring(size: 16, lineWidth: 2)
                     Text("\(context.percent)%")
                 }
                 .scaledFont(size: 14, weight: .medium)
                 .foregroundStyle(Theme.ink)
-                .padding(.horizontal, 10)
-                .frame(height: buttonSize)
-                .background(Theme.selection, in: Capsule())
-                .contentShape(Capsule())
+                .padding(.horizontal, 2)
+                .frame(height: buttonSize - ComposerGlass.inset * 2)
             } else {
                 HStack(spacing: 4) {
                     ring(size: 9, lineWidth: 1.5)
@@ -331,8 +322,22 @@ struct ContextMeter: View {
                 .contentShape(Rectangle())
             }
         }
+        .modifier(MeterStyle(compact: compact))
         .help("How full this chat's context is")
         .accessibilityLabel(Text("Context \(context.percent) percent full"))
+    }
+
+    /// iPhone's sits among the message box's glass buttons; the Mac's with the borderless menus.
+    private struct MeterStyle: ViewModifier {
+        let compact: Bool
+
+        func body(content: Content) -> some View {
+            if compact {
+                content.menuStyle(.button).buttonStyle(.glass).buttonBorderShape(.capsule)
+            } else {
+                content
+            }
+        }
     }
 
     @ViewBuilder private func ring(size: CGFloat, lineWidth: CGFloat) -> some View {

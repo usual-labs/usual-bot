@@ -77,7 +77,7 @@ struct SuggestionMenu: View {
                 proxy.scrollTo(items[index].id)
             }
         }
-        .floatingSurface(in: RoundedRectangle(cornerRadius: 14))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 14))
     }
 
     @ViewBuilder private func row(_ item: Suggestion) -> some View {

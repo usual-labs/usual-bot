@@ -233,22 +233,21 @@ struct MicButton: View {
         Button {
             if dictation.isListening { dictation.stop() } else { start() }
         } label: {
-            Image(systemName: dictation.isListening ? "stop.fill" : "mic.fill")
-                .font(.system(size: size * (dictation.isListening ? 11 : 13) / 28, weight: .semibold))
-                .foregroundStyle(dictation.isListening ? Theme.primaryInk : Theme.ink)
-                .frame(width: size, height: size)
-                .background(dictation.isListening ? Theme.primary : Theme.selection, in: Circle())
-                .overlay {
-                    if dictation.isListening {
-                        Circle()
-                            .stroke(Theme.ink.opacity(0.25), lineWidth: 3)
-                            .scaleEffect(1 + dictation.level * 0.45)
-                            .animation(.easeOut(duration: 0.12), value: dictation.level)
-                    }
-                }
-                .contentShape(Circle())
+            ComposerGlyph(
+                systemImage: dictation.isListening ? "stop.fill" : "mic.fill", scale: dictation.isListening ? 11 : 13)
         }
-        .buttonStyle(.clickable)
+        .composerGlass()
+        // While listening a ring follows your voice.
+        .overlay {
+            if dictation.isListening {
+                Circle()
+                    .stroke(Theme.ink.opacity(0.25), lineWidth: 3)
+                    .frame(width: size, height: size)
+                    .scaleEffect(1 + dictation.level * 0.45)
+                    .animation(.easeOut(duration: 0.12), value: dictation.level)
+                    .allowsHitTesting(false)
+            }
+        }
         .help(dictation.isListening ? "Stop dictation" : "Dictate")
         .accessibilityLabel(Text(dictation.isListening ? "Stop dictation" : "Dictate"))
     }
@@ -269,18 +268,13 @@ struct DictationProblem: View {
             Spacer(minLength: 0)
             if showsSettings {
                 Button("Open Settings", action: Dictation.openSettings)
-                    .buttonStyle(.clickable)
-                    .scaledFont(size: 12.5, weight: .semibold)
-                    .foregroundStyle(Theme.ink)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
             }
-            Button(action: dismiss) {
-                Image(systemName: "xmark").font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(Theme.secondaryInk)
-                    .frame(width: 22, height: 22)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.clickable)
-            .accessibilityLabel(Text("Dismiss"))
+            Button("Dismiss", systemImage: "xmark", action: dismiss)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .foregroundStyle(Theme.secondaryInk)
         }
         .padding(.horizontal, 8)
     }
@@ -289,19 +283,13 @@ struct DictationProblem: View {
 /// Starts a voice call, beside the mic in an empty message box.
 struct CallStartButton: View {
     let action: () -> Void
-    @Environment(\.composerButtonSize) private var size
-    @Environment(\.chatContact) private var contact
 
     var body: some View {
+        // In the spot Send takes, so in the same colour.
         Button(action: action) {
-            Image(systemName: "waveform")
-                .font(.system(size: size * 13 / 28, weight: .semibold))
-                .foregroundStyle(contact == nil ? Theme.primaryInk : Theme.userBubbleInk)
-                .frame(width: size, height: size)
-                .background(contact?.accent ?? Theme.primary, in: Circle())
-                .contentShape(Circle())
+            ComposerGlyph(systemImage: "waveform", prominent: true)
         }
-        .buttonStyle(.clickable)
+        .composerGlass(prominent: true)
         .help("Voice call")
         .accessibilityLabel(Text("Start a voice call"))
     }
