@@ -275,22 +275,14 @@ extension View {
 
     #if os(iOS)
         /// Content fades and blurs softly under the bars at the top and bottom, as in Grok's phone
-        /// app, on iOS 26 and later.
-        @ViewBuilder func softScrollEdges() -> some View {
-            if #available(iOS 26, *) {
-                scrollEdgeEffectStyle(.soft, for: .all)
-            } else {
-                self
-            }
+        /// app.
+        func softScrollEdges() -> some View {
+            scrollEdgeEffectStyle(.soft, for: .all)
         }
 
         /// The pill keeps its own glass instead of sitting in the bar's shared background.
-        @ViewBuilder func principalToolbarItem(_ item: some View) -> some View {
-            if #available(iOS 26, *) {
-                toolbar { ToolbarItem(placement: .principal) { item }.sharedBackgroundVisibility(.hidden) }
-            } else {
-                toolbar { ToolbarItem(placement: .principal) { item } }
-            }
+        func principalToolbarItem(_ item: some View) -> some View {
+            toolbar { ToolbarItem(placement: .principal) { item }.sharedBackgroundVisibility(.hidden) }
         }
     #endif
 }
@@ -400,16 +392,12 @@ private struct ChatBars<Top: View, Bottom: View>: ViewModifier {
     #endif
 
     #if os(iOS)
-        /// On iOS 26 the box is a bar the conversation scrolls under, softly blurred and faded as in
-        /// Grok's phone app, and the top edge fades the same way under the name and buttons.
-        @ViewBuilder private func iPhoneBottomBar(_ conversation: some View, _ bar: some View) -> some View {
-            if #available(iOS 26, *) {
-                conversation
-                    .safeAreaBar(edge: .bottom, spacing: 0) { bar }
-                    .softScrollEdges()
-            } else {
-                conversation.safeAreaInset(edge: .bottom, spacing: 0) { bar }
-            }
+        /// The box is a bar the conversation scrolls under, softly blurred and faded as in Grok's
+        /// phone app, and the top edge fades the same way under the name and buttons.
+        private func iPhoneBottomBar(_ conversation: some View, _ bar: some View) -> some View {
+            conversation
+                .safeAreaBar(edge: .bottom, spacing: 0) { bar }
+                .softScrollEdges()
         }
 
         /// iPhone: with the keyboard down the box reaches a little into the home indicator's area, so

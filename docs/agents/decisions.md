@@ -9,6 +9,9 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 
 ## Scope
 
+- **The app needs iOS 26 and macOS 26,** so it can use the system's own controls and Liquid Glass
+  everywhere without a second look for older systems. It also removes a launch failure on iOS 18:
+  the iOS 26 SDK links WebKit's Swift library, which iOS 18 doesn't have.
 - Usual Bot is a messenger for Hermes agents. Agent configuration, provider keys, skill setup and
   gateway administration stay in the official app, except what the developer chose to bring in: an
   agent's routines, its MCP servers (the Apps tab), and making, renaming and deleting Bots.

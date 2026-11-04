@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 import PackageDescription
 
 // TailscaleKit.xcframework comes from a usual-labs/tailscalekit-build release, built there from
@@ -7,7 +7,7 @@ import PackageDescription
 // skips it.
 let package = Package(
     name: "Tailnet",
-    platforms: [.macOS(.v15), .iOS(.v18)],
+    platforms: [.macOS(.v26), .iOS(.v26)],
     products: [
         .library(name: "Tailnet", targets: ["Tailnet"])
     ],

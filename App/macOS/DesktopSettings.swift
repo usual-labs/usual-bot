@@ -102,7 +102,7 @@
         init() {
             super.init(frame: .zero)
             bezelStyle = .rounded
-            if #available(macOS 26, *) { borderShape = .capsule }
+            borderShape = .capsule
             target = self
             action = #selector(startRecording)
             setAccessibilityLabel(String(localized: "Quick Message keyboard shortcut"))

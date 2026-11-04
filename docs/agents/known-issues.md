@@ -28,11 +28,6 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 - **Recovery starts after the chat takes input again.** `attach` opens the chat, then the recovery
   task runs. What can be lost is decided when the chat attaches; otherwise a question sent just
   after a reconnect shows as lost, which failed `SideQuestionTests` on CI.
-- **Open: the iPhone app doesn't launch on iOS 18, its deployment target.** In the iOS 18.4
-  Simulator it stops at launch: `Library not loaded: /usr/lib/swift/libswiftWebKit.dylib`, which
-  the iOS 26+ SDK links for `import WebKit` (`App/SignInPresenters.swift`, `Call/LiveCall.swift`)
-  and iOS 18 doesn't have. Not yet checked on a device or with a Release build. Test the iPhone
-  app on an iOS 26 or later Simulator until it's fixed.
 - **Wait for the event, not a fixed time.** Fixed sleeps failed on slow runners
   (`silentSocketIsClosedAfterTheLimit`). `scripts/check-test-waits.sh` rejects a `Task.sleep` without
   a `// sleep-ok:` reason. Leave several intervals of slack in timing tests. Don't retry a flaky test;

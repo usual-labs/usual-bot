@@ -89,6 +89,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Changed
 
+- **Usual Bot now needs macOS 26 and iOS 26,** for the system's own controls and Liquid Glass.
+  It also no longer fails to open on iOS 18.
 - **Search is now a palette.** ⌘K or the Search button finds chats and rooms, and opens New Room,
   Settings or a theme. It replaces the filter at the top of the sidebar on the Mac.
 - **You can tell what's clickable.** On the Mac the pointer becomes a hand over buttons, chats,

@@ -659,12 +659,8 @@ struct ContactsSplitView<Footer: View>: View {
                 }
             }
             .labelStyle(.iconOnly)
-            if #available(macOS 26, *) {
-                // The buttons bring their own surface; the toolbar shouldn't wrap them in glass.
-                toolbar { ToolbarItem(placement: .navigation) { row }.sharedBackgroundVisibility(.hidden) }
-            } else {
-                toolbar { ToolbarItem(placement: .navigation) { row } }
-            }
+            // The buttons bring their own surface; the toolbar shouldn't wrap them in glass.
+            toolbar { ToolbarItem(placement: .navigation) { row }.sharedBackgroundVisibility(.hidden) }
         }
 
         /// The open profile panel's close button, at the window's top right over the panel and level
@@ -673,16 +669,10 @@ struct ContactsSplitView<Footer: View>: View {
             let button = Button("Close Profile", systemImage: "xmark", action: close)
                 .help("Close Profile")
                 .sidebarCircleButton()
-            if #available(macOS 26, *) {
-                toolbar {
-                    if shown {
-                        ToolbarSpacer(.flexible)
-                        ToolbarItem { button }.sharedBackgroundVisibility(.hidden)
-                    }
-                }
-            } else {
-                toolbar {
-                    if shown { ToolbarItem { button } }
+            toolbar {
+                if shown {
+                    ToolbarSpacer(.flexible)
+                    ToolbarItem { button }.sharedBackgroundVisibility(.hidden)
                 }
             }
         }

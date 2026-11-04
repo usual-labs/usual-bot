@@ -15,8 +15,8 @@
 </p>
 
 <p align="center">
-  <img alt="macOS 15+" src="https://img.shields.io/badge/macOS-15%2B-000000?logo=apple">
-  <img alt="iOS 18+" src="https://img.shields.io/badge/iOS-18%2B-000000?logo=apple">
+  <img alt="macOS 26+" src="https://img.shields.io/badge/macOS-26%2B-000000?logo=apple">
+  <img alt="iOS 26+" src="https://img.shields.io/badge/iOS-26%2B-000000?logo=apple">
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white">
   <img alt="SwiftUI" src="https://img.shields.io/badge/UI-SwiftUI-0A84FF">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue"></a>
@@ -47,7 +47,7 @@ brew install --cask usual-labs/tap/usual-bot
 Or download `UsualBot-<version>.dmg` from the
 [latest release](https://github.com/usual-labs/usual-bot/releases/latest), open it, and drag
 **Usual Bot** to Applications. It's signed and notarized by Apple, so it opens like any other app.
-Needs macOS 15 or later, on Apple silicon or Intel.
+Needs macOS 26 or later, on Apple silicon or Intel.
 
 **iPhone:** there's no download yet; build it from source (below).
 
@@ -161,7 +161,7 @@ The [user guide](docs/guides/user-guide.md) walks through each of these.
   OAuth); Usual Bot uses its browser sign-in for apps (`native_pkce` in `/api/status`).
 - **Tested with** Hermes Agent 0.21.5 and 0.22.5. Gateways that speak Hermes's newer canonical
   session protocol (`hermes gateway`) connect, but chats there aren't supported yet.
-- **The app** runs on macOS 15 and iOS 18 or later. Building it needs Xcode 26 or newer.
+- **The app** runs on macOS 26 and iOS 26 or later. Building it needs Xcode 26 or newer.
 
 ## Documentation
 
