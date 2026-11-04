@@ -56,7 +56,7 @@ struct VaultCard: View {
                 .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
-            fields
+            fields.textFieldStyle(.roundedBorder)
             if isUnencrypted { UnencryptedConsent(isAllowed: $allowsUnencrypted) }
             HStack(spacing: 8) {
                 Spacer(minLength: 0)
@@ -64,11 +64,10 @@ struct VaultCard: View {
                     clear()
                     skip()
                 }
-                .buttonStyle(CardButtonStyle(primary: false))
+                .cardButton()
                 Button("Send", action: send)
-                    .buttonStyle(CardButtonStyle(primary: true))
+                    .cardButton(prominent: true)
                     .disabled(!canSend)
-                    .opacity(canSend ? 1 : 0.4)
             }
         }
         .cardSurface()

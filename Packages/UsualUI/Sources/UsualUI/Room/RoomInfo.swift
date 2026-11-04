@@ -66,9 +66,9 @@ struct RoomPanel: View {
 
                 if editing != nil {
                     VStack(spacing: 0) {
-                        action("Rename Room…", tint: Theme.ink) { edit = .rename(room) }
+                        action("Rename Room…") { edit = .rename(room) }
                         Divider().overlay(Self.line)
-                        action("Delete Room…", tint: Theme.danger) { edit = .delete(room) }
+                        action("Delete Room…", role: .destructive) { edit = .delete(room) }
                     }
                     .padding(.horizontal, 12)
                     .background(Self.card, in: RoundedRectangle(cornerRadius: 14))
@@ -96,15 +96,17 @@ struct RoomPanel: View {
         private static let line = Theme.groupedBorder
     #endif
 
-    private func action(_ title: LocalizedStringKey, tint: Color, perform: @escaping () -> Void) -> some View {
-        Button(action: perform) {
+    /// A list row's button: borderless, so its role colours Delete.
+    private func action(_ title: LocalizedStringKey, role: ButtonRole? = nil, perform: @escaping () -> Void)
+        -> some View
+    {
+        Button(role: role, action: perform) {
             Text(title)
                 .scaledFont(size: 14)
-                .foregroundStyle(tint)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.clickable)
+        .buttonStyle(.borderless)
     }
 
     private func row(_ member: Contact) -> some View {

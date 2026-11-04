@@ -33,7 +33,7 @@ struct SecretCard: View {
             }
             details
             SecureField(placeholder, text: $value)
-                .textFieldStyle(.plain)
+                .textFieldStyle(.roundedBorder)
                 .scaledFont(size: 14)
                 .autocorrectionDisabled()
                 .privacySensitive()
@@ -41,10 +41,6 @@ struct SecretCard: View {
                     .textInputAutocapitalization(.never)
                 #endif
                 .onSubmit(send)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
-                .background(Theme.pane, in: RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.border))
             if isUnencrypted {
                 Label(
                     "This gateway uses plain http, so others on your network could read what you send.",
@@ -60,11 +56,10 @@ struct SecretCard: View {
                     value = ""
                     skip()
                 }
-                .buttonStyle(CardButtonStyle(primary: false))
+                .cardButton()
                 Button(isUnencrypted ? "Send Unencrypted" : "Send", action: send)
-                    .buttonStyle(CardButtonStyle(primary: true))
+                    .cardButton(prominent: true)
                     .disabled(value.isEmpty)
-                    .opacity(value.isEmpty ? 0.4 : 1)
             }
         }
         .cardSurface()

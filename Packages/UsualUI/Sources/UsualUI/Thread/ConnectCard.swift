@@ -38,7 +38,7 @@ struct ConnectCard: View {
                     }
                 }
                 .padding(.horizontal, 12)
-                .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14))
+                .background(.background, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 Text(note)
                     .scaledFont(size: 12.5)
                     .foregroundStyle(Theme.secondaryInk)
@@ -60,15 +60,14 @@ struct ConnectCard: View {
                 Spacer(minLength: 0)
                 if request.isList {
                     Button("Done", action: thread.finishConnecting)
-                        .buttonStyle(CardButtonStyle(primary: true))
+                        .cardButton(prominent: true)
                 } else {
                     Button("Not now", action: thread.skipConnection)
-                        .buttonStyle(CardButtonStyle(primary: false))
+                        .cardButton()
                         .accessibilityHint(Text("\(agentName) goes on without these apps"))
                 }
             }
             .disabled(!canAnswer)
-            .opacity(canAnswer ? 1 : 0.4)
         }
         .cardSurface()
         .onChange(of: request.targets.filter { $0.state == .connected }.count) { page.close() }
@@ -123,7 +122,7 @@ private struct ConnectRow: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Theme.ink)
                 .frame(width: 28, height: 28)
-                .background(Theme.selection, in: RoundedRectangle(cornerRadius: 8))
+                .background(.fill.secondary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(target.title)
@@ -138,7 +137,7 @@ private struct ConnectRow: View {
             }
             .accessibilityElement(children: .combine)
             Spacer(minLength: 8)
-            action
+            action.fixedSize()
         }
         .padding(.vertical, 10)
     }
@@ -151,19 +150,19 @@ private struct ConnectRow: View {
             switch target.offer {
             case .signIn:
                 Button(isOpened ? "Open Again" : "Connect", action: connect)
-                    .buttonStyle(CardButtonStyle(primary: !isOpened))
+                    .cardButton(prominent: !isOpened)
                     .accessibilityLabel(
                         Text(isOpened ? "Open \(target.title) sign-in again" : "Connect \(target.title)")
                     )
                     .disabled(!canAnswer)
             case .approve:
                 Button("Connect", action: connect)
-                    .buttonStyle(CardButtonStyle(primary: true))
+                    .cardButton(prominent: true)
                     .accessibilityLabel(Text("Connect \(target.title)"))
                     .disabled(!canAnswer)
             case .retry:
                 Button("Try Again", action: retry)
-                    .buttonStyle(CardButtonStyle(primary: false))
+                    .cardButton()
                     .accessibilityLabel(Text("Try connecting \(target.title) again"))
                     .disabled(!canAnswer)
             case .preparing:

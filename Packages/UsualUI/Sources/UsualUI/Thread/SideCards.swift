@@ -22,12 +22,12 @@ struct SideQuestionCard: View {
                 Button(action: dismiss) {
                     Image(systemName: "xmark")
                         .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Theme.secondaryInk)
                         .frame(width: 22, height: 22)
                         .contentShape(Rectangle())
                         .touchTarget(width: 22, height: 22)
                 }
-                .buttonStyle(.clickable)
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
                 .accessibilityLabel(Text("Dismiss the side question"))
             }
             switch question.answer {
@@ -56,7 +56,8 @@ struct SideQuestionCard: View {
         .padding(.trailing, 8)
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .floatingSurface(in: RoundedRectangle(cornerRadius: 18))
+        // It floats over the transcript, above the message box.
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
@@ -77,7 +78,7 @@ struct BackgroundTasksBar: View {
         }
         .padding(.horizontal, 14)
         .frame(minHeight: 34)
-        .floatingSurface(in: Capsule())
+        .glassEffect(.regular, in: Capsule())
         .help(tasks.map(\.task).joined(separator: "\n"))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(summary))

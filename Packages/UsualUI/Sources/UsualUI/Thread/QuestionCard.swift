@@ -34,13 +34,12 @@ struct QuestionCard: View {
                     Spacer(minLength: 0)
                     Button(action: skip) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(Theme.secondaryInk)
                             .frame(width: 28, height: 28)
                             .contentShape(Rectangle())
                             .touchTarget(width: 28, height: 28)
                     }
-                    .buttonStyle(.clickable)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
                     .accessibilityLabel(Text("Skip the question"))
                     .help("Skip")
                 }
@@ -68,20 +67,18 @@ struct QuestionCard: View {
     private func choiceButton(
         _ index: Int, _ choice: String, isPicked: Bool, action: @escaping () -> Void
     ) -> some View {
+        // A full-width bordered button per choice, its letter leading, as a list of options.
         Button(action: action) {
             HStack(spacing: 10) {
                 letterChip(index, isPicked: isPicked)
                 Text(choice)
                     .foregroundStyle(Theme.ink)
+                    .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             .font(.system(size: messageSize))
-            .padding(.horizontal, 4)
-            .frame(minHeight: CardButtonStyle.rowHeight)
-            .contentShape(RoundedRectangle(cornerRadius: 10))
         }
-        .buttonStyle(.clickable)
-        .hoverHighlight(in: RoundedRectangle(cornerRadius: 10))
+        .cardButton()
         .accessibilityAddTraits(isPicked ? .isSelected : [])
     }
 
@@ -93,11 +90,10 @@ struct QuestionCard: View {
             HStack(spacing: 8) {
                 Spacer(minLength: 0)
                 Button("Skip", action: skip)
-                    .buttonStyle(CardButtonStyle(primary: false))
+                    .cardButton()
                 Button("Send") { answer(answers) }
-                    .buttonStyle(CardButtonStyle(primary: true))
+                    .cardButton(prominent: true)
                     .disabled(!isComplete)
-                    .opacity(isComplete ? 1 : 0.4)
             }
         }
         .cardSurface()
@@ -118,13 +114,9 @@ struct QuestionCard: View {
                     get: { typed[question.id, default: ""] },
                     set: { typed[question.id] = $0 }), axis: .vertical
             )
-            .textFieldStyle(.plain)
+            .textFieldStyle(.roundedBorder)
             .scaledFont(size: 14)
             .lineLimit(1...4)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
-            .background(Theme.pane, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.border))
         }
     }
 
@@ -139,7 +131,7 @@ struct QuestionCard: View {
             .font(.system(size: chipSize / 2, weight: .semibold))
             .foregroundStyle(isPicked ? Theme.primaryInk : Theme.secondaryInk)
             .frame(width: chipSize, height: chipSize)
-            .background(isPicked ? Theme.primary : Theme.pane, in: Circle())
+            .background(isPicked ? AnyShapeStyle(Theme.primary) : AnyShapeStyle(.background), in: Circle())
             .accessibilityHidden(true)
     }
 
@@ -174,7 +166,7 @@ struct QuestionCard: View {
     }
 }
 
-/// The pill buttons used on approval, question and secret cards.
+/// The pill buttons cards used before they took the system's bordered buttons (`cardButton`).
 struct CardButtonStyle: ButtonStyle {
     let primary: Bool
     /// Takes the full width, for buttons stacked in a narrow card.

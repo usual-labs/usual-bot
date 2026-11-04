@@ -130,12 +130,11 @@ struct RetryCard: View {
                 .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
-            // Pills like every other card's, so they read as buttons.
             HStack(spacing: 8) {
                 Button("Try Again", action: retry)
-                    .buttonStyle(CardButtonStyle(primary: true))
+                    .cardButton(prominent: true)
                 Button("Dismiss", action: dismiss)
-                    .buttonStyle(CardButtonStyle(primary: false))
+                    .cardButton()
             }
         }
         .cardSurface()

@@ -1,15 +1,15 @@
 import SwiftUI
 
 /// A masked field for a password, master password, card detail or code. Its text is never shown
-/// and stays out of the system's autocorrection.
+/// and stays out of the system's autocorrection. The field's style comes from where it is: a form's
+/// row, or `.roundedBorder` on a card.
 struct VaultSecureField: View {
     let title: LocalizedStringKey
     @Binding var text: String
     var isCode = false
 
     var body: some View {
-        SecureField(title, text: $text)
-            .textFieldStyle(.plain)
+        SecureField(title, text: $text, prompt: Text(title))
             .autocorrectionDisabled()
             .privacySensitive()
             #if os(iOS)
@@ -20,7 +20,7 @@ struct VaultSecureField: View {
     }
 }
 
-/// A plain field in the same style, for what isn't secret on screen: a label, a site, an email.
+/// A plain field to go with it, for what isn't secret on screen: a label, a site, an email.
 struct VaultTextField: View {
     let title: LocalizedStringKey
     @Binding var text: String
@@ -28,8 +28,7 @@ struct VaultTextField: View {
     var isLiteral = false
 
     var body: some View {
-        TextField(title, text: $text)
-            .textFieldStyle(.plain)
+        TextField(title, text: $text, prompt: Text(title))
             .autocorrectionDisabled(isLiteral)
             #if os(iOS)
                 .textInputAutocapitalization(isLiteral ? .never : .sentences)
@@ -39,12 +38,10 @@ struct VaultTextField: View {
 }
 
 extension View {
+    /// The title is the field's prompt and its VoiceOver label, never a label beside it: a Mac form
+    /// row would show it twice.
     fileprivate func vaultFieldStyle() -> some View {
-        scaledFont(size: 14)
-            .padding(.horizontal, 12)
-            .frame(minHeight: 40)
-            .background(Theme.pane, in: RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.border))
+        scaledFont(size: 14).labelsHidden()
     }
 }
 
@@ -67,9 +64,9 @@ struct UnencryptedConsent: View {
                     .foregroundStyle(Theme.needsYouInk)
             }
             Toggle("Send it anyway", isOn: $isAllowed)
+                .toggleStyle(.switch)
                 .scaledFont(size: 13)
                 .foregroundStyle(Theme.ink)
-                .tint(Theme.switchOn)
         }
         .padding(10)
         .background(Theme.needsYouFill, in: RoundedRectangle(cornerRadius: 10))

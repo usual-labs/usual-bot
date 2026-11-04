@@ -60,10 +60,14 @@ struct ApprovalCard: View {
 
     private func buttons(_ choices: [ApprovalPrompt.Choice], fill: Bool = false) -> some View {
         ForEach(choices, id: \.self) { choice in
-            Button(title(choice)) { answer(choice) }
-                .buttonStyle(CardButtonStyle(primary: choice == .once, fill: fill))
-                .help(explanation(choice))
-                .accessibilityHint(Text(explanation(choice)))
+            Button {
+                answer(choice)
+            } label: {
+                Text(title(choice)).frame(maxWidth: fill ? .infinity : nil)
+            }
+            .cardButton(prominent: choice == .once, fill: fill)
+            .help(explanation(choice))
+            .accessibilityHint(Text(explanation(choice)))
         }
     }
 
