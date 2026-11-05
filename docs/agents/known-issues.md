@@ -112,6 +112,10 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   run in the dashboard process, and `hermes gateway restart` leaves the old gateway running until its
   turns end, still on the old code. The plugin's `presence.json` from 0.1 held one
   `{"focused", "at"}` entry, which 0.2's reader skips.
+- **Don't use the `async` forms of `UNUserNotificationCenterDelegate`.** Their thunk calls the
+  completion handler from Swift's thread pool; tapping a notification then aborts the iPhone app in
+  `-[UIApplication _performBlockAfterCATransactionCommitSynchronizes:]`. `AgentNotifications` uses
+  the completion-handler forms and calls them on the main actor.
 - **`log` in zsh is a builtin.** Read the unified log with `/usr/bin/log show`.
 - **APNs from `wrangler dev` fails:** workerd has no HTTP/2 client. Deployed Workers reach APNs
   through Cloudflare's proxy.

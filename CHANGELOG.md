@@ -153,6 +153,7 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Fixed
 
+- **Tapping a notification on iPhone no longer closes the app.**
 - **Long chats open and resize faster.** A chat or room builds its newest messages and adds earlier
   ones as you scroll up to them, keeping your place, instead of laying out its whole history on
   every open and every step of a window resize. Replies are no longer parsed again on each update,

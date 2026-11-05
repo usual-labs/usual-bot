@@ -135,22 +135,34 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
 
     /// `heard` already decided a local alert should show. A push shows too, unless it's about the
     /// chat you're reading: the gateway may not have heard yet that it's open.
+    ///
+    /// Neither delegate method uses the `async` form: its thunk calls the completion handler from
+    /// Swift's thread pool, and iOS aborts when a tapped notification's handler runs off the main
+    /// thread (a `_performBlockAfterCATransactionCommitSynchronizes` assertion).
     nonisolated func userNotificationCenter(
-        _ center: UNUserNotificationCenter, willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
+        _ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping @Sendable (UNNotificationPresentationOptions) -> Void
+    ) {
         let content = notification.request.content
         guard content.userInfo["kind"] != nil, let chat = content.userInfo[Self.contactKey] as? String else {
-            return [.banner, .list, .sound]
+            completionHandler([.banner, .list, .sound])
+            return
         }
-        let reading = await MainActor.run { model?.isFocused == true && model?.visibleContactID == chat }
-        return reading ? [] : [.banner, .list, .sound]
+        Task { @MainActor in
+            let reading = model?.isFocused == true && model?.visibleContactID == chat
+            completionHandler(reading ? [] : [.banner, .list, .sound])
+        }
     }
 
     nonisolated func userNotificationCenter(
-        _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse
-    ) async {
-        guard let contact = response.notification.request.content.userInfo[Self.contactKey] as? String else { return }
-        await MainActor.run { open(contact) }
+        _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping @Sendable () -> Void
+    ) {
+        let contact = response.notification.request.content.userInfo[Self.contactKey] as? String
+        Task { @MainActor in
+            if let contact { open(contact) }
+            completionHandler()
+        }
     }
 
     private func open(_ contact: Contact.ID) {
