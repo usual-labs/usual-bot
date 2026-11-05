@@ -1,0 +1,36 @@
+name = "usual-push"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+# The address built into the app, and its only one.
+routes = [{ pattern = "push.usual.dev", custom_domain = true }]
+workers_dev = false
+# The account that holds usual.dev. Pinned so nothing lands in another account.
+account_id = "52a1c8e46a3fe3ab777dfdd2c2888832"
+
+# Not secrets: Apple's key ID and team ID name the key; the key itself is the APNS_KEY secret.
+[vars]
+APNS_KEY_ID = "LB7KSXF7CR"
+APNS_TEAM_ID = "G6WL4CPNV3"
+APNS_TOPIC = "labs.usual.UsualBot"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "usual-push"
+database_id = "2f0c2237-f056-4f8c-af93-bea1bbe573ea"
+
+# Limits per Cloudflare location, approximate by design. Signing up is keyed by address, as a new
+# device has nothing else; everything after is keyed by device, so a shared address isn't punished.
+[[ratelimits]]
+name = "SIGNUPS"
+namespace_id = "1001"
+simple = { limit = 10, period = 60 }
+
+[[ratelimits]]
+name = "DEVICE_CHANGES"
+namespace_id = "1002"
+simple = { limit = 20, period = 60 }
+
+[[ratelimits]]
+name = "PUSHES"
+namespace_id = "1003"
+simple = { limit = 60, period = 60 }

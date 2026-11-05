@@ -107,8 +107,8 @@ guarantee a merge.
 
 ## Releases
 
-Maintainers publish releases by pushing a version tag; a workflow signs, notarizes and attaches the
-Mac disk image. See [Releasing](docs/guides/releasing.md).
+Maintainers ship builds of the Mac and iPhone apps through TestFlight. See
+[Releasing](docs/guides/releasing.md).
 
 ## Debug switches
 

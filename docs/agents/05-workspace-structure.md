@@ -20,20 +20,22 @@
   user runs in their own agent; linked from `docs/guides/troubleshooting.md`
 - `CLAUDE.md` imports `AGENTS.md`; shared agent skills live in `.agents/skills`, linked from
   `.claude/skills`
-- `Integrations/hermes-push/` — the Hermes plugin behind ntfy and Pushover notifications (Python,
-  standard library plus Hermes itself; installed on the gateway, not built with the app)
+- `Integrations/hermes-push/` — the Hermes plugin that seals notifications per device and sends them
+  to the relay (Python, standard library plus Hermes and its `cryptography`; installed on the
+  gateway, not built with the app)
+- `Services/push-relay/` — the push relay at `push.usual.dev`: a Cloudflare Worker (plain JS, no
+  dependencies) and D1, deployed with Wrangler, not built with the app
+- `NotificationService/` — the notification service extension that opens sealed pushes, embedded in
+  the app; its settings are `Config/NotificationService*`
 - `.github/workflows/zizmor.yml` — zizmor security lint of the workflows (pushes/PRs touching
   `.github/`), findings in code scanning; `.github/workflows/scorecard.yml` — OpenSSF Scorecard
   weekly and on pushes to main, publishes the README badge; `.github/dependabot.yml` — weekly grouped
   updates of the pinned actions (7-day cooldown); `.github/workflows/codeql.yml` — CodeQL for Swift
   (xcodebuild of the app on `macos-26`, manual build mode) and Actions, on pushes, PRs and weekly.
   A package-only SwiftPM scan misses `App/`; the tracked workflow builds the app with Xcode
-- `.github/workflows/release.yml` — on a `v*` tag: Developer ID signed, notarized Mac `.dmg` on a
-  GitHub release, with the version's CHANGELOG section (required) as notes. Self-contained: the
-  notes extraction and the notarize-and-staple helper are inline. Setup and secrets:
-  `docs/guides/releasing.md`. The Homebrew cask (`brew install --cask usual-labs/tap/usual-bot`)
-  lives in the separate public repo `usual-labs/homebrew-tap` (local checkout
-  `../homebrew-tap/`); nothing bumps it automatically, so release step 5 does it by hand
+- `scripts/testflight.sh` — archives the Mac and iPhone apps with push and uploads them to
+  TestFlight, the only way builds ship (`docs/guides/releasing.md`). The GitHub release workflow
+  and the Homebrew cask in `usual-labs/homebrew-tap` were retired after 0.3.0
 - `Config/Shared.xcconfig` — shared Xcode settings
 - `UsualBot.xcodeproj` — application project
 - `design/avatars` — avatar reference and artwork

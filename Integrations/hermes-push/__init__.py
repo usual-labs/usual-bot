@@ -1,4 +1,4 @@
-"""Tells you what agents do through ntfy or Pushover, even when Usual Bot isn't running.
+"""Tells your devices what agents do, through Usual's push relay, even when Usual Bot isn't running.
 
 Hooks only watch: anything going wrong here is logged and never touches an agent's turn.
 """
@@ -8,10 +8,9 @@ from __future__ import annotations
 import logging
 import threading
 import time
-import urllib.parse
 from pathlib import Path
 
-from . import services, store
+from . import relay, store
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +21,7 @@ _ROOM_PLATFORM = "bot_room"
 _ROOM_ACTIVITY_DELAY = 1.5
 _PREVIEW_LIMIT = 240
 _HIDDEN = {"message": "New message. Open Usual Bot to read it.", "needs_you": "Open Usual Bot to answer."}
+TEST = {"title": "Usual Bot", "body": "Notifications from your gateway are working."}
 
 
 def _profile() -> str:
@@ -36,29 +36,58 @@ def _shorten(text: str) -> str:
     return line if len(line) <= _PREVIEW_LIMIT else line[: _PREVIEW_LIMIT - 1] + "…"
 
 
-def _deliver(kind: str, title: str, preview: str, chat: str, speaker: str | None = None) -> None:
-    settings = store.settings()
-    if not services.is_ready(settings) or not settings.get(kind, True) or store.is_focused():
+def deliver(kind: str, title: str, preview: str, chat: str, speaker: str | None = None) -> None:
+    """To every device that wants it, unless you're reading that chat on one of them."""
+    if store.is_open(chat):
         return
+    settings = store.settings()
+    names = settings["names"]
     if speaker:
-        preview = f"{settings['names'].get(speaker, speaker)}: {preview}"
-    body = _shorten(preview) if settings.get("previews", True) else _HIDDEN[kind]
-    link = "usualbot://chat/" + urllib.parse.quote(chat, safe="")
-    try:
-        services.send(settings, title.format(name=settings["names"].get(chat, chat)), body, link, kind == "needs_you")
-    except Exception as error:  # Named only: a service's error can quote the message.
-        logger.warning("usual-push: couldn't send through %s: %s", settings["service"], type(error).__name__)
+        preview = f"{names.get(speaker, speaker)}: {preview}"
+    title = title.format(name=names.get(chat, chat))
+    pushes = []
+    for device_id, device in settings["devices"].items():
+        if not device.get(kind, True) or chat in device.get("muted", []):
+            continue
+        body = _shorten(preview) if device.get("previews", True) else _HIDDEN[kind]
+        payload = {"title": title, "body": body, "chat": chat, "kind": kind, "sound": device.get("sound", True)}
+        pushes.append((device["relay"], relay.push(device_id, device, kind, payload, chat)))
+    _forget_gone(relay.send(pushes))
+
+
+def send_test(device_id: str) -> str:
+    """Answers the relay's verdict for that device, such as `sent`."""
+    device = store.devices().get(device_id)
+    if device is None:
+        return "gone"
+    payload = TEST | {"kind": "test", "sound": device.get("sound", True)}
+    fates = relay.send([(device["relay"], relay.push(device_id, device, "test", payload, None))])
+    _forget_gone(fates)
+    return fates.get(device_id, "failed")
+
+
+def _forget_gone(fates: dict[str, str]) -> None:
+    for device_id, fate in fates.items():
+        if fate == "gone":
+            store.remove_device(device_id)
 
 
 def _push(kind: str, title: str, preview: str, chat: str) -> None:
-    threading.Thread(target=_deliver, args=(kind, title, preview, chat), daemon=True).start()
+    threading.Thread(target=_safely, args=(deliver, kind, title, preview, chat), daemon=True).start()
+
+
+def _safely(action, *args) -> None:
+    try:
+        action(*args)
+    except Exception as error:  # Named only: an error can quote the message.
+        logger.warning("usual-push: couldn't notify: %s", type(error).__name__)
 
 
 def _deliver_room_reply(profile: str, text: str) -> None:
     """The reply's hook doesn't say which room, but that member's activity just did."""
     time.sleep(_ROOM_ACTIVITY_DELAY)
     if room := store.room_of(profile):
-        _deliver("message", "{name}", text, f"room:{room}", speaker=profile)
+        deliver("message", "{name}", text, f"room:{room}", speaker=profile)
 
 
 def _on_reply(assistant_response="", platform="", **_) -> None:
@@ -67,7 +96,9 @@ def _on_reply(assistant_response="", platform="", **_) -> None:
     if platform in _CHAT_PLATFORMS:
         _push("message", "{name}", assistant_response, _profile())
     elif platform == _ROOM_PLATFORM:
-        threading.Thread(target=_deliver_room_reply, args=(_profile(), assistant_response), daemon=True).start()
+        threading.Thread(
+            target=_safely, args=(_deliver_room_reply, _profile(), assistant_response), daemon=True
+        ).start()
 
 
 def _on_request(kind="", platform="", prompt="", **_) -> None:

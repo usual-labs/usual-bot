@@ -7,9 +7,24 @@ import Testing
 @MainActor
 @Suite("Push settings")
 struct PushSettingsTests {
-    private func makeModel(_ answer: @escaping @Sendable (URLRequest) -> (Int, String)) throws -> (
-        PushSettings, AppModel
+    private static let registration = PushRelay.Registration(
+        id: "dev1", secret: "s", sendKey: "send-key", sealKey: Data(repeating: 7, count: 32), token: "ab",
+        environment: "sandbox")
+
+    /// Push settings hold their model weakly, so tests that only keep `push` keep the model here.
+    private static var models: [AppModel] = []
+
+    private final class Requests: Sendable {
+        let log = Mutex<[(String, String)]>([])
+        var lines: [String] { log.withLock { $0.map(\.0) } }
+        func body(_ line: String) -> String? { log.withLock { $0.last { $0.0 == line }?.1 } }
+    }
+
+    /// A signed-in model whose gateway answers `settings`, and records every request.
+    private func makeModel(settings: String = #"{"devices":[]}"#, status: Int = 200) async throws -> (
+        PushSettings, AppModel, Requests
     ) {
+        let requests = Requests()
         let store = MemoryTokenStore()
         let tokens = TokenSet(
             accessToken: "a0", refreshToken: "r0", expiresAt: .now.addingTimeInterval(3600), provider: "nous",
@@ -18,121 +33,120 @@ struct PushSettingsTests {
         let defaults = UserDefaults(suiteName: UUID().uuidString)!
         defaults.set(testGateway.baseURL.absoluteString, forKey: "gatewayAddress")
         let model = AppModel(
-            tokenStore: store, http: ScriptedHTTP(answer), defaults: defaults,
+            tokenStore: store,
+            http: ScriptedHTTP { request in
+                let line = "\(request.httpMethod ?? "") \(request.url?.path() ?? "")"
+                let body = request.httpBody.map { String(decoding: $0, as: UTF8.self) } ?? ""
+                requests.log.withLock { $0.append((line, body)) }
+                if request.url?.lastPathComponent == "settings" { return (status, settings) }
+                if line.hasPrefix("PUT /api/plugins/usual-push/devices") { return (200, #"{"id":"dev1","muted":[]}"#) }
+                return (200, "{}")
+            }, defaults: defaults,
             cache: OfflineCache(directory: .temporaryDirectory.appending(path: UUID().uuidString)),
             makeSocket: { _ in FakeSocket() })
-        return (model.push, model)
+        model.relay = PushRelay(relay: URL(string: "https://relay.example.com")!, registration: Self.registration)
+        model.setForeground(false)
+        await model.restore()
+        Self.models.append(model)
+        return (model.push, model, requests)
     }
 
     @Test func aGatewayWithoutThePluginSaysSo() async throws {
-        let (push, model) = try makeModel { _ in (404, "{}") }
-        model.setForeground(false)
-        await model.restore()
+        let (push, _, _) = try await makeModel(settings: "{}", status: 404)
         await push.refresh()
         #expect(push.phase == .notInstalled)
         #expect(!push.isActive)
     }
 
-    @Test func secretsAreKnownOnlyAsSaved() async throws {
-        let (push, model) = try makeModel { _ in
-            (200, #"{"service":"pushover","has_token":true,"has_user_key":true,"topic":""}"#)
-        }
-        model.setForeground(false)
-        await model.restore()
+    @Test func aNewDeviceGivesTheGatewayItsKeysAndChoices() async throws {
+        let (push, _, requests) = try await makeModel()
+        push.currentChoices = { .init(previews: false) }
         await push.refresh()
-        #expect(push.service == .pushover)
-        #expect(push.hasToken && push.hasUserKey)
         #expect(push.isActive)
+        let body = try #require(requests.body("PUT /api/plugins/usual-push/devices/dev1"))
+        #expect(body.contains(#""send_key":"send-key""#))
+        #expect(body.contains(#""seal_key":"\#(Self.registration.sealKey.base64EncodedString())""#))
+        #expect(body.contains(#""relay":"https:\/\/relay.example.com""#))
+        #expect(body.contains(#""previews":false"#))
     }
 
-    @Test func aTestGoesThroughWhatsInSettingsNotWhatWasSaved() async throws {
-        let log = Mutex<[String]>([])
-        let (push, model) = try makeModel { request in
-            let body = request.httpBody.map { String(decoding: $0, as: UTF8.self) } ?? ""
-            log.withLock { $0.append("\(request.httpMethod ?? "") \(request.url?.lastPathComponent ?? "")") }
-            if request.httpMethod == "PUT" {
-                #expect(body.contains(#""service":"ntfy""#))
-                #expect(body.contains(#""ntfy_token":"tk_new""#))
-                #expect(!body.contains(#""token":"#))
-            }
-            return (200, #"{"service":"pushover","topic":"","has_token":true,"has_user_key":true}"#)
-        }
-        model.setForeground(false)
-        await model.restore()
+    @Test func aKnownDeviceIsntAddedAgainAndKeepsWhatItMuted() async throws {
+        let (push, _, requests) = try await makeModel(
+            settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com","muted":["forge"]}]}"#)
         await push.refresh()
-        log.withLock { $0.removeAll() }
-        push.service = .ntfy
-        push.topic = "my-agents"
-        try await push.saveAndSendTest(
-            .init(ntfyToken: "tk_new", messages: true, needsYou: true, previews: true))
-        #expect(log.withLock { $0 } == ["PUT settings", "POST test"])
-    }
-
-    @Test func ntfyNeedsATopic() async throws {
-        let (push, model) = try makeModel { _ in (200, #"{"service":"ntfy","topic":""}"#) }
-        model.setForeground(false)
-        await model.restore()
-        await push.refresh()
-        #expect(!push.isActive)
-        push.topic = "my-agents"
         #expect(push.isActive)
+        #expect(push.muted == ["forge"])
+        #expect(!requests.lines.contains { $0.hasPrefix("PUT") })
     }
 
-    @Test func signingOutForgetsTheService() async throws {
-        let (push, model) = try makeModel { _ in (200, #"{"service":"ntfy","topic":"t"}"#) }
-        model.setForeground(false)
-        await model.restore()
+    @Test func mutingABotSendsTheWholeList() async throws {
+        let (push, _, requests) = try await makeModel(
+            settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com","muted":["forge"]}]}"#)
+        await push.refresh()
+        try await push.setMuted("atlas", true)
+        let body = try #require(requests.body("PUT /api/plugins/usual-push/devices/dev1"))
+        #expect(body.contains(#""muted":["atlas","forge"]"#))
+    }
+
+    @Test func aTestNamesThisDevice() async throws {
+        let (push, _, requests) = try await makeModel(
+            settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com"}]}"#)
+        await push.refresh()
+        try await push.sendTest()
+        #expect(requests.body("POST /api/plugins/usual-push/test") == #"{"device":"dev1"}"#)
+    }
+
+    @Test func aRelayAtANewAddressIsToldToTheGatewayAgain() async throws {
+        let (push, _, requests) = try await makeModel(
+            settings: #"{"devices":[{"id":"dev1","relay":"https://old.example.com","muted":["forge"]}]}"#)
+        await push.refresh()
+        #expect(push.isActive)
+        let body = try #require(requests.body("PUT /api/plugins/usual-push/devices/dev1"))
+        #expect(body.contains(#""relay":"https:\/\/relay.example.com""#))
+    }
+
+    @Test func signingOutTakesThisDeviceOffTheGateway() async throws {
+        let (push, model, requests) = try await makeModel(
+            settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com","muted":["forge"]}]}"#)
         await push.refresh()
         model.signOut()
         #expect(!push.isActive)
-        #expect(push.topic.isEmpty)
+        #expect(push.muted.isEmpty)
+        try await waitUntil { requests.lines.contains("DELETE /api/plugins/usual-push/devices/dev1") }
     }
 
-    private final class Reports: Sendable {
-        let bodies = Mutex<[String]>([])
+    private func presence(_ requests: Requests) -> [String] {
+        requests.log.withLock { $0.filter { $0.0.hasSuffix("/presence") }.map(\.1) }
     }
 
-    private func presenceReports() async throws -> (AppModel, Reports) {
-        let reports = Reports()
-        let (push, model) = try makeModel { request in
-            if request.url?.lastPathComponent == "presence" {
-                let body = request.httpBody.map { String(decoding: $0, as: UTF8.self) } ?? ""
-                reports.bodies.withLock { $0.append(body) }
-            }
-            return (200, #"{"service":"ntfy","topic":"my-agents"}"#)
-        }
-        model.setForeground(false)
-        await model.restore()
+    @Test func anOpenChatRepeatsSoTheGatewayKeepsItQuiet() async throws {
+        let (push, _, requests) = try await makeModel(
+            settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com"}]}"#)
         await push.refresh()
-        return (model, reports)
-    }
-
-    @Test func focusRepeatsSoThePluginKeepsHoldingPushes() async throws {
-        let (model, reports) = try await presenceReports()
-        let push = model.push
         push.isWindowFocused = true
-        await push.report(names: [:])
-        await push.report(names: [:])
-        let sent = reports.bodies.withLock { $0 }
+        await push.report(visible: "forge", names: [:])
+        await push.report(visible: "forge", names: [:])
+        let sent = presence(requests)
         #expect(sent.count == 2)
-        #expect(sent.allSatisfy { $0.contains(#""focused":true"#) })
+        #expect(sent.allSatisfy { $0.contains(#""chat":"forge""#) && $0.contains(#""device":"dev1""#) })
     }
 
-    @Test func leavingIsSaidOnceSoAMacCantOverruleAPhoneInUse() async throws {
-        let (model, reports) = try await presenceReports()
-        let push = model.push
+    @Test func noChatIsSaidOnceSoAMacCantOverruleAPhoneInUse() async throws {
+        let (push, _, requests) = try await makeModel(
+            settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com"}]}"#)
+        await push.refresh()
         push.isWindowFocused = true
-        await push.report(names: [:])
+        await push.report(visible: "forge", names: [:])
         push.isWindowFocused = false
-        await push.report(names: [:])
-        await push.report(names: [:])
-        let sent = reports.bodies.withLock { $0 }
+        await push.report(visible: "forge", names: [:])
+        await push.report(visible: "forge", names: [:])
+        let sent = presence(requests)
         #expect(sent.count == 2)
-        #expect(sent.last?.contains(#""focused":false"#) == true)
+        #expect(sent.last?.contains(#""chat""#) == false)
     }
 
     @Test func theQuickPanelCountsAsFocus() async throws {
-        let (model, _) = try await presenceReports()
+        let (_, model, _) = try await makeModel()
         #expect(!model.isFocused)
         model.setPanelOpen(true)
         #expect(model.isFocused)
@@ -143,16 +157,16 @@ struct PushSettingsTests {
         #expect(!model.isFocused)
     }
 
-    @Test func aNotificationLinkOpensItsChat() throws {
-        let (_, model) = try makeModel { _ in (200, "{}") }
+    @Test func aNotificationLinkOpensItsChat() async throws {
+        let (_, model, _) = try await makeModel()
         model.open(URL(string: "usualbot://chat/head-of-sales")!)
         #expect(model.requestedContactID == "head-of-sales")
         model.open(URL(string: "usualbot://chat/room%3Aabc-123")!)
         #expect(model.requestedContactID == "room:abc-123")
     }
 
-    @Test func anyOtherLinkDoesNothing() throws {
-        let (_, model) = try makeModel { _ in (200, "{}") }
+    @Test func anyOtherLinkDoesNothing() async throws {
+        let (_, model, _) = try await makeModel()
         model.open(URL(string: "usualbot://settings/x")!)
         model.open(URL(string: "https://chat/forge")!)
         model.open(URL(string: "usualbot://chat/a/b")!)

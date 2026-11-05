@@ -3,7 +3,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 
-swift format lint --strict --recursive App Packages scripts/fixtures
+swift format lint --strict --recursive App NotificationService Packages scripts/fixtures
 scripts/check-test-waits.sh
 scripts/check-shortcuts.sh
 swift test --package-path Packages/HermesKit

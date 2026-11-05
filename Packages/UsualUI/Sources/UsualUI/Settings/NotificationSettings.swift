@@ -10,7 +10,8 @@ import UserNotifications
 
 struct NotificationSettings: View {
     let push: PushSettings
-    let gatewayIsUnencrypted: Bool
+    /// The Bots this device can choose to hear from.
+    let bots: [Contact]
     let isSignedIn: Bool
 
     @AppStorage(AppPreferences.messageNotificationsKey) private var messages = true
@@ -45,7 +46,7 @@ struct NotificationSettings: View {
             Text("Alerts")
         } footer: {
             Text(
-                "Alerts appear when you’re not using Usual Bot. Hiding previews keeps what Bots say and ask for out of new notifications."
+                "Alerts appear unless you’re reading that chat. Hiding previews keeps what Bots say and ask for out of new notifications."
             )
         }
         // On the top section: a list loads lower ones only when they scroll into view, and the
@@ -56,8 +57,8 @@ struct NotificationSettings: View {
         }
         if isSignedIn {
             PushSection(
-                push: push, gatewayIsUnencrypted: gatewayIsUnencrypted, messages: messages, needsYou: needsYou,
-                previews: previews)
+                push: push, bots: bots,
+                choices: PushSettings.Choices(messages: messages, needsYou: needsYou, previews: previews, sound: sound))
         }
         Section("System permission") {
             LabeledContent("Notifications", value: permissionLabel)

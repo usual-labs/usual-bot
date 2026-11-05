@@ -146,27 +146,56 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 
 ## Notifications
 
-- **Push goes through the user's own ntfy or Pushover, sent by a gateway plugin.** Apple's push needs a
-  key held by whoever signs the app, so a signed public release could only offer it through a relay
-  we'd run, which breaks "Private" and "Small". The app stays a client: Hermes has no push of its own,
-  and its ntfy platform is a separate two-way chat that doesn't mirror Bot Chats.
-- **A Pushover link takes two taps.** Its `url` only shows inside the expanded message; ntfy's `click`
-  runs on the first tap. Pushover has no way to open another app directly.
-- **The plugin's settings are the one piece of gateway setup in the app,** because they only serve
-  this app. `Integrations/hermes-push` holds them in `~/.hermes/usual-push/`, shared by all profiles.
+- **Push goes through Usual's own relay, sealed for each device.** ntfy and Pushover arrived late or
+  under another app's icon, so the developer chose Apple's push under Usual Bot's own name. Apple's
+  key belongs to the app's signer, so a relay we run (`Services/push-relay`, a Cloudflare Worker and
+  D1 at `push.usual.dev`) holds it. The gateway plugin (`Integrations/hermes-push`) seals each
+  notification with a key that only that device and its gateway have, and the app's notification
+  extension opens it. The relay and Apple see a generic "New message" and which device it's for,
+  never the text, the Bot or the gateway. This replaces the earlier rule that a relay of ours would
+  break "Private".
+- **The gateway keeps the choices; the relay keeps only addresses.** Each device's choices, muted
+  chats and keys live in `~/.hermes/usual-push/settings.json`, shared by all profiles. The relay's D1
+  holds the APNs token, its environment and hashes of two secrets: the device's own, to update or
+  remove its row, and the send key that lets its gateway push to it. There are no accounts. A
+  gateway can push only to devices that handed it a send key.
+- **No Firebase.** Its messaging is free, but it needs Google's SDK in the app, which breaks
+  "no third-party packages", and it adds Google as another party that sees every push. A deployed
+  Worker reaches APNs over HTTP/2 itself. Local `wrangler dev` can't, so test on a deployed Worker.
+- **Every device hears every message, unless that chat is open on one of them.** An open chat means
+  a window in front with that chat selected, or the quick panel. It quiets every device, so reading
+  on the Mac keeps the iPhone still. Another chat's message still notifies, even inside the app; this
+  replaces the earlier rule that nothing notified while you were at the app. On the device itself,
+  `willPresent` also hides a push for the chat on screen, as the gateway may not know yet.
+- **The app reports the open chat every roster tick, and "none" once,** and the plugin forgets an
+  entry after 15 s, so a crash can't silence pushes. Repeating "none" would let a Mac in the
+  background overrule the iPhone in your hand.
+- **Muting is per device and per chat, and everything starts on.** Settings › Notifications lists
+  Bots; the plugin skips a device whose `muted` holds the chat. Messages, "needs you", previews and
+  sound are per device too, taken from that device's Alerts switches.
+- **Once the gateway pushes to a device, its own alerts cover only background tasks,** or each
+  message would arrive twice. A build without push keeps local alerts for everything.
+- **Push is off unless the build sets `USUAL_PUSH = YES`.** It needs a paid team with Push
+  Notifications on for the bundle ID, so CI, unsigned and forked builds go without, and say so in
+  Settings. Our key reaches only `labs.usual.UsualBot`; a fork runs its own relay.
+- **Builds ship only through TestFlight, on the Mac and the iPhone.** Xcode makes the distribution
+  profiles itself there, push included. The notarized GitHub download and its Homebrew cask would
+  have needed two hand-made Developer ID profiles to carry push, so the developer retired both after
+  0.3.0. The entitlements say "development" and exporting for
+  TestFlight makes them production, so the app reads which service it's on from its own profile
+  (`PushRelay.appleEnvironment`) instead of a build setting that could disagree.
+- **The relay's rate limits are a ceiling, not a guard.** Cloudflare's rate-limit binding counts per
+  location and per instance, so bursts get through: on 2026-11-05, 40 sign-ups in a row from one
+  address all passed, and 4 of 80 sent at once were turned away. They stop a sustained flood of
+  sign-ups (by address, IPv6 by /64) or of pushes to one device. A strict limit would need a
+  Durable Object or a Cloudflare WAF rule on the zone.
+- **Signing out takes the device off the gateway** before the sign-in is revoked, or it would keep
+  showing a gateway's messages after leaving it. A device whose relay address changed sends it
+  again on the next refresh.
 - **`post_llm_call` is the reply signal.** `platform` tells a person's chat (`tui`) from helpers
   (`subagent`) and rooms (`bot_room`). It doesn't name the room, and the member session's title
   doesn't either: Hermes retitles it after the first message. So the plugin takes the room from that
   member's `on_room_member_activity`, which can land just after the reply, hence a short wait.
-- **Nothing notifies while you're at the app, on any device.** A window in front or the quick panel
-  counts; a Mac with its screen asleep doesn't, or leaving it in front would silence your phone. The
-  developer asked for this over per-chat alerts, which were too noisy, so on iPhone another chat's
-  request waits until you see the list.
-- **The app reports focus every roster tick, and once when it's lost,** and the plugin forgets it
-  after 15 s, so a crash can't silence pushes. Repeating "not focused" would let a Mac in the
-  background overrule the iPhone in your hand.
-- **Mac alerts stay local, iPhone leaves them to push once it's set up.** Otherwise an iPhone hears
-  each one twice. A Mac can get both when the service's Mac app is installed too.
 - **"Needs you" for an iPhone-only user may be short-lived.** With no client attached the gateway
   doesn't wait on a prompt, so answering often means having the app, on any device, connected.
 - A catch-up alert is the rise in `unreadCount` on attach, so no new state is cached. A running turn
@@ -380,15 +409,13 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 - Agent defaults against a live gateway; they're left out of shakedowns because they change an
   agent's default model everywhere.
 - iPhone on a real device beyond sign-in: calls, dictation and GPT-Live audio routing.
-- Notifications on a real gateway. A reply, a question and a room reply ran through the plugin on a
-  live throwaway dashboard, with a fake ntfy service and the session token, not the app's own
-  sign-in. Send Test from the app has reached an iPhone through real Pushover and real ntfy; ntfy's
-  arrived late, though its server had the message at once, so the delay is between ntfy and the
-  phone. Tapping an ntfy alert opened its chat on iPhone. Not yet seen on real devices: pushes held
-  while focused, released when a Mac's screen sleeps, or held by the quick panel. Not yet run: a
-  real approval (Hermes didn't flag the commands tried), a room approval, a
-  `/bg` task (it may notify twice on the Mac), and a routine's message. iOS background check-ins
-  can't be forced in the Simulator, so `BackgroundLink` has only run through unit tests of
+- Notifications through the relay were run on the developer's gateway on 2026-11-05: sealed replies
+  reached a Mac and an iPhone and opened in the extension, an open chat on either kept both quiet,
+  and muting a Bot on one device left the other hearing it. Not yet run: a room approval, a `/bg`
+  task, a routine's message and Apple rotating a token. TestFlight builds of 0.3.0 on the same Mac
+  and iPhone moved themselves to Apple's production service and got their tests the same day. iOS
+  background
+  check-ins can't be forced in the Simulator, so `BackgroundLink` has only run through unit tests of
   `AppModel.checkIn`.
 - Apps against a real gateway: nothing in the Apps tab has run against one, by design, since it
   changes real agents. The routes, bodies and flow states are read from source and run against fakes

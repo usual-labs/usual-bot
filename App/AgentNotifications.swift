@@ -5,9 +5,10 @@ import os
 
 /// Tells you what agents did while you weren't looking, and opens the chat when you tap it.
 ///
-/// On iPhone the app disconnects in the background, so these fire only while it's still connected
-/// or when iOS lets it check in (`BackgroundLink`). Instant alerts there come from the gateway
-/// through ntfy or Pushover (`PushSettings`).
+/// Once the gateway pushes to this device (`PushSettings`), messages and requests come that way,
+/// sealed for this device and opened by the notification extension; these local alerts then cover
+/// only what push doesn't, such as background task results. Without push, an iPhone hears only while
+/// still connected or when iOS lets it check in (`BackgroundLink`).
 @MainActor
 final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
     static let shared = AgentNotifications()
@@ -27,6 +28,12 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
             UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [id])
         }
         model.alertsCleared = { contact in Task { await Self.clear(contact) } }
+        model.push.currentChoices = {
+            PushSettings.Choices(
+                messages: Self.isWanted(.message), needsYou: Self.isWanted(.needsYou),
+                previews: Self.isOn(AppPreferences.notificationPreviewsKey),
+                sound: Self.isOn(AppPreferences.notificationSoundKey))
+        }
     }
 
     func askForPermission() async {
@@ -41,18 +48,18 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
     }
 
     private func heard(_ alert: AgentAlert, from contact: Contact) {
-        guard Self.isWanted(alert.kind), model?.isFocused != true, !Self.pushCovers(alert, model) else { return }
+        // Another chat speaks up even while you're in the app; the one on screen never raises an alert.
+        guard Self.isWanted(alert.kind), !Self.pushCovers(alert, model) else { return }
         Task { await Self.post(alert, from: contact) }
     }
 
-    /// An iPhone would hear it twice: ntfy or Pushover is installed right beside this app. A Mac
-    /// usually has neither, and it's this app that's there all day.
+    /// The gateway pushes messages and requests to this device, so an alert here would say it twice.
     private static func pushCovers(_ alert: AgentAlert, _ model: AppModel?) -> Bool {
-        #if os(iOS)
-            alert.kind != .taskFinished && model?.push.isActive == true
-        #else
-            false
-        #endif
+        alert.kind != .taskFinished && model?.push.isActive == true
+    }
+
+    private static func isOn(_ key: String) -> Bool {
+        UserDefaults.standard.object(forKey: key) as? Bool != false
     }
 
     private static func isWanted(_ kind: AgentAlert.Kind) -> Bool {
@@ -126,11 +133,17 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
 
     // MARK: - UNUserNotificationCenterDelegate
 
-    /// `heard` already decided this one should show, so show it even with the app in front.
+    /// `heard` already decided a local alert should show. A push shows too, unless it's about the
+    /// chat you're reading: the gateway may not have heard yet that it's open.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter, willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+        let content = notification.request.content
+        guard content.userInfo["kind"] != nil, let chat = content.userInfo[Self.contactKey] as? String else {
+            return [.banner, .list, .sound]
+        }
+        let reading = await MainActor.run { model?.isFocused == true && model?.visibleContactID == chat }
+        return reading ? [] : [.banner, .list, .sound]
     }
 
     nonisolated func userNotificationCenter(

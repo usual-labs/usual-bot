@@ -12,11 +12,10 @@ Verified 2026-10-23 in the iPhone 17 Pro simulator against the user's gateway: s
 
 Debug builds started with `USUALBOT_DEMO=1` use `AppModel.demo()` (made-up agents, a room, an approval and routines; never connects) instead of signing in; README screenshots come from it. Launch arguments such as `-selectedContact forge` pick the open chat without overwriting stored settings.
 
-Released Mac builds (`.github/workflows/release.yml`) use bundle ID `labs.usual.UsualBot`
-(`BUNDLE_ID_PREFIX=labs.usual`), `MARKETING_VERSION` from the tag without any pre-release suffix and
-the run number as `CURRENT_PROJECT_VERSION`, are signed with Developer ID plus the hardened runtime
-(no provisioning profile; the entitlements need none), and are notarized and stapled, as is the
-`.dmg`. Debug/dev builds keep `dev.usualbot.local` (or the `Local.xcconfig` prefix), so they don't
+Shipped builds (`scripts/testflight.sh`, Mac and iPhone) use bundle ID `labs.usual.UsualBot`
+(`BUNDLE_ID_PREFIX=labs.usual`), `MARKETING_VERSION` from `Config/Shared.xcconfig` and the upload
+time as `CURRENT_PROJECT_VERSION`, with push on, and Xcode signs them for the App Store. Debug/dev
+builds keep `dev.usualbot.local` (or the `Local.xcconfig` prefix), so they don't
 share settings or the Keychain item's trust with the released app.
 
 Device preferences live in UsualUI’s Settings view. The native shell supplies the Mac-only launch
@@ -41,6 +40,6 @@ Simulator drew every icon blank after a reinstall).
 
 Independence copy is defined in `ConnectView.swift` for sign-in and in
 `INFOPLIST_KEY_NSHumanReadableCopyright` (`Config/Shared.xcconfig`) for the Mac About box.
-The README and release-notes generation in `.github/workflows/release.yml` also include it.
+The README and TestFlight's Beta App Description (`docs/guides/releasing.md`) also include it.
 These locations were checked in source on 26 October 2026; no runtime check was performed.
 

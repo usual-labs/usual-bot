@@ -5,28 +5,21 @@ get the app, get your Hermes gateway ready, and sign in.
 
 ## 1. Get the app
 
-### Install a release (Mac)
+### Install the beta (Mac and iPhone)
 
-With [Homebrew](https://brew.sh), one command installs the latest release:
+Usual Bot is in beta on TestFlight. A public link to join is coming soon; until then, build it
+yourself as below. Once it's out:
 
-```sh
-brew install --cask usual-labs/tap/usual-bot
-```
+1. Install Apple's [TestFlight](https://apps.apple.com/app/testflight/id899247664) app on your Mac
+   or iPhone.
+2. Open the Usual Bot beta link on that device and choose **Accept**, then **Install**.
+3. Open Usual Bot. TestFlight updates it when a new build is out; your sign-in and settings stay.
 
-`brew upgrade --cask usual-bot` updates it later. Without Homebrew, use the signed and notarized
-disk image that each release has (from version 0.2.0 on):
+Each build lasts 90 days, and a newer one arrives before then. If you installed Usual Bot with
+Homebrew or from a GitHub download, those stopped at 0.3.0. Install the beta over it; you may have
+to sign in to your gateway again.
 
-1. Download `UsualBot-<version>.dmg` from the
-   [latest release](https://github.com/usual-labs/usual-bot/releases/latest).
-2. Open it and drag **Usual Bot** onto **Applications**.
-3. Open Usual Bot from Applications or Spotlight.
-
-To check the download, compare `shasum -a 256 UsualBot-<version>.dmg` with the `.sha256` file
-next to it on the release page. To check that it was built by this project's release workflow from
-the tagged source, run `gh attestation verify UsualBot-<version>.dmg -R usual-labs/usual-bot`. To update, download the new version and replace the app; your
-sign-in and settings stay.
-
-For the iPhone, or to change the code, build it yourself as below.
+To change the code, build it yourself as below.
 
 ### Build it yourself
 

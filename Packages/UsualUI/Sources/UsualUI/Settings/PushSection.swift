@@ -1,17 +1,12 @@
 import HermesKit
 import SwiftUI
 
-/// Sets up the gateway to reach you through ntfy or Pushover.
+/// Push on this device: whether the gateway can reach it, and which Bots it hears from.
 struct PushSection: View {
-    @Bindable var push: PushSettings
-    let gatewayIsUnencrypted: Bool
-    let messages: Bool
-    let needsYou: Bool
-    let previews: Bool
+    let push: PushSettings
+    let bots: [Contact]
+    let choices: PushSettings.Choices
 
-    @State private var ntfyToken = ""
-    @State private var token = ""
-    @State private var userKey = ""
     @State private var isBusy = false
     @State private var result: String?
     @State private var problem: String?
@@ -31,93 +26,56 @@ struct PushSection: View {
                 Text(reason).foregroundStyle(Theme.danger)
                 Button("Try Again") { Task { await push.refresh() } }
             case .ready:
-                form
+                ready
             }
         } header: {
             Text("Push")
         } footer: {
             Text(
-                "Reach you anywhere, even when Usual Bot is closed. Your gateway sends these through the service you pick, using that service’s own app, so anything in a preview passes through it."
+                "Reach this device even when Usual Bot is closed. Your gateway seals each notification for this device alone; Usual’s relay and Apple only pass it on."
             )
         }
-        .onChange(of: messages) { saveChoices() }
-        .onChange(of: needsYou) { saveChoices() }
-        .onChange(of: previews) { saveChoices() }
+        .onChange(of: choices) { _, choices in
+            guard push.isActive else { return }
+            run { try await push.save(choices) }
+        }
+        if push.isActive, !bots.isEmpty {
+            Section {
+                ForEach(bots) { bot in
+                    Toggle(bot.name, isOn: heard(bot))
+                }
+            } header: {
+                Text("Bots on this device")
+            } footer: {
+                Text("Turning a Bot off here keeps it quiet on this device only.")
+            }
+        }
     }
 
-    @ViewBuilder private var form: some View {
-        Picker("Service", selection: $push.service) {
-            Text("Off").tag(PushSettings.Service.off)
-            Text("ntfy").tag(PushSettings.Service.ntfy)
-            Text("Pushover").tag(PushSettings.Service.pushover)
-        }
-        switch push.service {
-        case .off:
-            EmptyView()
-        case .ntfy:
-            PushField("Server", text: $push.server, prompt: "https://ntfy.sh")
-            PushField("Topic", text: $push.topic, prompt: "Required")
-            PushField("Access token", text: $ntfyToken, prompt: push.hasNtfyToken ? "Saved" : "Optional", secret: true)
-        case .pushover:
-            PushField("User key", text: $userKey, prompt: push.hasUserKey ? "Saved" : "Required", secret: true)
-            PushField("Application token", text: $token, prompt: push.hasToken ? "Saved" : "Required", secret: true)
-        }
-        if gatewayIsUnencrypted, push.service != .off {
-            Text("Your gateway connection isn’t encrypted, so these could be read on the way there.")
-                .foregroundStyle(Theme.needsYouInk)
-        }
-        #if os(iOS)
-            // Rows of their own: two buttons in one row of a list both run on a tap.
-            saveButton
-            if push.service != .off { testButton }
-        #else
-            HStack {
-                saveButton
-                if push.service != .off { testButton }
+    @ViewBuilder private var ready: some View {
+        if !push.isAvailable {
+            Text("This copy of Usual Bot can’t receive push notifications. The TestFlight version can.")
+                .foregroundStyle(Theme.secondaryInk)
+        } else if !push.isConnected {
+            Text("Adding this device to your gateway…").foregroundStyle(Theme.secondaryInk)
+        } else {
+            LabeledContent("This device", value: String(localized: "Gets notifications"))
+            Button("Send Test") {
+                run {
+                    try await push.sendTest()
+                    result = String(localized: "Sent. It should arrive in a moment.")
+                }
             }
-        #endif
+            .disabled(isBusy)
+        }
         if let result { Text(result).foregroundStyle(Theme.secondaryInk) }
         if let problem { Text(problem).foregroundStyle(Theme.danger) }
     }
 
-    private var saveButton: some View {
-        Button("Save") { run { try await save() } }.disabled(isBusy)
-    }
-
-    private var testButton: some View {
-        Button("Send Test") {
-            run {
-                try await push.saveAndSendTest(changes)
-                clearSecrets()
-                result = String(localized: "Sent through \(serviceName). It should arrive in a moment.")
-            }
-        }
-        .disabled(isBusy)
-    }
-
-    private var serviceName: String { push.service == .pushover ? "Pushover" : "ntfy" }
-
-    private var changes: PushSettings.Changes {
-        PushSettings.Changes(
-            ntfyToken: ntfyToken.isEmpty ? nil : ntfyToken, token: token.isEmpty ? nil : token,
-            userKey: userKey.isEmpty ? nil : userKey, messages: messages, needsYou: needsYou, previews: previews)
-    }
-
-    private func clearSecrets() {
-        ntfyToken = ""
-        token = ""
-        userKey = ""
-    }
-
-    private func save() async throws {
-        try await push.save(changes)
-        clearSecrets()
-        result = String(localized: "Saved on your gateway.")
-    }
-
-    private func saveChoices() {
-        guard push.phase == .ready else { return }
-        run { try await push.save(changes) }
+    private func heard(_ bot: Contact) -> Binding<Bool> {
+        Binding(
+            get: { !push.muted.contains(bot.id) },
+            set: { on in run { try await push.setMuted(bot.id, !on) } })
     }
 
     private func run(_ action: @escaping () async throws -> Void) {
@@ -131,44 +89,6 @@ struct PushSection: View {
             } catch {
                 problem = AppModel.describe(error)
             }
-        }
-    }
-}
-
-/// A labelled field: on iPhone a bare field's name goes once something is typed in it.
-private struct PushField: View {
-    let label: LocalizedStringKey
-    @Binding var text: String
-    let prompt: LocalizedStringKey
-    var secret = false
-
-    init(_ label: LocalizedStringKey, text: Binding<String>, prompt: LocalizedStringKey, secret: Bool = false) {
-        self.label = label
-        _text = text
-        self.prompt = prompt
-        self.secret = secret
-    }
-
-    var body: some View {
-        #if os(iOS)
-            LabeledContent(label) {
-                field.multilineTextAlignment(.trailing)
-            }
-        #else
-            field
-        #endif
-    }
-
-    @ViewBuilder private var field: some View {
-        if secret {
-            SecureField(label, text: $text, prompt: Text(prompt))
-        } else {
-            TextField(label, text: $text, prompt: Text(prompt))
-                .autocorrectionDisabled()
-                #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.URL)
-                #endif
         }
     }
 }

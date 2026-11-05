@@ -1,31 +1,21 @@
-"""Push settings and whether you're at Usual Bot. Shared by every profile on this gateway."""
+"""The devices Usual Bot pushes to, and which chat each has open. Shared by every profile on this gateway."""
 
 from __future__ import annotations
 
 import json
-import os
 import threading
 import time
 from pathlib import Path
 
 _lock = threading.Lock()
 _rooms_seen: dict[str, str] = {}
-# Usual Bot repeats this while you're at it, so a crashed app can't silence pushes for long.
+# Usual Bot repeats this while a chat is open, so a crashed app can't silence pushes for long.
 PRESENCE_LIFETIME = 15
 
-DEFAULTS = {
-    "service": "off",  # "off", "ntfy" or "pushover"
-    "server": "https://ntfy.sh",
-    "topic": "",
-    "ntfy_token": "",
-    "token": "",  # The Pushover application token
-    "user_key": "",  # Pushover only
-    "message": True,
-    "needs_you": True,
-    "previews": True,
-    "names": {},  # Chat ID to the name Usual Bot shows for it
-}
-SECRETS = ("ntfy_token", "token", "user_key")
+# A device's choices. Everything is on until its owner turns it off on that device.
+CHOICES = {"message": True, "needs_you": True, "previews": True, "sound": True}
+# Kept here, never shown back: the relay's key to push to the device, and the key that seals for it.
+SECRETS = ("send_key", "seal_key")
 
 
 def _root() -> Path:
@@ -51,20 +41,38 @@ def _write(name: str, value: dict) -> None:
 
 
 def settings() -> dict:
-    return DEFAULTS | _read("settings.json")
+    return {"devices": {}, "names": {}} | _read("settings.json")
 
 
-def update(changes: dict) -> dict:
+def devices() -> dict[str, dict]:
+    return settings()["devices"]
+
+
+def put_device(device_id: str, changes: dict) -> dict:
+    """Adds a device or changes it. Fields left out stay as they were."""
     with _lock:
-        merged = settings() | changes
-        _write("settings.json", merged)
-        return merged
+        values = settings()
+        device = CHOICES | {"muted": []} | values["devices"].get(device_id, {}) | changes
+        values["devices"][device_id] = device
+        _write("settings.json", values)
+        return device
 
 
-def public(values: dict) -> dict:
-    """The settings without their secrets, for the app to show."""
-    shown = {key: value for key, value in values.items() if key not in SECRETS and key != "names"}
-    return shown | {f"has_{key}": bool(values.get(key)) for key in SECRETS}
+def remove_device(device_id: str) -> None:
+    with _lock:
+        values = settings()
+        if values["devices"].pop(device_id, None) is not None:
+            _write("settings.json", values)
+
+
+def set_names(names: dict[str, str]) -> None:
+    with _lock:
+        _write("settings.json", settings() | {"names": names})
+
+
+def public(device_id: str, device: dict) -> dict:
+    """A device without its keys, for the app to show."""
+    return {"id": device_id} | {key: value for key, value in device.items() if key not in SECRETS}
 
 
 def note_room(member: str, room: str) -> None:
@@ -80,11 +88,26 @@ def room_of(member: str) -> str | None:
     return _read("rooms.json").get(member)
 
 
-def set_focused(focused: bool) -> None:
+def _presence() -> dict[str, dict]:
+    # Only devices' entries: version 0.1 kept a single {"focused", "at"} here.
+    return {key: value for key, value in _read("presence.json").items() if isinstance(value, dict)}
+
+
+def set_open(device_id: str, chat: str | None) -> None:
+    """The chat a device has in front of you, or `None` once it has none."""
     with _lock:
-        _write("presence.json", {"focused": focused, "at": time.time()})
+        presence = _presence()
+        if chat is None:
+            presence.pop(device_id, None)
+        else:
+            presence[device_id] = {"chat": chat, "at": time.time()}
+        _write("presence.json", presence)
 
 
-def is_focused() -> bool:
-    presence = _read("presence.json")
-    return presence.get("focused") is True and time.time() - presence.get("at", 0) < PRESENCE_LIFETIME
+def is_open(chat: str) -> bool:
+    """Whether you're reading this chat on any device: then none of them hears about it."""
+    now = time.time()
+    return any(
+        entry.get("chat") == chat and now - entry.get("at", 0) < PRESENCE_LIFETIME
+        for entry in _presence().values()
+    )

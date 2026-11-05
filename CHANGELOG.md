@@ -35,10 +35,12 @@ All notable changes to Usual Bot are listed here. The format follows
 - **Try again in rooms.** A room reply that stopped partway now offers Try Again, and the room shows
   Needs you until you use it.
 - **Notifications.** Hear when an agent replies, messages you or needs you, in chats and rooms, not
-  just when a background task ends. They hold off while you're using the app. Tapping one opens that
-  chat, and it clears once you've read it.
-- **Push through ntfy or Pushover.** Install the `usual-push` plugin on your gateway, pick a service
-  in Settings, and you're reached even with Usual Bot closed. Usual Bot runs no server of its own.
+  just when a background task ends. A chat you're reading stays quiet; any other alerts, even while
+  you're in the app. Tapping one opens that chat, and it clears once you've read it.
+- **Push on Mac and iPhone.** With the `usual-push` plugin on your gateway, every device you sign in
+  on hears from your Bots instantly, even with Usual Bot closed, under Usual Bot's own name. Each
+  notification is sealed for that device, so Usual's relay and Apple can't read it. Reading a chat
+  on one device quiets it on the others, and you can turn any Bot off per device.
 - **Unread counts on the Mac** now also count replies that arrive while the window is behind another
   app.
 - **Settings.** Choose appearance, chat text size, notification sounds and previews, and voice
@@ -89,6 +91,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Changed
 
+- **Usual Bot ships through TestFlight, on the Mac and the iPhone,** with push. The Homebrew cask and
+  the GitHub download stop at 0.3.0; the README links the TestFlight beta once it's open to all.
 - **The system's own controls and Liquid Glass, on Mac and iPhone.** The chat's top bar, its
   buttons, the message box, the jump-to-latest button and the call bar float in glass; the chat
   list, profile pages, Settings and sign-in are the system's lists and forms; cards and sheets use

@@ -24,6 +24,8 @@ Problems in this repository's code, for example:
 - the loopback sign-in listener and its `state` and PKCE checks;
 - sending a sign-in or token over plain `http`, or to the wrong host;
 - the offline cache, notifications or logs exposing conversations;
+- the push relay (`Services/push-relay`) or the gateway plugin (`Integrations/hermes-push`)
+  letting anyone read a notification, or push to a device that didn't give them its send key;
 - a secret or sudo password reaching anything but the gateway that asked for it;
 - an approval being granted without the person choosing it;
 - the GPT-Live web view reaching more than it should.
@@ -45,8 +47,10 @@ releases don't get separate patches.
 - The app refuses plain `http` to public addresses; it's allowed only for private and Tailscale
   addresses.
 - The cached chats are written with file protection, in the app's own container.
+- Push notifications are sealed on your gateway with a key only that device and the gateway hold;
+  Usual's relay and Apple carry them without being able to read them. The relay stores only each
+  device's push token and hashes of its two secrets.
 - Debug-only switches (such as recording socket frames) are compiled out of Release builds.
-- Releases are built by a GitHub workflow, signed with a Developer ID, notarized by Apple, and
-  immutable once published. Each disk image has a build-provenance attestation:
-  `gh attestation verify UsualBot-<version>.dmg -R usual-labs/usual-bot` shows the workflow and
-  commit it came from.
+- Builds ship through Apple's TestFlight, signed by the team and checked by Apple. Each version is
+  tagged in this repository. The older Homebrew and GitHub downloads (up to 0.3.0) were signed with
+  a Developer ID and notarized.

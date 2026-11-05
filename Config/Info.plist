@@ -32,6 +32,15 @@
 			</array>
 		</dict>
 	</array>
+	<!-- Its only encryption is Apple's own (HTTPS, the Keychain, CryptoKit), so App Store Connect
+	     needn't ask about export compliance on each upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<!-- Usual's push relay, set by the build (Shared.xcconfig). -->
+	<key>UsualPushRelayURL</key>
+	<string>$(USUAL_PUSH_RELAY_URL)</string>
+	<key>UsualPushKeychainGroup</key>
+	<string>$(USUAL_PUSH_KEYCHAIN_GROUP)</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Dictate messages to your Bots.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

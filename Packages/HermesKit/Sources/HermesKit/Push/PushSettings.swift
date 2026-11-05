@@ -2,16 +2,12 @@ import Foundation
 import Observation
 import os
 
-/// How the gateway reaches you when this app can't: ntfy or Pushover, through the `usual-push`
-/// plugin (`Integrations/hermes-push`). Apple's own push would need a key only the app's signer
-/// has, so each person brings their own service. The settings live on the gateway, which sends.
+/// How the gateway reaches this device when the app can't: the `usual-push` plugin
+/// (`Integrations/hermes-push`) seals each notification for this device and hands it to Usual's
+/// push relay (`PushRelay`). The gateway keeps this device's choices; the relay only its address.
 @MainActor
 @Observable
 public final class PushSettings {
-    public enum Service: String, CaseIterable, Sendable {
-        case off, ntfy, pushover
-    }
-
     public enum Phase: Equatable, Sendable {
         case loading
         case ready
@@ -20,173 +16,238 @@ public final class PushSettings {
         case failed(String)
     }
 
+    /// What this device wants to hear about, from its notification settings.
+    public struct Choices: Equatable, Sendable {
+        public var messages = true
+        public var needsYou = true
+        public var previews = true
+        public var sound = true
+
+        public init(messages: Bool = true, needsYou: Bool = true, previews: Bool = true, sound: Bool = true) {
+            self.messages = messages
+            self.needsYou = needsYou
+            self.previews = previews
+            self.sound = sound
+        }
+    }
+
     public private(set) var phase: Phase = .loading
-    public var service: Service = .off
-    public var server = "https://ntfy.sh"
-    public var topic = ""
-    /// Whether the gateway holds these. None of them ever comes back to the app.
-    public private(set) var hasNtfyToken = false
-    public private(set) var hasToken = false
-    public private(set) var hasUserKey = false
-    /// A window has you, or the quick panel is open: agents' news can wait, here and on the gateway.
+    /// The gateway has this device and pushes to it.
+    public private(set) var isConnected = false
+    /// Chats and rooms this device doesn't hear about. Everything else notifies.
+    public private(set) var muted: Set<Contact.ID> = []
+    /// Read when the gateway first meets this device. The app sets it.
+    @ObservationIgnored public var currentChoices: @MainActor () -> Choices = { Choices() }
+    /// A window has you, or the quick panel is open.
     public var isFocused: Bool { isWindowFocused || isPanelOpen }
     var isWindowFocused = false
     var isPanelOpen = false
 
-    /// What the gateway should send, once a service is set up.
-    public var isActive: Bool {
-        guard phase == .ready else { return false }
-        return switch service {
-        case .off: false
-        case .ntfy: !topic.isEmpty
-        case .pushover: hasToken && hasUserKey
-        }
-    }
+    /// The gateway pushes here, so this device's own alerts would say it twice.
+    public var isActive: Bool { phase == .ready && isConnected }
+    /// This build can push: it has a relay, and Apple gave it a token.
+    public var isAvailable: Bool { relay()?.registration != nil }
 
     private let auth: @MainActor () -> AuthSession?
+    private let relay: @MainActor () -> PushRelay?
     private var lastNames: [String: String]?
-    private var reportedFocus: Bool?
+    /// The chat last said to be in front; `.some(nil)` once "none" was said.
+    private var reportedChat: Contact.ID??
     private var isReporting = false
-    /// Saves and tests stay here, as if the gateway took them.
+    private var isConnecting = false
+    /// Changes stay here, as if the gateway took them.
     private var isDemo = false
 
     private static let path = "/api/plugins/usual-push"
     private static let log = Logger(subsystem: "UsualBot", category: "push")
 
-    init(auth: @escaping @MainActor () -> AuthSession?) {
+    init(auth: @escaping @MainActor () -> AuthSession?, relay: @escaping @MainActor () -> PushRelay?) {
         self.auth = auth
+        self.relay = relay
     }
 
-    private struct Wire: Codable, Sendable {
-        var service: String
-        var server: String?
-        var topic: String?
+    private struct Device: Codable, Sendable {
+        var id: String?
+        var relay: String?
+        var name: String?
+        var platform: String?
+        var sendKey: String?
+        var sealKey: String?
         var message: Bool?
         var needsYou: Bool?
         var previews: Bool?
-        var ntfyToken: String?
-        var token: String?
-        var userKey: String?
-        var hasNtfyToken: Bool?
-        var hasToken: Bool?
-        var hasUserKey: Bool?
+        var sound: Bool?
+        var muted: [String]?
+    }
+
+    private struct Known: Decodable, Sendable {
+        let devices: [Device]
     }
 
     private struct Done: Decodable, Sendable {}
 
     public func refresh() async {
+        if isDemo { return }
         guard let auth = auth() else { return }
         do {
-            adopt(try await auth.json(Wire.self, path: "\(Self.path)/settings"))
+            let known = try await auth.json(Known.self, path: "\(Self.path)/settings")
+            let mine = relay()?.registration.flatMap { registration in
+                known.devices.first { $0.id == registration.id }
+            }
+            // A relay at a new address is told to the gateway again, choices and all.
+            isConnected = mine != nil && mine?.relay == relay()?.address?.absoluteString
+            muted = Set(mine?.muted ?? [])
+            phase = .ready
         } catch GatewayError.http(status: 404, _) {
             phase = .notInstalled
         } catch {
             phase = .failed(AppModel.describe(error))
         }
+        await connectIfNeeded()
     }
 
-    /// What's in Settings and not on the gateway yet. Secrets left `nil` stay as they are.
-    public struct Changes: Sendable {
-        public var ntfyToken: String?
-        public var token: String?
-        public var userKey: String?
-        public var messages: Bool
-        public var needsYou: Bool
-        public var previews: Bool
-
-        public init(
-            ntfyToken: String? = nil, token: String? = nil, userKey: String? = nil, messages: Bool, needsYou: Bool,
-            previews: Bool
-        ) {
-            self.ntfyToken = ntfyToken
-            self.token = token
-            self.userKey = userKey
-            self.messages = messages
-            self.needsYou = needsYou
-            self.previews = previews
+    /// Gives the gateway this device: where to reach it, the keys to do so, and its choices.
+    func connectIfNeeded() async {
+        guard phase == .ready, !isConnected, !isConnecting, !isDemo,
+            let relay = relay(), let address = relay.address, let registration = relay.registration,
+            let auth = auth()
+        else { return }
+        isConnecting = true
+        defer { isConnecting = false }
+        let choices = currentChoices()
+        var device = Self.device(for: choices)
+        device.relay = address.absoluteString
+        device.name = Self.deviceName
+        device.platform = Self.platform
+        device.sendKey = registration.sendKey
+        device.sealKey = registration.sealKey.base64EncodedString()
+        do {
+            let saved = try await auth.json(
+                Device.self, path: "\(Self.path)/devices/\(registration.id)", method: "PUT", body: device)
+            isConnected = true
+            muted = Set(saved.muted ?? [])
+        } catch {
+            Self.log.error("Couldn't add this device to the gateway: \(AppModel.describe(error), privacy: .public)")
         }
     }
 
-    public func save(_ changes: Changes) async throws {
-        if isDemo { return saveDemo(changes) }
-        guard let auth = auth() else { throw GatewayError.disconnected }
-        let wire = Wire(
-            service: service.rawValue, server: server, topic: topic, message: changes.messages,
-            needsYou: changes.needsYou, previews: changes.previews, ntfyToken: changes.ntfyToken,
-            token: changes.token, userKey: changes.userKey)
-        adopt(try await auth.json(Wire.self, path: "\(Self.path)/settings", method: "PUT", body: wire))
+    public func save(_ choices: Choices) async throws {
+        try await put(Self.device(for: choices))
     }
 
-    /// Saves, then sends a test notification. The gateway sends through what it has saved, so a
-    /// test of unsaved changes would go through the old service and still say it was sent.
-    public func saveAndSendTest(_ changes: Changes) async throws {
-        try await save(changes)
+    /// Whether this device hears about a chat or room.
+    public func setMuted(_ chat: Contact.ID, _ isMuted: Bool) async throws {
+        var next = muted
+        if isMuted { next.insert(chat) } else { next.remove(chat) }
+        var device = Device()
+        device.muted = next.sorted()
+        try await put(device)
+        muted = next
+    }
+
+    /// Asks the gateway to push a test to this device, the whole way: gateway, relay, Apple.
+    public func sendTest() async throws {
         if isDemo { return }
         guard let auth = auth() else { throw GatewayError.disconnected }
-        _ = try await auth.json(Done.self, path: "\(Self.path)/test", method: "POST")
+        guard let registration = relay()?.registration else { throw PushError.notRegistered }
+        _ = try await auth.json(
+            Done.self, path: "\(Self.path)/test", method: "POST", body: ["device": registration.id])
     }
 
-    private func saveDemo(_ changes: Changes) {
-        hasNtfyToken = hasNtfyToken || changes.ntfyToken != nil
-        hasToken = hasToken || changes.token != nil
-        hasUserKey = hasUserKey || changes.userKey != nil
+    public enum PushError: LocalizedError {
+        case notRegistered
+
+        public var errorDescription: String? {
+            String(localized: "This device hasn’t signed up for notifications yet.")
+        }
     }
 
-    private func adopt(_ wire: Wire) {
-        service = Service(rawValue: wire.service) ?? .off
-        server = wire.server ?? server
-        topic = wire.topic ?? ""
-        hasNtfyToken = wire.hasNtfyToken ?? false
-        hasToken = wire.hasToken ?? false
-        hasUserKey = wire.hasUserKey ?? false
-        phase = .ready
+    private func put(_ device: Device) async throws {
+        if isDemo { return }
+        guard let auth = auth() else { throw GatewayError.disconnected }
+        guard let registration = relay()?.registration else { throw PushError.notRegistered }
+        let saved = try await auth.json(
+            Device.self, path: "\(Self.path)/devices/\(registration.id)", method: "PUT", body: device)
+        muted = Set(saved.muted ?? [])
+    }
+
+    private static func device(for choices: Choices) -> Device {
+        var device = Device()
+        device.message = choices.messages
+        device.needsYou = choices.needsYou
+        device.previews = choices.previews
+        device.sound = choices.sound
+        return device
     }
 
     private struct Presence: Encodable, Sendable {
-        let focused: Bool
+        let device: String
+        let chat: String?
         let names: [String: String]?
     }
 
-    /// Tells the plugin whether you're at the app, so it holds its pushes, and the names to put in
-    /// them. It forgets after a few seconds, so this repeats while you are. Out of focus it's said
-    /// once: a Mac left running would otherwise keep overruling the iPhone in your hand.
-    func report(names: [String: String]) async {
-        let focused = isFocused
+    /// Tells the gateway which chat you're reading here, so no device hears about it. It forgets
+    /// after a few seconds, so this repeats while one is open. "None" is said once: a Mac left
+    /// running would otherwise keep overruling the iPhone in your hand.
+    func report(visible: Contact.ID?, names: [String: String]) async {
+        await connectIfNeeded()
+        let chat = isFocused ? visible : nil
         let changed = names != lastNames
-        guard isActive, !isReporting, focused || focused != reportedFocus || changed, let auth = auth() else { return }
+        guard isActive, !isReporting, chat != nil || reportedChat != .some(chat) || changed,
+            let registration = relay()?.registration, let auth = auth()
+        else { return }
         isReporting = true
         do {
             _ = try await auth.json(
                 Done.self, path: "\(Self.path)/presence", method: "PUT",
-                body: Presence(focused: focused, names: changed ? names : nil))
+                body: Presence(device: registration.id, chat: chat, names: changed ? names : nil))
             lastNames = names
-            reportedFocus = focused
+            reportedChat = .some(chat)
         } catch {
-            Self.log.error("Couldn't report focus: \(AppModel.describe(error), privacy: .public)")
+            Self.log.error("Couldn't report the open chat: \(AppModel.describe(error), privacy: .public)")
         }
         isReporting = false
-        // Leaving the app now can't wait for a next tick: iOS may not give it one.
-        if focused != isFocused { await report(names: names) }
+    }
+
+    /// Takes this device off the gateway, or it would keep hearing about a gateway it signed out of.
+    func forget(on auth: AuthSession) async {
+        guard !isDemo, let registration = relay()?.registration else { return }
+        do {
+            _ = try await auth.json(Done.self, path: "\(Self.path)/devices/\(registration.id)", method: "DELETE")
+        } catch {
+            Self.log.error("Couldn't take this device off the gateway: \(AppModel.describe(error), privacy: .public)")
+        }
     }
 
     func clear() {
         phase = .loading
-        service = .off
-        topic = ""
-        server = "https://ntfy.sh"
-        hasNtfyToken = false
-        hasToken = false
-        hasUserKey = false
+        isConnected = false
+        muted = []
         lastNames = nil
-        reportedFocus = nil
+        reportedChat = nil
+    }
+
+    private static var platform: String {
+        #if os(macOS)
+            "mac"
+        #else
+            "iphone"
+        #endif
+    }
+
+    private static var deviceName: String {
+        #if os(macOS)
+            Host.current().localizedName ?? "Mac"
+        #else
+            "iPhone"
+        #endif
     }
 
     #if DEBUG
-        /// The demo: as if ntfy were set up, with nowhere to send to.
+        /// The demo: as if the gateway pushed here, with nowhere to send to.
         func showDemo() {
-            service = .ntfy
-            topic = "my-bots"
             phase = .ready
+            isConnected = true
             isDemo = true
         }
     #endif

@@ -33,7 +33,12 @@ INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad[sdk=iphone*] = UIInterfaceOr
 // App/Assets.xcassets: the Hermes doodle on white, rounded by the system on both platforms.
 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
 CODE_SIGN_STYLE = Automatic
-CODE_SIGN_ENTITLEMENTS[sdk=macosx*] = Config/UsualBot-macOS.entitlements
+CODE_SIGN_ENTITLEMENTS[sdk=macosx*] = $(USUAL_MAC_ENTITLEMENTS_$(USUAL_PUSH))
+CODE_SIGN_ENTITLEMENTS[sdk=iphone*] = $(USUAL_IOS_ENTITLEMENTS_$(USUAL_PUSH))
+USUAL_MAC_ENTITLEMENTS_NO = Config/UsualBot-macOS.entitlements
+USUAL_MAC_ENTITLEMENTS_YES = Config/UsualBot-macOS-Push.entitlements
+USUAL_IOS_ENTITLEMENTS_NO =
+USUAL_IOS_ENTITLEMENTS_YES = Config/UsualBot-iOS-Push.entitlements
 ENABLE_HARDENED_RUNTIME[sdk=macosx*] = YES
 LD_RUNPATH_SEARCH_PATHS[sdk=macosx*] = $(inherited) @executable_path/../Frameworks
 LD_RUNPATH_SEARCH_PATHS[sdk=iphone*] = $(inherited) @executable_path/Frameworks
@@ -43,5 +48,17 @@ ENABLE_PREVIEWS = YES
 ENABLE_USER_SCRIPT_SANDBOXING = YES
 DEAD_CODE_STRIPPING = YES
 SWIFT_EMIT_LOC_STRINGS = YES
+
+// Push notifications through Usual's relay (Services/push-relay). Off by default: they need a paid
+// team with Push Notifications on for the bundle ID, so CI, unsigned and forked builds go without.
+// Set USUAL_PUSH = YES in Local.xcconfig or on the command line. A fork with its own relay sets
+// USUAL_PUSH_RELAY_URL_YES too. The entitlements say "development": exporting for TestFlight or the
+// App Store makes it production, and the app reads which from its profile (PushRelay).
+USUAL_PUSH = NO
+USUAL_PUSH_RELAY_URL = $(USUAL_PUSH_RELAY_URL_$(USUAL_PUSH))
+USUAL_PUSH_RELAY_URL_NO =
+USUAL_PUSH_RELAY_URL_YES = https:/$()/push.usual.dev
+// Shared with the notification extension, which opens what the gateway sealed.
+USUAL_PUSH_KEYCHAIN_GROUP = $(DEVELOPMENT_TEAM).$(BUNDLE_ID_PREFIX).UsualBot.push
 
 #include? "Local.xcconfig"

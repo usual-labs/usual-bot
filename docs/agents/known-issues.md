@@ -98,3 +98,20 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   open only the throwaway agent. A debug build keeps its settings under its own bundle ID, apart from
   the installed app's. `CFFIXED_USER_HOME` moves its cache but not `UserDefaults`, so afterwards
   delete `gatewayAddress` from that domain, and the Keychain item for the test address.
+
+## Push notifications
+
+- **A Mac notification extension needs `NSExtension` › `Subsystems` = `NSExtensionService_Subsystem`.**
+  Without it macOS starts the extension the iOS way, `usernoted` logs "Extension will be killed due
+  to sluggish startup", and the banner shows the relay's generic text. The Mac build reads
+  `Config/NotificationService-Info-macOS.plist` for this.
+- **macOS opens the extension from the copy of the bundle ID in `/Applications`.** An older copy
+  there without the extension gives "Failed to find extension inside /Applications/UsualBot.app".
+  Replace it with the build you're testing.
+- **After installing the plugin, restart the dashboard as well as the gateway.** Bot Chats' hooks also
+  run in the dashboard process, and `hermes gateway restart` leaves the old gateway running until its
+  turns end, still on the old code. The plugin's `presence.json` from 0.1 held one
+  `{"focused", "at"}` entry, which 0.2's reader skips.
+- **`log` in zsh is a builtin.** Read the unified log with `/usr/bin/log show`.
+- **APNs from `wrangler dev` fails:** workerd has no HTTP/2 client. Deployed Workers reach APNs
+  through Cloudflare's proxy.

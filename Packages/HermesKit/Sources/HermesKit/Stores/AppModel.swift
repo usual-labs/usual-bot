@@ -30,6 +30,7 @@ public final class AppModel {
             for (id, thread) in threads { thread.isVisible = id == visibleContactID }
             for (id, room) in rooms { room.isVisible = id == visibleContactID }
             if let visibleContactID { alertsCleared?(visibleContactID) }
+            if visibleContactID != oldValue { reportFocus() }
         }
     }
     /// A chat to open, say because you tapped its notification. The window clears it.
@@ -96,7 +97,10 @@ public final class AppModel {
     @ObservationIgnored public private(set) lazy var media = MediaStore(auth: { [weak self] in self?.auth })
     @ObservationIgnored public private(set) lazy var voiceLive = VoiceLiveService(auth: { [weak self] in self?.auth })
     /// How the gateway reaches you when this app can't.
-    @ObservationIgnored public private(set) lazy var push = PushSettings(auth: { [weak self] in self?.auth })
+    @ObservationIgnored public private(set) lazy var push = PushSettings(
+        auth: { [weak self] in self?.auth }, relay: { [weak self] in self?.relay })
+    /// This device's entry in Usual's push relay.
+    @ObservationIgnored public internal(set) lazy var relay = PushRelay.fromMainBundle()
     /// Token use across Bots, for Settings › Usage.
     @ObservationIgnored public internal(set) lazy var usage = UsageOverview(
         auth: { [weak self] in self?.auth },
@@ -209,7 +213,11 @@ public final class AppModel {
         alertsCleared?(nil)
         if let auth {
             cache.delete(for: auth.gateway)
-            Task { await auth.signOut() }
+            // Off the gateway's push list first, while the sign-in still works.
+            Task { [push] in
+                await push.forget(on: auth)
+                await auth.signOut()
+            }
         }
         auth = nil
         contacts = []

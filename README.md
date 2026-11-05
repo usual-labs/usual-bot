@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <sub>Free and open source, notarized by Apple, and independent: not made by, affiliated with or endorsed by Nous Research.</sub>
+  <sub>Free and open source, and independent: not made by, affiliated with or endorsed by Nous Research.</sub>
 </p>
 
 <p align="center">
@@ -38,18 +38,11 @@ skill setup and everything else stay in the official Hermes app.
 
 ## Install
 
-**Mac:** install it with [Homebrew](https://brew.sh):
+Usual Bot is in beta on **TestFlight**, for the Mac and the iPhone. A public link to join is coming
+soon; until then, build it from source (below). Needs macOS 26 or iOS 26 or later.
 
-```bash
-brew install --cask usual-labs/tap/usual-bot
-```
-
-Or download `UsualBot-<version>.dmg` from the
-[latest release](https://github.com/usual-labs/usual-bot/releases/latest), open it, and drag
-**Usual Bot** to Applications. It's signed and notarized by Apple, so it opens like any other app.
-Needs macOS 26 or later, on Apple silicon or Intel.
-
-**iPhone:** there's no download yet; build it from source (below).
+The Homebrew cask and the GitHub download stopped at version 0.3.0. If you installed one, join
+the beta once the link is here to keep getting updates.
 
 Then sign in to your gateway; [Getting started](docs/guides/getting-started.md#2-get-your-gateway-ready)
 shows what it needs.
@@ -144,6 +137,8 @@ The film and all screenshots come from the built-in demo, with made-up Bots.
 - **Side questions.** `/btw` asks about the conversation without interrupting the Bot.
 - **Background tasks.** `/bg` has the Bot do a task in the background while you keep chatting. You get a
   notification when it's done, even if the app was closed.
+- **Push.** With the `usual-push` plugin on your gateway, your Mac and iPhone hear from your Bots
+  even when Usual Bot is closed, sealed so nothing in between can read it.
 - **Rooms.** Group chats with several Bots.
 - **Routines.** Each Bot's scheduled jobs, with a switch to pause and resume them.
 - **Quick message (Mac).** ⌥Space opens a small panel to message any Bot from anywhere.
@@ -171,7 +166,7 @@ The [user guide](docs/guides/user-guide.md) walks through each of these.
 | [User guide](docs/guides/user-guide.md) | Every feature, with keyboard shortcuts |
 | [Troubleshooting](docs/guides/troubleshooting.md) | What error messages mean and how to fix them |
 | [Architecture](docs/guides/architecture.md) | How the code is laid out and talks to the gateway |
-| [Releasing](docs/guides/releasing.md) | For maintainers: signing, notarizing and publishing a release |
+| [Releasing](docs/guides/releasing.md) | For maintainers: shipping a build through TestFlight |
 | [Contributing](CONTRIBUTING.md) | Setting up, checks, and how to send a pull request |
 | [Changelog](CHANGELOG.md) | What changed in each version |
 

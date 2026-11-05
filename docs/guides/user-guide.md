@@ -398,16 +398,15 @@ and Settings opens with your gateway at the top. Preferences stay on this device
   Quick Message itself always uses Return to send and ⌘Return to open the full chat.
 - **Notifications:** choose what alerts you: messages and replies, a Bot needing you, and
   background tasks finishing, plus sounds and previews. With previews off, new alerts say only who
-  it's from. System notification settings and Focus also apply. Alerts appear when you're
-  not using Usual Bot, and tapping one opens that chat. On the Mac the app must be running, in the menu bar
-  is enough. iPhone alerts from the app itself aren't instant: it disconnects soon after you leave,
-  and iOS decides when it can check in.
-- **Push:** for instant alerts anywhere, even with the app closed, install the plugin in
-  [`Integrations/hermes-push`](../../Integrations/hermes-push/README.md) on your gateway and pick
-  ntfy or Pushover under Notifications. They arrive in that service's app. Tapping one in ntfy opens
-  the chat in Usual Bot; in Pushover, tap it, then **Open in Usual Bot**. Push stays quiet while
-  you're using Usual Bot on any device, so a Mac in front also quiets your iPhone until its screen
-  sleeps.
+  it's from. System notification settings and Focus also apply. A chat you're reading doesn't alert;
+  any other does, even while you're in the app. Tapping one opens that chat.
+- **Push:** with the plugin in [`Integrations/hermes-push`](../../Integrations/hermes-push/README.md)
+  on your gateway, every device you sign in on is reached instantly, even with Usual Bot closed. Your
+  gateway seals each notification for that device, and Usual's relay and Apple pass it on without
+  reading it. Reading a chat on one device keeps it quiet on the others. Under **Bots on this
+  device**, turn a Bot off to keep it quiet here only; **Send Test** checks the whole way. Signing
+  out stops pushes to that device. Without the plugin, the Mac alerts while the app runs (the menu
+  bar is enough), and the iPhone only while connected or when iOS lets it check in.
 - **Voice:** choose the call engine and the language, voice and speed for on-device speech. These
   preferences are shared with the controls inside a call; GPT-Live’s voice stays on the gateway.
 - **Connection:** see the gateway address, status, version and identity when available, or sign out.

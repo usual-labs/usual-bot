@@ -40,7 +40,7 @@ Child-local ideas stay in their package KBs.
   that costs one platform condition in `Packages/Tailnet` and an `#if os(iOS)` around the app's
   Tailscale file, while a linked-but-off Mac build would need a universal macOS slice (Tailscale's
   `make macos` builds Apple silicon only; the Mac release is universal), ship about 20 MB unused,
-  and put the Go framework in the notarized Mac release. Code: `Packages/Tailnet`
+  and put the Go framework in the shipped Mac build. Code: `Packages/Tailnet`
   (node lifecycle, proxied session, device name and address, LocalAPI logout through the
   loopback port because TailscaleKit's `logout()` isn't public); `AppModel(session:)` and
   `reconnect()` in HermesKit; `App/BuiltInTailscale.swift` (on/off in `UserDefaults`
@@ -82,6 +82,3 @@ Child-local ideas stay in their package KBs.
   a patched fork without attestation) says not to depend on it. Committing the framework (69 MB
   per version) and building from source in every build (Go 1.27) were rejected. Zero-code
   alternative: Tailscale's VPN On Demand can start the VPN when a `*.ts.net` name is resolved.
-- **Apple push through a relay.** Notifications under Usual Bot's own icon, for everyone, would need a
-  small hosted relay holding the push key, with payloads encrypted to the device and a notification
-  service extension to read them.

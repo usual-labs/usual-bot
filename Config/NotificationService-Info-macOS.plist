@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.usernotifications.service</string>
+		<key>NSExtensionPrincipalClass</key>
+		<string>$(PRODUCT_MODULE_NAME).NotificationService</string>
+		<!-- Without it, macOS starts the extension the iOS way and kills it for never answering. -->
+		<key>Subsystems</key>
+		<array>
+			<string>NSExtensionService_Subsystem</string>
+		</array>
+	</dict>
+	<!-- Where the app keeps the key that opens sealed notifications (PushRelay). -->
+	<key>UsualPushKeychainGroup</key>
+	<string>$(USUAL_PUSH_KEYCHAIN_GROUP)</string>
+</dict>
+</plist>

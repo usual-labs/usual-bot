@@ -10,7 +10,32 @@
 		5B0B00000000000000000101 /* HermesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5B0B00000000000000000201 /* HermesKit */; };
 		5B0B00000000000000000102 /* UsualUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5B0B00000000000000000202 /* UsualUI */; };
 		5B0B00000000000000000103 /* Tailnet in Frameworks */ = {isa = PBXBuildFile; productRef = 5B0B00000000000000000203 /* Tailnet */; };
+		5B0B0000000000000000A003 /* UsualBotNotifications.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5B0B0000000000000000A001 /* UsualBotNotifications.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		5B0B0000000000000000A005 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5B0B00000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5B0B0000000000000000A010;
+			remoteInfo = UsualBotNotifications;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		5B0B0000000000000000A004 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				5B0B0000000000000000A003 /* UsualBotNotifications.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		5B0B00000000000000000301 /* UsualBot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = UsualBot.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -20,10 +45,13 @@
 		5B0B00000000000000000305 /* Local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text; path = Local.xcconfig.example; sourceTree = "<group>"; };
 		5B0B00000000000000000306 /* UsualBot-macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "UsualBot-macOS.entitlements"; sourceTree = "<group>"; };
 		5B0B00000000000000000307 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5B0B0000000000000000A001 /* UsualBotNotifications.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = UsualBotNotifications.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		5B0B0000000000000000A030 /* NotificationService.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = NotificationService.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		5B0B00000000000000000401 /* App */ = {isa = PBXFileSystemSynchronizedRootGroup; path = App; sourceTree = "<group>"; };
+		5B0B0000000000000000A002 /* NotificationService */ = {isa = PBXFileSystemSynchronizedRootGroup; path = NotificationService; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,6 +65,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5B0B0000000000000000A012 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -44,6 +79,7 @@
 			isa = PBXGroup;
 			children = (
 				5B0B00000000000000000401 /* App */,
+				5B0B0000000000000000A002 /* NotificationService */,
 				5B0B00000000000000000603 /* Config */,
 				5B0B00000000000000000602 /* Products */,
 			);
@@ -53,6 +89,7 @@
 			isa = PBXGroup;
 			children = (
 				5B0B00000000000000000301 /* UsualBot.app */,
+				5B0B0000000000000000A001 /* UsualBotNotifications.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -66,6 +103,7 @@
 				5B0B00000000000000000305 /* Local.xcconfig.example */,
 				5B0B00000000000000000306 /* UsualBot-macOS.entitlements */,
 				5B0B00000000000000000307 /* Info.plist */,
+				5B0B0000000000000000A030 /* NotificationService.xcconfig */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -80,10 +118,12 @@
 				5B0B00000000000000000801 /* Sources */,
 				5B0B00000000000000000802 /* Frameworks */,
 				5B0B00000000000000000803 /* Resources */,
+				5B0B0000000000000000A004 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				5B0B0000000000000000A006 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				5B0B00000000000000000401 /* App */,
@@ -98,6 +138,26 @@
 			productReference = 5B0B00000000000000000301 /* UsualBot.app */;
 			productType = "com.apple.product-type.application";
 		};
+		5B0B0000000000000000A010 /* UsualBotNotifications */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5B0B0000000000000000A020 /* Build configuration list for PBXNativeTarget "UsualBotNotifications" */;
+			buildPhases = (
+				5B0B0000000000000000A011 /* Sources */,
+				5B0B0000000000000000A012 /* Frameworks */,
+				5B0B0000000000000000A013 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5B0B0000000000000000A002 /* NotificationService */,
+			);
+			name = UsualBotNotifications;
+			productName = UsualBotNotifications;
+			productReference = 5B0B0000000000000000A001 /* UsualBotNotifications.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -109,6 +169,9 @@
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					5B0B00000000000000000701 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					5B0B0000000000000000A010 = {
 						CreatedOnToolsVersion = 26.0;
 					};
 				};
@@ -133,12 +196,20 @@
 			projectRoot = "";
 			targets = (
 				5B0B00000000000000000701 /* UsualBot */,
+				5B0B0000000000000000A010 /* UsualBotNotifications */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		5B0B00000000000000000803 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5B0B0000000000000000A013 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -155,7 +226,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5B0B0000000000000000A011 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		5B0B0000000000000000A006 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5B0B0000000000000000A010 /* UsualBotNotifications */;
+			targetProxy = 5B0B0000000000000000A005 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		5B0B00000000000000000911 /* Debug */ = {
@@ -184,6 +270,20 @@
 			};
 			name = Release;
 		};
+		5B0B0000000000000000A021 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B0B0000000000000000A030 /* NotificationService.xcconfig */;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		5B0B0000000000000000A022 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B0B0000000000000000A030 /* NotificationService.xcconfig */;
+			buildSettings = {
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -201,6 +301,15 @@
 			buildConfigurations = (
 				5B0B00000000000000000921 /* Debug */,
 				5B0B00000000000000000922 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5B0B0000000000000000A020 /* Build configuration list for PBXNativeTarget "UsualBotNotifications" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5B0B0000000000000000A021 /* Debug */,
+				5B0B0000000000000000A022 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

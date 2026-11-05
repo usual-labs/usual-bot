@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Push through Usual's relay. -->
+	<key>aps-environment</key>
+	<string>development</string>
+	<!-- Its own group first, so sign-in stays its own; then the one the notification extension shares. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+		<string>$(AppIdentifierPrefix)$(BUNDLE_ID_PREFIX).UsualBot.push</string>
+	</array>
+</dict>
+</plist>

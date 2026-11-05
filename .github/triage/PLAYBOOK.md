@@ -74,8 +74,8 @@ step 2.
 
 Search the issues in usual-labs/usual-bot. Check whether a newer release already fixes this, using
 the changelog and recent commits. If it does, say so plainly and give the update step:
-`brew upgrade --cask usual-labs/tap/usual-bot` for a Homebrew install, otherwise the latest download
-from the releases page.
+the latest build from TestFlight. Homebrew and GitHub downloads stopped at 0.3.0; point those users
+to the TestFlight beta in the README.
 
 ## 8. Offer outcomes
 

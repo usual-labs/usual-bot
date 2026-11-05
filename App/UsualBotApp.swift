@@ -6,6 +6,11 @@ import UsualUI
 struct UsualBotApp: App {
     @State private var model: AppModel
     #if os(macOS)
+        @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
+    #else
+        @UIApplicationDelegateAdaptor private var appDelegate: AppDelegate
+    #endif
+    #if os(macOS)
         @State private var presenter = BrowserSignInPresenter()
         @State private var quickPanel: QuickPanelController
     #else
@@ -57,6 +62,7 @@ struct UsualBotApp: App {
         WindowGroup(id: "main") {
             rootView
                 .task { await model.restore() }
+                .task { PushRegistration.start(model.relay) }
                 .onOpenURL { model.open($0) }
                 // Asked once you're in, not from the background, where iOS can't show the question.
                 .onChange(of: model.session, initial: true) { _, session in

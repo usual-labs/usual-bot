@@ -27,7 +27,7 @@ jobs:
         run: xcodebuild -version && swift --version
 
       - name: Lint
-        run: swift format lint --strict --recursive App Packages
+        run: swift format lint --strict --recursive App NotificationService Packages
 
       - name: Check test waits
         run: scripts/check-test-waits.sh

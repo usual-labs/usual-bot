@@ -6,3 +6,8 @@ DEVELOPMENT_TEAM = ABCDE12345
 
 // A reverse-DNS prefix you own, so your build doesn't clash with other forks.
 BUNDLE_ID_PREFIX = com.example
+
+// Push notifications through Usual's relay. Needs Push Notifications on for your bundle ID in your
+// team; with labs.usual it reaches push.usual.dev, and a fork points USUAL_PUSH_RELAY_URL_YES at its
+// own relay (Services/push-relay/README.md).
+// USUAL_PUSH = YES

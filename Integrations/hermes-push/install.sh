@@ -7,6 +7,8 @@ root=${HERMES_HOME:-$HOME/.hermes}
 install_into() { # profile home, then the arguments that select it for `hermes`
     home=$1
     shift
+    # A folder Hermes doesn't list as a profile is left alone.
+    hermes "$@" plugins list >/dev/null 2>&1 || { echo "Skipped $home: not a profile."; return 0; }
     rm -rf "$home/plugins/usual-push"
     mkdir -p "$home/plugins"
     cp -R "$here" "$home/plugins/usual-push"
@@ -18,4 +20,4 @@ for home in "$root"/profiles/*/; do
     [ -d "$home" ] || continue
     install_into "${home%/}" -p "$(basename "$home")"
 done
-echo "Installed. Restart your gateway's dashboard, then open Settings > Notifications in Usual Bot."
+echo "Installed. Restart your gateway and its dashboard, then open Settings > Notifications in Usual Bot."

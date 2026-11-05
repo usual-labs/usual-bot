@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- Talks to the Hermes gateway (REST + WebSocket). -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!-- Browser sign-in redirects to a listener on 127.0.0.1. -->
+	<key>com.apple.security.network.server</key>
+	<true/>
+	<!-- Reads the files you pick, drop or paste to send to an agent, and saves files agents send. -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<!-- Dictation in the message box. -->
+	<key>com.apple.security.device.audio-input</key>
+	<true/>
+	<!-- Push through Usual's relay. -->
+	<key>com.apple.developer.aps-environment</key>
+	<string>development</string>
+	<!-- Its own group first, so sign-in stays its own; then the one the notification extension shares. -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+		<string>$(AppIdentifierPrefix)$(BUNDLE_ID_PREFIX).UsualBot.push</string>
+	</array>
+</dict>
+</plist>

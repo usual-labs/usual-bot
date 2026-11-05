@@ -2,14 +2,16 @@ import Foundation
 
 /// What keeps iPhone notifications going once the app has left the screen.
 extension AppModel {
-    /// Tells the push plugin whether you're at the app, and what the chats are called.
+    /// Tells the push plugin which chat you're reading, and what the chats are called.
     func reportFocus() {
-        guard push.isActive else { return }
+        guard isSignedIn else { return }
         let names = Dictionary(contacts.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
-        Task { await push.report(names: names) }
+        let visible = visibleContactID
+        Task { await push.report(visible: visible, names: names) }
     }
 
-    /// Whether you're at the app, on any of its surfaces. Nothing notifies while you are.
+    /// Whether you're at the app, on any of its surfaces. The chat on screen doesn't notify while
+    /// you are; others still do.
     public var isFocused: Bool { push.isFocused }
 
     public func setWindowFocused(_ focused: Bool) {

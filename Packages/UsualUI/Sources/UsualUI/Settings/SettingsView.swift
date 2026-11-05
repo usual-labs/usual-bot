@@ -156,7 +156,10 @@ public struct SettingsView: View {
                 #endif
             case .notifications:
                 NotificationSettings(
-                    push: model.push, gatewayIsUnencrypted: model.gatewayIsUnencrypted,
+                    push: model.push,
+                    bots: model.contacts.filter { $0.kind == .agent }.sorted {
+                        $0.name.localizedStandardCompare($1.name) == .orderedAscending
+                    },
                     isSignedIn: model.isSignedIn)
             case .voice:
                 VoiceSettings()
