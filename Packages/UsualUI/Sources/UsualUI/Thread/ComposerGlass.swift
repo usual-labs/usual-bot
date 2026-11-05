@@ -6,7 +6,7 @@ struct ComposerGlyph: View {
     /// The symbol's size in a 28 pt button.
     var scale: CGFloat = 13
     var weight: Font.Weight = .semibold
-    /// Send or a call: on the Bot's colour (ink in a room) rather than clear glass.
+    /// Send or a call: on the Bot's colour (ink in a room) rather than a bare icon.
     var prominent = false
     @Environment(\.composerButtonSize) private var size
     @Environment(\.chatContact) private var contact
@@ -15,16 +15,16 @@ struct ComposerGlyph: View {
         let side = size - ComposerGlass.inset * 2
         Image(systemName: systemImage)
             .font(.system(size: size * scale / 28, weight: weight))
-            .foregroundStyle(prominent ? (contact == nil ? Theme.primaryInk : Theme.userBubbleInk) : Theme.ink)
+            .foregroundStyle(prominent ? (contact == nil ? Theme.primaryInk : Theme.userBubbleInk) : Theme.secondaryInk)
             .frame(width: side, height: side)
     }
 }
 
-/// The message box's round buttons are the system's Liquid Glass circles. The prominent one, Send
-/// or a call, is tinted with the Bot's colour, or ink in a room. Like any tinted glass, macOS draws
-/// it grey while its window isn't the one you're at.
+/// The message box's round buttons. The prominent one, Send or a call, is a Liquid Glass circle
+/// tinted with the Bot's colour, or ink in a room; like any tinted glass, macOS draws it grey while
+/// its window isn't the one you're at. The rest are bare icons in the same spot, as in Grok's app.
 struct ComposerGlass: ViewModifier {
-    /// What the glass styles draw around a label, so a button comes out `composerButtonSize` across.
+    /// What the glass style draws around a label, so a button comes out `composerButtonSize` across.
     #if os(iOS)
         static let inset: CGFloat = 7
     #else
@@ -35,15 +35,17 @@ struct ComposerGlass: ViewModifier {
 
     func body(content: Content) -> some View {
         if prominent {
-            content.buttonStyle(.glassProminent).tint(contact?.accent ?? Theme.primary).buttonBorderShape(.circle)
+            content.buttonStyle(.clickable(.glassProminent)).tint(contact?.accent ?? Theme.primary).buttonBorderShape(
+                .circle)
         } else {
-            content.buttonStyle(.glass).buttonBorderShape(.circle)
+            content.buttonStyle(.bare(inset: Self.inset))
         }
     }
 }
 
 extension View {
-    /// A round Liquid Glass button in the message box; `prominent` for Send and a call.
+    /// A round button in the message box: glass in the Bot's colour if `prominent` (Send and a
+    /// call), a bare icon otherwise.
     func composerGlass(prominent: Bool = false) -> some View {
         modifier(ComposerGlass(prominent: prominent))
     }

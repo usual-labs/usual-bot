@@ -13,6 +13,7 @@ struct VoiceSettings: View {
                 Text("On-device").tag("apple")
                 Text("GPT-Live").tag("gpt-live")
             }
+            .clickable()
         } header: {
             Text("Voice calls")
         } footer: {
@@ -27,17 +28,20 @@ struct VoiceSettings: View {
                     Text(CallSettings.name(of: locale)).tag(locale.identifier)
                 }
             }
+            .clickable()
             Picker("Voice", selection: $voice) {
                 Text("Best available").tag("")
                 ForEach(CallSettings.voices(for: CallSettings.language), id: \.identifier) { voice in
                     Text(voice.name).tag(voice.identifier)
                 }
             }
+            .clickable()
             Picker("Speaking speed", selection: $speed) {
                 ForEach(CallSettings.speeds, id: \.self) { speed in
                     Text(speed.formatted(.number.precision(.fractionLength(0...2))) + "×").tag(speed)
                 }
             }
+            .clickable()
         } header: {
             Text("On-device speech")
         } footer: {

@@ -19,7 +19,7 @@ struct InkProminentButtonStyle: PrimitiveButtonStyle {
         #if os(iOS)
             return button.tint(Theme.primary).foregroundStyle(Theme.primaryInk)
         #else
-            return button.tint(Theme.prominent)
+            return button.tint(Theme.prominent).clickable()
         #endif
     }
 }

@@ -222,7 +222,7 @@ public struct QuickMessageView: View {
                     KeyCap(key: "⌘↵")
                 }
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.clickable(.bordered))
             .buttonBorderShape(.capsule)
         }
         .padding(.leading, 20)

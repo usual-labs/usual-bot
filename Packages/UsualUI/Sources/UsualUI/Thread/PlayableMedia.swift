@@ -76,6 +76,7 @@ struct SaveShareMenu: View {
         #if os(macOS)
             // `.button` draws a bezel on the Mac.
             .menuStyle(.borderlessButton)
+            .clickable()
         #else
             .menuStyle(.button)
             .buttonStyle(.borderless)

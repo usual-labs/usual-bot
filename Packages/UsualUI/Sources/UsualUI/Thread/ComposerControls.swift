@@ -102,7 +102,7 @@ struct ComposerLayout: Layout {
                     } label: {
                         Image(systemName: Self.gauge(model.reasoning, reasons: thread.takesReasoning(model)))
                             .font(.system(size: size * 15 / 28))
-                            .foregroundStyle(pickingLevel ? Theme.primaryInk : Theme.ink)
+                            .foregroundStyle(pickingLevel ? Theme.primaryInk : Theme.secondaryInk)
                             .frame(width: size - ComposerGlass.inset * 2, height: size - ComposerGlass.inset * 2)
                     }
                     .modifier(GaugeStyle(open: pickingLevel))
@@ -114,13 +114,13 @@ struct ComposerLayout: Layout {
             }
         }
 
-        /// The gauge is plain glass, and ink while its picker is open.
+        /// The gauge is a bare icon, and ink glass while its picker is open.
         private struct GaugeStyle: ViewModifier {
             let open: Bool
 
             func body(content: Content) -> some View {
                 if open {
-                    content.buttonStyle(.glassProminent).tint(Theme.primary).buttonBorderShape(.circle)
+                    content.buttonStyle(.clickable(.glassProminent)).tint(Theme.primary).buttonBorderShape(.circle)
                 } else {
                     content.composerGlass()
                 }

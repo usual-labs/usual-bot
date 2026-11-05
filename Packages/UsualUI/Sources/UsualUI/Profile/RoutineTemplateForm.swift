@@ -80,6 +80,7 @@ struct RoutineTemplateForm: View {
                 DatePicker(selection: time(value), displayedComponents: .hourAndMinute) {
                     Text(verbatim: field.label)
                 }
+                .clickable()
             case .choice, .days:
                 Picker(selection: value) {
                     // The current value stays a choice even if the list leaves it out.
@@ -89,6 +90,7 @@ struct RoutineTemplateForm: View {
                 } label: {
                     Text(verbatim: field.label)
                 }
+                .clickable()
                 .pickerStyle(.menu)
             case .text:
                 #if os(iOS)
@@ -137,6 +139,7 @@ struct RoutineTemplateForm: View {
                 Text("Post in this chat").tag(RoutineDelivery.thisChat)
                 Text("Keep in past runs only").tag(RoutineDelivery.pastRunsOnly)
             }
+            .clickable()
             #if os(macOS)
                 .pickerStyle(.radioGroup)
             #else

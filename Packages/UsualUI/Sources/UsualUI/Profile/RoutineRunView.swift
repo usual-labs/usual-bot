@@ -57,7 +57,7 @@ struct RoutineRunView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(problem).foregroundStyle(Theme.secondaryInk)
                 Button("Try Again") { Task { await load() } }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.clickable(.bordered))
             }
             .scaledFont(size: 13)
         } else {

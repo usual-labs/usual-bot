@@ -51,6 +51,7 @@ struct VaultAddSheet: View {
                         Text("Card").tag(VaultDraft.Kind.payment)
                         Text("Address").tag(VaultDraft.Kind.address)
                     }
+                    .clickable()
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     VaultTextField(title: "Name", text: $form.label)
@@ -89,6 +90,7 @@ struct VaultAddSheet: View {
             Text("Phone").tag(VaultDraft.IdentifierType.phone)
             Text("Username").tag(VaultDraft.IdentifierType.username)
         }
+        .clickable()
         .pickerStyle(.segmented)
         .labelsHidden()
         VaultTextField(title: "Email, phone or username", text: $form.identifier, isLiteral: true)

@@ -42,7 +42,7 @@ struct RoutineDetail: View {
                 // Deleted here or somewhere else while open.
                 VStack(spacing: 12) {
                     Text("This routine is gone.").foregroundStyle(Theme.secondaryInk)
-                    Button("Close") { dismiss() }.buttonStyle(.bordered)
+                    Button("Close") { dismiss() }.buttonStyle(.clickable(.bordered))
                 }
                 .padding(40)
             }
@@ -172,9 +172,9 @@ struct RoutineDetail: View {
             .disabled(isRunning)
             .accessibilityHint(Text("Runs it once now, as if it were time"))
         Button("Edit") { page = .editing }
-            .buttonStyle(.bordered)
+            .buttonStyle(.clickable(.bordered))
         Button("Delete…", role: .destructive) { confirmingDelete = true }
-            .buttonStyle(.bordered)
+            .buttonStyle(.clickable(.bordered))
     }
 
     private func pastRuns(_ routine: Routine) -> some View {

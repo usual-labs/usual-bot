@@ -29,6 +29,7 @@ struct ModelControls: View {
                 } label: {
                     label(Self.short(model.name))
                 }
+                .clickable()
                 .help("Model for this chat")
                 .accessibilityLabel(Text("Model: \(Self.short(model.name))"))
                 if thread.takesReasoning(model) {
@@ -37,6 +38,7 @@ struct ModelControls: View {
                     } label: {
                         label(Self.levelName(model.reasoning))
                     }
+                    .clickable()
                     .help("How hard the Bot thinks in this chat")
                     .accessibilityLabel(
                         Text("Thinking: \(model.reasoning.map(Self.name(of:)) ?? String(localized: "Default"))"))
@@ -323,6 +325,7 @@ struct ContextMeter: View {
             }
         }
         .modifier(MeterStyle(compact: compact))
+        .clickable()
         .help("How full this chat's context is")
         .accessibilityLabel(Text("Context \(context.percent) percent full"))
     }

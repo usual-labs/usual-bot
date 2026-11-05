@@ -50,9 +50,6 @@ public enum Theme {
     public static let needsYouFill = Color(light: 0xFFF1D6, dark: 0x3A2A0A)
     public static let needsYouInk = Color(light: 0x8A5300, dark: 0xF5C36B)
     public static let danger = Color(light: 0xB42318, dark: 0xF97066)
-    /// A switch that's on. Ink in light mode; in dark mode ink is near white, which the switch's
-    /// white knob vanishes into, so a grey that stands apart from both the knob and an off track.
-    public static let switchOn = Color(light: 0x1C1C1C, dark: 0xA0A0A0)
     /// Code blocks, which sit on a bubble, and the expanded tool-step list.
     public static let codeFill = Color(light: 0xFAFAFA, dark: 0x1A1A1A)
     public static let online = Color(hex: 0x1FA971)
@@ -172,13 +169,18 @@ extension Color {
     }
 }
 
-/// A switch in `Theme.switchOn`, for places whose tint is ink, such as Settings.
-struct InkSwitchStyle: ToggleStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        Toggle(configuration).toggleStyle(.switch).tint(Theme.switchOn)
+/// A switch in the system's own on colour (the Mac's accent, iPhone's green), with the pointing
+/// hand. The app's ink tint would draw it near white in dark mode, where on and off look alike.
+public struct SystemSwitchStyle: ToggleStyle {
+    public func makeBody(configuration: Configuration) -> some View {
+        #if os(macOS)
+            Toggle(configuration).toggleStyle(.switch).tint(Color(nsColor: .controlAccentColor)).clickable()
+        #else
+            Toggle(configuration).toggleStyle(.switch).tint(.green)
+        #endif
     }
 }
 
-extension ToggleStyle where Self == InkSwitchStyle {
-    static var ink: InkSwitchStyle { InkSwitchStyle() }
+extension ToggleStyle where Self == SystemSwitchStyle {
+    public static var systemSwitch: SystemSwitchStyle { SystemSwitchStyle() }
 }

@@ -95,6 +95,7 @@ struct MessageRow<Content: View>: View {
     @State private var overMessage = false
     @State private var overBar = false
     @Environment(\.appearsActive) private var appearsActive
+    @Environment(\.colorScheme) private var colorScheme
     @State private var leaving: Task<Void, Never>?
     @State private var picking = false
 
@@ -158,6 +159,10 @@ struct MessageRow<Content: View>: View {
 
     private func canReact(_ actions: MessageActions) -> Bool { actions.canReact(item) }
 
+    /// An outlined face. macOS 26 swaps the face symbols with the appearance: `face.smiling` is
+    /// filled in dark mode, and `.inverse` is the outline there.
+    private var reactSymbol: String { colorScheme == .dark ? "face.smiling.inverse" : "face.smiling" }
+
     // MARK: Reactions under the message
 
     /// System capsules; yours in the chat's colour, as your messages are.
@@ -169,7 +174,7 @@ struct MessageRow<Content: View>: View {
                 } label: {
                     Text(reaction.emoji).scaledFont(size: 14)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.clickable(.bordered))
                 .buttonBorderShape(.capsule)
                 .controlSize(.small)
                 .tint(reaction.byAgent ? Theme.ink : chatContact?.accent ?? Theme.ink)
@@ -191,7 +196,7 @@ struct MessageRow<Content: View>: View {
                 // A window behind others still tracks the pointer passing over it.
                 let shown = picking || (appearsActive && (overMessage || overBar))
                 ZStack {
-                    // Made only while shown: its glass, menu and popover for every message held up
+                    // Made only while shown: its menu and popover for every message held up
                     // opening a long chat.
                     if shown {
                         bar(actions)
@@ -221,19 +226,13 @@ struct MessageRow<Content: View>: View {
             }
         }
 
-        /// Glass buttons, as it floats beside the message over the transcript.
+        /// Bare icons, as in Grok's app: glass circles beside every message read as clutter.
         private func bar(_ actions: MessageActions) -> some View {
-            GlassEffectContainer(spacing: 4) {
-                barButtons(actions)
-            }
-        }
-
-        private func barButtons(_ actions: MessageActions) -> some View {
-            HStack(spacing: 4) {
+            HStack(spacing: 2) {
                 // Grok shows when a message was sent only while you point at it.
                 if isMine, let date = item.date { sentTime(date) }
                 if canReact(actions) {
-                    barButton("face.smiling", String(localized: "React")) { picking = true }
+                    barButton(reactSymbol, String(localized: "React")) { picking = true }
                         .popover(isPresented: $picking, arrowEdge: .bottom) { picker(actions) }
                 }
                 barButton("arrowshape.turn.up.left", String(localized: "Reply")) { actions.reply(item) }
@@ -241,19 +240,17 @@ struct MessageRow<Content: View>: View {
                     Button("Copy", systemImage: "doc.on.doc", action: copy)
                     rewindButtons(actions)
                 } label: {
-                    // A Mac menu takes no `.glass` button style, so its label carries the glass.
-                    Image(systemName: "ellipsis")
-                        .frame(width: 28, height: 28)
-                        .glassEffect(.regular.interactive(), in: Circle())
+                    Image(systemName: "ellipsis").frame(width: 28, height: 28)
                 }
                 .menuStyle(.button)
-                .buttonStyle(.plain)
+                .buttonStyle(.bare)
                 .clickable()
                 .menuIndicator(.hidden)
                 .help("More")
                 if !isMine, let date = item.date { sentTime(date) }
             }
-            .scaledFont(size: 12, weight: .medium)
+            .scaledFont(size: 13, weight: .medium)
+            .foregroundStyle(Theme.secondaryInk)
         }
 
         private func sentTime(_ date: Date) -> some View {
@@ -268,10 +265,9 @@ struct MessageRow<Content: View>: View {
 
         private func barButton(_ systemImage: String, _ label: String, action: @escaping () -> Void) -> some View {
             Button(action: action) {
-                Image(systemName: systemImage).frame(width: 18, height: 18)
+                Image(systemName: systemImage).frame(width: 28, height: 28)
             }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
+            .buttonStyle(.bare)
             .help(label)
             .accessibilityLabel(Text(label))
         }
@@ -297,7 +293,7 @@ struct MessageRow<Content: View>: View {
         if canReact(actions) {
             #if os(macOS)
                 // A Mac menu's palette leaves out buttons without an image, so emoji go in a submenu.
-                Menu("React", systemImage: "face.smiling") {
+                Menu("React", systemImage: reactSymbol) {
                     ForEach(quickReactions, id: \.self) { emoji in
                         Button(emoji) { actions.react(emoji, item) }
                     }
@@ -383,7 +379,7 @@ private struct ReactionPicker: View {
                         .frame(width: Self.size, height: Self.size)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.clickable(.borderless))
                 .foregroundStyle(.secondary)
                 .help(showsMore ? "Fewer" : "More reactions")
                 .accessibilityLabel(Text(showsMore ? "Fewer reactions" : "More reactions"))
@@ -404,7 +400,7 @@ private struct ReactionPicker: View {
             Text(emoji).font(.system(size: 22)).frame(width: Self.size, height: Self.size)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.borderless)
+        .buttonStyle(.clickable(.borderless))
         .accessibilityLabel(Text("React \(emoji)"))
     }
 }
@@ -442,7 +438,7 @@ struct ReplyChip: View {
                     .contentShape(Rectangle())
                     .touchTarget(width: 24, height: 24)
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.clickable(.borderless))
             .foregroundStyle(.secondary)
             .keyboardShortcut(.cancelAction)
             .accessibilityLabel(Text(cancelLabel))

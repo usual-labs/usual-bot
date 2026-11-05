@@ -35,6 +35,7 @@ struct AppAddSheet: View {
                         Text("Catalog").tag(Source.catalog)
                         Text("Custom").tag(Source.custom)
                     }
+                    .clickable()
                     .pickerStyle(.segmented)
                     .labelsHidden()
                 }
@@ -149,6 +150,7 @@ struct AppAddSheet: View {
                 Text("Web address").tag(MCPServerDraft.Kind.web)
                 Text("Program").tag(MCPServerDraft.Kind.program)
             }
+            .clickable()
             .pickerStyle(.segmented)
             switch draft.kind {
             case .web:
@@ -169,6 +171,7 @@ struct AppAddSheet: View {
                     Text("Token").tag(MCPServerDraft.Auth.token)
                     Text("Provider page").tag(MCPServerDraft.Auth.signIn)
                 }
+                .clickable()
                 .pickerStyle(.segmented)
                 if draft.auth == .token {
                     VaultSecureField(title: "Token", text: $draft.token)

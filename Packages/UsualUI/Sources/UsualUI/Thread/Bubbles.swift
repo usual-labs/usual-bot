@@ -62,7 +62,7 @@ extension View {
         if prominent {
             sized.buttonStyle(.inkProminent)
         } else {
-            sized.buttonStyle(.bordered)
+            sized.buttonStyle(.clickable(.bordered))
         }
     }
 

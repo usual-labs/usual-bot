@@ -48,7 +48,7 @@ struct NewBotSheet: View {
                             Button("Remove", role: .destructive) { picture = nil }
                         }
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.clickable(.bordered))
                 }
                 .frame(maxWidth: .infinity)
                 .listRowBackground(Color.clear)

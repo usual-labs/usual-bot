@@ -34,6 +34,9 @@ private struct PreferencesStyle: ViewModifier {
                 \.messageTextSize,
                 Theme.scaled(Theme.messageSize + CGFloat(min(max(textSize, -2), 6)), for: dynamicTypeSize)
             )
+            // The pointing hand over buttons that pick no style; the rest wrap theirs in
+            // `.clickable(_:)`.
+            .buttonStyle(.clickable(.automatic))
     }
 }
 

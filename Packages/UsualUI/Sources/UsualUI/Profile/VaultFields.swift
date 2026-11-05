@@ -64,7 +64,7 @@ struct UnencryptedConsent: View {
                     .foregroundStyle(Theme.needsYouInk)
             }
             Toggle("Send it anyway", isOn: $isAllowed)
-                .toggleStyle(.switch)
+                .toggleStyle(.systemSwitch)
                 .scaledFont(size: 13)
                 .foregroundStyle(Theme.ink)
         }

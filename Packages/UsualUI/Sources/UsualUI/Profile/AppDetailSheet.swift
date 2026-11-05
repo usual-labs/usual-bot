@@ -110,7 +110,7 @@ struct AppDetailSheet: View {
                 .scaledFont(size: 14)
                 .foregroundStyle(Theme.ink)
         }
-        .toggleStyle(.switch)
+        .toggleStyle(.systemSwitch)
     }
 
     @ViewBuilder private var signIn: some View {

@@ -88,7 +88,7 @@ struct RoomPane: View {
             VStack(spacing: 10) {
                 Text(message).multilineTextAlignment(.center)
                 Button("Try Again") { Task { await room.sync() } }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.clickable(.bordered))
             }
             .scaledFont(size: 13)
             .foregroundStyle(Theme.secondaryInk)

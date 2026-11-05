@@ -78,7 +78,7 @@ struct FindingNotice: View {
                 Text(reason)
                 Button("Dismiss", systemImage: "xmark", action: dismiss)
                     .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.clickable(.borderless))
                     .frame(minWidth: 28, minHeight: 28)
             }
         }

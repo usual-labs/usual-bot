@@ -115,12 +115,12 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
         Button("Settings", systemImage: "gearshape", action: showSettings)
             .labelStyle(.iconOnly)
             #if os(macOS)
-                .buttonStyle(.borderless)
+                .buttonStyle(.clickable(.borderless))
                 .foregroundStyle(Theme.secondaryInk)
                 .frame(width: 32, height: 32)
             #else
                 // It floats over the connect screen.
-                .buttonStyle(.glass)
+                .buttonStyle(.clickable(.glass))
                 .buttonBorderShape(.circle)
                 .controlSize(.large)
             #endif
@@ -346,7 +346,7 @@ struct ContactsSplitView<Footer: View>: View {
                     Text(verbatim: emptyText)
                 } actions: {
                     if let tryAgain {
-                        Button("Try Again", action: tryAgain).buttonStyle(.bordered)
+                        Button("Try Again", action: tryAgain).buttonStyle(.clickable(.bordered))
                     }
                 }
             } else {
@@ -357,9 +357,10 @@ struct ContactsSplitView<Footer: View>: View {
             #if os(macOS)
                 if compact {
                     VStack(spacing: 0) {
-                        if canLeaveRail { sidebarToggle.frame(width: 44, height: 44) }
-                        searchButton.frame(width: 44, height: 44)
-                        newButton.menuStyle(.button).fixedSize().frame(width: 44, height: 44)
+                        // A menu among them takes no button style, so each has its own hand.
+                        if canLeaveRail { sidebarToggle.clickable().frame(width: 44, height: 44) }
+                        searchButton.clickable().frame(width: 44, height: 44)
+                        newButton.menuStyle(.button).fixedSize().clickable().frame(width: 44, height: 44)
                     }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)

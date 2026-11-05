@@ -131,6 +131,7 @@ struct ProfilePanel: View {
                     Picker("Page", selection: $tab) {
                         ForEach(Tab.allCases, id: \.self) { Text($0.title).tag($0) }
                     }
+                    .clickable()
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     .controlSize(.small)
@@ -176,6 +177,7 @@ struct ProfilePanel: View {
                     .labelStyle(.iconOnly)
                     .menuIndicator(.hidden)
                     .fixedSize()
+                    .clickable()
                     .help("Edit Bot")
                     .padding(.top, 4)
                 }
@@ -204,7 +206,7 @@ struct ProfileForm<Content: View>: View {
             content()
         }
         .formStyle(.grouped)
-        .toggleStyle(.ink)
+        .toggleStyle(.systemSwitch)
     }
 }
 
@@ -230,6 +232,7 @@ struct ProfileSectionHeader<Action: View>: View {
                 .foregroundStyle(Theme.primaryInk)
                 .controlSize(.small)
                 .textCase(nil)
+                .clickable()
                 .fixedSize()
         }
     }
@@ -250,7 +253,7 @@ struct ProfileFailure: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(message).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-            Button("Try Again") { Task { await retry() } }.buttonStyle(.bordered)
+            Button("Try Again") { Task { await retry() } }.buttonStyle(.clickable(.bordered))
         }
     }
 }
@@ -283,7 +286,7 @@ private struct MachineView: View {
                 if let settings = Self.hermesSettings {
                     Section {
                         Button("Open Hermes for advanced settings") { NSWorkspace.shared.open(settings) }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(.clickable(.bordered))
                     }
                 }
             #endif

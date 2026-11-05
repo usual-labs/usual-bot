@@ -197,7 +197,7 @@ struct ThreadPane: View {
             #if os(macOS)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(Theme.ink)
-                .buttonStyle(.glass)
+                .buttonStyle(.clickable(.glass))
                 .buttonBorderShape(.circle)
             #endif
             .help(working ? "\(contact.name) is using its computer" : "\(contact.name)'s computer")
@@ -217,7 +217,7 @@ struct ThreadPane: View {
                 VStack(spacing: 10) {
                     Text(message).multilineTextAlignment(.center)
                     Button("Try Again", action: open)
-                        .buttonStyle(.bordered)
+                        .buttonStyle(.clickable(.bordered))
                 }
                 .padding(.horizontal, 32)
             }

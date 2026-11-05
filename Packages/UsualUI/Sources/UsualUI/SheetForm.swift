@@ -148,7 +148,7 @@ struct SheetForm<Content: View, Extra: View>: View {
                 button
             } else {
                 // Glass picks a label that reads on the ink, unlike `.borderedProminent`.
-                button.buttonStyle(.glassProminent)
+                button.buttonStyle(.clickable(.glassProminent))
             }
         #else
             button.tint(Theme.prominent)

@@ -101,7 +101,7 @@ private struct ApplyNote: View {
                         Text("Apply to the Open Chat")
                     }
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.clickable(.bordered))
                 .disabled(isApplying)
             }
         }

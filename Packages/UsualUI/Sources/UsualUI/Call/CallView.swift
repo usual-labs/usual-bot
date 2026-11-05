@@ -237,9 +237,9 @@ private struct CallBarButton: View {
 
         func body(content: Content) -> some View {
             if prominent {
-                content.buttonStyle(.glassProminent).tint(tint)
+                content.buttonStyle(.clickable(.glassProminent)).tint(tint)
             } else {
-                content.buttonStyle(.glass)
+                content.buttonStyle(.clickable(.glass))
             }
         }
     }
@@ -265,6 +265,7 @@ private struct CallSettingsPanel: View {
                     Text("On-device").tag("apple")
                     Text("GPT-Live").tag("gpt-live")
                 }
+                .clickable()
             }
             if live {
                 HStack {
@@ -303,6 +304,7 @@ private struct CallSettingsPanel: View {
                     Text(voice.name).tag(voice.identifier)
                 }
             }
+            .clickable()
         }
         row("Speed") {
             Picker("Speed", selection: $speed) {
@@ -310,6 +312,7 @@ private struct CallSettingsPanel: View {
                     Text(speed.formatted(.number.precision(.fractionLength(0...2))) + "×").tag(speed)
                 }
             }
+            .clickable()
         }
         row("Language") {
             Picker("Language", selection: $language) {
@@ -318,6 +321,7 @@ private struct CallSettingsPanel: View {
                     Text(CallSettings.name(of: locale)).tag(locale.identifier)
                 }
             }
+            .clickable()
         }
     }
 

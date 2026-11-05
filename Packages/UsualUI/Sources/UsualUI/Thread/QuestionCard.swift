@@ -38,7 +38,7 @@ struct QuestionCard: View {
                             .contentShape(Rectangle())
                             .touchTarget(width: 28, height: 28)
                     }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.clickable(.borderless))
                     .foregroundStyle(.secondary)
                     .accessibilityLabel(Text("Skip the question"))
                     .help("Skip")

@@ -15,7 +15,7 @@ struct UsageSettings: View {
                 if let openBotID {
                     Section {
                         Button("All Bots", systemImage: "chevron.left") { self.openBotID = nil }
-                            .buttonStyle(.borderless)
+                            .buttonStyle(.clickable(.borderless))
                     }
                     BotUsageSections(model: model, botID: openBotID)
                 } else {
@@ -85,7 +85,7 @@ struct UsageSettings: View {
                     } label: {
                         BotUsageRow(bot: bot, total: total)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.clickable(.plain))
                 #else
                     NavigationLink {
                         Form { BotUsageSections(model: model, botID: bot.id) }
@@ -168,6 +168,7 @@ private struct PeriodSection: View {
                 Picker("Period", selection: $usage.period) {
                     ForEach(UsageOverview.Period.allCases) { Text($0.title).tag($0) }
                 }
+                .clickable()
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 if usage.isRefreshing, usage.phase == .ready {

@@ -94,7 +94,7 @@
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .tint(Theme.online)
+            .toggleStyle(.systemSwitch)
             .padding(.horizontal, 4)
             .padding(.vertical, 4)
         }

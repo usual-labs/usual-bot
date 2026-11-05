@@ -59,10 +59,10 @@ public struct SettingsView: View {
                 }
             }
             .frame(width: 640, height: 560)
-            // The app's ink, as in the main window, not the system's blue. Switches keep a grey
-            // that their white knob shows on in dark mode (`Theme.switchOn`).
+            // The app's ink, as in the main window, not the system's blue; switches take the
+            // system's own colour (`SystemSwitchStyle`).
             .tint(Theme.ink)
-            .toggleStyle(.ink)
+            .toggleStyle(.systemSwitch)
             .appPreferences()
         #else
             // Grok's phone settings: a close button at the top left, the account (here, the
@@ -95,7 +95,7 @@ public struct SettingsView: View {
                 }
             }
             .tint(Theme.ink)
-            .toggleStyle(.ink)
+            .toggleStyle(.systemSwitch)
             .appPreferences()
         #endif
     }
@@ -255,12 +255,14 @@ private struct GeneralSettings: View {
                 Text("Light").tag("light")
                 Text("Dark").tag("dark")
             }
+            .clickable()
             Picker("Chat text size", selection: $textSize) {
                 Text("Small").tag(-2)
                 Text("Default").tag(0)
                 Text("Large").tag(3)
                 Text("Extra Large").tag(6)
             }
+            .clickable()
             VStack(alignment: .leading, spacing: 8) {
                 Text("Preview").font(.caption).foregroundStyle(.secondary)
                 MarkdownView(
@@ -274,6 +276,7 @@ private struct GeneralSettings: View {
                     Text("Return").tag(false)
                     Text("⌘Return").tag(true)
                 }
+                .clickable()
             } header: {
                 Text("Chat")
             } footer: {

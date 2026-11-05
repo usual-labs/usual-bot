@@ -148,7 +148,7 @@ struct SectionNameField: View {
             #if os(iOS)
                 // iPhone has no Esc.
                 Button("Cancel", action: dismiss)
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.clickable(.borderless))
             #endif
         }
         .padding(.horizontal, 10)

@@ -268,12 +268,12 @@ struct DictationProblem: View {
             Spacer(minLength: 0)
             if showsSettings {
                 Button("Open Settings", action: Dictation.openSettings)
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.clickable(.bordered))
                     .controlSize(.small)
             }
             Button("Dismiss", systemImage: "xmark", action: dismiss)
                 .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
+                .buttonStyle(.clickable(.borderless))
                 .foregroundStyle(Theme.secondaryInk)
         }
         .padding(.horizontal, 8)

@@ -94,7 +94,7 @@ struct ConnectView<Options: View>: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Button("Cancel", action: model.cancelSignIn)
-                .buttonStyle(.bordered)
+                .buttonStyle(.clickable(.bordered))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)

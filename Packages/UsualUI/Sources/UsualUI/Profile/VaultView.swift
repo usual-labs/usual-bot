@@ -49,6 +49,7 @@ struct VaultView: View {
                     Text("\(Text(option.title)) (\(list.items.filter(option.includes).count))").tag(option)
                 }
             }
+            .clickable()
             let shown = list.items.filter(filter.includes)
             if shown.isEmpty {
                 Text(filter.emptyText).foregroundStyle(.secondary)
@@ -155,7 +156,7 @@ private struct VaultItemRow: View {
             if item.isRemovable {
                 Button("Remove \(item.label)", systemImage: "trash", role: .destructive, action: remove)
                     .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.clickable(.borderless))
                     .foregroundStyle(.secondary)
             } else {
                 Text(manager)
@@ -213,7 +214,7 @@ private struct VaultSourceRow: View {
                         Button("Unlock", action: unlock)
                     }
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.clickable(.bordered))
                 .controlSize(.small)
             }
             Toggle(

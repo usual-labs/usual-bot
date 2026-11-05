@@ -36,15 +36,24 @@ private struct Clickable: ViewModifier {
     }
 }
 
-/// `.plain`, with the pointing hand on the Mac. Use it wherever a button would be `.plain`.
-public struct ClickableButtonStyle: PrimitiveButtonStyle {
-    public init() {}
+/// A button style with the pointing hand on the Mac: `.clickable` is `.plain`, and
+/// `.clickable(.bordered)` wraps any other style. Like any style it reaches every button inside
+/// what it's set on, so `RootView` sets `.clickable(.automatic)` for buttons that pick no style.
+public struct ClickableButtonStyle<Base: PrimitiveButtonStyle>: PrimitiveButtonStyle {
+    let base: Base
 
     public func makeBody(configuration: Configuration) -> some View {
-        Button(configuration).buttonStyle(.plain).clickable()
+        Button(configuration).buttonStyle(base).clickable()
     }
 }
 
-extension PrimitiveButtonStyle where Self == ClickableButtonStyle {
-    public static var clickable: ClickableButtonStyle { ClickableButtonStyle() }
+extension PrimitiveButtonStyle where Self == ClickableButtonStyle<PlainButtonStyle> {
+    public static var clickable: Self { ClickableButtonStyle(base: .plain) }
+}
+
+extension PrimitiveButtonStyle {
+    public static func clickable<Base: PrimitiveButtonStyle>(_ base: Base) -> Self
+    where Self == ClickableButtonStyle<Base> {
+        ClickableButtonStyle(base: base)
+    }
 }

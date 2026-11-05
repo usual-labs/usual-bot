@@ -91,6 +91,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Changed
 
+- **The pointing hand over everything you can click on the Mac,** and switches in the system's blue, so on and off are easy to tell apart.
+- **Quieter buttons.** The message box's attach, mic and Stop buttons, and the Mac's React, Reply and More beside a message, are plain icons instead of glass circles. Send and the call button keep the Bot's colour.
 - **Usual Bot ships through TestFlight, on the Mac and the iPhone,** with push. The Homebrew cask and
   the GitHub download stop at 0.3.0; the README links the TestFlight beta once it's open to all.
 - **The system's own controls and Liquid Glass, on Mac and iPhone.** The chat's top bar, its

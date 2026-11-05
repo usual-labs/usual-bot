@@ -170,7 +170,7 @@ private struct JumpToLatestButton: View {
             .labelStyle(.iconOnly)
             .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(Theme.ink)
-            .buttonStyle(.glass)
+            .buttonStyle(.clickable(.glass))
             .buttonBorderShape(.circle)
             #if os(iOS)
                 .controlSize(.large)

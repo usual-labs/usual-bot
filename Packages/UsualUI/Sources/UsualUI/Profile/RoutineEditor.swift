@@ -107,6 +107,7 @@ struct RoutineEditor: View {
                     Text(Self.title(preset)).tag(preset)
                 }
             }
+            .clickable()
             .pickerStyle(.menu)
             if choice.preset == .weekly {
                 Picker("Day", selection: $choice.weekday) {
@@ -115,10 +116,12 @@ struct RoutineEditor: View {
                         Text(RoutineSchedule.weekdayName(day)).tag(day)
                     }
                 }
+                .clickable()
                 .pickerStyle(.menu)
             }
             if choice.preset.hasTime {
                 DatePicker("Time", selection: time, displayedComponents: .hourAndMinute)
+                    .clickable()
             }
             if choice.preset == .custom {
                 VaultTextField(title: "Like every 2h or weekdays at 9am", text: $custom, isLiteral: true)
@@ -145,6 +148,7 @@ struct RoutineEditor: View {
                     Text("Keep sending to \(RoutineDelivery.places(raw, profile: list.profile))").tag(original)
                 }
             }
+            .clickable()
             .labelsHidden()
             // Radio buttons on the Mac; iPhone has none, so a menu there.
             #if os(macOS)

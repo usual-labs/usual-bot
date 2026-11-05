@@ -213,13 +213,13 @@ struct MediaFile: View {
             AttachmentTile(kind: .file, name: name)
             if let file {
                 ShareLink(item: file) { Image(systemName: "square.and.arrow.up") }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.clickable(.borderless))
                     .foregroundStyle(.secondary)
                     .help("Share \(name)")
             } else {
                 Button("Get File", systemImage: "arrow.down.circle") { Task { await fetch() } }
                     .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.clickable(.borderless))
                     .foregroundStyle(.secondary)
                     .help(problem ?? String(localized: "Get \(name) from the gateway"))
             }

@@ -123,10 +123,10 @@ struct WaitingRow: View {
             Group {
                 switch row.action {
                 case .approve(let answer):
-                    Button("Deny") { answer(.deny) }.buttonStyle(.bordered)
+                    Button("Deny") { answer(.deny) }.buttonStyle(.clickable(.bordered))
                     Button("Allow once") { answer(.once) }.buttonStyle(.inkProminent)
                 case .retry(let retry):
-                    Button("Open") { openChat(row.contact.id) }.buttonStyle(.bordered)
+                    Button("Open") { openChat(row.contact.id) }.buttonStyle(.clickable(.bordered))
                     Button("Try Again", action: retry).buttonStyle(.inkProminent)
                 case .open:
                     Button("Open") { openChat(row.contact.id) }.buttonStyle(.inkProminent)

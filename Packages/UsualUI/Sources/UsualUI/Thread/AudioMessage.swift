@@ -117,7 +117,7 @@ struct AudioMessage: View {
             Text(speedText)
                 .scaledFont(size: 11.5, weight: .semibold).monospacedDigit()
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.clickable(.bordered))
         .buttonBorderShape(.capsule)
         .controlSize(.mini)
         .accessibilityLabel(Text("Playback speed \(speedText)"))
@@ -131,7 +131,7 @@ struct AudioMessage: View {
             Button(showsTranscript ? "Hide transcript" : "Show transcript") {
                 withAnimation(.easeOut(duration: 0.15)) { showsTranscript.toggle() }
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.clickable(.borderless))
             .scaledFont(size: 12.5, weight: .medium)
             .foregroundStyle(Theme.secondaryInk)
             if showsTranscript {

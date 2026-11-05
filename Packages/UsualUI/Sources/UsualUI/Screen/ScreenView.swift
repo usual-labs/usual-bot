@@ -43,7 +43,7 @@ struct ScreenView: View {
                 if let close {
                     Button("Close", systemImage: "xmark", action: close)
                         .labelStyle(.iconOnly)
-                        .buttonStyle(.borderless)
+                        .buttonStyle(.clickable(.borderless))
                         .frame(width: 32, height: 32)
                 }
                 controlPill
@@ -92,13 +92,13 @@ struct ScreenView: View {
                     showsKeyboard.toggle()
                 }
                 .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
+                .buttonStyle(.clickable(.borderless))
                 .frame(width: 32, height: 32)
             }
         #endif
         if screen.control == .you {
             Button("Hand Back") { Task { await screen.handBack() } }
-                .buttonStyle(.bordered)
+                .buttonStyle(.clickable(.bordered))
                 .disabled(screen.isBusy || !isOnline)
                 .accessibilityHint(Text("Gives control of the computer back to \(contact.name)"))
         } else {

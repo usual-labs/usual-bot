@@ -94,14 +94,14 @@ private struct ConnectorRow: View {
             ProgressView().accessibilityLabel(Text("Connecting \(connector.name)"))
         case .waiting:
             Button("Stop") { Task { await list.cancelConnecting(connector) } }
-                .buttonStyle(.bordered)
+                .buttonStyle(.clickable(.bordered))
                 .accessibilityLabel(Text("Stop connecting \(connector.name)"))
         case .failed, nil:
             if list.disconnecting.contains(connector.id) {
                 ProgressView().accessibilityLabel(Text("Disconnecting \(connector.name)"))
             } else if connector.isConnected {
                 Button("Disconnect") { confirmsDisconnect = true }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.clickable(.bordered))
                     .accessibilityLabel(Text("Disconnect \(connector.name)"))
             } else {
                 Button("Connect") { Task { await list.connect(connector) { page.open($0) } } }
