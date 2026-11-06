@@ -54,7 +54,8 @@ The dashboard serves:
 - `GET /api/plugins/usual-browser/status?bot=<profile>` returns `available` (the Bot browses with your
   real profile, headless) and `browser` (its browser is open now).
 - `WS /api/plugins/usual-browser/feed?bot=<profile>&ticket=<from POST /api/auth/ws-ticket>` streams
-  the page. It takes optional `format=jpeg|png` (default jpeg) and `quality=1..100` (default 90).
+  the page. It takes optional `format=jpeg|png` (default jpeg), `quality=1..100` (default 90) and
+  `density=1|2` (default 1).
   Binary messages are frames at the page's full size. Text messages are
   `{"type":"state","state":"waiting"|"live"}` and `{"type":"tab","url","title"}`. The view follows
   the tab the Bot opens, and waits when the Bot's browser isn't running.
@@ -62,6 +63,11 @@ The dashboard serves:
   The Bot often works in a tab it opened in the background, which Chrome doesn't paint. While you
   watch one, the plugin takes a throwaway screenshot of it twice a second so it paints, without
   bringing it to the front. The page sees itself become visible for that moment.
+
+  Chrome's screencast sends the page at its size in CSS pixels whatever the density, so at
+  `density=2` the plugin uses it only to see that the page changed, and then sends a screenshot
+  drawn at twice the pixels, at most four a second. The page's `devicePixelRatio`, and the
+  screenshots the Bot takes, stay at 1.
 
 There's a test page in the dashboard at `/usual-browser`.
 

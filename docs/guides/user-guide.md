@@ -283,6 +283,10 @@ shows a **Browser** button (a globe) beside **Computer**, with a green dot while
 - Watching is all you can do for now: the page doesn't take clicks or typing.
 - When the Bot's browser isn't open, the view says so and picks the page up as soon as the Bot
   browses again.
+- **Picture.** Settings › General › Bot's Browser sets how the page reaches this device, for every
+  Bot: **Picture quality** (Data Saver, Standard or Best, which is lossless) and **Pixel density**
+  (2× is sharper on Retina screens and uses about four times the data). Neither changes the Bot's
+  browser or the screenshots it takes.
 
 ## Rooms
 

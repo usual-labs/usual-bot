@@ -12,6 +12,8 @@ struct BrowserView: View {
 
     @Environment(\.gatewayOnline) private var isOnline
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage(BrowserPicture.qualityKey) private var quality = BrowserPicture.Quality.standard.rawValue
+    @AppStorage(BrowserPicture.densityKey) private var density = 1
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,6 +33,10 @@ struct BrowserView: View {
         // The gateway is back: pick the page up again.
         .onChange(of: isOnline) { _, online in
             if online, case .failed = browser.connection { browser.connect() }
+        }
+        // A new picture quality or density in Settings: the feed takes it when it opens.
+        .onChange(of: "\(quality) \(density)") {
+            if browser.connection != .idle { browser.connect() }
         }
     }
 

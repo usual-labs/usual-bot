@@ -226,22 +226,28 @@ struct ThreadPane: View {
             Label(title, systemImage: systemImage)
                 .labelStyle(.iconOnly)
                 #if os(macOS)
-                    // Level with the name, and as tall as it: glass adds 4 pt around the label.
-                    .frame(width: 28, height: 28)
+                    // The name capsule's glass, level with it and as tall: the system's glass
+                    // button drew a pale disc in the window you're at, unlike the capsule beside it.
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Theme.ink)
+                    .frame(width: 36, height: 36)
+                    .contentShape(Circle())
+                    .glassEffect(.regular.interactive(), in: Circle())
                 #endif
                 .overlay(alignment: .topTrailing) {
                     if working {
                         Circle().fill(Theme.online).frame(width: 9, height: 9)
-                            .offset(x: 3, y: -3)
+                            #if os(macOS)
+                                .offset(x: -1, y: 1)
+                            #else
+                                .offset(x: 3, y: -3)
+                            #endif
                             .accessibilityHidden(true)
                     }
                 }
         }
         #if os(macOS)
-            .font(.system(size: 15, weight: .medium))
-            .foregroundStyle(Theme.ink)
-            .buttonStyle(.clickable(.glass))
-            .buttonBorderShape(.circle)
+            .buttonStyle(.clickable)
         #endif
         .accessibilityValue(working ? Text("In use") : Text(""))
     }

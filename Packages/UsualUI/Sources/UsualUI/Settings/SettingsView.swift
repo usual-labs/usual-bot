@@ -150,6 +150,7 @@ public struct SettingsView: View {
             switch page {
             case .general:
                 GeneralSettings()
+                BrowserSettings()
                 if let desktopControls { desktopControls }
                 #if os(macOS)
                     about

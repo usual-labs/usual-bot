@@ -3,12 +3,14 @@
 The Bot's real-profile Chrome (``browser.use_real_profile``) runs headless on the gateway host and
 listens for DevTools on a random loopback port. ``/feed`` attaches to it, asks Chrome for a
 screencast and forwards each frame to the viewer, so the browser can be watched from any device
-signed in to the gateway, without a window on the host. A background tab is nudged to paint (``nudge``).
+signed in to the gateway, without a window on the host. A background tab is nudged to paint, and
+at 2x the pictures are screenshots taken when the screencast shows a change (``refresh``).
 
 ``GET /status?bot=<profile>`` says whether the Bot has a browser to watch; ``WS /feed`` shows it.
 
 Query: ``bot=<profile>`` and ``ticket=<from POST /api/auth/ws-ticket>``, plus optional
-``format=jpeg|png`` (default jpeg) and ``quality=1..100`` (jpeg only, default 90).
+``format=jpeg|png`` (default jpeg), ``quality=1..100`` (jpeg only, default 90) and ``density=1|2``
+(default 1; 2 sends the page at twice the pixels, sharper on high-resolution screens).
 
 Socket messages, server to viewer:
   binary            one frame, JPEG or PNG (only the newest is sent when the viewer falls behind)
@@ -38,6 +40,7 @@ router = APIRouter()
 _BOT = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 _WAIT_S = 2.0  # how often to look for a browser while there is none
 _MAX_SIDE = 4096  # Chrome scales frames down only past this; the page's own size is what you get
+_TICK_S = 0.25  # how often to look at the shown tab: at most 4 sharp pictures a second
 _NUDGE_S = 0.5  # how often to make a background tab paint
 _QUIET_S = 1.0  # a newly shown tab that sends no frame in this long isn't painting
 
@@ -53,6 +56,17 @@ def _screencast(params) -> dict:
         except ValueError:
             settings["quality"] = 90
     return settings
+
+
+def _sharp(params) -> dict | None:
+    """Screenshot settings for ``density=2``, or None at 1x. A screencast frame is the page's size in
+    CSS pixels whatever the density, so 2x pictures are screenshots with ``clip.scale`` 2. That draws
+    twice the pixels for the screenshot alone: the page's ``devicePixelRatio``, and the Bot's own
+    screenshots, stay as they were."""
+    if params.get("density") != "2":
+        return None
+    settings = _screencast(params)
+    return {key: settings[key] for key in ("format", "quality") if key in settings}
 
 
 # ── Finding the Bot's browser ────────────────────────────────────────────────────────────────────
@@ -126,6 +140,7 @@ class _Viewer:
         self.ws = ws
         self.home = home
         self.screencast = _screencast(ws.query_params)
+        self.sharp = _sharp(ws.query_params)
         self.gone = asyncio.Event()  # the viewer disconnected
         self.messages: asyncio.Queue[str] = asyncio.Queue()
         self.frame: bytes | None = None
@@ -141,7 +156,7 @@ class _Viewer:
         self.wake.set()
 
     def show(self, jpeg: bytes) -> None:
-        # A background tab, nudged to paint, sends the same picture again while nothing changes.
+        # A screencast keeps sending, and a nudged tab resends, the same picture while nothing changes.
         if jpeg == self.sent:
             return
         self.sent = jpeg
@@ -199,7 +214,9 @@ class _Viewer:
             pending: dict[int, asyncio.Future] = {}
             pages: dict[str, dict] = {}  # targetId -> targetInfo, in the order they appeared
             # painted: when the shown tab last sent a frame; hidden: Chrome says it stopped painting.
-            current: dict = {"target": None, "session": None, "shown": 0.0, "painted": 0.0, "hidden": False}
+            # At 2x, frame is the last screencast frame and changed says a sharp picture is due.
+            current: dict = {"target": None, "session": None, "shown": 0.0, "painted": 0.0, "hidden": False,
+                             "frame": None, "changed": False}
             loop = asyncio.get_running_loop()
 
             async def call(method: str, params: dict | None = None, session: str | None = None) -> dict:
@@ -222,7 +239,8 @@ class _Viewer:
                     return
                 attached = await call("Target.attachToTarget", {"targetId": target_id, "flatten": True})
                 session = attached["sessionId"]
-                current.update(target=target_id, session=session, shown=loop.time(), painted=0.0, hidden=False)
+                current.update(target=target_id, session=session, shown=loop.time(), painted=0.0, hidden=False,
+                               frame=None, changed=True)
                 info = pages.get(target_id, {})
                 self.say(type="tab", url=info.get("url"), title=info.get("title"))
                 await call("Page.enable", session=session)
@@ -247,7 +265,11 @@ class _Viewer:
                     method, params = message.get("method"), message.get("params", {})
                     if method == "Page.screencastFrame" and message.get("sessionId") == current["session"]:
                         current.update(painted=loop.time(), hidden=False)
-                        self.show(base64.b64decode(params["data"]))
+                        frame = base64.b64decode(params["data"])
+                        if self.sharp is None:
+                            self.show(frame)
+                        elif frame != current["frame"]:
+                            current.update(frame=frame, changed=True)
                         asyncio.create_task(call("Page.screencastFrameAck",
                                                  {"sessionId": params["sessionId"]}, session=current["session"]))
                     elif method == "Page.screencastVisibilityChanged" and message.get("sessionId") == current["session"]:
@@ -268,29 +290,45 @@ class _Viewer:
                         if params["targetId"] == current["target"]:
                             asyncio.create_task(show(newest()))
 
-            async def nudge() -> None:
-                """The Bot can work in a tab it never brings to the front, such as one it opened in the
+            async def refresh() -> None:
+                """Two jobs on the shown tab.
+
+                The Bot can work in a tab it never brings to the front, such as one it opened in the
                 background. Chrome doesn't paint those, so their screencast sends nothing. A screenshot
                 paints the tab for a moment without bringing it forward, and the screencast sends that
                 picture; the screenshot itself is thrown away, at the lowest quality to keep it cheap.
-                Chrome doesn't report a background tab's new title either, so it's asked for."""
+                Chrome doesn't report a background tab's new title either, so it's asked for.
+
+                At 2x, a screencast frame that differs from the last one means the page changed: take
+                a sharp picture of what's on screen."""
+                nudged = 0.0
                 while True:
-                    await asyncio.sleep(_NUDGE_S)
+                    await asyncio.sleep(_TICK_S)
                     session, target = current["session"], current["target"]
-                    silent = current["painted"] < current["shown"] and loop.time() - current["shown"] > _QUIET_S
-                    if not session or not (current["hidden"] or silent):
+                    if not session:
                         continue
+                    silent = current["painted"] < current["shown"] and loop.time() - current["shown"] > _QUIET_S
                     with contextlib.suppress(Exception):  # the tab closed or was switched meanwhile
-                        await call("Page.captureScreenshot", {"format": "jpeg", "quality": 1}, session=session)
-                        info = (await call("Target.getTargetInfo", {"targetId": target})).get("targetInfo", {})
-                        old = pages.get(target, {})
-                        if target == current["target"] and (info.get("url"), info.get("title")) != (
-                                old.get("url"), old.get("title")):
-                            pages[target] = info
-                            self.say(type="tab", url=info.get("url"), title=info.get("title"))
+                        if (current["hidden"] or silent) and loop.time() - nudged >= _NUDGE_S:
+                            nudged = loop.time()
+                            await call("Page.captureScreenshot", {"format": "jpeg", "quality": 1}, session=session)
+                            info = (await call("Target.getTargetInfo", {"targetId": target})).get("targetInfo", {})
+                            old = pages.get(target, {})
+                            if target == current["target"] and (info.get("url"), info.get("title")) != (
+                                    old.get("url"), old.get("title")):
+                                pages[target] = info
+                                self.say(type="tab", url=info.get("url"), title=info.get("title"))
+                        if self.sharp is not None and current["changed"] and current["frame"] is not None:
+                            current["changed"] = False
+                            view = (await call("Page.getLayoutMetrics", session=session))["cssVisualViewport"]
+                            clip = {"x": view["pageX"], "y": view["pageY"], "width": view["clientWidth"],
+                                    "height": view["clientHeight"], "scale": 2}
+                            shot = await call("Page.captureScreenshot", {**self.sharp, "clip": clip}, session=session)
+                            if session == current["session"]:
+                                self.show(base64.b64decode(shot.get("data", "")))
 
             reader = asyncio.create_task(events())
-            nudger = asyncio.create_task(nudge())
+            refresher = asyncio.create_task(refresh())
             try:
                 found = await call("Target.getTargets")
                 for info in found.get("targetInfos", []):
@@ -308,7 +346,7 @@ class _Viewer:
                         await call("Page.stopScreencast", session=current["session"])
             finally:
                 reader.cancel()
-                nudger.cancel()
+                refresher.cancel()
                 for future in pending.values():
                     future.cancel()
 

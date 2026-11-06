@@ -14,7 +14,8 @@ All notable changes to Usual Bot are listed here. The format follows
   button in its chat: watch its screen live, take over the mouse and keyboard, and hand it back.
 - **Watch an agent's browser.** An agent that browses with your own browser profile, out of sight on
   your gateway, shows a Browser button in its chat: watch the page it has open, on the Mac or iPhone.
-  It needs the `usual-browser` plugin (`Integrations/hermes-browser`) on the gateway.
+  Settings › General › Bot's Browser picks the picture quality and 1× or 2× pixel density for this
+  device. It needs the `usual-browser` plugin (`Integrations/hermes-browser`) on the gateway.
 - **Audio and video in chats.** Voice replies play as voice memos with their transcript, and audio files and videos play in chats and rooms, with Share and Save kept.
 - **Make and change Bots.** **+** › **New Bot…** makes a Bot from a name, an optional picture and
   what it's for. Rename a Bot, change its picture or delete it from its profile or its menu in the

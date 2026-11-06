@@ -15,9 +15,10 @@ struct BotBrowserTests {
     }
 
     /// A browser whose gateway answers the plugin's routes from `status` and mints tickets t1, t2, ….
-    private func make(status: (Int, String) = (200, #"{"bot":"scout","available":true,"browser":true}"#))
-        -> (BotBrowser, ScriptedHTTP, Sockets)
-    {
+    private func make(
+        status: (Int, String) = (200, #"{"bot":"scout","available":true,"browser":true}"#),
+        picture: BrowserPicture = BrowserPicture()
+    ) -> (BotBrowser, ScriptedHTTP, Sockets) {
         let tickets = Mutex(0)
         let http = ScriptedHTTP { request in
             if request.url?.path() == "/api/auth/ws-ticket" {
@@ -37,7 +38,7 @@ struct BotBrowserTests {
             store: MemoryTokenStore(), http: http)
         let sockets = Sockets()
         let browser = BotBrowser(
-            profile: "scout", auth: { auth },
+            profile: "scout", auth: { auth }, picture: { picture },
             makeSocket: { url in
                 let socket = ScriptedScreenSocket()
                 sockets.opened.withLock { $0.append((url, socket)) }
@@ -85,6 +86,21 @@ struct BotBrowserTests {
         let (browser, _, _) = make(status: (404, #"{"detail":"Not Found"}"#))
         await browser.refresh()
         #expect(!browser.isAvailable)
+    }
+
+    @Test func theFeedAsksForThePictureChosenInSettings() async throws {
+        let base = "ws://100.101.102.103:9119/api/plugins/usual-browser/feed?bot=scout&ticket=t1"
+        for (picture, query) in [
+            (BrowserPicture(quality: .dataSaver), "&quality=60"),
+            (BrowserPicture(quality: .best, density: 2), "&format=png&density=2"),
+            (BrowserPicture(density: 2), "&density=2"),
+        ] {
+            let (browser, _, sockets) = make(picture: picture)
+            browser.connect()
+            _ = try await socket(sockets)
+            #expect(sockets.all[0].0.absoluteString == base + query)
+            browser.disconnect()
+        }
     }
 
     @Test func watchingShowsFramesAndTheTab() async throws {

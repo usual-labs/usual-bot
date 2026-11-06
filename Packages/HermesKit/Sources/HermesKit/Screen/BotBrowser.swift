@@ -39,6 +39,7 @@ public final class BotBrowser {
     public private(set) var page: Page?
 
     @ObservationIgnored private let auth: @MainActor () -> AuthSession?
+    @ObservationIgnored private let picture: @MainActor () -> BrowserPicture
     @ObservationIgnored private let makeSocket: ScreenSocketFactory
     @ObservationIgnored private var socket: (any ScreenSocket)?
     @ObservationIgnored private var stream: Task<Void, Never>?
@@ -47,9 +48,13 @@ public final class BotBrowser {
 
     nonisolated static let path = "/api/plugins/usual-browser"
 
-    init(profile: String, auth: @escaping @MainActor () -> AuthSession?, makeSocket: @escaping ScreenSocketFactory) {
+    init(
+        profile: String, auth: @escaping @MainActor () -> AuthSession?,
+        picture: @escaping @MainActor () -> BrowserPicture = { .saved }, makeSocket: @escaping ScreenSocketFactory
+    ) {
         self.profile = profile
         self.auth = auth
+        self.picture = picture
         self.makeSocket = makeSocket
     }
 
@@ -99,7 +104,8 @@ public final class BotBrowser {
             guard let auth = auth() else { throw GatewayError.disconnected }
             let ticket = try await auth.webSocketTicket()
             try Task.checkCancellation()
-            let socket = try await makeSocket(auth.gateway.browserFeedURL(profile: profile, ticket: ticket))
+            let url = auth.gateway.browserFeedURL(profile: profile, ticket: ticket, picture: picture())
+            let socket = try await makeSocket(url)
             try Task.checkCancellation()
             self.socket = socket
             while !Task.isCancelled {
@@ -193,14 +199,59 @@ public final class BotBrowser {
     #endif
 }
 
+/// How a Bot's browser is sent to this device: chosen in Settings, the same for every Bot.
+public struct BrowserPicture: Equatable, Sendable {
+    public enum Quality: String, CaseIterable, Sendable {
+        /// JPEG at 60.
+        case dataSaver
+        /// JPEG at 90, the plugin's default.
+        case standard
+        /// PNG: lossless, and several times bigger.
+        case best
+    }
+
+    public var quality: Quality
+    /// 1, or 2 for twice the pixels: sharper on a Retina screen, and about four times the data.
+    public var density: Int
+
+    public init(quality: Quality = .standard, density: Int = 1) {
+        self.quality = quality
+        self.density = density
+    }
+
+    /// `UserDefaults` keys, for Settings' `@AppStorage`.
+    public static let qualityKey = "browserQuality"
+    public static let densityKey = "browserDensity"
+
+    /// As chosen in Settings.
+    public static var saved: BrowserPicture {
+        let defaults = UserDefaults.standard
+        return BrowserPicture(
+            quality: defaults.string(forKey: qualityKey).flatMap(Quality.init(rawValue:)) ?? .standard,
+            density: defaults.integer(forKey: densityKey) == 2 ? 2 : 1)
+    }
+
+    /// The feed's query for this picture; the plugin's defaults are left out.
+    var queryItems: [URLQueryItem] {
+        var items: [URLQueryItem] = []
+        switch quality {
+        case .dataSaver: items.append(URLQueryItem(name: "quality", value: "60"))
+        case .standard: break
+        case .best: items.append(URLQueryItem(name: "format", value: "png"))
+        }
+        if density == 2 { items.append(URLQueryItem(name: "density", value: "2")) }
+        return items
+    }
+}
+
 extension GatewayAddress {
     /// The browser feed, authenticated by a single-use ticket in the query, like the app's own socket.
-    func browserFeedURL(profile: String, ticket: String) -> URL {
+    func browserFeedURL(profile: String, ticket: String, picture: BrowserPicture = BrowserPicture()) -> URL {
         var components = URLComponents(url: url("\(BotBrowser.path)/feed"), resolvingAgainstBaseURL: false)!
         components.scheme = baseURL.scheme == "https" ? "wss" : "ws"
-        components.queryItems = [
-            URLQueryItem(name: "bot", value: profile), URLQueryItem(name: "ticket", value: ticket),
-        ]
+        components.queryItems =
+            [URLQueryItem(name: "bot", value: profile), URLQueryItem(name: "ticket", value: ticket)]
+            + picture.queryItems
         return components.url!
     }
 }
