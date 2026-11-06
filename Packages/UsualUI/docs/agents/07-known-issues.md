@@ -101,7 +101,7 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **iOS fires `onSubmit` for a Return `onKeyPress` handled.** `MessageBox` notes when Return picked from a menu (`pickedAt`) and ignores a submit within 0.3 s.
 - **Replacing `text` keeps the old selection.** Go through `MessageBox.replaceText(with:)` so the cursor lands at the end.
 - **Moving a view between stacks resets it.** The field would lose focus and `+` would drop an open picker. `ComposerLayout` repositions the same subviews; keep views that hold focus or presentation state in one place in the hierarchy.
-- **The bottom safe area doesn't separate the keyboard from the home indicator.** In the iOS 26.5 Simulator, readers ignoring `.container` and `.keyboard` both report 34 pt with the keyboard down and 335 pt up. `ChatBars` treats 50 pt or less as the home indicator; keep that threshold above 34 pt and below any keyboard height.
+- **The bottom safe area doesn't separate the keyboard from the home indicator.** In the iOS 26.5 Simulator, readers ignoring `.container` and `.keyboard` both report 34 pt with the keyboard down and 335 pt up. `ChatBars` reads the window's own bottom inset (UIKit), which leaves the keyboard out, and takes the rest as the keyboard. Unverified: a phone without a home indicator, and the eased margin during a swipe-down. The device tool's drags can't reach into the keyboard, so a swipe can't be scripted in the Simulator.
 - **The Mac draws Send grey in a window you aren't at.** macOS greys tinted glass while its window
   isn't key: `.glassProminent`, and `.glassEffect(.regular.tint(_:))` too; `appearsActive` and
   `controlActiveState` set to active didn't change it. Automation launches the demo in the

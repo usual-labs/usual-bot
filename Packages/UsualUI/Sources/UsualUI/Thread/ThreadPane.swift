@@ -16,9 +16,9 @@ struct ThreadPane: View {
     var jumped: () -> Void = {}
 
     /// The message box's and the conversation's distances from the window's sides, in chats and
-    /// rooms. On iPhone the box floats further in than the messages, as in Grok's phone app.
+    /// rooms. On iPhone the box reaches a little wider than the messages, so the text has room.
     #if os(iOS)
-        static let composerMargin: CGFloat = 30
+        static let composerMargin: CGFloat = 12
         static let contentMargin: CGFloat = 16
     #else
         static let composerMargin: CGFloat = 20
@@ -347,6 +347,8 @@ private struct ChatBars<Top: View, Actions: View, Bottom: View>: ViewModifier {
     @State private var outsideTaps = 0
     /// iPhone: the safe area under the bottom bar, the home indicator's or the keyboard's.
     @State private var bottomInset: CGFloat = 0
+    /// iPhone: the window's own bottom safe area, the home indicator's alone (0 without one).
+    @State private var homeIndicator: CGFloat = 0
 
     func body(content: Content) -> some View {
         let conversation = content.simultaneousGesture(TapGesture().onEnded { outsideTaps += 1 })
@@ -367,6 +369,7 @@ private struct ChatBars<Top: View, Actions: View, Bottom: View>: ViewModifier {
                             $0.safeAreaInsets.bottom
                         } action: {
                             bottomInset = $0
+                            homeIndicator = Self.windowBottomInset
                         }
                 }
                 .navigationBarTitleDisplayMode(.inline)
@@ -405,12 +408,20 @@ private struct ChatBars<Top: View, Actions: View, Bottom: View>: ViewModifier {
         }
 
         /// iPhone: with the keyboard down the box reaches a little into the home indicator's area, so
-        /// it sits low like other messengers'; with the keyboard up it keeps clear of the keys. A home
-        /// indicator takes 34 pt at most and a keyboard hundreds (see known issues); phones without a
-        /// home indicator report none.
+        /// it sits low like other messengers'; with the keyboard up it keeps clear of the keys. The
+        /// bar's safe area counts both (see known issues), so the window's, which leaves out the
+        /// keyboard, tells them apart. The margin eases between the two over the keyboard's last
+        /// 20 pt: a swipe that pulls the keyboard down doesn't end in a jump.
         private var iPhoneBottomPadding: CGFloat {
-            if bottomInset > 50 { return 10 }
-            return bottomInset > 0 ? -8 : 12
+            let resting: CGFloat = homeIndicator > 0 ? -8 : 12
+            let keyboard = max(0, bottomInset - homeIndicator)
+            return resting + (10 - resting) * min(1, keyboard / 20)
+        }
+
+        private static var windowBottomInset: CGFloat {
+            UIApplication.shared.connectedScenes
+                .compactMap { ($0 as? UIWindowScene)?.windows.first }
+                .first?.safeAreaInsets.bottom ?? 0
         }
     #endif
 }

@@ -41,6 +41,11 @@ public actor JSONRPCChannel {
     private let socket: any WebSocketConnection
     private let eventSink: AsyncStream<GatewayEvent>.Continuation
     private let requestSink: AsyncStream<ServerRequest>.Continuation
+    /// Frames to send, in the order they were written. One writer sends them: a task per frame
+    /// could put a reply ahead of the one before it.
+    private let outgoing: AsyncStream<String>
+    private let outbox: AsyncStream<String>.Continuation
+    private var writer: Task<Void, Never>?
     private let heartbeatInterval: Duration
     private let silenceLimit: Duration
     private var nextID = 1
@@ -64,6 +69,7 @@ public actor JSONRPCChannel {
         self.silenceLimit = silenceLimit
         (events, eventSink) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
         (requests, requestSink) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
+        (outgoing, outbox) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
     }
 
     /// Starts reading frames and sending heartbeats.
@@ -123,11 +129,18 @@ public actor JSONRPCChannel {
         #if DEBUG
             FrameRecorder.record("out", text)
         #endif
-        Task { [weak self] in
-            do {
-                try await self?.socket.send(text)
-            } catch {
-                await self?.shutDown(.disconnected)
+        outbox.yield(text)
+        if writer == nil {
+            writer = Task { [weak self, outgoing] in
+                for await text in outgoing {
+                    guard let self else { return }
+                    do {
+                        try await socket.send(text)
+                    } catch {
+                        await shutDown(.disconnected)
+                        return
+                    }
+                }
             }
         }
     }
@@ -226,6 +239,8 @@ public actor JSONRPCChannel {
         resolveReady(.failure(error))
         eventSink.finish()
         requestSink.finish()
+        outbox.finish()
+        writer?.cancel()
         for task in tasks { task.cancel() }
     }
 }

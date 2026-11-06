@@ -112,10 +112,14 @@ struct MessageBox: View {
             .onDisappear { dictation.stop() }
             // The menu reads the gateway's list each time it opens.
             .onChange(of: slashQuery != nil) { _, open in if open { commands?.load() } }
-            // Clicking or tapping the conversation closes the menus, like Escape.
+            // Clicking or tapping the conversation closes the menus, like Escape; on iPhone it puts
+            // the keyboard away too, as a swipe down the conversation does.
             .onChange(of: conversationTaps) {
                 closeMenu()
                 pickingLevel = false
+                #if os(iOS)
+                    focused = false
+                #endif
             }
             .onChange(of: menuText) { _, text in
                 highlighted = 0
