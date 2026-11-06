@@ -23,6 +23,9 @@
 - `Integrations/hermes-push/` — the Hermes plugin that seals notifications per device and sends them
   to the relay (Python, standard library plus Hermes and its `cryptography`; installed on the
   gateway, not built with the app)
+- `Integrations/hermes-browser/` — the Hermes plugin that streams a real-profile Bot's headless
+  browser to the app and keeps that browser's Chrome flags (window size, user agent) in step
+  (Python, Hermes and its `aiohttp`; installed on the gateway only for real-profile Bots)
 - `Services/push-relay/` — the push relay at `push.usual.dev`: a Cloudflare Worker (plain JS, no
   dependencies) and D1, deployed with Wrangler, not built with the app
 - `NotificationService/` — the notification service extension that opens sealed pushes, embedded in

@@ -61,9 +61,10 @@ struct SheetForm<Content: View, Extra: View>: View {
                 }
             }
         #else
-            // Back at the top left, as a window's; Cancel stays beside the action.
+            // Back at the bottom left, across from Cancel and the action. A sheet's bar draws no
+            // `.navigation` item: Back put there was invisible, and its Esc went with it.
             if let back {
-                ToolbarItem(placement: .navigation) { backButton(back) }
+                ToolbarItem(placement: .destructiveAction) { backButton(back).labelStyle(.titleOnly) }
             }
             ToolbarItem(placement: .cancellationAction) {
                 if let cancel {

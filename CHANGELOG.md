@@ -12,6 +12,9 @@ All notable changes to Usual Bot are listed here. The format follows
 - **Connect apps from the chat.** When an agent needs an account such as Gmail, or an MCP server's sign-in, a card offers Connect and Not now, opens the sign-in page, and updates once you're done. The Apps page lists the accounts Hermes reaches through your Nous Portal, with Connect and Disconnect.
 - **Watch an agent's computer and take over.** An agent with a computer of its own shows a Computer
   button in its chat: watch its screen live, take over the mouse and keyboard, and hand it back.
+- **Watch an agent's browser.** An agent that browses with your own browser profile, out of sight on
+  your gateway, shows a Browser button in its chat: watch the page it has open, on the Mac or iPhone.
+  It needs the `usual-browser` plugin (`Integrations/hermes-browser`) on the gateway.
 - **Audio and video in chats.** Voice replies play as voice memos with their transcript, and audio files and videos play in chats and rooms, with Share and Save kept.
 - **Make and change Bots.** **+** › **New Bot…** makes a Bot from a name, an optional picture and
   what it's for. Rename a Bot, change its picture or delete it from its profile or its menu in the
@@ -94,6 +97,7 @@ All notable changes to Usual Bot are listed here. The format follows
 - **The pointing hand over everything you can click on the Mac,** and switches in the system's blue, so on and off are easy to tell apart.
 - **Quieter buttons.** The message box's attach, mic and Stop buttons, and the Mac's React, Reply and More beside a message, are plain icons instead of glass circles. Send and the call button keep the Bot's colour.
 - **A wider message box on iPhone, and the keyboard goes away with a tap.** Tap the conversation to put the keyboard away, as well as swiping down it; the box no longer jumps as the keyboard finishes going.
+- **A clearer Jump to latest button on the Mac,** a solid circle with an arrow, and the conversation no longer shows through the message box or around the model menus under it.
 - **Usual Bot ships through TestFlight, on the Mac and the iPhone,** with push. The Homebrew cask and
   the GitHub download stop at 0.3.0; the README links the TestFlight beta once it's open to all.
 - **The system's own controls and Liquid Glass, on Mac and iPhone.** The chat's top bar, its
@@ -155,6 +159,7 @@ All notable changes to Usual Bot are listed here. The format follows
 ### Fixed
 
 - **Tapping a notification on iPhone no longer closes the app.**
+- **Back shows in Mac sheets again,** so a routine's past run, or a template's form, has a way out, and Quit works while a sheet is open.
 - **Long chats open and resize faster.** A chat or room builds its newest messages and adds earlier
   ones as you scroll up to them, keeping your place, instead of laying out its whole history on
   every open and every step of a window resize. Replies are no longer parsed again on each update,

@@ -52,7 +52,11 @@
             }
         }
 
-        init() {
+        /// `label` and `hint` describe the picture to VoiceOver while watching.
+        init(
+            label: String = String(localized: "The Bot's screen"),
+            hint: String = String(localized: "Take over to use the computer.")
+        ) {
             super.init(frame: .zero)
             delegate = self
             minimumZoomScale = 1
@@ -62,9 +66,9 @@
             backgroundColor = .black
             picture.isUserInteractionEnabled = true
             picture.isAccessibilityElement = true
-            picture.accessibilityLabel = String(localized: "The Bot's screen")
+            picture.accessibilityLabel = label
             picture.accessibilityTraits = .image
-            picture.accessibilityHint = String(localized: "Take over to use the computer.")
+            picture.accessibilityHint = hint
             addSubview(picture)
             addSubview(keyboard)
             let tap = UITapGestureRecognizer(target: self, action: #selector(tapped))

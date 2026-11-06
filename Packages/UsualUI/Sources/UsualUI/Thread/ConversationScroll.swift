@@ -160,21 +160,15 @@ struct TakesOfferedSize: Layout {
 }
 
 /// Back to the newest message, shown while you're reading further up. A dot says more came in.
+/// iPhone: a glass circle. Mac: a thin arrow on a solid circle, as in Grok's app; glass drew it
+/// there as a small pale disc that got lost in the text under it.
 private struct JumpToLatestButton: View {
     let hasNew: Bool
     let action: () -> Void
     @Environment(\.chatContact) private var contact
 
     var body: some View {
-        Button("Jump to latest message", systemImage: "arrow.down", action: action)
-            .labelStyle(.iconOnly)
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(Theme.ink)
-            .buttonStyle(.clickable(.glass))
-            .buttonBorderShape(.circle)
-            #if os(iOS)
-                .controlSize(.large)
-            #endif
+        button
             .overlay(alignment: .topTrailing) {
                 if hasNew {
                     Circle()
@@ -187,5 +181,28 @@ private struct JumpToLatestButton: View {
             .help("Jump to latest message")
             .accessibilityLabel(Text("Jump to latest message"))
             .accessibilityValue(hasNew ? Text("New messages") : Text(""))
+    }
+
+    @ViewBuilder private var button: some View {
+        #if os(iOS)
+            Button("Jump to latest message", systemImage: "arrow.down", action: action)
+                .labelStyle(.iconOnly)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.ink)
+                .buttonStyle(.clickable(.glass))
+                .buttonBorderShape(.circle)
+                .controlSize(.large)
+        #else
+            Button(action: action) {
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(Theme.ink)
+                    .frame(width: 32, height: 32)
+                    .background(Theme.bubble, in: Circle())
+                    .overlay(Circle().strokeBorder(Theme.border, lineWidth: 1))
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.clickable)
+        #endif
     }
 }

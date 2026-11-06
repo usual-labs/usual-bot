@@ -70,6 +70,8 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **An inspector doesn't shrink to its minimum, and it doesn't fit itself into the window.** Opened in a narrow window, the profile or room panel pushed the sidebar and the chat off both sides, and at 560 pt the room's pill seemed to do nothing. The split view keeps an inspector near its ideal width, so the window's minimum width counts the open panel's ideal (`OpenPanelWidth`), and SwiftUI then grows the window to fit. Keep the preference's value in step with `inspectorColumnWidth`'s ideal.
 - **The chat can need more than its 360 pt.** In the demo, Forge's approval card holds the chat at about 428 pt, so a window at its minimum still spills that chat off both sides. Not looked into.
 - **With no chat selected, the Mac sidebar sits about 200 pt in from the window's left edge,** leaving a blank strip. Seen right after sign-in and in the demo with an unknown `-selectedContact`; selecting a chat puts it back. Cause not looked into.
+- **A Mac sheet's bar draws no `.navigation` item.** `SheetForm` put Back there: it was invisible, and its Esc with it, so a routine's run had no way out. Back now takes the bottom-left slot (`.destructiveAction`); a sheet using `extra` and `back` together would share it.
+- **SwiftUI won't quit while a window shows a sheet,** and the app delegate's `applicationShouldTerminate` isn't asked. Closing the sheet's `NSWindow` doesn't help: SwiftUI puts it back while its state says it's open. `UsualBotCommands.quit()` closes the sheets, calls `terminate`, and exits half a second later if that was refused. Quitting from the Dock or at logout still goes through `terminate` alone and is unverified with a sheet open.
 
 ## Lists and text
 

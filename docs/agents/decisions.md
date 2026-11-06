@@ -396,7 +396,24 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   needs no global-event routing. Disconnect removes every live account of that app from the Nous
   Portal, so it says it affects every agent. Hidden when `available` is false or the gate says 4031.
 
+## A Bot's browser
+
+- **The browser view comes from the `usual-browser` plugin, not Hermes.** Hermes has no way to watch
+  a headless real-profile browser (`browser.use_real_profile`). Its Bot Screen is a Linux desktop
+  only. The plugin's dashboard route attaches to that browser's DevTools port and streams CDP
+  screencast frames. A plugin route keeps it working without changes to Hermes; the cost is that it
+  checks sign-in with a private Hermes function (`_ws_auth_ok`), which an update could change.
+- **Watch only.** Input is a later step; the feed ignores what the app sends.
+- **Text and frames are told apart by their first byte.** `ScreenSocket` hands over text and binary
+  messages alike, as bytes. The feed's text is always a JSON object (`{`), and JPEG and PNG never
+  start with one.
+- **The Browser button shows only for a Bot whose status says `available`**: real profile on and
+  headless. A gateway without the plugin answers 404, so the button stays hidden.
+
 ## Not verified
+
+- The Browser view hasn't run in the app against a real gateway: the plugin's feed and `BotBrowser`
+  were each tested on their own (`BotBrowserTests`, and a script client on the developer's gateway).
 
 - These live activity cases have only run from fakes, never from a real turn: provider waits,
   compression status, `tool.progress` (MCP tools only), `notification.show`, `reasoning.delta`, and a

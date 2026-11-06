@@ -1,0 +1,10 @@
+{
+  "name": "usual-browser",
+  "label": "Bot browser",
+  "description": "Watch a Bot's headless browser live (test viewer for Usual Bot).",
+  "icon": "Globe",
+  "version": "0.1.0",
+  "tab": { "path": "/usual-browser", "hidden": true },
+  "entry": "dist/index.js",
+  "api": "plugin_api.py"
+}

@@ -119,3 +119,13 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 - **`log` in zsh is a builtin.** Read the unified log with `/usr/bin/log show`.
 - **APNs from `wrangler dev` fails:** workerd has no HTTP/2 client. Deployed Workers reach APNs
   through Cloudflare's proxy.
+
+## Bot browser
+
+- **On macOS, a gateway running as a launchd service can't read the browser's own profile folder.**
+  Reading `~/Library/Application Support/Google/Chrome` fails with `EPERM` unless its Python has Full
+  Disk Access. Hermes then logs "reusing the last snapshot" and never refreshes the Bot's copy, so its
+  sign-ins are as old as that copy. The plugin reads the tab layout from the copy instead.
+- **Plugin changes need both restarts.** The feed runs in the dashboard, and the flag hook in the
+  Bot's agent. A cloned profile loads agent plugins only from its own `plugins/` folder, which is why
+  `install.sh` copies the plugin into each real-profile Bot.

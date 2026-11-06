@@ -1,7 +1,7 @@
 #if DEBUG
     import Foundation
 
-    /// A made-up Linux desktop for the demo's computer: a panel, a browser and a terminal.
+    /// A made-up Linux desktop for the demo's computer, and a made-up page for its browser.
     enum DemoDesktop {
         static func framebuffer(width: Int = 1440, height: Int = 900) -> Framebuffer {
             var fb = Framebuffer(width: width, height: height)
@@ -30,6 +30,29 @@
                 fb.fill(
                     x: 784, y: 470 + line * 28, width: [220, 380, 300, 460, 180][line % 5], height: 10,
                     bgr: line % 4 == 0 ? (140, 220, 120) : (210, 210, 210))
+            }
+            return fb
+        }
+
+        /// A made-up page for the demo's browser: a site header, a search form and three results.
+        static func page(width: Int = 1440, height: Int = 820) -> Framebuffer {
+            var fb = Framebuffer(width: width, height: height)
+            fb.fill(x: 0, y: 0, width: width, height: height, bgr: (255, 255, 255))
+            fb.fill(x: 0, y: 0, width: width, height: 64, bgr: (120, 70, 30))
+            fb.fill(x: 48, y: 22, width: 140, height: 20, bgr: (255, 255, 255))
+            fb.fill(x: 48, y: 104, width: 520, height: 30, bgr: (40, 40, 40))
+            for (index, x) in [48, 380, 712].enumerated() {
+                fb.fill(x: x, y: 164, width: 300, height: 48, bgr: (245, 243, 241))
+                fb.fill(x: x + 16, y: 184, width: [120, 150, 90][index], height: 10, bgr: (150, 150, 150))
+            }
+            fb.fill(x: 1044, y: 164, width: 160, height: 48, bgr: (110, 123, 255))
+            for row in 0..<3 {
+                let y = 252 + row * 150
+                fb.fill(x: 48, y: y, width: width - 96, height: 126, bgr: (250, 249, 248))
+                fb.fill(x: 72, y: y + 26, width: 260, height: 18, bgr: (60, 60, 60))
+                fb.fill(x: 72, y: y + 62, width: 520, height: 10, bgr: (190, 190, 190))
+                fb.fill(x: 72, y: y + 84, width: 380, height: 10, bgr: (190, 190, 190))
+                fb.fill(x: width - 228, y: y + 40, width: 140, height: 44, bgr: (110, 123, 255))
             }
             return fb
         }

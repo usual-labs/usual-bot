@@ -84,6 +84,8 @@ public final class AppModel {
     @ObservationIgnored var rooms: [Contact.ID: RoomThread] = [:]
     /// Agents' computers, once a chat asked about one.
     @ObservationIgnored var screens: [Contact.ID: BotScreen] = [:]
+    /// Agents' browsers (`usual-browser` plugin), once a chat asked about one.
+    @ObservationIgnored var browsers: [Contact.ID: BotBrowser] = [:]
     let makeScreenSocket: ScreenSocketFactory
     /// Chats' messages ready to search (`searchMessages`).
     @ObservationIgnored let messageIndex = MessageIndex()
@@ -238,6 +240,8 @@ public final class AppModel {
         gatewaySearch.reset()
         for screen in screens.values { screen.disconnect() }
         screens = [:]
+        for browser in browsers.values { browser.disconnect() }
+        browsers = [:]
         gatewayDetails = nil
         lastSaved = nil
         link = .connecting

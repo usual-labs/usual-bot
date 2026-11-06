@@ -34,6 +34,7 @@ struct ThreadPane: View {
     @State private var calling = false
     @State private var isDropTarget = false
     @State private var showsComputer = false
+    @State private var showsBrowser = false
     @Environment(\.screens) private var screens
     @Environment(\.gatewayOnline) private var isOnline
     #if os(macOS)
@@ -61,6 +62,7 @@ struct ThreadPane: View {
             .chatBars(bottomPadding: thread?.model == nil ? nil : ModelControls.gap) {
                 namePill
             } actions: {
+                browserButton
                 computerButton
                 #if os(iOS)
                     moreMenu
@@ -99,11 +101,20 @@ struct ThreadPane: View {
                         .environment(\.gatewayOnline, isOnline)
                     }
                 }
+                .fullScreenCover(isPresented: $showsBrowser) {
+                    if let browser {
+                        BrowserView(contact: contact, browser: browser, thread: thread) { showsBrowser = false }
+                        .environment(\.gatewayOnline, isOnline)
+                    }
+                }
             #endif
             .environment(\.chatContact, contact)
             .task(id: contact.id) { open() }
-            // Whether the agent has a computer to show, asked again once the gateway is back.
-            .task(id: "\(contact.id) \(isOnline)") { await screen?.refresh() }
+            // Whether the agent has a computer or browser to show, asked again once the gateway is back.
+            .task(id: "\(contact.id) \(isOnline)") {
+                await screen?.refresh()
+                await browser?.refresh()
+            }
             .onChange(of: contact.id) {
                 attachments = []
                 calling = false
@@ -168,42 +179,71 @@ struct ThreadPane: View {
         contact.kind == .agent ? screens?.screen(for: contact) : nil
     }
 
+    /// The agent's browser, for agents only.
+    private var browser: BotBrowser? {
+        contact.kind == .agent ? screens?.browser(for: contact) : nil
+    }
+
     /// Opens the agent's computer: a window on the Mac, full screen on iPhone. A dot shows while the
     /// agent is using it.
     @ViewBuilder private var computerButton: some View {
         if let screen, screen.hasScreen {
             let working = thread?.state.isUsingComputer == true
-            Button {
+            liveButton("Computer", systemImage: "display", working: working) {
                 #if os(macOS)
                     openWindow(id: "bot-screen", value: contact.id)
                 #else
                     showsComputer = true
                 #endif
-            } label: {
-                Label("Computer", systemImage: "display")
-                    .labelStyle(.iconOnly)
-                    #if os(macOS)
-                        // Level with the name, and as tall as it: glass adds 4 pt around the label.
-                        .frame(width: 28, height: 28)
-                    #endif
-                    .overlay(alignment: .topTrailing) {
-                        if working {
-                            Circle().fill(Theme.online).frame(width: 9, height: 9)
-                                .offset(x: 3, y: -3)
-                                .accessibilityHidden(true)
-                        }
-                    }
             }
-            #if os(macOS)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Theme.ink)
-                .buttonStyle(.clickable(.glass))
-                .buttonBorderShape(.circle)
-            #endif
             .help(working ? "\(contact.name) is using its computer" : "\(contact.name)'s computer")
             .accessibilityLabel(Text("\(contact.name)'s Computer"))
-            .accessibilityValue(working ? Text("In use") : Text(""))
         }
+    }
+
+    /// Opens the agent's browser, for an agent that browses with your real browser profile: a window
+    /// on the Mac, full screen on iPhone. A dot shows while the agent is browsing.
+    @ViewBuilder private var browserButton: some View {
+        if let browser, browser.isAvailable {
+            let working = thread?.state.isUsingBrowser == true
+            liveButton("Browser", systemImage: "globe", working: working) {
+                #if os(macOS)
+                    openWindow(id: "bot-browser", value: contact.id)
+                #else
+                    showsBrowser = true
+                #endif
+            }
+            .help(working ? "\(contact.name) is browsing" : "\(contact.name)'s browser")
+            .accessibilityLabel(Text("\(contact.name)'s Browser"))
+        }
+    }
+
+    /// A round button in the chat's bar for something of the agent's you can watch live.
+    private func liveButton(
+        _ title: LocalizedStringKey, systemImage: String, working: Bool, action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: systemImage)
+                .labelStyle(.iconOnly)
+                #if os(macOS)
+                    // Level with the name, and as tall as it: glass adds 4 pt around the label.
+                    .frame(width: 28, height: 28)
+                #endif
+                .overlay(alignment: .topTrailing) {
+                    if working {
+                        Circle().fill(Theme.online).frame(width: 9, height: 9)
+                            .offset(x: 3, y: -3)
+                            .accessibilityHidden(true)
+                    }
+                }
+        }
+        #if os(macOS)
+            .font(.system(size: 15, weight: .medium))
+            .foregroundStyle(Theme.ink)
+            .buttonStyle(.clickable(.glass))
+            .buttonBorderShape(.circle)
+        #endif
+        .accessibilityValue(working ? Text("In use") : Text(""))
     }
 
     @ViewBuilder private var content: some View {
@@ -383,18 +423,22 @@ private struct ChatBars<Top: View, Actions: View, Bottom: View>: ViewModifier {
 
     #if os(macOS)
         /// The name and actions float in glass over the conversation, which the system's hard
-        /// scroll edge hides under them. Not window toolbar items: those centre on the window, not
-        /// the chat beside the sidebar (see known issues).
+        /// scroll edge hides under them; the same edge under the message box keeps the conversation
+        /// out of the box and the model menus below it. Not window toolbar items: those centre on
+        /// the window, not the chat beside the sidebar (see known issues).
         private func macBars(_ conversation: some View, @ViewBuilder bottom: () -> some View) -> some View {
             conversation
                 .safeAreaBar(edge: .top, spacing: 0) {
                     top.frame(maxWidth: .infinity)
-                        .overlay(alignment: .trailing) { actions.padding(.trailing, ThreadPane.composerMargin) }
+                        // In a row: an overlay alone would stack the actions on top of each other.
+                        .overlay(alignment: .trailing) {
+                            HStack(spacing: 8) { actions }.padding(.trailing, ThreadPane.composerMargin)
+                        }
                         .padding(.top, 9)
                         .padding(.bottom, 8)
                 }
                 .safeAreaBar(edge: .bottom, spacing: 0, content: bottom)
-                .scrollEdgeEffectStyle(.hard, for: .top)
+                .scrollEdgeEffectStyle(.hard, for: [.top, .bottom])
         }
     #endif
 

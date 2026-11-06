@@ -270,6 +270,20 @@ Hermes gives a Bot a computer when its gateway runs on Linux with the desktop pa
 or when the Bot's terminal runs in a Docker or SSH sandbox whose image has them. Set that up in
 Hermes; Usual Bot only shows it. Rooms have no Computer button: open the Bot's own chat.
 
+## A Bot's browser
+
+A Bot can browse with a copy of your own browser profile, signed in where you are, in a browser
+that runs out of sight on your gateway (Hermes' `browser.use_real_profile`). With the
+[`usual-browser` plugin](../../Integrations/hermes-browser/README.md) on your gateway, its chat
+shows a **Browser** button (a globe) beside **Computer**, with a green dot while the Bot is browsing.
+
+- **Watch.** The Mac opens the page in a window of its own; iPhone shows it full screen, and you
+  pinch to zoom. The bar shows the open tab's title and address, and the view follows the tab the
+  Bot is on.
+- Watching is all you can do for now: the page doesn't take clicks or typing.
+- When the Bot's browser isn't open, the view says so and picks the page up as soon as the Bot
+  browses again.
+
 ## Rooms
 
 Rooms are group chats with several Bots. Create one with **+** › **New Room…** at the top of the sidebar

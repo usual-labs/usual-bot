@@ -1,0 +1,6 @@
+name: usual-browser
+version: "0.2.0"
+description: "Watch a Bot's headless real-profile browser from Usual Bot, and keep that browser looking like a desktop Chrome"
+author: "Usual Labs"
+provides_hooks:
+  - pre_tool_call

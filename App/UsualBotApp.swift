@@ -98,6 +98,14 @@ struct UsualBotApp: App {
             // Opened only from a chat, for its agent: File › New would show an empty window.
             .commandsRemoved()
 
+            // An agent's browser, live, from the chat's Browser button.
+            WindowGroup("Browser", id: "bot-browser", for: String.self) { $contactID in
+                if let contactID { BotBrowserWindow(model: model, contactID: contactID) }
+            }
+            // 1440 wide pages show at full size, with room for the bar above them.
+            .defaultSize(width: 1440, height: 880)
+            .commandsRemoved()
+
             Settings {
                 SettingsView(model: model, desktopControls: AnyView(DesktopSettings(controller: quickPanel)))
             }

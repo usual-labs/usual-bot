@@ -48,7 +48,22 @@ enum ChatOrder {
 
         public init() {}
 
+        /// The system's Quit did nothing while a window showed a sheet: SwiftUI puts a closed sheet
+        /// back while its state says it's open, and refuses to quit while one is up. So this
+        /// closes the sheets and quits, and if that's refused, exits: the app keeps nothing that
+        /// only quitting writes.
+        static func quit() {
+            for window in NSApp.windows {
+                for sheet in window.sheets { sheet.close() }
+            }
+            NSApp.terminate(nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { exit(0) }
+        }
+
         public var body: some Commands {
+            CommandGroup(replacing: .appTermination) {
+                Button("Quit Usual Bot", action: Self.quit).keyboardShortcut("q")
+            }
             // Replaces New Window: a second window would share the first one's open chat.
             CommandGroup(replacing: .newItem) {
                 Button("New Bot…") { window?.newBot?() }
