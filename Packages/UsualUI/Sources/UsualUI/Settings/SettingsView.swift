@@ -245,6 +245,7 @@ public struct SettingsView: View {
 private struct GeneralSettings: View {
     @AppStorage(AppPreferences.appearanceKey) private var appearance = "system"
     @AppStorage(AppPreferences.textSizeKey) private var textSize = 0
+    @AppStorage(AppPreferences.streamRepliesKey) private var streamsReplies = true
     #if os(macOS)
         @AppStorage(AppPreferences.commandReturnKey) private var commandReturn = false
     #endif
@@ -271,20 +272,26 @@ private struct GeneralSettings: View {
             }
             .padding(.vertical, 8)
         }
-        #if os(macOS)
-            Section {
+        Section {
+            Toggle("Show replies as they’re written", isOn: $streamsReplies)
+                .toggleStyle(.systemSwitch)
+            #if os(macOS)
                 Picker("Send messages with", selection: $commandReturn) {
                     Text("Return").tag(false)
                     Text("⌘Return").tag(true)
                 }
                 .clickable()
-            } header: {
-                Text("Chat")
-            } footer: {
+            #endif
+        } header: {
+            Text("Chat")
+        } footer: {
+            #if os(macOS)
                 Text(
-                    "Shift-Return always adds a new line. Quick Message uses Return to send and ⌘Return to open the full chat."
+                    "With replies not shown as they’re written, each message appears once it’s finished. Shift-Return always adds a new line. Quick Message uses Return to send and ⌘Return to open the full chat."
                 )
-            }
-        #endif
+            #else
+                Text("With this off, each message appears once it’s finished.")
+            #endif
+        }
     }
 }

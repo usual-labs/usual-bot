@@ -188,3 +188,77 @@ struct ConversationScrollTests {
         #expect(!state.followsEnd)
     }
 }
+
+struct KeptSpaceTests {
+    @Test func theSpaceKeptAtTheEndGoesOnlyOnceItIsOutOfSight() {
+        var state = ConversationScrollState()
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 4_300))
+        let start = state.releases
+        _ = state.scrollingByHand(true)
+        // Just above the end, the space may still show.
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 4_100))
+        #expect(state.releases == start)
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 3_000))
+        #expect(state.releases == start + 1)
+        // Once, not on every frame of the scroll.
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 2_000))
+        #expect(state.releases == start + 1)
+    }
+
+    @Test func aReloadOrAnUndoLetsTheSpaceGo() {
+        var state = ConversationScrollState()
+        _ = state.sent(SentMessages(load: 1, count: 3))
+        let start = state.releases
+        _ = state.sent(SentMessages(load: 1, count: 4))
+        #expect(state.releases == start)
+        _ = state.sent(SentMessages(load: 1, count: 3))
+        #expect(state.releases == start + 1)
+        _ = state.reload(2)
+        #expect(state.releases == start + 2)
+    }
+}
+
+#if os(macOS)
+    import AppKit
+    import SwiftUI
+
+    @MainActor
+    struct GrowsOnlyTests {
+        @Observable final class Rows {
+            var height: CGFloat = 500
+            var release = 0
+        }
+
+        struct Column: View {
+            let rows: Rows
+            var body: some View {
+                GrowsOnly(release: rows.release) { Color.clear.frame(height: rows.height) }
+                    .frame(width: 300)
+            }
+        }
+
+        private func height(_ view: NSHostingView<Column>) -> CGFloat {
+            view.layoutSubtreeIfNeeded()
+            return view.fittingSize.height
+        }
+
+        @Test func whatLeavesTheEndLeavesItsSpaceUntilItIsLetGo() {
+            let rows = Rows()
+            let view = NSHostingView(rootView: Column(rows: rows))
+            view.frame = CGRect(x: 0, y: 0, width: 300, height: 800)
+            #expect(height(view) == 500)
+            rows.height = 400
+            #expect(height(view) == 500)
+            // What arrives fills the space first.
+            rows.height = 450
+            #expect(height(view) == 500)
+            rows.height = 600
+            #expect(height(view) == 600)
+            // More than the limit goes, as an undo can.
+            rows.height = 100
+            #expect(height(view) == 100 + GrowsOnly.limit)
+            rows.release += 1
+            #expect(height(view) == 100)
+        }
+    }
+#endif

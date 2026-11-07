@@ -14,6 +14,16 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   histories, a running reply and reading older messages. `--demo-long-chat` supplies that fixture.
   Group accessibility per message, not around the whole transcript, so Mac accessibility can
   expose the messages without traversing one enormous group.
+- **A conversation must only move up.** Following the end, anything that leaves the bottom pulls
+  everything above it down. A real turn moved your message down 40 pt four times: the "Thinking…"
+  row left with each tool call and came back after it, and the to-do and helper lines vanished
+  when the turn ended. Now the newest tool line carries the working status instead of a row of its
+  own, a finished turn keeps its lines as a `.progress` item, and `GrowsOnly` keeps any other space
+  that leaves (an answered card, a background helper) until something fills it, the reader scrolls
+  it out of sight, or an undo, reload or width change lets it go. Measured on a real gateway, frame
+  by frame: up only. A new row that comes and goes at the end needs the same care; `GrowsOnly` hides
+  the bounce but leaves a gap. The demo can't answer a card, so that case is covered by
+  `GrowsOnlyTests`, not seen.
 - **The non-lazy transcript costs every built message on every layout.** A 165-message demo chat
   took about 800 ms to open and 37 ms per resize step even in Release. `TranscriptWindow` builds the
   newest page and adds a page when the reader nears the top; `ConversationScrollState` then moves

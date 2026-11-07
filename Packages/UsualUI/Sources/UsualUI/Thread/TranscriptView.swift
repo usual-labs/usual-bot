@@ -13,6 +13,7 @@ struct TranscriptView: View {
     @State private var window = TranscriptWindow()
     /// A message a search jumped to, kept in what's shown.
     @State private var target: Int?
+    @AppStorage(AppPreferences.streamRepliesKey) private var streamsReplies = true
 
     var body: some View {
         // A reloaded transcript numbers its items afresh, so a position kept by item would now
@@ -57,6 +58,8 @@ struct TranscriptView: View {
     }
 
     private var items: [TranscriptItem] { thread.state.items }
+    /// The reply being written, as far as the chat shows it.
+    private var draft: String { streamsReplies ? thread.state.draft : "" }
     private var cardsIndex: Int { Self.cardsIndex(in: items, after: cardsAfter) }
 
     /// A part of the transcript: an item, the reply being written with what the turn is doing, or
@@ -98,33 +101,39 @@ struct TranscriptView: View {
             joinsAbove: item.isReply && index > 0 && items[index - 1].isReply && dates[item.id] == nil,
             joinsBelow: item.isReply
                 && (isLast
-                    ? !thread.state.draft.isEmpty
+                    ? !draft.isEmpty
                     : items[index + 1].isReply && dates[items[index + 1].id] == nil),
-            spokenTexts: Self.spokenTexts(of: shown, in: items, at: index)
+            spokenTexts: Self.spokenTexts(of: shown, in: items, at: index),
+            working: isLast ? working : nil
         )
-        .transition(item.arrival)
+        .transition(item.arrival(streamed: streamsReplies))
         .accessibilityElement(children: .contain)
     }
 
     /// The reply being written and what the turn is doing, after the newest message.
     @ViewBuilder private var live: some View {
-        if !thread.state.draft.isEmpty {
+        if !draft.isEmpty {
             // Becomes a transcript item when it ends, so it leaves without a fade.
             AgentBubble(joinsAbove: items.last?.isReply == true) {
-                MarkdownView(thread.state.draft, isBeingWritten: true)
+                MarkdownView(draft, isBeingWritten: true)
             }
             .joined(items.last?.isReply == true)
             .transition(.asymmetric(insertion: .settle, removal: .identity))
         }
         LiveCards(live: thread.state.live)
+        if let working, !lastItemIsActivity {
+            WorkingRow(text: working).transition(.settle)
+        }
+    }
+
+    /// What the agent is doing, shown in one row: the newest tool line, or a row of its own after
+    /// the rest. One row that changes its words, so the chat doesn't grow a row and lose it again
+    /// with each tool. `nil` while a reply is shown being written, or while the agent waits for you.
+    private var working: String? {
         // A card with nothing after it is what the agent waits for, so it isn't thinking. Once you
         // write after the card, the agent is working on that.
-        if thread.state.draft.isEmpty, thread.state.isRunning, !lastItemIsLiveActivity,
-            !hasCards || cardsIndex < items.count
-        {
-            let live = thread.state.live
-            WorkingRow(text: live.status ?? live.thought ?? String(localized: "Thinking…")).transition(.settle)
-        }
+        guard draft.isEmpty, thread.state.isRunning, !hasCards || cardsIndex < items.count else { return nil }
+        return WorkingRow.text(for: thread.state)
     }
 
     /// What the agent waits on you for.
@@ -172,7 +181,7 @@ struct TranscriptView: View {
     /// Changes when something arrives at the end of the conversation.
     private var arrival: [Int] {
         [
-            thread.state.items.count, thread.state.draft.isEmpty ? 0 : 1, thread.state.isRunning ? 1 : 0,
+            thread.state.items.count, draft.isEmpty ? 0 : 1, thread.state.isRunning ? 1 : 0,
             thread.vaultPrompts.count, thread.approvals.count, thread.questions.count, thread.secrets.count,
             thread.connection == nil ? 0 : 1,
             thread.state.live.todos.isEmpty ? 0 : 1, thread.state.live.helpers.isEmpty ? 0 : 1,
@@ -205,9 +214,8 @@ struct TranscriptView: View {
         return SpokenAudio.transcripts(in: items, replyAt: index, audioPaths: audio)
     }
 
-    private var lastItemIsLiveActivity: Bool {
-        guard case .activity(let steps) = thread.state.items.last?.content else { return false }
-        return steps.contains { $0.state == .running }
+    private var lastItemIsActivity: Bool {
+        if case .activity = thread.state.items.last?.content { true } else { false }
     }
 }
 
@@ -228,11 +236,14 @@ extension TranscriptItem {
         if case .user = content { true } else { false }
     }
 
-    /// How the item comes in. A reply was on screen as a draft, so it swaps in without a move.
-    fileprivate var arrival: AnyTransition {
+    /// How the item comes in. A streamed reply was on screen as a draft, so it swaps in without
+    /// a move.
+    fileprivate func arrival(streamed: Bool) -> AnyTransition {
         switch content {
         case .user: .rise
-        case .assistant: .identity
+        case .assistant: streamed ? .identity : .settle
+        // The running turn's lines, kept where they were.
+        case .progress: .identity
         default: .settle
         }
     }
@@ -252,6 +263,8 @@ struct ItemView: View {
     var joinsBelow = false
     /// Transcripts for a reply's voice memos, by path.
     var spokenTexts: [String: String] = [:]
+    /// What the agent is doing now, for the newest tool line to say.
+    var working: String? = nil
     /// Rooms only: resolves a member ID to its author.
     var author: (String) -> MemberAuthor? = { _ in nil }
     @Environment(\.highlightedItem) private var highlighted
@@ -309,7 +322,9 @@ struct ItemView: View {
                 }
             }
         case .activity(let steps):
-            ActivityLine(steps: steps, agentName: agentName)
+            ActivityLine(steps: steps, agentName: agentName, working: working)
+        case .progress(let todos, let helpers):
+            VStack(alignment: .leading, spacing: 12) { ProgressLines(todos: todos, helpers: helpers) }
         case .notice(let text):
             NoticeLine(text: text)
         case .result(let title, let detail):
@@ -421,10 +436,11 @@ struct NoticeLine: View {
 private struct ActivityLine: View {
     let steps: [ToolStep]
     let agentName: String
+    var working: String? = nil
 
     var body: some View {
         FoldedRow {
-            if let now = ActivitySummary.current(in: steps) {
+            if let now = ActivitySummary.current(in: steps) ?? working {
                 WorkingRow(text: now)
             } else {
                 Text(ActivitySummary.line(for: steps, agent: agentName))

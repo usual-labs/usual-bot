@@ -29,6 +29,10 @@ struct ConversationScrollState {
     private var lastSent: SentMessages?
     /// The content's height when earlier messages were added above it, until they're measured.
     private var heightBeforeAbove: CGFloat?
+    /// Counts the times the space a conversation keeps at its end may go (`GrowsOnly`).
+    private(set) var releases = 0
+    /// That space is out of sight: you've scrolled more than its most above the end.
+    private var spaceHidden = false
 
     /// Away from the newest message, so a button offers the way back.
     var isAwayFromEnd: Bool {
@@ -39,6 +43,9 @@ struct ConversationScrollState {
     mutating func update(_ viewport: ConversationViewport) -> CGFloat? {
         guard viewport.isUsable else { return nil }
         self.viewport = viewport
+        let hidden = !followsEnd && viewport.offset + viewport.height < viewport.contentHeight - GrowsOnly.limit
+        if hidden, !spaceHidden { releases += 1 }
+        spaceHidden = hidden
         if let before = heightBeforeAbove, viewport.contentHeight != before {
             heightBeforeAbove = nil
             // Even mid-gesture: what grew is above the reader, so this keeps them where they were.
@@ -72,6 +79,7 @@ struct ConversationScrollState {
 
     /// The transcript was loaded again. `load` counts the loads.
     mutating func reload(_ load: Int) -> CGFloat? {
+        releases += 1
         guard load != jumpedLoad else { return nil }
         followsEnd = true
         return correction
@@ -103,7 +111,10 @@ struct ConversationScrollState {
     /// holds other messages, so it says nothing about sending.
     mutating func sent(_ messages: SentMessages) -> CGFloat? {
         defer { lastSent = messages }
-        guard let lastSent, lastSent.load == messages.load, messages.count > lastSent.count else { return nil }
+        guard let lastSent, lastSent.load == messages.load else { return nil }
+        // An undo took your message back: what went with it was your doing.
+        if messages.count < lastSent.count { releases += 1 }
+        guard messages.count > lastSent.count else { return nil }
         followsEnd = true
         return correction
     }

@@ -1,11 +1,12 @@
 import Foundation
 
-/// What a chat's agent is doing between its messages. None of it is cached: it means nothing
-/// afterwards, and a chat reopened mid-turn gets the to-do list back from Hermes.
+/// What a chat's agent is doing between its messages. None of it is cached: a chat reopened
+/// mid-turn gets the to-do list back from Hermes. A finished turn keeps its list and helpers as a
+/// transcript item (`TranscriptItem.Content.progress`).
 public struct LiveActivity: Equatable, Sendable {
     /// One line of the agent's to-do list.
-    public struct Todo: Identifiable, Equatable, Sendable {
-        public enum Status: Sendable { case pending, active, done, cancelled }
+    public struct Todo: Identifiable, Equatable, Sendable, Codable {
+        public enum Status: String, Sendable, Codable { case pending, active, done, cancelled }
 
         public let id: String
         public let text: String
@@ -25,8 +26,8 @@ public struct LiveActivity: Equatable, Sendable {
     }
 
     /// A subagent the turn handed part of the work to.
-    public struct Helper: Identifiable, Equatable, Sendable {
-        public enum Status: Sendable { case running, done, failed }
+    public struct Helper: Identifiable, Equatable, Sendable, Codable {
+        public enum Status: String, Sendable, Codable { case running, done, failed }
 
         public let id: String
         public var goal: String

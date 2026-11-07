@@ -8,6 +8,7 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Added
 
+- **Wait for whole replies.** Turn off Settings › General › Show replies as they're written, and each of an agent's messages appears once it's finished, with "Writing…" while it's on the way. Quick Message follows it too.
 - **See where tokens go.** Settings › Usage shows your Bots' tokens over the last 7, 30 or 90 days by day and by Bot, what was written, sent new or sent again, the background work beside your chats, and the cost when Hermes knows it.
 - **Connect apps from the chat.** When an agent needs an account such as Gmail, or an MCP server's sign-in, a card offers Connect and Not now, opens the sign-in page, and updates once you're done. The Apps page lists the accounts Hermes reaches through your Nous Portal, with Connect and Disconnect.
 - **Watch an agent's computer and take over.** An agent with a computer of its own shows a Computer
@@ -95,6 +96,7 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Changed
 
+- **Chats only move up while a Bot works.** The "Thinking…" row no longer leaves and returns around each tool, a finished turn keeps its to-do list and helpers where they were, and an answered card leaves its space until the next message fills it.
 - **A thin, quiet scroll bar in chats and rooms on the Mac,** instead of the wide bright one macOS shows with a mouse connected. It widens under the pointer, and you can drag it.
 - **Smoother profile and room panels on the Mac.** They slide in fast and settle, instead of moving at one speed and pausing on the way. The room's details get a close button like a profile's, and a Bot's ••• menu sits beside it.
 - **The pointing hand over everything you can click on the Mac,** and switches in the system's blue, so on and off are easy to tell apart.

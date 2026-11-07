@@ -10,6 +10,8 @@ public enum AppPreferences {
     public static let needsYouNotificationsKey = "needsYouNotifications"
     public static let notificationSoundKey = "notificationSound"
     public static let notificationPreviewsKey = "notificationPreviews"
+    /// Off: an agent's message appears once it's written, not word by word.
+    public static let streamRepliesKey = "streamReplies"
 }
 
 extension EnvironmentValues {

@@ -45,11 +45,22 @@ struct LiveCards: View {
     let live: LiveActivity
 
     var body: some View {
-        if !live.countedTodos.isEmpty {
-            TodoLine(todos: live.countedTodos).transition(.settle)
+        ProgressLines(todos: live.countedTodos, helpers: live.helpers)
+    }
+}
+
+/// A to-do list and helpers: the running turn's, or those a finished turn kept in its place.
+struct ProgressLines: View {
+    let todos: [LiveActivity.Todo]
+    let helpers: [LiveActivity.Helper]
+
+    var body: some View {
+        // When the turn ends the same lines become a transcript item, so they leave without a fade.
+        if !todos.isEmpty {
+            TodoLine(todos: todos).transition(.asymmetric(insertion: .settle, removal: .identity))
         }
-        if !live.helpers.isEmpty {
-            HelperLine(helpers: live.helpers).transition(.settle)
+        if !helpers.isEmpty {
+            HelperLine(helpers: helpers).transition(.asymmetric(insertion: .settle, removal: .identity))
         }
     }
 }

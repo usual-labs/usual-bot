@@ -89,7 +89,8 @@ These need the gateway: offline, they're greyed out and say why.
 
 Type in the message box and press Return to send (Shift-Return for a new line). On Mac, Settings
 can change sending to ⌘Return, leaving Return for new lines. Replies stream in
-as the Bot writes them, with Markdown, code blocks you can copy, and tables. While the Bot uses
+as the Bot writes them (turn off **Show replies as they're written** in Settings › General to see
+each message only once it's finished, with "Writing…" meanwhile), with Markdown, code blocks you can copy, and tables. While the Bot uses
 tools, one line such as "Forge edited 1 file and ran 1 command" sums them up; click it to see each
 step.
 
@@ -408,7 +409,8 @@ and Settings opens with your gateway at the top. Preferences stay on this device
 
 - **General:** follow the system appearance or choose light or dark, and change chat text size.
   On iPhone the whole app also follows the text size in the system's Display & Brightness or
-  Accessibility settings, with chat text size on top of it. On Mac, choose Return or ⌘Return to send messages, and whether to launch at login.
+  Accessibility settings, with chat text size on top of it. Choose whether replies show as
+  they're written or each message appears once it's finished. On Mac, choose Return or ⌘Return to send messages, and whether to launch at login.
 - **Quick Message (Mac):** in General, click the keyboard shortcut and press a new combination
   including Control, Option or Command. Esc cancels. A shortcut macOS refuses leaves your previous
   choice in place. **Disable Shortcut** keeps Quick Message available from the menu bar;

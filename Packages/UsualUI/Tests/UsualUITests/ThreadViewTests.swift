@@ -175,3 +175,13 @@ struct RoutineStatusTests {
         #expect(RoutineStatus.status(for: explained, failure: false, now: now) == "")
     }
 }
+
+struct WorkingRowTests {
+    @Test func aReplyWrittenOutOfSightSaysSo() {
+        var state = ThreadState()
+        state.sendLocally("Hi")
+        #expect(WorkingRow.text(for: state) == "Thinking…")
+        state.apply(GatewayEvent(type: "message.delta", sessionID: "s1", seq: nil, payload: ["text": "Hel"]))
+        #expect(WorkingRow.text(for: state) == "Writing…")
+    }
+}

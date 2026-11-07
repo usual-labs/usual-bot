@@ -124,6 +124,15 @@ struct WorkingRow: View {
         .padding(.leading, 8)
         .frame(minHeight: 28)
     }
+
+    /// Shown while a reply is written out of sight, with streaming turned off in Settings.
+    nonisolated static var writing: String { String(localized: "Writing…") }
+
+    /// What the turn is doing, for a chat that shows no reply being written.
+    nonisolated static func text(for state: ThreadState) -> String {
+        if !state.draft.isEmpty { return writing }
+        return state.live.status ?? state.live.thought ?? String(localized: "Thinking…")
+    }
 }
 
 /// Grey words with a lighter band passing over them. Reduce Motion leaves them plain.

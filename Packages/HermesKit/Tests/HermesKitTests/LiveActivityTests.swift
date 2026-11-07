@@ -127,6 +127,34 @@ struct LiveActivityTests {
         #expect(state.live.todos.isEmpty)
     }
 
+    @Test func aFinishedTurnKeepsItsListAndFinishedHelpersWhereTheyWere() {
+        var state = running()
+        state.apply(event("todo.updated", todos([("Read", "completed"), ("Drop", "cancelled")], revision: 1)))
+        state.apply(event("subagent.start", ["subagent_id": "a", "goal": "Look"]))
+        state.apply(event("subagent.complete", ["subagent_id": "a", "status": "completed"]))
+        state.apply(event("subagent.start", ["subagent_id": "b", "goal": "Still going"]))
+        state.apply(event("message.delta", ["text": "Done"]))
+        state.apply(event("message.complete", ["status": "interrupted"]))
+
+        let kept = state.items.compactMap { item -> ([String], [String])? in
+            guard case .progress(let todos, let helpers) = item.content else { return nil }
+            return (todos.map(\.text), helpers.map(\.goal))
+        }
+        #expect(kept.count == 1)
+        #expect(kept.first?.0 == ["Read"])
+        #expect(kept.first?.1 == ["Look"])
+        // After the reply, as the lines were shown under it; before the notice the end adds.
+        guard state.items.count == 4 else { Issue.record("\(state.items.map(\.content))"); return }
+        #expect(state.items[1].content == .assistant("Done"))
+        #expect(state.items[3].content == .notice("Stopped"))
+    }
+
+    @Test func aTurnWithNoListOrHelpersKeepsNothing() {
+        var state = running()
+        state.apply(event("message.complete", ["text": "Hi", "status": "complete"]))
+        #expect(state.items.map(\.content) == [.user("go"), .assistant("Hi")])
+    }
+
     @Test func aHelperInTheBackgroundOutlastsItsTurnAndLeavesWhenItFinishes() {
         var state = running()
         state.apply(event("subagent.spawn_requested", ["subagent_id": "a", "goal": "Read"]))

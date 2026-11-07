@@ -333,6 +333,7 @@ private struct QuickAnswer: View {
     let contact: Contact
     let start: Int
     let agents: [Contact.ID: Contact]
+    @AppStorage(AppPreferences.streamRepliesKey) private var streamsReplies = true
 
     var body: some View {
         ScrollView {
@@ -358,12 +359,12 @@ private struct QuickAnswer: View {
                 item: TranscriptView.shown(items, at: index), agentName: contact.name,
                 spokenTexts: TranscriptView.spokenTexts(in: items, at: index))
         }
-        if !thread.state.draft.isEmpty {
+        if streamsReplies, !thread.state.draft.isEmpty {
             AgentBubble { MarkdownView(thread.state.draft, isBeingWritten: true) }
         } else if thread.state.isRunning, thread.approvals.isEmpty, thread.questions.isEmpty, thread.secrets.isEmpty,
             thread.vaultPrompts.isEmpty, thread.connection == nil
         {
-            WorkingRow(text: String(localized: "Thinking…"))
+            WorkingRow(text: thread.state.draft.isEmpty ? String(localized: "Thinking…") : WorkingRow.writing)
         }
         VaultCards(thread: thread, agentName: contact.name)
         if let card = thread.connection { ConnectCard(thread: thread, card: card, agentName: contact.name) }

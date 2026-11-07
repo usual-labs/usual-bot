@@ -18,6 +18,9 @@ public struct TranscriptItem: Identifiable, Equatable, Sendable, Codable {
         /// Work Hermes finished on its own, such as a background process: a title, and what it
         /// reported for anyone who wants to look.
         case result(title: String, detail: String)
+        /// A finished turn's to-do list and the helpers it used. They stay where they were shown
+        /// while it ran, so the end of a turn doesn't pull the conversation down.
+        case progress(todos: [LiveActivity.Todo], helpers: [LiveActivity.Helper])
     }
 
     public let id: Int
@@ -319,6 +322,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
 
     mutating func endTurnLocally() {
         sealDraft()
+        keepProgress()
         finishSteps(as: .failed)
         isRunning = false
         live.endTurn()
@@ -427,6 +431,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
             // Providers that don't stream send the whole reply here.
             append(.assistant(text))
         }
+        keepProgress()
         switch status {
         case "interrupted":
             append(.notice(String(localized: "Stopped")))
@@ -446,6 +451,14 @@ public struct ThreadState: Equatable, Sendable, Codable {
             if case .assistant = $0.content { return true }
             return false
         }
+    }
+
+    /// The turn's to-do list and the helpers that finished, kept in the transcript. Helpers still
+    /// running stay live.
+    private mutating func keepProgress() {
+        let todos = live.countedTodos
+        let helpers = live.helpers.filter { $0.status != .running }
+        if !todos.isEmpty || !helpers.isEmpty { append(.progress(todos: todos, helpers: helpers)) }
     }
 
     private mutating func sealDraft() {

@@ -42,20 +42,22 @@ struct ConversationScroll<Content: View>: View {
     private var scrollView: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                // Lazy row-height estimates can leave a long transcript parked in blank space.
-                // Measure the loaded messages together so the scroll bounds are real at every offset.
-                VStack(alignment: .leading, spacing: 12) {
-                    content
+                GrowsOnly(release: scroll.releases) {
+                    // Lazy row-height estimates can leave a long transcript parked in blank space.
+                    // Measure the loaded messages together so the scroll bounds are real at every offset.
+                    VStack(alignment: .leading, spacing: 12) {
+                        content
+                    }
+                    .environment(\.highlightedItem, highlighted)
+                    .animation(
+                        reduceMotion || reload != settledReload ? nil : .spring(duration: 0.32, bounce: 0.12),
+                        value: arrival
+                    )
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: Theme.columnWidth)
+                    .padding(.horizontal, ThreadPane.contentMargin)
+                    .frame(maxWidth: .infinity)
                 }
-                .environment(\.highlightedItem, highlighted)
-                .animation(
-                    reduceMotion || reload != settledReload ? nil : .spring(duration: 0.32, bounce: 0.12),
-                    value: arrival
-                )
-                .padding(.vertical, 16)
-                .frame(maxWidth: Theme.columnWidth)
-                .padding(.horizontal, ThreadPane.contentMargin)
-                .frame(maxWidth: .infinity)
             }
             .scrollPosition($position)
             #if os(macOS)
@@ -159,6 +161,41 @@ struct ConversationScroll<Content: View>: View {
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) { position.scrollTo(y: offset) }
+    }
+}
+
+/// A conversation never gets shorter: what leaves its end, such as a card you answered, leaves its
+/// space behind, and what arrives next fills that space first. Following the newest message, the
+/// chat then only ever moves up. The space goes when `release` changes, which happens while it's
+/// out of sight, and when the width changes. It's at most `limit` tall: removing more than that,
+/// as an undo can, is something you did, and the chat may move for it.
+struct GrowsOnly: Layout {
+    var release: Int
+    static let limit: CGFloat = 320
+
+    struct Cache {
+        var width: CGFloat?
+        var release: Int?
+        var floor: CGFloat = 0
+    }
+
+    func makeCache(subviews: Subviews) -> Cache { Cache() }
+    // The default makes a new cache, which would forget the floor whenever a message arrives.
+    func updateCache(_ cache: inout Cache, subviews: Subviews) {}
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) -> CGSize {
+        guard let child = subviews.first else { return .zero }
+        let size = child.sizeThatFits(proposal)
+        guard proposal.width != nil, proposal.width == cache.width, cache.release == release else { return size }
+        return CGSize(width: size.width, height: max(size.height, min(cache.floor, size.height + Self.limit)))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) {
+        guard let child = subviews.first else { return }
+        child.place(at: bounds.origin, proposal: proposal)
+        cache.width = bounds.width
+        cache.release = release
+        cache.floor = bounds.height
     }
 }
 
