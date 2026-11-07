@@ -519,13 +519,14 @@ struct ContactsSplitView<Footer: View>: View {
                 jump: jump(in: contact), jumped: { jump = nil }
             )
             #if os(macOS)
-                .inspector(isPresented: Binding(get: { showsProfile && panel != nil }, set: { showsProfile = $0 })) {
-                    if let panel {
-                        panel.inspectorColumnWidth(min: 280, ideal: ProfilePanel.width, max: 420)
-                    }
+                .sidePanel(
+                    isPresented: showsProfile && panel != nil, widthKey: "profileWidth", idealWidth: ProfilePanel.width,
+                    widthRange: ProfilePanel.width...480, closeTitle: "Close Profile"
+                ) {
+                    showsProfile = false
+                } panel: {
+                    panel
                 }
-                .preference(key: OpenPanelWidth.self, value: showsProfile && panel != nil ? ProfilePanel.width : 0)
-                .profileCloseButton(shown: showsProfile && panel != nil) { showsProfile = false }
                 .focusedSceneValue(
                     \.chatPanel,
                     panel.map { _ in
@@ -642,19 +643,6 @@ struct ContactsSplitView<Footer: View>: View {
                         if let toggle { toggle }
                         search
                         newRoom
-                    }
-                }
-            }
-        }
-
-        /// The open profile panel's close button, at the window's top right over the panel and level
-        /// with the window buttons.
-        fileprivate func profileCloseButton(shown: Bool, close: @escaping () -> Void) -> some View {
-            toolbar {
-                if shown {
-                    ToolbarSpacer(.flexible)
-                    ToolbarItem {
-                        Button("Close Profile", systemImage: "xmark", action: close).help("Close Profile")
                     }
                 }
             }

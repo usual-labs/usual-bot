@@ -95,6 +95,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Changed
 
+- **A thin, quiet scroll bar in chats and rooms on the Mac,** instead of the wide bright one macOS shows with a mouse connected. It widens under the pointer, and you can drag it.
+- **Smoother profile and room panels on the Mac.** They slide in fast and settle, instead of moving at one speed and pausing on the way. The room's details get a close button like a profile's, and a Bot's ••• menu sits beside it.
 - **The pointing hand over everything you can click on the Mac,** and switches in the system's blue, so on and off are easy to tell apart.
 - **Quieter buttons.** The message box's attach, mic and Stop buttons, and the Mac's React, Reply and More beside a message, are plain icons instead of glass circles. Send and the call button keep the Bot's colour.
 - **A wider message box on iPhone, and the keyboard goes away with a tap.** Tap the conversation to put the keyboard away, as well as swiping down it; the box no longer jumps as the keyboard finishes going.

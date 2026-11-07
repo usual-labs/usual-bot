@@ -27,6 +27,8 @@ struct ConversationScroll<Content: View>: View {
     #if os(iOS)
         /// A message's words, shown to select part of.
         @State private var selecting: SelectingText?
+    #else
+        @State private var knob = ScrollKnobModel()
     #endif
 
     var body: some View {
@@ -56,6 +58,23 @@ struct ConversationScroll<Content: View>: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollPosition($position)
+            #if os(macOS)
+                // Our own thin knob instead (`ScrollKnob`). `.never`: `.hidden` still shows the
+                // system's when a mouse is connected.
+                .scrollIndicators(.never)
+                .onScrollGeometryChange(for: ScrollKnobGeometry.self, of: ScrollKnobGeometry.init) {
+                    knob.geometry = $1
+                }
+                .overlay {
+                    ScrollKnob(model: knob) { y in
+                        var transaction = Transaction()
+                        transaction.disablesAnimations = true
+                        withTransaction(transaction) { position.scrollTo(y: y) }
+                    } dragging: { byHand in
+                        move(to: scroll.scrollingByHand(byHand))
+                    }
+                }
+            #endif
             .scrollDismissesKeyboard(.interactively)
             .defaultScrollAnchor(.bottom, for: .initialOffset)
             // No size-change anchor: only this policy moves the viewport as the content changes.

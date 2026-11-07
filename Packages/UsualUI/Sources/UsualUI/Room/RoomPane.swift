@@ -47,7 +47,7 @@ struct RoomPane: View {
                 replyTo = nil
                 showsInfo = false
             }
-            // Inside the inspector: outside, the name drops below the window buttons' line.
+            // Inside the side panel's row: outside, the name drops below the window buttons' line.
             .paneChrome()
             #if os(macOS)
                 .focusedSceneValue(
@@ -56,11 +56,14 @@ struct RoomPane: View {
                         showsInfo.toggle()
                     }
                 )
-                .inspector(isPresented: $showsInfo) {
+                .sidePanel(
+                    isPresented: showsInfo, widthKey: "roomDetailsWidth", idealWidth: Self.panelWidth,
+                    widthRange: 260...400, closeTitle: "Close Room Details"
+                ) {
+                    showsInfo = false
+                } panel: {
                     RoomPanel(room: contact, members: members)
-                    .inspectorColumnWidth(min: 260, ideal: Self.panelWidth, max: 400)
                 }
-                .preference(key: OpenPanelWidth.self, value: showsInfo ? Self.panelWidth : 0)
             #else
                 // Pushed, as a Bot's profile is. A compact inspector drops the name from the bar.
                 .navigationDestination(isPresented: $showsInfo) {
@@ -76,8 +79,7 @@ struct RoomPane: View {
             }
     }
 
-    /// The room panel's usual width, which the window's minimum width makes room for. The split
-    /// view keeps an inspector near this rather than shrinking it to its minimum.
+    /// The room panel's width until you drag it.
     static let panelWidth: CGFloat = 300
 
     @ViewBuilder private var content: some View {
@@ -224,12 +226,3 @@ struct RoomPane: View {
             prefill: .constant(nil))
     }
 }
-
-#if os(macOS)
-    /// The open side panel's (profile or room) usual width; 0 with none open. The window keeps room
-    /// for it, or the panel pushes the sidebar and the chat out of the window.
-    struct OpenPanelWidth: PreferenceKey {
-        static let defaultValue: CGFloat = 0
-        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-    }
-#endif

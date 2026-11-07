@@ -41,8 +41,9 @@ struct ProfilePanel: View {
     @State private var isDropTarget = false
     @Environment(\.botEditing) private var botEditing
 
-    /// The Mac panel's usual width, which the window's minimum width makes room for.
-    static let width: CGFloat = 320
+    /// The Mac panel's width until you drag it, and the narrowest it goes: the grouped form with its
+    /// five tabs is no narrower, and a narrower panel cut it off at both sides.
+    static let width: CGFloat = 390
 
     #if os(iOS)
         private static let nameSize: CGFloat = 24
@@ -55,6 +56,7 @@ struct ProfilePanel: View {
             // One form per tab, with the Bot and the tabs scrolling at its top.
             page(tab, top: AnyView(macTop))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .topTrailing) { editMenu }
                 .botEditor($botEdit)
         #else
             // Pushed from the chat: who it is, then a row for each page, as in Settings.
@@ -122,6 +124,26 @@ struct ProfilePanel: View {
     }
 
     #if os(macOS)
+        /// Rename, picture and delete, beside the panel's close button. A menu with a drawn label
+        /// takes the plain style and its own pointing hand (see known issues).
+        @ViewBuilder private var editMenu: some View {
+            if let botEditing {
+                Menu {
+                    BotMenuItems(contact: contact, editing: botEditing, edit: $botEdit)
+                } label: {
+                    SidePanelIcon(systemName: "ellipsis")
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .clickable()
+                .help("Edit Bot")
+                .accessibilityLabel(Text("Edit Bot"))
+                .sidePanelTopRow(beforeClose: true)
+            }
+        }
+
         /// The Bot and the tabs, as the first section of each page's form.
         private var macTop: some View {
             Section {
@@ -164,24 +186,6 @@ struct ProfilePanel: View {
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            #if os(macOS)
-                if let botEditing {
-                    Menu {
-                        BotMenuItems(contact: contact, editing: botEditing, edit: $botEdit)
-                    } label: {
-                        Label("Edit Bot", systemImage: "ellipsis")
-                    }
-                    .menuStyle(.button)
-                    .buttonStyle(.bordered)
-                    .buttonBorderShape(.circle)
-                    .labelStyle(.iconOnly)
-                    .menuIndicator(.hidden)
-                    .fixedSize()
-                    .clickable()
-                    .help("Edit Bot")
-                    .padding(.top, 4)
-                }
-            #endif
         }
         .frame(maxWidth: .infinity)
     }

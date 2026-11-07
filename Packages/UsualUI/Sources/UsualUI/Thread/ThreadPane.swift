@@ -343,7 +343,7 @@ struct NamePill: View {
     var body: some View {
         Group {
             if let action {
-                Button(action: action) { label }
+                Button(action: macAction(action)) { label }
                     #if os(iOS)
                         // The Mac's is in the View menu.
                         .keyboardShortcut("i", modifiers: .command)
@@ -359,6 +359,18 @@ struct NamePill: View {
         .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .accessibilityAddTraits(.isHeader)
         .accessibilityShowsLargeContentViewer()
+    }
+
+    /// On the Mac a click opens or closes the side panel a moment after the button lets go. In the
+    /// same update as the release, the button's pressed look turns animation off for its label, so
+    /// the name jumped to its new place while the rest of the chat slid. A press from VoiceOver or
+    /// accessibility never sets that state and slid either way.
+    private func macAction(_ action: @escaping () -> Void) -> () -> Void {
+        #if os(macOS)
+            { DispatchQueue.main.async(execute: action) }
+        #else
+            action
+        #endif
     }
 
     private var label: some View {
