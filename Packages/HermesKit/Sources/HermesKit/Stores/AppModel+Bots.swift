@@ -32,7 +32,7 @@ extension AppModel {
 
     /// The profile names on the gateway, which a new Bot can't take.
     public var takenBotNames: Set<String> {
-        Set(contacts.filter { $0.kind == .agent }.map { $0.details?.profile ?? $0.id })
+        Set((contacts + hiddenBots).filter { $0.kind == .agent }.map { $0.details?.profile ?? $0.id })
     }
 
     /// The rooms `contact` is a member of.
@@ -153,6 +153,36 @@ extension AppModel {
         forgetAgent(contact.id)
     }
 
+    /// Takes a Bot out of the sidebar on every device, and the official app's too. It keeps working:
+    /// its routines run, it replies in rooms, and its chat is kept. Its notifications stop, as the
+    /// push plugin reads the same setting.
+    public func hideBot(_ contact: Contact) async throws {
+        guard let contact = contacts.first(where: { $0.id == contact.id }), contact.kind == .agent else { return }
+        try await saveHidden(true, contact)
+        contacts.removeAll { $0.id == contact.id }
+        hiddenBots.removeAll { $0.id == contact.id }
+        hiddenBots.append(contact)
+        if visibleContactID == contact.id { visibleContactID = nil }
+    }
+
+    /// Puts a hidden Bot back in the sidebar, in the section it was in.
+    public func showBot(_ contact: Contact) async throws {
+        guard let contact = hiddenBots.first(where: { $0.id == contact.id }) else { return }
+        try await saveHidden(false, contact)
+        hiddenBots.removeAll { $0.id == contact.id }
+        contacts.removeAll { $0.id == contact.id }
+        contacts.append(contact)
+        sections.reconcile(contacts)
+    }
+
+    private func saveHidden(_ isHidden: Bool, _ contact: Contact) async throws {
+        if !isDemo {
+            guard let channel else { throw GatewayError.disconnected }
+            try await BotMetaWrite.setHidden(isHidden, profile: contact.details?.profile ?? contact.id, on: channel)
+        }
+        rosterHolds.setHidden(contact.id, isHidden)
+    }
+
     private func setPicture(_ picture: Contact.Picture?, of id: Contact.ID) {
         rosterHolds.setPicture(id, picture)
         if let index = contacts.firstIndex(where: { $0.id == id }) { contacts[index].picture = picture }
@@ -190,7 +220,7 @@ extension AppModel {
             let holding = claims.filter { [$0.canonicalSession?.id, $0.canonicalSession?.resolvedId].contains(chat) }
             if holding.count == 1 { return holding[0].name }
         }
-        let named = claims.filter { Contact(profile: $0)?.name == contact?.name }
+        let named = claims.filter { Contact(profile: $0).name == contact?.name }
         return named.count == 1 ? named[0].name : nil
     }
 
@@ -240,7 +270,7 @@ extension AppModel {
 
     #if DEBUG
         /// The demo has no gateway: a new Bot gets an empty chat that answers with the scripted reply.
-        private func addDemoBot(_ contact: Contact) {
+        func addDemoBot(_ contact: Contact) {
             let thread = ChatThread.sample(contact.id, state: ThreadState(history: [], running: false))
             thread.playsDemoReplies = true
             threads[contact.id] = thread

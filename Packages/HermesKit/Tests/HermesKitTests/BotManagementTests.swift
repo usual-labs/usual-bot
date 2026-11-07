@@ -77,6 +77,27 @@ struct BotProfilesTests {
         #expect(sent["ui_meta_expected_revisions"] == ["hermes-bots": 4])
     }
 
+    @Test func hidingAndShowingSaveOnlyTheFlagAsTheOfficialAppDoes() async throws {
+        let gateway = ScriptedGateway()
+        let channel = await channel(gateway)
+        let row: JSONValue = [
+            "name": "scout", "ui_meta": ["hermes-bots": ["title": "Scout", "sectionId": "s1"]],
+            "ui_meta_revisions": ["hermes-bots": 2],
+        ]
+        async let hide: Void = BotMetaWrite.setHidden(true, profile: "scout", on: channel)
+        _ = try await gateway.answer(0, method: "profiles.list", result: ["profiles": .array([row])])
+        let hidden = try await gateway.answer(1, method: "profiles.configure", result: saved)
+        try await hide
+        #expect(hidden["ui_meta"]?["hermes-bots"] == ["title": "Scout", "sectionId": "s1", "hidden": true])
+
+        // The official app shows a Bot again with `false`, not by dropping the key.
+        async let show: Void = BotMetaWrite.setHidden(false, profile: "scout", on: channel)
+        _ = try await gateway.answer(2, method: "profiles.list", result: ["profiles": .array([row])])
+        let shown = try await gateway.answer(3, method: "profiles.configure", result: saved)
+        try await show
+        #expect(shown["ui_meta"]?["hermes-bots"]?["hidden"] == false)
+    }
+
     @Test func aPictureIsStoredThenMarkedAPhoto() async throws {
         let gateway = ScriptedGateway()
         let channel = await channel(gateway)
@@ -171,6 +192,27 @@ struct RosterHoldsTests {
         holds.rename("scout", to: "Scouty")
         #expect(holds.apply(to: [scout]).first?.name == "Scouty")
         #expect(holds.apply(to: [Contact(id: "scout", name: "Scouty")]).first?.name == "Scouty")
+        #expect(holds.isEmpty)
+    }
+
+    @Test func hidingAndShowingHoldThroughAStaleRead() {
+        var holds = RosterHolds()
+        holds.setHidden("scout", true)
+        #expect(holds.hidden(among: [scout, ops], reported: []) == ["scout"])
+        #expect(holds.hidden(among: [scout, ops], reported: ["scout"]) == ["scout"])
+        #expect(holds.isEmpty)
+
+        holds.setHidden("scout", false)
+        #expect(holds.hidden(among: [scout, ops], reported: ["scout"]).isEmpty)
+        #expect(holds.hidden(among: [scout, ops], reported: []).isEmpty)
+        #expect(holds.isEmpty)
+    }
+
+    @Test func aHideTheGatewayNeverShowsGivesWayAfterThreeReads() {
+        var holds = RosterHolds()
+        holds.setHidden("scout", true)
+        for _ in 0..<RosterHolds.reads { #expect(holds.hidden(among: [scout], reported: []) == ["scout"]) }
+        #expect(holds.hidden(among: [scout], reported: []).isEmpty)
         #expect(holds.isEmpty)
     }
 
@@ -304,6 +346,60 @@ struct BotStateTests {
         #expect(model.threads["scout"] != nil)
     }
 
+    @Test func aRosterReadListsHiddenBotsApart() async throws {
+        let model = model()
+        let gateway = ScriptedGateway()
+        let channel = JSONRPCChannel(socket: gateway.socket)
+        await channel.start()
+        async let read: Void = model.refreshRoster(on: channel)
+        _ = try await gateway.answer(
+            0, method: "profiles.list",
+            result: [
+                "profiles": [
+                    ["name": "ops"],
+                    ["name": "scout", "ui_meta": ["hermes-bots": ["title": "Scouty", "hidden": true]]],
+                    ["name": "ledger", "ui_meta": ["hermes-bots": ["hidden": false]]],
+                ]
+            ])
+        _ = try await gateway.answer(1, method: "groups.list", error: (4004, "no rooms"))
+        try await read
+        #expect(model.contacts.map(\.id) == ["ops", "ledger"])
+        #expect(model.hiddenBots.map(\.name) == ["Scouty"])
+        // A new Bot can't take a hidden one's name.
+        #expect(model.takenBotNames.contains("scout"))
+    }
+
+    @Test func hidingTakesTheBotOutOfTheSidebarAndKeepsItsChat() async throws {
+        let model = model()
+        model.isDemo = true
+        let scout = agent("scout")
+        model.contacts = [scout, agent("ops")]
+        model.threads["scout"] = ChatThread.sample("scout", state: ThreadState(history: [], running: false))
+        model.visibleContactID = "scout"
+
+        try await model.hideBot(scout)
+        #expect(model.contacts.map(\.id) == ["ops"])
+        #expect(model.hiddenBots.map(\.id) == ["scout"])
+        #expect(model.threads["scout"] != nil)
+        #expect(model.visibleContactID == nil)
+        // A read that started before the hide doesn't bring it back.
+        #expect(model.rosterHolds.hidden(among: [scout, agent("ops")], reported: []) == ["scout"])
+
+        try await model.showBot(scout)
+        #expect(model.contacts.map(\.id) == ["ops", "scout"])
+        #expect(model.hiddenBots.isEmpty)
+        #expect(model.rosterHolds.hidden(among: [scout, agent("ops")], reported: ["scout"]).isEmpty)
+    }
+
+    @Test func hidingNeedsTheGateway() async throws {
+        let model = model()
+        let scout = agent("scout")
+        model.contacts = [scout]
+        await #expect(throws: GatewayError.disconnected) { try await model.hideBot(scout) }
+        #expect(model.contacts.map(\.id) == ["scout"])
+        #expect(model.hiddenBots.isEmpty)
+    }
+
     @Test func aBotJustMadeHereIsntForgottenByAStaleRead() async throws {
         let model = model()
         model.isDemo = true
@@ -387,5 +483,17 @@ struct DemoBotTests {
         try await model.deleteBot(contact)
         #expect(model.contacts.contains { $0.id == made.id } == false)
         #expect(model.threads[made.id] == nil)
+    }
+
+    @Test func theDemoHasAHiddenBotToShowAgain() async throws {
+        let model = AppModel.demo()
+        let courier = try #require(model.hiddenBots.first)
+        #expect(!model.sidebarContacts.contains { $0.id == courier.id })
+
+        try await model.showBot(courier)
+        #expect(model.sidebarContacts.contains { $0.id == courier.id })
+        #expect(model.threads[courier.id]?.phase == .ready)
+        try await model.hideBot(courier)
+        #expect(model.hiddenBots.map(\.id) == [courier.id])
     }
 }

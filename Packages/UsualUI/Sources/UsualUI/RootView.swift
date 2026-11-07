@@ -50,7 +50,8 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
             ConnectView(model: model, presenter: presenter, options: connectOptions)
         case .signedIn(let gateway):
             ContactsSplitView(
-                contacts: model.sidebarContacts, sections: model.sections, emptyText: model.link.emptyListText,
+                contacts: model.sidebarContacts, sections: model.sections, hiddenBots: model.hiddenBots,
+                emptyText: model.link.emptyListText,
                 tryAgain: model.link.offersTryAgain ? { model.reconnect() } : nil,
                 thread: { $0.kind == .agent ? model.thread(for: $0) : nil },
                 room: { model.room(for: $0) },
@@ -157,6 +158,8 @@ struct ContactsSplitView<Footer: View>: View {
     let contacts: [Contact]
     /// How the sidebar is grouped; `nil` lists everything together.
     var sections: SidebarSections?
+    /// Not listed, but still in their rooms.
+    var hiddenBots: [Contact] = []
     var emptyText = String(localized: "No Bots yet.")
     /// Shown under `emptyText` as Try Again, when there's something to try again.
     var tryAgain: (() -> Void)?
@@ -224,8 +227,8 @@ struct ContactsSplitView<Footer: View>: View {
             .environment(\.roomEditing, roomEditing)
             .environment(
                 \.botEditing,
-                // Deleting the open Bot closes its chat.
-                botEditing?.afterDeleting { if selection == $0.id { selection = nil } }
+                // Hiding or deleting the open Bot closes its chat.
+                botEditing?.afterRemoving { if selection == $0.id { selection = nil } }
             )
             .sheet(isPresented: $showsNewRoom) {
                 if let createRoom {
@@ -351,7 +354,8 @@ struct ContactsSplitView<Footer: View>: View {
                 }
             } else {
                 ContactList(
-                    contacts: contacts, sections: sections, query: query, compact: compact, selection: $selection,
+                    contacts: contacts, sections: sections, hiddenBots: hiddenBots, query: query, compact: compact,
+                    selection: $selection,
                     messages: search.hits(query), status: search.status(query), openMessage: show)
             }
             #if os(macOS)
@@ -508,7 +512,7 @@ struct ContactsSplitView<Footer: View>: View {
             RoomPane(
                 contact: contact, members: members(of: contact), room: room,
                 agents: Dictionary(
-                    contacts.filter { $0.kind == .agent }.map { ($0.id, $0) },
+                    (contacts + hiddenBots).filter { $0.kind == .agent }.map { ($0.id, $0) },
                     uniquingKeysWith: { first, _ in first }),
                 skills: skills, jump: jump(in: contact), jumped: { jump = nil })
         } else if let contact = contacts.first(where: { $0.id == selection }) {
@@ -620,7 +624,7 @@ struct ContactsSplitView<Footer: View>: View {
     }
 
     private func members(of contact: Contact) -> [Contact] {
-        let byID = Dictionary(contacts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let byID = Dictionary((contacts + hiddenBots).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         return ContactList.members(of: contact, in: byID)
     }
 }

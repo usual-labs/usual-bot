@@ -29,6 +29,9 @@
                     }),
                 apps: Dictionary(
                     uniqueKeysWithValues: demo.agents.map { ($0.id, MCPServerList.demo(gateway: Demo.gateway)) }))
+            // One Bot hidden, so Settings › General has one to show again.
+            model.hiddenBots = [demo.courier]
+            model.addDemoBot(demo.courier)
             model.media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }
             model.usage = .demo(
                 agents: { [weak model] in model?.contacts.filter { $0.kind == .agent } ?? [] }, now: now)
@@ -117,6 +120,12 @@
                     about: "Keeps the books: invoices, receipts and the monthly close.",
                     section: Self.backOffice),
             ]
+        }
+
+        var courier: Contact {
+            agent(
+                "courier", "Courier", preview: "The weekly newsletter went out", minutesAgo: 3 * 1440,
+                about: "Sends the weekly newsletter and answers replies to it.")
         }
 
         private static let product = ContactSection(id: "demo-product", name: "Product")

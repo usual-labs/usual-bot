@@ -173,6 +173,13 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 - **Muting is per device and per chat, and everything starts on.** Settings › Notifications lists
   Bots; the plugin skips a device whose `muted` holds the chat. Messages, "needs you", previews and
   sound are per device too, taken from that device's Alerts switches.
+- **A hidden Bot is quiet on every device, except in rooms.** Hiding is the official app's
+  `ui_meta['hermes-bots'].hidden`, which Hermes keeps in the profile's `profile.yaml`; the plugin
+  reads it there before each push from that Bot's own chat, rather than each app muting it, so a Bot
+  hidden in the official app is quiet too and showing it again doesn't undo a mute you chose. Rooms
+  aren't hidden, so a hidden member's room replies still notify. A gateway with plugin 0.2.0 still
+  pushes for hidden Bots until it's reinstalled. The official app shows a Bot again by writing
+  `hidden: false`, and so does this one.
 - **Once the gateway pushes to a device, its own alerts cover only background tasks,** or each
   message would arrive twice. A build without push keeps local alerts for everything.
 - **Push is off unless the build sets `USUAL_PUSH = YES`.** It needs a paid team with Push

@@ -10,6 +10,7 @@ struct BotEditing {
     let rename: (Contact, String) async throws -> Void
     let setPicture: (Contact, Data) async throws -> Void
     let removePicture: (Contact) async throws -> Void
+    let hide: (Contact) async throws -> Void
     let delete: (Contact) async throws -> Void
     let canDelete: (Contact) -> Bool
     /// The rooms a Bot is in, to say what deleting it does to them.
@@ -24,20 +25,25 @@ extension BotEditing {
             rename: { try await model.renameBot($0, to: $1) },
             setPicture: { try await model.setBotPicture($0, to: $1) },
             removePicture: { try await model.removeBotPicture($0) },
+            hide: { try await model.hideBot($0) },
             delete: { try await model.deleteBot($0) },
             canDelete: { model.canDeleteBot($0) },
             rooms: { model.rooms(including: $0) })
     }
 
-    /// The same, with `deleted` told once a Bot is gone.
-    func afterDeleting(_ deleted: @escaping (Contact) -> Void) -> BotEditing {
-        let delete = delete
+    /// The same, with `gone` told once a Bot is out of the sidebar: hidden or deleted.
+    func afterRemoving(_ gone: @escaping (Contact) -> Void) -> BotEditing {
+        let (hide, delete) = (hide, delete)
         return BotEditing(
             unavailable: unavailable, takenNames: takenNames, create: create, rename: rename, setPicture: setPicture,
             removePicture: removePicture,
+            hide: { contact in
+                try await hide(contact)
+                gone(contact)
+            },
             delete: { contact in
                 try await delete(contact)
-                deleted(contact)
+                gone(contact)
             }, canDelete: canDelete, rooms: rooms)
     }
 }
@@ -54,18 +60,20 @@ enum BotEdit: Equatable {
     case removePicture(Contact)
     /// A picture already chosen, such as one dropped on the Bot.
     case usePicture(Contact, Data)
+    /// Asks nothing: Settings › General lists it to show again.
+    case hide(Contact)
     case delete(Contact)
 }
 
 extension View {
     /// Asks for what `edit` needs, then makes the change. Each place that offers these holds its own,
-    /// as with rooms. `deleted` hears of a Bot that's gone, to close what showed it.
+    /// as with rooms. `deleted` hears of a Bot hidden or gone, to close what showed it.
     func botEditor(_ edit: Binding<BotEdit?>, deleted: @escaping (Contact) -> Void = { _ in }) -> some View {
         modifier(BotEditor(edit: edit, deleted: deleted))
     }
 }
 
-/// Rename, Change Picture, Remove Picture and Delete, for a context menu or a `…` button. While
+/// Rename, Change Picture, Remove Picture, Hide and Delete, for a context menu or a `…` button. While
 /// nothing can change they're disabled, with the reason below them.
 struct BotMenuItems: View {
     let contact: Contact
@@ -79,6 +87,7 @@ struct BotMenuItems: View {
             if contact.picture != nil {
                 Button("Remove Picture", systemImage: "person.crop.circle") { edit = .removePicture(contact) }
             }
+            Button("Hide Bot", systemImage: "eye.slash") { edit = .hide(contact) }
         }
         .disabled(editing.unavailable != nil)
         if editing.canDelete(contact) {
@@ -143,6 +152,9 @@ private struct BotEditor: ViewModifier {
                 case .usePicture(let contact, let data):
                     edit = nil
                     setPicture(data, of: contact)
+                case .hide(let contact):
+                    edit = nil
+                    hide(contact)
                 default: break
                 }
             }
@@ -179,6 +191,18 @@ private struct BotEditor: ViewModifier {
                 try await editing.removePicture(contact)
             } catch {
                 problem = String(localized: "\(contact.name)'s picture is still there. \(AppModel.describe(error))")
+            }
+        }
+    }
+
+    private func hide(_ contact: Contact) {
+        guard let editing else { return }
+        Task {
+            do {
+                try await editing.hide(contact)
+                deleted(contact)
+            } catch {
+                problem = String(localized: "\(contact.name) wasn't hidden. \(AppModel.describe(error))")
             }
         }
     }

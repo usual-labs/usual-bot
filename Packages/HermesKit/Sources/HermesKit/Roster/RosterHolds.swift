@@ -1,8 +1,8 @@
 import Foundation
 
-/// Bots made, renamed, given a picture or deleted from this app, held over the roster read every
-/// few seconds. A read can start before the change and land after it, and would put the Bot back
-/// as it was. Each change holds until a read shows it, or for three reads (15 s), after which the
+/// Bots made, renamed, given a picture, hidden, shown or deleted from this app, held over the
+/// roster read every few seconds. A read can start before the change and land after it, and would
+/// put the Bot back as it was. Each change holds until a read shows it, or for three reads (15 s), after which the
 /// gateway's word stands, as with sidebar sections.
 struct RosterHolds {
     static let reads = 3
@@ -16,11 +16,14 @@ struct RosterHolds {
     private var removed: [Contact.ID: Hold<Void>] = [:]
     private var names: [Contact.ID: Hold<String>] = [:]
     private var pictures: [Contact.ID: Hold<Contact.Picture?>] = [:]
+    private var hiding: [Contact.ID: Hold<Bool>] = [:]
 
     /// Bots made here that no roster read has listed yet.
     var added: Set<Contact.ID> { Set(additions.keys) }
 
-    var isEmpty: Bool { additions.isEmpty && removed.isEmpty && names.isEmpty && pictures.isEmpty }
+    var isEmpty: Bool {
+        additions.isEmpty && removed.isEmpty && names.isEmpty && pictures.isEmpty && hiding.isEmpty
+    }
 
     mutating func add(_ contact: Contact) {
         removed[contact.id] = nil
@@ -31,6 +34,7 @@ struct RosterHolds {
         additions[id] = nil
         names[id] = nil
         pictures[id] = nil
+        hiding[id] = nil
         removed[id] = Hold(value: ())
     }
 
@@ -42,6 +46,27 @@ struct RosterHolds {
     mutating func setPicture(_ id: Contact.ID, _ picture: Contact.Picture?) {
         pictures[id] = Hold(value: picture)
         additions[id]?.value.picture = picture
+    }
+
+    mutating func setHidden(_ id: Contact.ID, _ isHidden: Bool) {
+        hiding[id] = Hold(value: isHidden)
+    }
+
+    /// Which of `agents` are hidden, given the ones a roster read says are, with a change made here
+    /// that it doesn't show yet. Call it once for each read, after `apply(to:)`.
+    mutating func hidden(among agents: [Contact], reported: Set<Contact.ID>) -> Set<Contact.ID> {
+        var hidden = reported
+        for (id, hold) in hiding {
+            if reported.contains(id) == hold.value || hold.readsLeft <= 0 {
+                hiding[id] = nil
+            } else if hold.value {
+                hidden.insert(id)
+            } else {
+                hidden.remove(id)
+            }
+        }
+        for id in Array(hiding.keys) { hiding[id]?.readsLeft -= 1 }
+        return hidden.intersection(agents.map(\.id))
     }
 
     /// `agents` from a roster read, with what it doesn't show yet put back. Counts as one read.

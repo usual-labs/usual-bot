@@ -98,8 +98,11 @@ public struct QuickMessageView: View {
         return contacts.first { $0.id == id } ?? contacts.first
     }
 
+    /// With hidden Bots, which still speak in rooms.
     private var agentsByProfile: [Contact.ID: Contact] {
-        Dictionary(contacts.filter { $0.kind == .agent }.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        Dictionary(
+            (contacts + model.hiddenBots).filter { $0.kind == .agent }.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first })
     }
 
     private var recipientRow: some View {

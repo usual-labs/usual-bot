@@ -1,7 +1,7 @@
 import Foundation
 
 /// Saves a Bot's own settings on the gateway, in `ui_meta['hermes-bots']`: its sidebar section,
-/// its name and what kind of picture it has.
+/// its name, what kind of picture it has and whether it's hidden.
 enum BotMetaWrite {
     private static let key = "hermes-bots"
     private static let attempts = 3
@@ -24,6 +24,11 @@ enum BotMetaWrite {
     /// which is how every app learns to read its picture again.
     static func setPictureKind(isPhoto: Bool, profile: String, on channel: JSONRPCChannel) async throws {
         try await update(profile: profile, on: channel) { $0["imageKind"] = .string(isPhoto ? "photo" : "shape") }
+    }
+
+    /// Hides the Bot from the sidebar, or shows it again; the official app writes `false` to show.
+    static func setHidden(_ isHidden: Bool, profile: String, on channel: JSONRPCChannel) async throws {
+        try await update(profile: profile, on: channel) { $0["hidden"] = .bool(isHidden) }
     }
 
     /// `profiles.configure` replaces the whole `hermes-bots` value, and the official app keeps more

@@ -18,6 +18,10 @@ struct ProfileRow: Decodable, Sendable {
     /// The names this profile had before `hermes profile rename` (or the dashboard) renamed it.
     let previousNames: [String]
 
+    /// Hidden from the sidebar, here or in the official app. Hermes keeps it in `profile.yaml`,
+    /// where the push plugin reads it too.
+    var isHidden: Bool { bot?.hidden == true }
+
     /// The desktop's per-bot presentation settings, stored in `profile.yaml` under
     /// `ui_meta['hermes-bots']`.
     struct BotMeta: Decodable, Sendable {
@@ -107,9 +111,8 @@ struct ProfileList: Decodable, Sendable {
 }
 
 extension Contact {
-    /// A sidebar contact for a profile, or `nil` when the user hid that bot.
-    init?(profile: ProfileRow) {
-        guard profile.bot?.hidden != true else { return nil }
+    /// A Bot for a profile, hidden or not (`ProfileRow.isHidden`).
+    init(profile: ProfileRow) {
         let name = [profile.bot?.title, profile.displayName].lazy
             .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
             .first { !$0.isEmpty }

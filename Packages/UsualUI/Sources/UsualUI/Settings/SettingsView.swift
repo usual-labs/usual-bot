@@ -150,6 +150,7 @@ public struct SettingsView: View {
             switch page {
             case .general:
                 GeneralSettings()
+                if model.isSignedIn { HiddenBotsSection(model: model) }
                 BrowserSettings()
                 if let desktopControls { desktopControls }
                 #if os(macOS)

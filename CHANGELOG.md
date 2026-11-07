@@ -8,6 +8,7 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Added
 
+- **Hide a Bot.** Choose **Hide Bot** from a Bot's menu in the sidebar or its profile to take it out of the sidebar on every device, and out of the Hermes app's list. It keeps working and stays in its rooms, but doesn't notify you. Settings › General › Hidden Bots lists hidden Bots, including ones hidden in the Hermes app, with **Show** to bring each back. Quiet notifications need the `usual-push` plugin 0.3.0 on the gateway.
 - **Wait for whole replies.** Turn off Settings › General › Show replies as they're written, and each of an agent's messages appears once it's finished, with "Writing…" while it's on the way. Quick Message follows it too.
 - **See where tokens go.** Settings › Usage shows your Bots' tokens over the last 7, 30 or 90 days by day and by Bot, what was written, sent new or sent again, the background work beside your chats, and the cost when Hermes knows it.
 - **Connect apps from the chat.** When an agent needs an account such as Gmail, or an MCP server's sign-in, a card offers Connect and Not now, opens the sign-in page, and updates once you're done. The Apps page lists the accounts Hermes reaches through your Nous Portal, with Connect and Disconnect.

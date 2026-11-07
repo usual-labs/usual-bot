@@ -24,7 +24,9 @@ struct RosterTests {
 
     @Test func mapsProfilesToContacts() throws {
         let value = try JSONDecoder().decode(JSONValue.self, from: Data(Self.listJSON.utf8))
-        let contacts = try value.decode(ProfileList.self).profiles.compactMap(Contact.init(profile:))
+        let rows = try value.decode(ProfileList.self).profiles
+        #expect(rows.filter(\.isHidden).map(\.name) == ["old-bot"])
+        let contacts = rows.filter { !$0.isHidden }.map(Contact.init(profile:))
 
         #expect(contacts.map(\.id) == ["default", "scout", "ops"])
 

@@ -24,6 +24,9 @@ public final class AppModel {
     public internal(set) var link: Link = .connecting
     /// The agents and rooms the gateway reports, in its own terms. Show `sidebarContacts` instead.
     public internal(set) var contacts: [Contact] = []
+    /// Bots hidden from the sidebar, here or in the official app. They still work, and still reply
+    /// in rooms; Settings lists them to show again.
+    public internal(set) var hiddenBots: [Contact] = []
     /// The chat on screen, if any. Its replies don't count as unread.
     public var visibleContactID: Contact.ID? {
         didSet {
@@ -223,6 +226,7 @@ public final class AppModel {
         }
         auth = nil
         contacts = []
+        hiddenBots = []
         threads = [:]
         routineLists = [:]
         skillLists = [:]
@@ -602,8 +606,11 @@ public final class AppModel {
         let result = try await channel.call("profiles.list", params: ["include_sessions": true])
         let list = try result.decode(ProfileList.self)
         followProfileChanges(list.profiles)
-        let agents = rosterHolds.apply(to: list.profiles.compactMap(Contact.init(profile:)))
-        pictures.refresh(agents, on: channel)
+        let all = rosterHolds.apply(to: list.profiles.map(Contact.init(profile:)))
+        let hidden = rosterHolds.hidden(among: all, reported: Set(list.profiles.filter(\.isHidden).map(\.name)))
+        pictures.refresh(all, on: channel)
+        hiddenBots = all.filter { hidden.contains($0.id) }
+        let agents = all.filter { !hidden.contains($0.id) }
         contacts = agents + (await refreshRooms(on: channel) ?? contacts.filter { $0.kind != .agent })
         sections.reconcile(contacts)
         rosterReads += 1

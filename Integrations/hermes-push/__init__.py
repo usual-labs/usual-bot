@@ -31,6 +31,24 @@ def _profile() -> str:
     return home.name if home.parent.name == "profiles" else "default"
 
 
+def _is_hidden() -> bool:
+    """Hidden from the sidebar, in Usual Bot or the official app: it keeps working, quietly.
+
+    Hermes keeps that in the profile's ``profile.yaml``, under ``ui_meta['hermes-bots'].hidden``.
+    """
+    try:
+        from hermes_constants import get_hermes_home
+
+        try:
+            from hermes_yaml import safe_load
+        except ImportError:  # A Hermes from before its own YAML module.
+            from yaml import safe_load
+        meta = safe_load((Path(get_hermes_home()) / "profile.yaml").read_text(encoding="utf-8-sig")) or {}
+        return meta.get("ui_meta", {}).get("hermes-bots", {}).get("hidden") is True
+    except Exception:  # Missing or odd: notify, as before hiding existed.
+        return False
+
+
 def _shorten(text: str) -> str:
     line = " ".join(text.split())
     return line if len(line) <= _PREVIEW_LIMIT else line[: _PREVIEW_LIMIT - 1] + "…"
@@ -76,6 +94,16 @@ def _push(kind: str, title: str, preview: str, chat: str) -> None:
     threading.Thread(target=_safely, args=(deliver, kind, title, preview, chat), daemon=True).start()
 
 
+def _push_unless_hidden(kind: str, title: str, preview: str, chat: str) -> None:
+    """A Bot's own chat. A hidden Bot still speaks up in rooms, which aren't hidden."""
+
+    def deliver_unless_hidden() -> None:
+        if not _is_hidden():
+            deliver(kind, title, preview, chat)
+
+    threading.Thread(target=_safely, args=(deliver_unless_hidden,), daemon=True).start()
+
+
 def _safely(action, *args) -> None:
     try:
         action(*args)
@@ -94,7 +122,7 @@ def _on_reply(assistant_response="", platform="", **_) -> None:
     if not assistant_response.strip():
         return
     if platform in _CHAT_PLATFORMS:
-        _push("message", "{name}", assistant_response, _profile())
+        _push_unless_hidden("message", "{name}", assistant_response, _profile())
     elif platform == _ROOM_PLATFORM:
         threading.Thread(
             target=_safely, args=(_deliver_room_reply, _profile(), assistant_response), daemon=True
@@ -105,7 +133,7 @@ def _on_request(kind="", platform="", prompt="", **_) -> None:
     if platform not in _CHAT_PLATFORMS:
         return
     asks = {"approval": f"Wants to run “{prompt}”", "sudo": "Asks for the sudo password"}.get(kind, prompt)
-    _push("needs_you", "{name} needs you", asks, _profile())
+    _push_unless_hidden("needs_you", "{name} needs you", asks, _profile())
 
 
 def _on_room_activity(room_id="", member_id="", kind="", payload=None, **_) -> None:

@@ -8,6 +8,8 @@ struct ContactList: View {
     let contacts: [Contact]
     /// How the list is grouped; `nil` lists everything together.
     var sections: SidebarSections?
+    /// Not listed, but still drawn in their rooms' pictures.
+    var hiddenBots: [Contact] = []
     /// Shows only contacts whose name or last message contains it.
     var query = ""
     /// The narrow window's rail: avatars only.
@@ -30,7 +32,7 @@ struct ContactList: View {
     @Environment(\.botEditing) private var botEditing
 
     var body: some View {
-        let byID = Dictionary(contacts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let byID = Dictionary((contacts + hiddenBots).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let matching = contacts.filter { Self.matches($0, query) }
         Group {
             if matching.isEmpty, messages.isEmpty, status != .searching, !contacts.isEmpty {

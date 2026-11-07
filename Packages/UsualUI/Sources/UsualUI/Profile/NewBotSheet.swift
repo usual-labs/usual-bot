@@ -181,7 +181,8 @@ struct NewBotSheet: View {
     NewBotSheet(
         editing: BotEditing(
             unavailable: nil, takenNames: ["scout"], create: { name, _, _ in NewBot(id: name.profile) },
-            rename: { _, _ in }, setPicture: { _, _ in }, removePicture: { _ in }, delete: { _ in },
+            rename: { _, _ in }, setPicture: { _, _ in }, removePicture: { _ in }, hide: { _ in },
+            delete: { _ in },
             canDelete: { _ in true }, rooms: { _ in [] }),
         created: { _ in })
 }

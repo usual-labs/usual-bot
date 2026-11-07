@@ -71,13 +71,18 @@ Searching lists every match together, without headings.
   a name, and if you like a picture and a line on what it's for. It starts with Hermes's own model,
   skills and tools, and the gateway's sign-ins; change those in the Hermes app. Its chat opens once
   it's made. If Hermes has no model it can use, the app says so before opening it.
-- **Rename, change or remove its picture, or delete it:** right-click the Bot in the sidebar (touch
+- **Rename, change or remove its picture, hide or delete it:** right-click the Bot in the sidebar (touch
   and hold on iPhone), or use **…** in its profile. On the Mac you can also drop a picture on the
   profile's avatar. On iPhone a picture comes from Photos or Files. Pictures are cropped to the
   middle square.
 - **Renaming** changes only the name you see, here and in the Hermes app. The Bot's chats, routines
   and settings stay as they are. If a Bot's profile is renamed elsewhere, such as with `hermes
   profile rename`, Usual Bot keeps its chat, picture and section.
+- **Hiding** takes the Bot out of the sidebar, search and Quick Message on every device, and out
+  of the Hermes app's list too. It keeps working: its routines run and it replies in rooms, but it
+  doesn't notify you (with the push plugin 0.3.0 or later on the gateway). To bring it back, use
+  **Show** beside it in Settings › General › Hidden Bots. Bots hidden in the Hermes app are listed
+  there too.
 - **Deleting** removes the Bot's Hermes profile from the gateway, with its chats, routines, skills,
   memory, vault, keys and apps, from every app. You type its name to confirm. Rooms it was in keep
   it listed, but it can't answer there; delete a room to be rid of it. The default Bot can't be
@@ -410,7 +415,8 @@ and Settings opens with your gateway at the top. Preferences stay on this device
 - **General:** follow the system appearance or choose light or dark, and change chat text size.
   On iPhone the whole app also follows the text size in the system's Display & Brightness or
   Accessibility settings, with chat text size on top of it. Choose whether replies show as
-  they're written or each message appears once it's finished. On Mac, choose Return or ⌘Return to send messages, and whether to launch at login.
+  they're written or each message appears once it's finished. **Hidden Bots** lists the Bots
+  you've hidden, with **Show** to put each back in the sidebar. On Mac, choose Return or ⌘Return to send messages, and whether to launch at login.
 - **Quick Message (Mac):** in General, click the keyboard shortcut and press a new combination
   including Control, Option or Command. Esc cancels. A shortcut macOS refuses leaves your previous
   choice in place. **Disable Shortcut** keeps Quick Message available from the menu bar;
