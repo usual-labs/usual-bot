@@ -25,3 +25,7 @@ design/avatars/*/receipts/
 
 # Python
 __pycache__/
+
+# Local Claude Code state (worktrees, local settings). skills links to .agents/skills.
+.claude/*
+!.claude/skills
