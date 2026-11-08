@@ -29,6 +29,9 @@ list. The most recent conversation is at the top.
   characters.
 - An avatar that gently moves means the Bot is working.
 - A dot on the avatar means it needs you: it's waiting for your approval or an answer.
+- A number counts the replies you haven't read. Reading a Bot's chat on one device clears its count
+  and its notifications on your other devices once they're connected, with a recent Hermes on the
+  gateway. Rooms count on each device.
 - On the Mac, ⌘K or the Search button (also in the narrow rail) finds a chat or room, and opens New
   Bot, New Room, Settings or a theme. On iPhone, search filters the list.
 - Search also finds messages once you type two letters or more: under the chats, Messages lists

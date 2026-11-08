@@ -94,8 +94,13 @@ public final class ChatThread {
     var hasFullHistory = false
     /// The gateway attached without the history, as it was over its size limit.
     private(set) var historyOmitted = false
-    /// When you last had this chat on screen. Replies after it count as unread.
-    private(set) var lastViewed: Date?
+    /// When you last had this chat on screen, or read it on another device (`adoptRead(at:)`).
+    /// Replies after it count as unread.
+    var lastViewed: Date?
+    /// How far the gateway knows this chat was read, on any device (`ReadSync`).
+    var readOnGateway: Date?
+    /// Set by the app: you've just seen this chat's replies so far, so the gateway can hear of it.
+    var wasRead: (() -> Void)?
     /// Set by the app while this chat is on screen.
     var isVisible = false {
         didSet { if isVisible { markViewed() } }
@@ -271,7 +276,10 @@ public final class ChatThread {
             announce(reply)
         }
         if event.type == "message.complete" { finishTurnElsewhere(event.payload) }
-        if isVisible { lastViewed = Date() }
+        if isVisible {
+            lastViewed = Date()
+            if event.type == "message.complete" { wasRead?() }
+        }
     }
 
     func receive(_ approval: ApprovalPrompt) {
@@ -574,6 +582,7 @@ public final class ChatThread {
     private func markViewed() {
         lastViewed = Date()
         unreadCount = 0
+        wasRead?()
     }
 
     // MARK: - Offline cache

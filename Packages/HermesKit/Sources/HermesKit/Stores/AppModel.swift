@@ -114,6 +114,12 @@ public final class AppModel {
     @ObservationIgnored public let pictures = BotPictures()
     /// How the sidebar is grouped.
     @ObservationIgnored public let sections: SidebarSections
+    /// How far each Bot Chat was read, shared with your other devices through the gateway.
+    @ObservationIgnored lazy var readSync: ReadSync = {
+        let sync = ReadSync(auth: { [weak self] in self?.auth }, chats: { [weak self] in self?.readableChats ?? [] })
+        sync.cleared = { [weak self] in self?.alertsCleared?($0) }
+        return sync
+    }()
 
     private static let gatewayKey = "gatewayAddress"
     private static let rosterInterval: Duration = .seconds(5)
@@ -225,6 +231,7 @@ public final class AppModel {
             }
         }
         auth = nil
+        readSync.reset()
         contacts = []
         hiddenBots = []
         threads = [:]
@@ -317,6 +324,7 @@ public final class AppModel {
                 replayEpoch = ready.replayEpoch?.stringValue
                 for thread in threads.values { thread.replayEpoch = replayEpoch }
                 link = .online(ready.dialect)
+                readSync.reset()
                 for screen in screens.values { screen.linkChanged() }
                 await push.refresh()
                 let events = Task { for await event in channel.events { route(event) } }
@@ -328,9 +336,14 @@ public final class AppModel {
                     for thread in threads.values { thread.detach() }
                     Task { await channel.close() }
                 }
+                var firstRead = true
                 while !Task.isCancelled {
                     try await refreshRoster(on: channel)
                     attachChats()
+                    // Chats may have been read elsewhere while this link was down; after that, a
+                    // chat that turns unread is looked at on the next read.
+                    if firstRead { readSync.somethingChanged() } else { readSync.look() }
+                    firstRead = false
                     saveCache(for: auth.gateway)
                     reportFocus()
                     try await Task.sleep(for: Self.rosterInterval)
@@ -408,6 +421,7 @@ public final class AppModel {
         thread.storedAnswer = { [weak self] taskID in await self?.storedAnswer(taskID: taskID, profile: id) }
         thread.gateway = { [weak self] in self?.auth?.gateway }
         thread.replayEpoch = replayEpoch
+        thread.wasRead = { [weak self] in self?.readSync.markRead(id) }
         thread.gatewayIsUnencrypted = { [weak self] in self?.auth?.gateway.isUnencrypted ?? true }
         return thread
     }
@@ -537,6 +551,11 @@ public final class AppModel {
         if event.type == "cron.changed" {
             // Jobs changed somewhere on the gateway: reload the lists that are loaded.
             for list in routineLists.values where list.phase == .ready { Task { await list.refresh() } }
+            return
+        }
+        if event.type == "sessions.changed" {
+            // Says only that some conversation changed, perhaps a read elsewhere.
+            readSync.somethingChanged()
             return
         }
         if event.type.hasPrefix("display.") {

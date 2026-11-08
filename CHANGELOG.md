@@ -8,6 +8,9 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Added
 
+- **Unread counts follow you.** Read a Bot's chat on the Mac or iPhone and its unread count, and its
+  notifications, clear on your other devices too. Rooms still count on each device, as Hermes keeps
+  no read position for them.
 - **Hide a Bot.** Choose **Hide Bot** from a Bot's menu in the sidebar or its profile to take it out of the sidebar on every device, and out of the Hermes app's list. It keeps working and stays in its rooms, but doesn't notify you. Settings › General › Hidden Bots lists hidden Bots, including ones hidden in the Hermes app, with **Show** to bring each back. Quiet notifications need the `usual-push` plugin 0.3.0 on the gateway.
 - **Wait for whole replies.** Turn off Settings › General › Show replies as they're written, and each of an agent's messages appears once it's finished, with "Writing…" while it's on the way. Quick Message follows it too.
 - **See where tokens go.** Settings › Usage shows your Bots' tokens over the last 7, 30 or 90 days by day and by Bot, what was written, sent new or sent again, the background work beside your chats, and the cost when Hermes knows it.

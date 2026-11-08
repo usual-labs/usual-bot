@@ -66,7 +66,7 @@ extension ChatThread {
         state.addBackgroundResult(task: task, result: result)
         backgroundResults.append(BackgroundResult(taskID: taskID, task: task, result: result, date: .now))
         if backgroundResults.count > 50 { backgroundResults.removeFirst(backgroundResults.count - 50) }
-        if !isVisible { unreadCount += 1 }
+        if isVisible { wasRead?() } else { unreadCount += 1 }
         backgroundTaskFinished?(task, result)
     }
 }

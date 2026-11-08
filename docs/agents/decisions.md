@@ -208,6 +208,27 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 - A catch-up alert is the rise in `unreadCount` on attach, so no new state is cached. A running turn
   waits for `message.complete`.
 
+## Read state
+
+- **A Bot Chat's read time is Hermes's `sessions.last_read_at`,** the official app's Mark as Read, so
+  reading on one device clears the count on the others (`ReadSync`). The count stays the app's own:
+  replies after the later of this device's last look and that time. Hermes's own `unread` is a
+  yes/no that your messages set too, as does `last_activity_at` moving mid-turn. The official app
+  never reads it for Bots (a Bot Chat is hidden, so its dot is per window), so the two apps don't
+  agree there.
+- **A write needs a `request_id` and the chat's `expected_revision`** (`GET …/mutation-snapshot`)
+  and moves that revision, which the chat's other edits share. A write that lost a race (409
+  `revision_conflict`) is tried once more.
+- **Reading it back costs the whole record.** `GET /api/sessions/{id}` sends the system prompt too
+  (about 90 KB on the developer's gateway), and lists leave hidden chats out. `sessions.changed`
+  comes at most every 2 s, on any session change, naming none, so the app looks only at chats unread
+  here: the snapshot first, the record only when the revision moved.
+- **Only while you're looking.** `visibleContactID` is set only while a window has you, so a Mac left
+  on a chat doesn't mark replies read.
+- **Rooms stay per device:** `hosted_rooms` has no read position and no field to keep one in.
+- A gateway answering 400, 404, 405 or 422, or a record without `last_read_at`, turns sharing off
+  until the next connection.
+
 ## Bot pictures
 
 - `has_avatar` is true for nearly every Bot, because the desktop stores a 160 × 160 PNG of its drawn
@@ -419,6 +440,10 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 
 ## Not verified
 
+- Read state: its routes were run on the developer's gateway on 2026-11-08 by a script signed in
+  the app's way (native PKCE on the dashboard): the snapshot, a PATCH on a hidden Bot Chat, a stale
+  revision's 409 and `sessions.changed` on the dashboard socket. The app itself hasn't: a Mac and an
+  iPhone clearing each other's counts is untested.
 - The Browser view hasn't run in the app against a real gateway: the plugin's feed and `BotBrowser`
   were each tested on their own (`BotBrowserTests`, and a script client on the developer's gateway).
 
