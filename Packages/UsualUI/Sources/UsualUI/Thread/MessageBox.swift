@@ -32,6 +32,7 @@ struct MessageBox: View {
 
     #if os(macOS)
         @AppStorage(AppPreferences.commandReturnKey) private var commandReturn = false
+        @Environment(\.messageBoxTakesTyping) private var takesTyping
     #endif
     @State private var text = ""
     /// The menu row Return picks.
@@ -106,6 +107,7 @@ struct MessageBox: View {
             #if os(macOS)
                 .animation(.smooth(duration: 0.25), value: expanded)
                 .onAppear { focused = true }
+                .typingFocuses($focused, enabled: takesTyping)
                 .onChange(of: text) { if text.isEmpty { hasWrapped = false } }
             #else
                 // In the keyboard's own animation, which this change arrives in.

@@ -92,8 +92,9 @@ These need the gateway: offline, they're greyed out and say why.
 
 ## Chatting with a Bot
 
-Type in the message box and press Return to send (Shift-Return for a new line). On Mac, Settings
-can change sending to ⌘Return, leaving Return for new lines. Replies stream in
+Type in the message box and press Return to send (Shift-Return for a new line). On the Mac you
+can just start typing: after you click a Bot in the sidebar or somewhere in the chat, typing goes
+into the message box. On Mac, Settings can change sending to ⌘Return, leaving Return for new lines. Replies stream in
 as the Bot writes them (turn off **Show replies as they're written** in Settings › General to see
 each message only once it's finished, with "Writing…" meanwhile), with Markdown, code blocks you can copy, and tables. While the Bot uses
 tools, one line such as "Forge edited 1 file and ran 1 command" sums them up; click it to see each

@@ -311,6 +311,7 @@ struct ContactsSplitView<Footer: View>: View {
                 windowWidth = $0
             }
             .focusedSceneValue(\.windowCommands, windowCommands)
+            .environment(\.messageBoxTakesTyping, !showsPalette)
             .overlay {
                 if showsPalette {
                     CommandPalette(

@@ -43,6 +43,7 @@
                 card.padding(.top, 88)
             }
             .onAppear { fieldIsFocused = true }
+            .typingFocuses($fieldIsFocused)
             .onChange(of: query) {
                 highlighted = 0
                 search.lookUp(query)
