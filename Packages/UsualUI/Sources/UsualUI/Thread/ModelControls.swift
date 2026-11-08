@@ -1,66 +1,8 @@
 import HermesKit
 import SwiftUI
 
-/// The chat's model and how hard it thinks, as two small menus under the message box on the Mac:
-/// the gateway's models (this provider's first, others in submenus), and the thinking levels for
-/// models that take one. A pick changes this chat only; Make Default saves it as the agent's own.
-/// On iPhone the box shows the same choices as a gauge while you type (ComposerControls.swift).
-struct ModelControls: View {
-    let thread: ChatThread
-    let agentName: String
-    /// The agent's default model, as the roster reports it.
-    let agentDefault: AgentDetails?
-    @State private var picking = ModelPicking()
-
-    /// The menus' row fills the space between the box above and the window's bottom edge, as big a
-    /// target as fits. Gap, row and gap add up to the box's 20 pt side margin (ThreadPane), so the
-    /// box sits as far from the bottom as from the sides.
-    static let height: CGFloat = 20
-    static let gap: CGFloat = 0
-
-    var body: some View {
-        if let model = thread.model {
-            HStack(spacing: 2) {
-                if let usage = thread.usage, let context = usage.context {
-                    ContextMeter(thread: thread, usage: usage, context: context)
-                }
-                Menu {
-                    ModelMenu(thread: thread, agentName: agentName, agentDefault: agentDefault, picking: picking)
-                } label: {
-                    label(Self.short(model.name))
-                }
-                .clickable()
-                .help("Model for this chat")
-                .accessibilityLabel(Text("Model: \(Self.short(model.name))"))
-                if thread.takesReasoning(model) {
-                    Menu {
-                        LevelMenu(thread: thread, agentName: agentName)
-                    } label: {
-                        label(Self.levelName(model.reasoning))
-                    }
-                    .clickable()
-                    .help("How hard the Bot thinks in this chat")
-                    .accessibilityLabel(
-                        Text("Thinking: \(model.reasoning.map(Self.name(of:)) ?? String(localized: "Default"))"))
-                }
-            }
-            // The system's borderless menus: quiet settings of the box above, not more buttons.
-            .menuStyle(.button)
-            .buttonStyle(.borderless)
-            .controlSize(.small)
-            .foregroundStyle(Theme.secondaryInk)
-            .frame(height: Self.height)
-            .fixedSize()
-            .task(id: thread.isAttached) { await thread.loadModelsAndUsage() }
-            .modelPickingAlerts(picking, thread: thread)
-        }
-    }
-
-    /// Quiet text, with the system's chevron, so the two read as settings of the box above.
-    private func label(_ text: String) -> some View {
-        Text(text).lineLimit(1)
-    }
-
+/// How a chat's model and thinking level read in its menus.
+enum ModelControls {
     /// A model ID without its vendor folder: `x-ai/grok-5` reads `grok-5`.
     static func short(_ name: String) -> String {
         name.split(separator: "/").last.map(String.init) ?? name
@@ -85,8 +27,67 @@ struct ModelControls: View {
     }
 }
 
+#if os(macOS)
+    /// The chat's model, how hard it thinks and how full its context is, as menus in the agent's
+    /// panel on the Mac: the gateway's models (this provider's first, others in submenus), the
+    /// thinking levels for models that take one, and the context's numbers with Compress. A model
+    /// or level pick changes this chat only; Make Default saves it as the agent's own. Moved here
+    /// from under the message box (November 2026), which keeps nothing under it now.
+    struct ChatModelSection: View {
+        let thread: ChatThread
+        let agentName: String
+        /// The agent's default model, as the roster reports it.
+        let agentDefault: AgentDetails?
+        @State private var picking = ModelPicking()
+
+        var body: some View {
+            if let model = thread.model {
+                Section {
+                    LabeledContent("Model") {
+                        Menu {
+                            ModelMenu(
+                                thread: thread, agentName: agentName, agentDefault: agentDefault, picking: picking)
+                        } label: {
+                            Text(ModelControls.short(model.name)).lineLimit(1)
+                        }
+                        .fixedSize()
+                        .clickable()
+                        .help("Model for this chat")
+                        .accessibilityLabel(Text("Model: \(ModelControls.short(model.name))"))
+                    }
+                    if thread.takesReasoning(model) {
+                        LabeledContent("Thinking") {
+                            Menu {
+                                LevelMenu(thread: thread, agentName: agentName)
+                            } label: {
+                                Text(ModelControls.levelName(model.reasoning)).lineLimit(1)
+                            }
+                            .fixedSize()
+                            .clickable()
+                            .help("How hard the Bot thinks in this chat")
+                            .accessibilityLabel(Text("Thinking: \(thinking(model))"))
+                        }
+                    }
+                    if let usage = thread.usage, let context = usage.context {
+                        LabeledContent("Context") {
+                            ContextMeter(thread: thread, usage: usage, context: context)
+                        }
+                    }
+                } header: {
+                    ProfileSectionHeader("This Chat")
+                }
+                .modelPickingAlerts(picking, thread: thread)
+            }
+        }
+
+        private func thinking(_ model: ChatModel) -> String {
+            model.reasoning.map(ModelControls.name(of:)) ?? String(localized: "Default")
+        }
+    }
+#endif
+
 /// Switching a chat's model or saving it as the agent's default can need a yes first (an
-/// expensive model) or fail. The Mac's menus and the iPhone's model sheet ask and report here.
+/// expensive model) or fail. The Mac panel's menus and the iPhone's model sheet ask and report here.
 @MainActor
 @Observable
 final class ModelPicking {
@@ -272,9 +273,9 @@ struct LevelMenu: View {
     }
 }
 
-/// How full the chat's context is, as a small ring and percentage beside the model menu (on
-/// iPhone, a ring among the message box's controls); its menu gives the numbers and compresses the
-/// conversation when it's getting full.
+/// How full the chat's context is: on the Mac a menu in the agent's panel, beside the model and
+/// thinking; on iPhone a ring among the message box's controls. Its menu gives the numbers and
+/// compresses the conversation when it's getting full.
 struct ContextMeter: View {
     let thread: ChatThread
     let usage: ChatUsage
@@ -313,24 +314,24 @@ struct ContextMeter: View {
                 .padding(.horizontal, 2)
                 .frame(height: buttonSize - ComposerGlass.inset * 2)
             } else {
-                HStack(spacing: 4) {
-                    ring(size: 9, lineWidth: 1.5)
-                    Text("\(context.percent)%")
+                // Plain text, like the model and thinking menus above it: a menu's label drops images.
+                if thread.isCompressing {
+                    Text("Compressing…")
+                } else {
+                    Text("\(approx)\(context.percent)% full").lineLimit(1)
                 }
-                .scaledFont(size: 11)
-                .foregroundStyle(Theme.secondaryInk)
-                .padding(.horizontal, 6)
-                .frame(height: ModelControls.height)
-                .contentShape(Rectangle())
             }
         }
         .modifier(MeterStyle(compact: compact))
+        #if os(macOS)
+            .fixedSize()
+        #endif
         .clickable()
         .help("How full this chat's context is")
         .accessibilityLabel(Text("Context \(context.percent) percent full"))
     }
 
-    /// iPhone's sits among the message box's glass buttons; the Mac's with the borderless menus.
+    /// iPhone's sits among the message box's glass buttons; the Mac's is a menu like its neighbours.
     private struct MeterStyle: ViewModifier {
         let compact: Bool
 
@@ -345,7 +346,7 @@ struct ContextMeter: View {
 
     @ViewBuilder private func ring(size: CGFloat, lineWidth: CGFloat) -> some View {
         if thread.isCompressing {
-            ProgressView().controlSize(.mini).frame(width: compact ? size : nil, height: compact ? size : nil)
+            ProgressView().controlSize(.mini).frame(width: size, height: size)
         } else {
             ZStack {
                 Circle().stroke(Theme.secondaryInk.opacity(0.25), lineWidth: lineWidth)
@@ -364,6 +365,6 @@ struct ContextMeter: View {
     /// Amber once the context is mostly full, when compressing starts to matter.
     private var tint: Color {
         if context.percent >= 80 { return Theme.needsYouInk }
-        return compact ? Theme.ink.opacity(0.8) : Theme.secondaryInk.opacity(0.7)
+        return Theme.ink.opacity(0.8)
     }
 }

@@ -172,6 +172,7 @@ public struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .thinScroller()
     }
 
     @ViewBuilder private var connection: some View {

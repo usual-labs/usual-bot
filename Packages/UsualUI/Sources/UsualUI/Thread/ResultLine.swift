@@ -61,7 +61,7 @@ struct ResultLine: View {
             .padding(12)
         return ViewThatFits(in: .vertical) {
             text
-            ScrollView { text }
+            ScrollView { text }.thinScroller()
         }
         .frame(maxHeight: 320)
     }

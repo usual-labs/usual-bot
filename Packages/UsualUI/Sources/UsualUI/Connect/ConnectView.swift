@@ -51,6 +51,7 @@ struct ConnectView<Options: View>: View {
             }
         }
         .formStyle(.grouped)
+        .thinScroller()
         .scrollDismissesKeyboard(.interactively)
         .frame(maxWidth: 480)
         .frame(maxWidth: .infinity)

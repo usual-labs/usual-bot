@@ -23,6 +23,13 @@ struct ThreadPane: View {
     #else
         static let composerMargin: CGFloat = 20
         static let contentMargin: CGFloat = 20
+        /// The header's name and round buttons, the message box on one line, and the sidebar's
+        /// footer items are all this tall, so the window's controls read as one set.
+        static let barItemHeight: CGFloat = 36
+        /// How far those controls keep from the window's top and bottom edges: the header's below
+        /// the top, on the line of the window buttons; the message box and sidebar footer above the
+        /// bottom.
+        static let barEdgeMargin: CGFloat = 9
     #endif
 
     /// Files waiting to go with the next message.
@@ -57,9 +64,7 @@ struct ThreadPane: View {
                 }
             }
             .animation(.smooth(duration: 0.25), value: calling)
-            // On the Mac the model menus under the box bring their own space, so the bar's margin
-            // shrinks. iPhone shows them inside the box.
-            .chatBars(bottomPadding: thread?.model == nil ? nil : ModelControls.gap) {
+            .chatBars {
                 namePill
             } actions: {
                 browserButton
@@ -76,7 +81,7 @@ struct ThreadPane: View {
                         inCall: calling, startCall: { calling = true }
                     )
                     .frame(maxWidth: Theme.columnWidth)
-                    // On the Mac, ModelControls' row and gaps below the box add up to this margin too.
+                    // On the Mac, the context meter's row and gaps below the box add up to this margin too.
                     .padding(.horizontal, Self.composerMargin)
                 }
             }
@@ -230,7 +235,7 @@ struct ThreadPane: View {
                     // button drew a pale disc in the window you're at, unlike the capsule beside it.
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(Theme.ink)
-                    .frame(width: 36, height: 36)
+                    .frame(width: ThreadPane.barItemHeight, height: ThreadPane.barItemHeight)
                     .contentShape(Circle())
                     .glassEffect(.regular.interactive(), in: Circle())
                 #endif
@@ -299,12 +304,12 @@ extension View {
     /// Pins `top` (the name), `actions` and `bottom` (the message box) over a conversation that
     /// scrolls beneath them. On iPhone the name and actions ride in the navigation bar, which the
     /// system draws in Liquid Glass; on the Mac they float over the conversation in glass of their
-    /// own. `bottomPadding` replaces the Mac's usual margin under `bottom`.
+    /// own.
     func chatBars(
-        bottomPadding: CGFloat? = nil, @ViewBuilder top: () -> some View,
-        @ViewBuilder actions: () -> some View = { EmptyView() }, @ViewBuilder bottom: () -> some View
+        @ViewBuilder top: () -> some View, @ViewBuilder actions: () -> some View = { EmptyView() },
+        @ViewBuilder bottom: () -> some View
     ) -> some View {
-        modifier(ChatBars(top: top(), actions: actions(), bottom: bottom(), bottomPadding: bottomPadding))
+        modifier(ChatBars(top: top(), actions: actions(), bottom: bottom()))
     }
 
     #if os(iOS)
@@ -333,7 +338,7 @@ struct NamePill: View {
         private static let leading: CGFloat = 6
         private static let trailing: CGFloat = 18
     #else
-        private static let height: CGFloat = 36
+        private static let height = ThreadPane.barItemHeight
         private static let avatar: CGFloat = 26
         private static let nameSize: CGFloat = 15
         private static let leading: CGFloat = 5
@@ -399,8 +404,6 @@ private struct ChatBars<Top: View, Actions: View, Bottom: View>: ViewModifier {
     let top: Top
     let actions: Actions
     let bottom: Bottom
-    /// The Mac's margin under `bottom`, in place of the usual one.
-    let bottomPadding: CGFloat?
     /// Counts clicks and taps on the conversation, so the message box can close its menu.
     @State private var outsideTaps = 0
     /// iPhone: the safe area under the bottom bar, the home indicator's or the keyboard's.
@@ -412,10 +415,10 @@ private struct ChatBars<Top: View, Actions: View, Bottom: View>: ViewModifier {
         let conversation = content.simultaneousGesture(TapGesture().onEnded { outsideTaps += 1 })
         let bottom = bottom.environment(\.conversationTaps, outsideTaps)
         #if os(macOS)
-            // 9 pt centres the name on the line of the window buttons and the sidebar's buttons;
-            // the message box sits a little further from the bottom edge.
+            // The message box sits as far from the bottom edge as the header from the top, level
+            // with the sidebar's footer.
             macBars(conversation) {
-                bottom.padding(.top, 8).padding(.bottom, bottomPadding ?? 14)
+                bottom.padding(.top, 8).padding(.bottom, ThreadPane.barEdgeMargin)
             }
         #else
             iPhoneBottomBar(conversation, bottom.padding(.top, 8).padding(.bottom, iPhoneBottomPadding))
@@ -440,10 +443,10 @@ private struct ChatBars<Top: View, Actions: View, Bottom: View>: ViewModifier {
     }
 
     #if os(macOS)
-        /// The name and actions float in glass over the conversation, which the system's hard
-        /// scroll edge hides under them; the same edge under the message box keeps the conversation
-        /// out of the box and the model menus below it. Not window toolbar items: those centre on
-        /// the window, not the chat beside the sidebar (see known issues).
+        /// The name and actions float over the conversation, which scrolls under them and under the
+        /// message box. The header sits on `HeaderGlass`, as the sidebar's top does; the message
+        /// box's own glass blurs at the bottom. Not window toolbar items: those centre on the window, not the chat beside
+        /// the sidebar (see known issues).
         private func macBars(_ conversation: some View, @ViewBuilder bottom: () -> some View) -> some View {
             conversation
                 .safeAreaBar(edge: .top, spacing: 0) {
@@ -452,11 +455,13 @@ private struct ChatBars<Top: View, Actions: View, Bottom: View>: ViewModifier {
                         .overlay(alignment: .trailing) {
                             HStack(spacing: 8) { actions }.padding(.trailing, ThreadPane.composerMargin)
                         }
-                        .padding(.top, 9)
+                        // Centres the name on the line of the window buttons and the sidebar's.
+                        .padding(.top, ThreadPane.barEdgeMargin)
                         .padding(.bottom, 8)
+                        .background { HeaderGlass().padding(.bottom, -HeaderGlass.fade) }
                 }
                 .safeAreaBar(edge: .bottom, spacing: 0, content: bottom)
-                .scrollEdgeEffectStyle(.hard, for: [.top, .bottom])
+                .scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
         }
     #endif
 

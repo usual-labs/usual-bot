@@ -2,7 +2,7 @@ import HermesKit
 import SwiftUI
 
 /// What the message box needs to offer a chat's model, thinking and context. iPhone only: the Mac
-/// shows them under the box (ModelControls).
+/// shows all three in the agent's panel (ChatModelSection).
 struct ChatControls {
     let thread: ChatThread
     let agentName: String

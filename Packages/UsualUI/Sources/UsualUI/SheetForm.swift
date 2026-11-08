@@ -38,6 +38,7 @@ struct SheetForm<Content: View, Extra: View>: View {
         NavigationStack {
             content()
                 .formStyle(.grouped)
+                .thinScroller()
                 .navigationTitle(title)
                 #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)

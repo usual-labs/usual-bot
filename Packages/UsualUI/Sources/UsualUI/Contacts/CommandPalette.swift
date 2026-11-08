@@ -119,6 +119,7 @@
                     }
                     .padding(8)
                 }
+                .thinScroller()
                 .frame(maxHeight: 400)
                 .fixedSize(horizontal: false, vertical: true)
                 .onChange(of: highlighted) {

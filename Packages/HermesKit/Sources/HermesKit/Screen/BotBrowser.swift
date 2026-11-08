@@ -32,6 +32,9 @@ public final class BotBrowser {
     public let profile: String
     /// The Bot browses with your real profile, headless: there's a browser to watch.
     public private(set) var isAvailable = false
+    /// Whether the gateway has the `usual-browser` plugin, once asked: Settings › Plugins tells a
+    /// missing plugin from a Bot that doesn't browse with your real profile.
+    public private(set) var hasPlugin: Bool?
     public private(set) var connection = Connection.idle
     /// The page as last shown, and its size in pixels.
     public private(set) var frame: CGImage?
@@ -70,8 +73,10 @@ public final class BotBrowser {
         let query = profile.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? profile
         do {
             isAvailable = try await auth.json(Status.self, path: "\(Self.path)/status?bot=\(query)").available ?? false
+            hasPlugin = true
         } catch GatewayError.http(status: 404, _) {
             isAvailable = false
+            hasPlugin = false
         } catch {}
     }
 
@@ -189,6 +194,7 @@ public final class BotBrowser {
                 profile: profile, auth: { nil }, makeSocket: { _ in throw GatewayError.disconnected })
             browser.isDemo = true
             browser.isAvailable = true
+            browser.hasPlugin = true
             let page = DemoDesktop.page()
             browser.frame = page.image()
             browser.frameSize = CGSize(width: page.width, height: page.height)

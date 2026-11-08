@@ -36,6 +36,7 @@ struct RoutinesView: View {
             } header: {
                 ProfileSectionHeader("Scheduled") {
                     Button("New Routine", systemImage: "plus") { sheet = .new }
+                        .help("New Routine")
                         .disabled(list.phase != .ready)
                 }
             } footer: {

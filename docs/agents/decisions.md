@@ -435,6 +435,19 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 - **Text and frames are told apart by their first byte.** `ScreenSocket` hands over text and binary
   messages alike, as bytes. The feed's text is always a JSON object (`{`), and JPEG and PNG never
   start with one.
+- **The Plugins sheet guides, it doesn't administer.** The developer asked for a home for the
+  browser and computer setup (November 2026): a puzzle-piece button in the Mac sidebar's footer,
+  between the gateway and Settings, not a Settings tab (tried, and turned down). Mac only; the rail
+  leaves it out, keeping Expand Sidebar and Settings. It reads the plugin's status (404 means no plugin,
+  `BotBrowser.hasPlugin`) and `display.status` per Bot, and offers commands to copy; it never sets
+  `browser.use_real_profile` or installs anything, as gateway administration stays in Hermes. The
+  copied `hermes … config set browser.use_real_profile true` hasn't been run against a gateway, and
+  the headless requirement has no command here. It lists every Usual gateway plugin (push from
+  `PushSettings.phase`, browser from `BotBrowser.hasPlugin`). **Ask a Bot** (the developer's pick
+  over an app-side shell, SSH or a setup route in our plugin) fills the chosen Bot's box with the
+  steps through `ChatThread.prefill` and opens its chat; it never sends. The request tells the Bot
+  to stop if its terminal is sandboxed, and to restart the gateway last, since the restart drops
+  the chat. Not yet run with a real Bot.
 - **The Browser button shows only for a Bot whose status says `available`**: real profile on and
   headless. A gateway without the plugin answers 404, so the button stays hidden.
 

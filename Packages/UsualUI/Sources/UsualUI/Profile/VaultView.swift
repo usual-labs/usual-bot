@@ -75,6 +75,7 @@ struct VaultView: View {
         } label: {
             Label("New Item", systemImage: "plus")
         }
+        .help("New Item")
     }
 
     private var managers: some View {
@@ -83,7 +84,7 @@ struct VaultView: View {
                 VaultSourceRow(source: source, list: list) { unlocking = source }
             }
         } header: {
-            Text("Password managers")
+            ProfileSectionHeader("Password managers")
         } footer: {
             footnote
         }
@@ -109,10 +110,10 @@ private enum Filter: CaseIterable {
 
     var emptyText: LocalizedStringKey {
         switch self {
-        case .all: "Nothing saved yet. Add something with New Item."
-        case .logins: "No logins yet. Add one with New Item."
-        case .cards: "No cards yet. Add one with New Item."
-        case .addresses: "No addresses yet. Add one with New Item."
+        case .all: "Nothing saved yet. Add something with +."
+        case .logins: "No logins yet. Add one with +."
+        case .cards: "No cards yet. Add one with +."
+        case .addresses: "No addresses yet. Add one with +."
         }
     }
 

@@ -68,6 +68,7 @@ struct SuggestionMenu: View {
                 }
                 .padding(4)
             }
+            .thinScroller()
             .scrollBounceBehavior(.basedOnSize)
             .frame(maxHeight: CGFloat(Self.visibleRows) * Self.rowHeight + 8)
             .fixedSize(horizontal: false, vertical: true)

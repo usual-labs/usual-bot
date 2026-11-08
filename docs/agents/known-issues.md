@@ -33,6 +33,10 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   a `// sleep-ok:` reason. Leave several intervals of slack in timing tests. Don't retry a flaky test;
   find the race.
 
+- **`GatewaySearchTests.anAnswerToAnOlderQueryIsDropped` is flaky (unresolved).** On 8 November 2026
+  it failed twice in a row in `scripts/check.sh --fast` (its 1 s `waitUntilOnMain` ran out) and
+  passed on the next run, with no HermesKit change. The race isn't found yet.
+
 ## Mac
 
 - **Carbon shares hot keys unless registration is exclusive.** A successful registration with

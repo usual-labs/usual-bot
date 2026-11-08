@@ -350,6 +350,7 @@ private struct QuickAnswer: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
         }
+        .thinScroller()
         .frame(maxHeight: 380)
         .fixedSize(horizontal: false, vertical: true)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)

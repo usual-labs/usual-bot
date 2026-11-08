@@ -6,8 +6,6 @@ import SwiftUI
 struct GatewayStatusButton<More: View>: View {
     let gateway: GatewayAddress
     let link: AppModel.Link
-    /// In the narrow window's rail: the status dot alone.
-    var compact = false
     let signOut: () -> Void
     @ViewBuilder let more: () -> More
     @State private var confirmsSignOut = false
@@ -22,18 +20,16 @@ struct GatewayStatusButton<More: View>: View {
         } label: {
             HStack(spacing: 8) {
                 Circle().fill(dotColor).frame(width: 8, height: 8)
-                if !compact {
-                    Text(label)
-                        .foregroundStyle(Theme.secondaryInk)
-                        .lineLimit(1)
-                    #if os(macOS)
-                        Spacer(minLength: 0)
-                    #endif
-                }
+                Text(label)
+                    .foregroundStyle(Theme.secondaryInk)
+                    .lineLimit(1)
+                #if os(macOS)
+                    Spacer(minLength: 0)
+                #endif
             }
             #if os(macOS)
                 .scaledFont(size: 12.5)
-                .frame(minWidth: compact ? 44 : nil, minHeight: 28)
+                .frame(minHeight: 28)
             #else
                 .scaledFont(size: 15)
                 .padding(.horizontal, 4)

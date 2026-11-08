@@ -29,6 +29,7 @@ struct AppsView: View {
             } header: {
                 ProfileSectionHeader("Connected") {
                     Button("New App", systemImage: "plus") { isAdding = true }
+                        .help("New App")
                         .disabled(list.phase != .ready)
                 }
             } footer: {

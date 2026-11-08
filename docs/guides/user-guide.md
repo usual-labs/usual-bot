@@ -222,13 +222,15 @@ Commands that only make sense in a terminal or the desktop app are left out of t
 
 ## Model, thinking and context
 
-On the Mac they sit below the message box, on the right:
+On the Mac, the model, thinking and context menus are under **This Chat** in the Bot's profile
+panel (click the Bot's name above the chat):
 
 - **The model menu** switches the model for this chat only. Expensive models ask first. If the
   Bot is mid-reply, the switch takes effect from your next message.
 - **The thinking menu** sets how hard the model reasons (for models that can).
-- **The context meter** shows how full the conversation's context window is, and turns amber past
-  80%. Its menu has **Compress Conversation**, which summarises older messages to free space.
+- **Context** shows how full the conversation's context window is (on iPhone, a ring that turns
+  amber past 80%). Its menu has the numbers and **Compress Conversation**, which summarises older
+  messages to free space.
 
 Both menus also offer **Make Default for <Bot>**, which saves the choice as the Bot's default
 everywhere, including in the official Hermes app.
@@ -279,7 +281,8 @@ computer right now.
 
 Hermes gives a Bot a computer when its gateway runs on Linux with the desktop packages installed,
 or when the Bot's terminal runs in a Docker or SSH sandbox whose image has them. Set that up in
-Hermes; Usual Bot only shows it. Rooms have no Computer button: open the Bot's own chat.
+Hermes; Usual Bot only shows it. On the Mac, **Plugins** (the puzzle piece at the foot of the sidebar) lists each Bot's computer: On, Ready, Desktop
+not installed, or Not on this gateway. Rooms have no Computer button: open the Bot's own chat.
 
 ## A Bot's browser
 
@@ -287,6 +290,15 @@ A Bot can browse with a copy of your own browser profile, signed in where you ar
 that runs out of sight on your gateway (Hermes' `browser.use_real_profile`). With the
 [`usual-browser` plugin](../../Integrations/hermes-browser/README.md) on your gateway, its chat
 shows a **Browser** button (a globe) beside **Computer**, with a green dot while the Bot is browsing.
+
+On the Mac, **Plugins** (the puzzle piece at the foot of the sidebar, between the gateway and
+Settings) helps set it up. It says whether your gateway has the plugin and, for each Bot, whether
+it's Ready. **Set Up** beside a Bot that's Off copies the commands that turn real-profile browsing on
+for it, add the plugin and restart the gateway, or asks a Bot to run them: **Ask a Bot** opens that
+Bot's chat with the request typed in its box, for you to read and send. Pick a Bot whose terminal
+runs on the gateway's computer, not in a Docker or SSH sandbox. The restart drops the chat for a
+moment. The app itself changes nothing on the gateway. Plugins also shows whether the gateway has
+the push plugin that sends notifications, with the same ways to install it.
 
 - **Watch.** The Mac opens the page in a window of its own; iPhone shows it full screen, and you
   pinch to zoom. The bar shows the open tab's title and address, and the view follows the tab the
@@ -329,7 +341,7 @@ showing at a glance how many are on.
 
 - **Routines** are the Bot's scheduled jobs. Each shows when it runs, whether it's on, and why the
   last run failed if it did. The switch pauses or resumes one.
-  - **New Routine** asks for a name, what to do, when, and where results go. **When** offers every
+  - **New Routine** (the **+** beside Scheduled) asks for a name, what to do, when, and where results go. **When** offers every
     day, weekdays, every week, every month, every hour and every 15 minutes, or **Custom** for text
     like "every 2h", "every monday 9am", "0 9 * * 1-5" or "in 30m". If the gateway can't read it,
     it says which forms it accepts.

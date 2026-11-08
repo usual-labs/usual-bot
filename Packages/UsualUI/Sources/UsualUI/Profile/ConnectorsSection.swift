@@ -13,8 +13,10 @@ struct ConnectorsSection: View {
         case .loading, .unavailable:
             EmptyView()
         case .failed(let message):
-            Section("Connected accounts") {
+            Section {
                 ProfileFailure(message: message) { await list.refresh() }
+            } header: {
+                ProfileSectionHeader("Connected accounts")
             }
         case .ready:
             Section {
@@ -31,7 +33,7 @@ struct ConnectorsSection: View {
                     Text(problem).foregroundStyle(Theme.danger)
                 }
             } header: {
-                Text("Connected accounts")
+                ProfileSectionHeader("Connected accounts")
             } footer: {
                 Text(
                     "These sign in through your Nous Portal account, which Hermes uses for \(agentName). \(agentName) can also ask to connect one from the chat."

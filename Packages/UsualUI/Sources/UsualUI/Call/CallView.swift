@@ -367,6 +367,7 @@ private struct TranscriptPanel: View {
                     .padding(.horizontal, 18)
                     .padding(.vertical, 12)
                 }
+                .thinScroller()
                 .defaultScrollAnchor(.bottom)
                 .frame(maxHeight: 220)
             }

@@ -7,7 +7,7 @@
 
 - `App/UsualBotApp.swift` — application entry
 - `App/SignInPresenters.swift` — browser/web-auth presenters
-- `App/Assets.xcassets` — the app icon (`AppIcon`), the iPhone launch image (`LaunchMark`) and its
+- `App/Assets.xcassets` — the app icon (`AppIcon`; `AppIconDev`, its DEV-banded copy for Debug builds), the iPhone launch image (`LaunchMark`) and its
   background (`LaunchBackground`)
 - `.github/workflows/ci.yml` — lint, the test-wait check, both test suites, Mac and iOS Simulator
   builds on pushes and PRs

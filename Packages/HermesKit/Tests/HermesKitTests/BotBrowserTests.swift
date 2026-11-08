@@ -80,12 +80,16 @@ struct BotBrowserTests {
         let (headed, _, _) = make(status: (200, #"{"bot":"scout","available":false,"browser":false}"#))
         await headed.refresh()
         #expect(!headed.isAvailable)
+        // The plugin answered, so only the Bot's own setup is missing.
+        #expect(headed.hasPlugin == true)
     }
 
     @Test func aGatewayWithoutThePluginHasNoBrowser() async throws {
         let (browser, _, _) = make(status: (404, #"{"detail":"Not Found"}"#))
+        #expect(browser.hasPlugin == nil)
         await browser.refresh()
         #expect(!browser.isAvailable)
+        #expect(browser.hasPlugin == false)
     }
 
     @Test func theFeedAsksForThePictureChosenInSettings() async throws {

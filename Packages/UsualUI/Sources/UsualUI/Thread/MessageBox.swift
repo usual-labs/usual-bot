@@ -70,8 +70,10 @@ struct MessageBox: View {
         private static let fontSize: CGFloat = 18
         private static let fieldPadding: CGFloat = 6
     #else
-        private let buttonSize: CGFloat = 28
-        private static let inset: CGFloat = 8
+        private static let macButtonSize: CGFloat = 28
+        private var buttonSize: CGFloat { Self.macButtonSize }
+        /// On one line the box is as tall as the header's buttons (`ThreadPane.barItemHeight`).
+        private static let inset: CGFloat = (ThreadPane.barItemHeight - macButtonSize) / 2
         private static let fontSize: CGFloat = 15
         private static let fieldPadding: CGFloat = 4
     #endif
@@ -155,7 +157,8 @@ struct MessageBox: View {
                 self.unsent?.wrappedValue = nil
                 focused = true
             }
-            .onChange(of: commands?.prefill) { _, prefill in
+            // Initial too: the Plugins sheet fills a chat's box before the chat opens.
+            .onChange(of: commands?.prefill, initial: true) { _, prefill in
                 guard let prefill else { return }
                 replaceText(with: prefill)
                 commands?.prefill = nil

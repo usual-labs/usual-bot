@@ -34,6 +34,8 @@ struct ProfilePanel: View {
     let link: AppModel.Link
     let gatewayDetails: GatewayDetails?
     let loadGatewayDetails: () async -> Void
+    /// The agent's chat, whose model and thinking the Mac panel sets.
+    var thread: ChatThread? = nil
     let close: () -> Void
 
     @State private var tab = Tab.routines
@@ -144,21 +146,24 @@ struct ProfilePanel: View {
             }
         }
 
-        /// The Bot and the tabs, as the first section of each page's form.
-        private var macTop: some View {
+        /// The Bot, this chat's model and thinking, and the tabs, as the first sections of each
+        /// page's form.
+        @ViewBuilder private var macTop: some View {
             Section {
             } header: {
-                VStack(spacing: 16) {
-                    header
-                    Picker("Page", selection: $tab) {
-                        ForEach(Tab.allCases, id: \.self) { Text($0.title).tag($0) }
-                    }
-                    .clickable()
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .controlSize(.small)
-                }
-                .padding(.top, 8)
+                header.padding(.top, 8).padding(.bottom, 10)
+            }
+            if let thread {
+                ChatModelSection(thread: thread, agentName: contact.name, agentDefault: contact.details)
+            }
+            Section {
+            } header: {
+                ProfileTabs(selection: $tab)
+                    .textCase(nil)
+                    // A header sits 10 pt in from the sections' cards; the tabs reach their edges,
+                    // and keep clear of the page's first section below.
+                    .padding(.horizontal, -10)
+                    .padding(.bottom, 12)
             }
         }
     #endif
@@ -210,11 +215,14 @@ struct ProfileForm<Content: View>: View {
             content()
         }
         .formStyle(.grouped)
+        .thinScroller()
         .toggleStyle(.systemSwitch)
     }
 }
 
-/// A page section's title, with its main action at the trailing end (New Routine, New App).
+/// A section's title in the profile panel, every section's, with the page's main action at the
+/// trailing end (New Routine, New App) as a bare icon: give it a `.help` naming it. Styled here:
+/// the grouped form drew some plain titles small and grey and others large and bold.
 struct ProfileSectionHeader<Action: View>: View {
     let title: LocalizedStringKey
     @ViewBuilder let action: () -> Action
@@ -226,19 +234,30 @@ struct ProfileSectionHeader<Action: View>: View {
 
     var body: some View {
         HStack {
-            Text(title).accessibilityAddTraits(.isHeader)
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(Theme.secondaryInk)
+                .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
-            // As `.inkProminent`, which a menu (New Item) doesn't take.
+            // A ghost button, the developer's choice over a filled one. A system style, which a
+            // menu (New Item) takes too.
             action()
-                .buttonStyle(.borderedProminent)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
                 .menuStyle(.button)
-                .tint(Theme.primary)
-                .foregroundStyle(Theme.primaryInk)
-                .controlSize(.small)
+                .menuIndicator(.hidden)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Theme.secondaryInk)
                 .textCase(nil)
                 .clickable()
                 .fixedSize()
         }
+    }
+}
+
+extension ProfileSectionHeader where Action == EmptyView {
+    init(_ title: LocalizedStringKey) {
+        self.init(title) { EmptyView() }
     }
 }
 
@@ -274,17 +293,21 @@ private struct MachineView: View {
 
     var body: some View {
         ProfileForm(top: top) {
-            Section("Bot") {
+            Section {
                 row("Profile", details?.profile)
                 row("Model", details?.model)
                 row("Provider", details?.provider)
                 row("Skills", details?.skillCount.map { String($0) })
+            } header: {
+                ProfileSectionHeader("Bot")
             }
-            Section("Gateway") {
+            Section {
                 row("Address", gateway.displayName)
                 row("Version", gatewayDetails?.version)
                 row("Status", statusText)
                 row("Signed in as", gatewayDetails?.account)
+            } header: {
+                ProfileSectionHeader("Gateway")
             }
             #if os(macOS)
                 if let settings = Self.hermesSettings {

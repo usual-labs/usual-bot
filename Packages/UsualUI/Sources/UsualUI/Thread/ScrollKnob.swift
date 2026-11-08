@@ -1,14 +1,73 @@
-#if os(macOS)
-    import SwiftUI
+import SwiftUI
 
-    /// Where a conversation is scrolled to, for its scroll knob. Kept in an object so a scroll
-    /// redraws only the knob, not the conversation.
+extension View {
+    /// The app's thin, quiet scroller on any scroll view in this view (a form, a list, a
+    /// `ScrollView`), in place of the system's wide one. Nothing on iPhone, whose scroll
+    /// indicators are already thin.
+    func thinScroller() -> some View {
+        #if os(macOS)
+            modifier(ThinScroller())
+        #else
+            self
+        #endif
+    }
+}
+
+#if os(macOS)
+    /// For a scroll view nothing else drives: its own position, for the knob to read and move.
+    private struct ThinScroller: ViewModifier {
+        @State private var position = ScrollPosition()
+
+        func body(content: Content) -> some View {
+            content.scrollPosition($position).scrollKnob($position)
+        }
+    }
+
+    extension View {
+        /// Our own thin knob in place of the system's scroller, on a scroll view that `position`
+        /// drives: the conversation and the sidebar. `dragging` hears when a drag by hand starts
+        /// and ends.
+        func scrollKnob(
+            _ position: Binding<ScrollPosition>, hidden: Bool = false, dragging: @escaping (Bool) -> Void = { _ in }
+        ) -> some View {
+            modifier(ScrollKnobModifier(position: position, hidden: hidden, dragging: dragging))
+        }
+    }
+
+    private struct ScrollKnobModifier: ViewModifier {
+        @Binding var position: ScrollPosition
+        let hidden: Bool
+        let dragging: (Bool) -> Void
+        @State private var knob = ScrollKnobModel()
+
+        func body(content: Content) -> some View {
+            content
+                // `.never`: `.hidden` still shows the system's scroller when a mouse is connected.
+                .scrollIndicators(.never)
+                .onScrollGeometryChange(for: ScrollKnobGeometry.self, of: ScrollKnobGeometry.init) {
+                    knob.geometry = $1
+                }
+                .overlay {
+                    if !hidden { ScrollKnob(model: knob, scroll: scroll(to:), dragging: dragging) }
+                }
+        }
+
+        private func scroll(to y: CGFloat) {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { position.scrollTo(y: y) }
+        }
+    }
+
+    /// Where a scroll view is scrolled to, for its scroll knob. Kept in an object so a scroll
+    /// redraws only the knob, not the content.
     @Observable final class ScrollKnobModel {
         var geometry = ScrollKnobGeometry()
     }
 
-    /// The scroll view's own frame already stops at the bars pinned over the conversation, so
-    /// its container is the part you see, and the knob's track is the whole frame.
+    /// The scroll view's own frame already stops at the bars pinned over it (the chat's bars, the
+    /// sidebar's footer), so its container is the part you see, and the knob's track is the whole
+    /// frame.
     struct ScrollKnobGeometry: Equatable {
         var contentHeight: CGFloat = 0
         var visibleHeight: CGFloat = 0
@@ -26,7 +85,7 @@
         var maxOffset: CGFloat { max(contentHeight - visibleHeight, 0) }
     }
 
-    /// A thin, quiet knob at the conversation's trailing edge, as in Grok's Mac app. The system's
+    /// A thin, quiet knob at a scroll view's trailing edge, as in Grok's Mac app. The system's
     /// scroller is the wide, bright one whenever a mouse is connected, and SwiftUI can't restyle
     /// it. Drag the knob to scroll; it widens under the pointer.
     struct ScrollKnob: View {

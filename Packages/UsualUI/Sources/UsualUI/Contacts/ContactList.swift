@@ -28,6 +28,9 @@ struct ContactList: View {
     @State private var dropTarget: SidebarBlock.ID?
     @State private var roomEdit: RoomEdit?
     @State private var botEdit: BotEdit?
+    #if os(macOS)
+        @State private var scrollPosition = ScrollPosition()
+    #endif
     @Environment(\.roomEditing) private var roomEditing
     @Environment(\.botEditing) private var botEditing
 
@@ -147,7 +150,9 @@ struct ContactList: View {
                 .padding(.horizontal, compact ? 6 : 10)
                 .padding(.vertical, 6)
             }
-            .scrollIndicators(compact ? .hidden : .automatic)
+            // The conversation's thin knob, not the system's wide scroller; none in the rail.
+            .scrollPosition($scrollPosition)
+            .scrollKnob($scrollPosition, hidden: compact)
             .focusable()
             .focusEffectDisabled()
             .onKeyPress(.downArrow) { moveSelection(by: 1, in: shown) }

@@ -11,6 +11,8 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
     let gatewayMenu: () -> GatewayMenu
     #if os(macOS)
         @Environment(\.openSettings) private var openSettings
+        /// The browser and computer setup, from the footer's puzzle-piece button.
+        @State private var showsPlugins = false
     #else
         @State private var showsSettings = false
     #endif
@@ -29,6 +31,21 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
     public var body: some View {
         Group { content }
             .appPreferences()
+            #if os(macOS)
+                .sheet(isPresented: $showsPlugins) {
+                    SheetForm(title: Text("Plugins"), action: SheetAction(title: "Done") { showsPlugins = false }) {
+                        Form {
+                            PluginsSettings(model: model) { bot, message in
+                                // Typed into the chat's box, unsent, and the chat opened.
+                                model.thread(for: bot).prefill = message
+                                model.requestedContactID = bot.id
+                                showsPlugins = false
+                            }
+                        }
+                    }
+                    .frame(width: 520, height: 600)
+                }
+            #endif
             #if os(iOS)
                 .sheet(isPresented: $showsSettings) {
                     // The gateway menu's items, such as Tailscale, live on Settings' Connection page.
@@ -78,16 +95,26 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                         vault: model.vault(for: contact), gateway: gateway,
                         link: model.link,
                         gatewayDetails: model.gatewayDetails, loadGatewayDetails: { await model.loadGatewayDetails() },
-                        close: close)
+                        thread: model.thread(for: contact), close: close)
                 }
             ) { compact in
                 #if os(macOS)
-                    let layout = compact ? AnyLayout(VStackLayout(spacing: 4)) : AnyLayout(HStackLayout(spacing: 8))
-                    layout {
-                        GatewayStatusButton(
-                            gateway: gateway, link: model.link, compact: compact, signOut: model.signOut,
-                            more: gatewayMenu)
-                        settingsButton
+                    // The connection in a capsule, then Plugins and Settings in circles. The rail
+                    // keeps only Settings (the developer's call); Search and New stay in the menu
+                    // bar, with their shortcuts.
+                    GlassEffectContainer(spacing: 8) {
+                        HStack(spacing: 8) {
+                            if !compact {
+                                GatewayStatusButton(
+                                    gateway: gateway, link: model.link, signOut: model.signOut, more: gatewayMenu
+                                )
+                                .padding(.horizontal, 14)
+                                .frame(height: ThreadPane.barItemHeight)
+                                .glassEffect(.regular.interactive(), in: Capsule())
+                                pluginsButton.roundGlass()
+                            }
+                            settingsButton.roundGlass()
+                        }
                     }
                     .fixedSize(horizontal: compact, vertical: false)
                 #else
@@ -111,6 +138,17 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
             showsSettings = true
         #endif
     }
+
+    #if os(macOS)
+        private var pluginsButton: some View {
+            Button("Plugins", systemImage: "puzzlepiece.extension") { showsPlugins = true }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.clickable(.borderless))
+                .foregroundStyle(Theme.secondaryInk)
+                .frame(width: 32, height: 32)
+                .help("Plugins: set up a Bot’s browser and computer")
+        }
+    #endif
 
     private var settingsButton: some View {
         Button("Settings", systemImage: "gearshape", action: showSettings)
@@ -359,28 +397,38 @@ struct ContactsSplitView<Footer: View>: View {
                     selection: $selection,
                     messages: search.hits(query), status: search.status(query), openMessage: show)
             }
-            #if os(macOS)
-                if compact {
-                    VStack(spacing: 0) {
-                        // A menu among them takes no button style, so each has its own hand.
-                        if canLeaveRail { sidebarToggle.clickable().frame(width: 44, height: 44) }
-                        searchButton.clickable().frame(width: 44, height: 44)
-                        newButton.menuStyle(.button).fixedSize().clickable().frame(width: 44, height: 44)
-                    }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .controlSize(.large)
-                    .foregroundStyle(Theme.secondaryInk)
-                }
-                footer(compact)
-                    .padding(.horizontal, compact ? 0 : 14)
-                    .padding(.vertical, 10)
-            #endif
         }
         #if os(macOS)
+            // The list scrolls under the window buttons and the toolbar, on the chat header's glass,
+            // and under the footer, which floats in glass like the chat's message box.
+            .overlay(alignment: .top) { HeaderGlass().frame(height: 0) }
+            .safeAreaBar(edge: .bottom, spacing: 0) { sidebarFooter(compact: compact) }
+            .scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
             .background(Theme.window)
         #endif
     }
+
+    #if os(macOS)
+        /// The footer (the connection and Settings, each in its own glass); in the rail, Expand
+        /// Sidebar above Settings, in a circle of its own.
+        private func sidebarFooter(compact: Bool) -> some View {
+            VStack(spacing: 8) {
+                if compact, canLeaveRail {
+                    sidebarToggle
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.clickable(.borderless))
+                        .foregroundStyle(Theme.secondaryInk)
+                        .frame(width: 32, height: 32)
+                        .roundGlass()
+                }
+                footer(compact)
+            }
+            // The list's 10 pt side inset, so the glass lines up with the rows' highlight and the
+            // top bar; level with the message box at the bottom.
+            .padding(.horizontal, compact ? 0 : 10)
+            .padding(.bottom, ThreadPane.barEdgeMargin)
+        }
+    #endif
 
     #if os(macOS)
         /// The list narrows to the rail when you drag its edge in, or when the window leaves the
@@ -651,6 +699,17 @@ struct ContactsSplitView<Footer: View>: View {
                     }
                 }
             }
+        }
+    }
+#endif
+
+#if os(macOS)
+    extension View {
+        /// A round glass button as tall as the header's: the sidebar footer's Settings and the
+        /// rail's Expand Sidebar.
+        fileprivate func roundGlass() -> some View {
+            frame(width: ThreadPane.barItemHeight, height: ThreadPane.barItemHeight)
+                .glassEffect(.regular.interactive(), in: Circle())
         }
     }
 #endif

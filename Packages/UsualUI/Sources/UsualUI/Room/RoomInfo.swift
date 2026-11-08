@@ -78,6 +78,7 @@ struct RoomPanel: View {
             .padding(.top, 28)
             .padding(.bottom, 20)
         }
+        .thinScroller()
         #if os(macOS)
             .background(Theme.window)
         #else

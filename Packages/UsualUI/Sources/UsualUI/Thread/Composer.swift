@@ -1,10 +1,10 @@
 import HermesKit
 import SwiftUI
 
-/// The message box under a chat with one agent, with its model and thinking choices (menus under
-/// the box on the Mac, controls inside it while you type on iPhone). Return sends. While the agent
-/// works, a message steers it and the empty box's button stops it. Files can go with a message
-/// between turns.
+/// The message box under a chat with one agent. On iPhone its model, thinking and context sit
+/// inside it while you type; on the Mac they're in the agent's panel (ChatModelSection). Return
+/// sends. While the agent works, a message steers it and the empty box's button stops it. Files can
+/// go with a message between turns.
 struct Composer: View {
     let thread: ChatThread
     let agentName: String
@@ -19,9 +19,8 @@ struct Composer: View {
     var startCall: (() -> Void)?
 
     var body: some View {
-        // Background tasks and side answers float above the box; on the Mac the model and thinking
-        // menus sit under it, on the right.
-        VStack(alignment: .trailing, spacing: ModelControls.gap) {
+        // Background tasks and side answers float above the box.
+        VStack(alignment: .trailing, spacing: 0) {
             if !thread.backgroundTasks.isEmpty {
                 BackgroundTasksBar(tasks: thread.backgroundTasks).padding(.bottom, 6)
             }
@@ -30,13 +29,8 @@ struct Composer: View {
                     .padding(.bottom, 6)
             }
             box
-            #if os(macOS)
-                ModelControls(thread: thread, agentName: agentName, agentDefault: agentDefault)
-            #endif
         }
-        #if os(iOS)
-            .task(id: thread.isAttached) { await thread.loadModelsAndUsage() }
-        #endif
+        .task(id: thread.isAttached) { await thread.loadModelsAndUsage() }
         .animation(.smooth(duration: 0.2), value: thread.sideQuestions)
         .animation(.smooth(duration: 0.2), value: thread.backgroundTasks)
     }

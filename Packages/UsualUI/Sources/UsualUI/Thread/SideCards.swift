@@ -43,6 +43,7 @@ struct SideQuestionCard: View {
                     MarkdownView(text)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .thinScroller()
                 .scrollBounceBehavior(.basedOnSize)
                 .frame(maxHeight: 220)
                 .fixedSize(horizontal: false, vertical: true)
