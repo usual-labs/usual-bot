@@ -12,16 +12,19 @@ public enum Theme {
     /// Window background behind the sidebar and the chat pane.
     public static let window = Color(light: 0xF5F5F5, dark: 0x101010)
     /// The chat pane.
-    public static let pane = Color(light: 0xFFFFFF, dark: 0x161616)
+    public static let pane = Color(light: 0xFFFFFF, dark: 0x141414)
     /// The agent's bubbles and the cards in a conversation.
-    static let bubble = Color(light: 0xF0F0F0, dark: 0x252525)
+    static let bubble = Color(light: 0xF0F0F0, dark: 0x202020)
     /// What floats over a conversation: the message box, the name pill and their kin.
     static let surface = Color(light: 0xFFFFFF, dark: 0x1F1F1F)
-    /// Chat text: 15 pt on the Mac, 16 pt on iPhone, which is held further from the eye.
+    /// Chat text: 15 pt on the Mac, and 18 pt with a 24 pt line on iPhone, as in Grok's phone app,
+    /// since a phone is held further from the eye.
     #if os(macOS)
         static let messageSize: CGFloat = 15
+        static let messageLineSpacing: CGFloat = 4
     #else
-        static let messageSize: CGFloat = 16
+        static let messageSize: CGFloat = 18
+        static let messageLineSpacing: CGFloat = 2.5
     #endif
     /// The widest a message or card grows, so lines stay readable in a wide window.
     static let bubbleWidth: CGFloat = 560
@@ -37,16 +40,16 @@ public enum Theme {
     /// A conversation's column, and the message box under it.
     static let columnWidth: CGFloat = 960
     public static let border = Color(light: 0xE6E6E6, dark: 0x2E2E2E)
-    public static let ink = Color(light: 0x1C1C1C, dark: 0xF2F2F2)
-    public static let secondaryInk = Color(light: 0x6B6B6B, dark: 0x9E9E9E)
+    public static let ink = Color(light: 0x111111, dark: 0xFFFFFF)
+    public static let secondaryInk = Color(light: 0x5C5C5C, dark: 0xB0B0B0)
     /// The selected contact row in the sidebar.
     public static let selection = Color(light: 0xEBEBEB, dark: 0x2A2A2A)
     /// Primary buttons and unread badges.
-    public static let primary = Color(light: 0x1C1C1C, dark: 0xF2F2F2)
-    public static let primaryInk = Color(light: 0xFFFFFF, dark: 0x1C1C1C)
+    public static let primary = Color(light: 0x111111, dark: 0xFFFFFF)
+    public static let primaryInk = Color(light: 0xFFFFFF, dark: 0x111111)
     /// Your bubbles where there's no one agent's colour to use, as in rooms.
     public static let userBubble = Color(light: 0x1C1C1C, dark: 0x3A3A3A)
-    public static let userBubbleInk = Color(light: 0xFFFFFF, dark: 0xF2F2F2)
+    public static let userBubbleInk = Color(light: 0xFFFFFF, dark: 0xFFFFFF)
     public static let needsYouFill = Color(light: 0xFFF1D6, dark: 0x3A2A0A)
     public static let needsYouInk = Color(light: 0x8A5300, dark: 0xF5C36B)
     public static let danger = Color(light: 0xB42318, dark: 0xF97066)

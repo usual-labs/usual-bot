@@ -66,7 +66,7 @@ struct MessageBox: View {
         @ScaledMetric(relativeTo: .body) private var scaledButtonSize: CGFloat = 34
         private var buttonSize: CGFloat { min(scaledButtonSize, 50) }
         private static let inset: CGFloat = 6
-        private static let fontSize: CGFloat = 17
+        private static let fontSize: CGFloat = 18
         private static let fieldPadding: CGFloat = 6
     #else
         private let buttonSize: CGFloat = 28

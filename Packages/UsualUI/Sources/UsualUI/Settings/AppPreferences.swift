@@ -46,7 +46,7 @@ private struct MessageFont: ViewModifier {
     @Environment(\.messageTextSize) private var size
 
     func body(content: Content) -> some View {
-        content.font(.system(size: size)).lineSpacing(4)
+        content.font(.system(size: size)).lineSpacing(Theme.messageLineSpacing)
     }
 }
 

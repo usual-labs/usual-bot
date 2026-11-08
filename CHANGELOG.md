@@ -97,6 +97,7 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Changed
 
+- **Larger chat text on iPhone, and more contrast everywhere.** Messages are 18 pt with a 24 pt line, and the message box 18 pt, as in Grok's phone app. Text is pure white in dark mode and near-black in light, secondary text and the message box's buttons are brighter, and dark mode's chat and agent bubbles are a step darker, so text stands out more.
 - **Chats only move up while a Bot works.** The "Thinking…" row no longer leaves and returns around each tool, a finished turn keeps its to-do list and helpers where they were, and an answered card leaves its space until the next message fills it.
 - **A thin, quiet scroll bar in chats and rooms on the Mac,** instead of the wide bright one macOS shows with a mouse connected. It widens under the pointer, and you can drag it.
 - **Smoother profile and room panels on the Mac.** They slide in fast and settle, instead of moving at one speed and pausing on the way. The room's details get a close button like a profile's, and a Bot's ••• menu sits beside it.
@@ -164,8 +165,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Fixed
 
-- **Tapping a notification on iPhone no longer closes the app.**
 - **The iPhone message box opens with the keyboard.** It grows and rises in one motion, and the context and thinking buttons appear once it's open, instead of showing below the box first.
+- **Tapping a notification on iPhone no longer closes the app.**
 - **Back shows in Mac sheets again,** so a routine's past run, or a template's form, has a way out, and Quit works while a sheet is open.
 - **Long chats open and resize faster.** A chat or room builds its newest messages and adds earlier
   ones as you scroll up to them, keeping your place, instead of laying out its whole history on
