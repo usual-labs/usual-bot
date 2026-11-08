@@ -36,5 +36,9 @@ the Hermes app, except in rooms. A chat you're reading on any device is quiet on
 all of them; everything else reaches every device that hasn't turned that Bot off. With previews
 off on a device, its notifications say only who needs you.
 
+To hear from a routine, set its **Results** to **Post in this chat**. Its output then lands in the Bot's chat,
+the Bot replies there, and that reply notifies you. Don't have a Bot load this plugin's files to
+send its own notifications: they're private and change between versions.
+
 Settings are in `~/.hermes/usual-push/`, readable only by your user: each device's choices and the
 two keys it gave your gateway. Signing out of Usual Bot removes that device.
