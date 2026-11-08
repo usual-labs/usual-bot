@@ -165,6 +165,7 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Fixed
 
+- **Long answers to an agent's question show in full on the Mac.** A choice too long for one line wraps instead of being cut off, and its letter lines up with the others.
 - **The iPhone message box opens with the keyboard.** It grows and rises in one motion, and the context and thinking buttons appear once it's open, instead of showing below the box first.
 - **Tapping a notification on iPhone no longer closes the app.**
 - **Back shows in Mac sheets again,** so a routine's past run, or a template's form, has a way out, and Quit works while a sheet is open.

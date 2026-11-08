@@ -78,7 +78,7 @@ struct QuestionCard: View {
             }
             .font(.system(size: messageSize))
         }
-        .cardButton()
+        .buttonStyle(ChoiceButtonStyle())
         .accessibilityAddTraits(isPicked ? .isSelected : [])
     }
 
@@ -163,5 +163,24 @@ struct QuestionCard: View {
 
     private var isComplete: Bool {
         prompt.questions.allSatisfy { !(answers[$0.id] ?? []).isEmpty }
+    }
+}
+
+/// A choice's row: a bordered button's fill, drawn here because the Mac's bordered button keeps
+/// its label on one line, so a long choice was cut off and its letter pulled out of line.
+private struct ChoiceButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(fill(configuration.isPressed), in: shape)
+            .contentShape(shape)
+            .clickable()
+    }
+
+    private var shape: some Shape { RoundedRectangle(cornerRadius: 14, style: .continuous) }
+
+    private func fill(_ isPressed: Bool) -> AnyShapeStyle {
+        isPressed ? AnyShapeStyle(.fill.secondary) : AnyShapeStyle(.fill.tertiary)
     }
 }
