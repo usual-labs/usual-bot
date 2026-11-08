@@ -465,7 +465,9 @@ private struct ChatBars<Top: View, Actions: View, Bottom: View>: ViewModifier {
         /// phone app, and the top edge fades the same way under the name and buttons.
         private func iPhoneBottomBar(_ conversation: some View, _ bar: some View) -> some View {
             conversation
-                .safeAreaBar(edge: .bottom, spacing: 0) { bar }
+                .safeAreaBar(edge: .bottom, spacing: 0) {
+                    bar.environment(\.keyboardUp, bottomInset > homeIndicator)
+                }
                 .softScrollEdges()
         }
 
@@ -493,4 +495,7 @@ extension EnvironmentValues {
     @Entry var conversationTaps = 0
     /// The round buttons in the message box: 28 pt on the Mac, larger on iPhone.
     @Entry var composerButtonSize: CGFloat = 28
+    /// iPhone: the keyboard is up under the message box. It changes as the keyboard starts to move,
+    /// in that move's animation.
+    @Entry var keyboardUp = false
 }

@@ -165,6 +165,7 @@ All notable changes to Usual Bot are listed here. The format follows
 ### Fixed
 
 - **Tapping a notification on iPhone no longer closes the app.**
+- **The iPhone message box opens with the keyboard.** It grows and rises in one motion, and the context and thinking buttons appear once it's open, instead of showing below the box first.
 - **Back shows in Mac sheets again,** so a routine's past run, or a template's form, has a way out, and Quit works while a sheet is open.
 - **Long chats open and resize faster.** A chat or room builds its newest messages and adds earlier
   ones as you scroll up to them, keeping your place, instead of laying out its whole history on

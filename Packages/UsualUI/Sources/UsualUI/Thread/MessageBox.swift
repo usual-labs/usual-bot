@@ -50,6 +50,12 @@ struct MessageBox: View {
     @State private var pickingLevel = false
     /// iPhone: the model sheet is open.
     @State private var choosingModel = false
+    #if os(iOS)
+        @Environment(\.keyboardUp) private var keyboardUp
+        /// iPhone: the box is open for typing. It opens and closes with the keyboard, in the same
+        /// motion: opening on focus alone grew the box, then the keyboard pushed it up after.
+        @State private var open = false
+    #endif
     /// Mac: the text has wrapped, so it gets the box's whole width until the box empties. Staying
     /// open stops the wider field from unwrapping it and the box closing again.
     @State private var hasWrapped = false
@@ -75,7 +81,7 @@ struct MessageBox: View {
     /// you type in a chat, with the chat's settings, and on the Mac once your text wraps.
     private var expanded: Bool {
         #if os(iOS)
-            focused && chat != nil
+            open && chat != nil
         #else
             hasWrapped
         #endif
@@ -95,16 +101,31 @@ struct MessageBox: View {
                 }
             }
             .environment(\.composerButtonSize, buttonSize)
-            .animation(.smooth(duration: 0.25), value: expanded)
             .animation(.smooth(duration: 0.2), value: pickingLevel)
             .animation(.snappy(duration: 0.16), value: isEmpty)
             #if os(macOS)
+                .animation(.smooth(duration: 0.25), value: expanded)
                 .onAppear { focused = true }
                 .onChange(of: text) { if text.isEmpty { hasWrapped = false } }
             #else
+                // In the keyboard's own animation, which this change arrives in.
+                .onChange(of: keyboardUp) { _, up in open = up && focused }
                 // The level picker closes as you type on, put the keyboard away, or tap the chat.
                 .onChange(of: text) { pickingLevel = false }
-                .onChange(of: focused) { _, focused in if !focused { pickingLevel = false } }
+                .onChange(of: focused) { _, focused in
+                    if !focused { pickingLevel = false }
+                    // Focus came to keys already up, or left with none up: no keyboard will move.
+                    if focused == keyboardUp {
+                        withAnimation(.smooth(duration: 0.25)) { open = focused }
+                    }
+                }
+                // A hardware keyboard raises no keys, so the box opens a moment after focus instead.
+                .task(id: focused) {
+                    guard focused else { return }
+                    try? await Task.sleep(for: .seconds(0.6))
+                    guard !Task.isCancelled, focused, !open else { return }
+                    withAnimation(.smooth(duration: 0.25)) { open = true }
+                }
                 .sheet(isPresented: $choosingModel) {
                     if let chat { ModelSheet(chat: chat) }
                 }
@@ -188,7 +209,14 @@ struct MessageBox: View {
                     HStack(spacing: 6) {
                         #if os(iOS)
                             if expanded, let chat {
+                                // Arriving views don't slide with the rest: they're drawn where they
+                                // end up, below the box while it still grows. So they fade in once it
+                                // has, and go at once as it shrinks.
                                 ComposerControls(chat: chat, pickingLevel: $pickingLevel)
+                                    .transition(
+                                        .asymmetric(
+                                            insertion: .opacity.animation(.easeOut(duration: 0.15).delay(0.3)),
+                                            removal: .identity))
                             }
                         #endif
                         sendButton
