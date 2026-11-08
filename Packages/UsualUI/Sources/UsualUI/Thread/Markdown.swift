@@ -15,6 +15,7 @@ enum MarkdownBlock: Equatable {
     case media(path: String, voice: Bool = false)
     /// A Markdown image from the web.
     case image(URL, alt: String)
+    case table(MarkdownTable)
 
     /// `parse`, remembered: a chat's views are made again on every change to it (each word of a
     /// reply being written), and parsing every message each time made long chats slow.
@@ -83,7 +84,7 @@ enum MarkdownBlock: Equatable {
 
     /// Splits Markdown into blocks using Foundation's parser. Inline styling (bold, italic, links,
     /// inline code) stays in each block's `AttributedString` as presentation intents, which
-    /// `MarkdownView` turns into fonts. Table cells of one row join into a line; images become
+    /// `MarkdownView` turns into fonts. A table's cells gather into one block; images become
     /// blocks of their own after their paragraph.
     private static func parseMarkdown(_ markdown: String) -> [MarkdownBlock] {
         let options = AttributedString.MarkdownParsingOptions(
@@ -92,7 +93,7 @@ enum MarkdownBlock: Equatable {
             return [.paragraph(AttributedString(markdown))]
         }
         var blocks: [MarkdownBlock] = []
-        var lastTableRow: Int?
+        var lastTable: (id: Int, row: Int?)?
         for (intent, range) in document.runs[\.presentationIntent] {
             let text = AttributedString(document[range])
             guard let intent else {
@@ -100,16 +101,19 @@ enum MarkdownBlock: Equatable {
                 continue
             }
             let kinds = intent.components.map(\.kind)
-            if let rowID = tableRowIdentity(intent) {
-                if rowID == lastTableRow, case .paragraph(let previous) = blocks.last {
-                    blocks[blocks.count - 1] = .paragraph(previous + AttributedString("  ·  ") + text)
+            if let cell = tableCell(intent) {
+                if lastTable?.id == cell.table, case .table(var table) = blocks.last {
+                    table.add(text, row: cell.row, newRow: cell.row != lastTable?.row, column: cell.column)
+                    blocks[blocks.count - 1] = .table(table)
                 } else {
-                    blocks.append(.paragraph(text))
+                    var table = MarkdownTable(cell.columns)
+                    table.add(text, row: cell.row, newRow: true, column: cell.column)
+                    blocks.append(.table(table))
                 }
-                lastTableRow = rowID
+                lastTable = (cell.table, cell.row)
                 continue
             }
-            lastTableRow = nil
+            lastTable = nil
             if let language = kinds.lazy.compactMap({ kind -> String?? in
                 if case .codeBlock(let hint) = kind { return .some(hint) }
                 return nil
@@ -187,10 +191,19 @@ enum MarkdownBlock: Equatable {
         return (ordered ? "\(ordinal)." : "•", max(lists.count - 1, 0))
     }
 
-    private static func tableRowIdentity(_ intent: PresentationIntent) -> Int? {
+    /// Where a run of a table sits: its table, its row (`nil` for the header) and its column.
+    private static func tableCell(_ intent: PresentationIntent) -> (
+        table: Int, columns: [PresentationIntent.TableColumn], row: Int?, column: Int
+    )? {
+        var column: Int?
+        var row: Int?
         for component in intent.components {
             switch component.kind {
-            case .tableRow, .tableHeaderRow: return component.identity
+            case .tableCell(let index): column = index
+            case .tableRow: row = component.identity
+            case .table(let columns):
+                guard let column else { return nil }
+                return (component.identity, columns, row, column)
             default: continue
             }
         }
@@ -298,6 +311,8 @@ struct MarkdownView: View {
             MediaView(path: path, voice: voice)
         case .image(let url, let alt):
             ReplyImage(source: .web(url), name: alt.isEmpty ? url.lastPathComponent : alt)
+        case .table(let table):
+            MarkdownTableView(table: table) { styled($0, weight: $1) }
         }
     }
 

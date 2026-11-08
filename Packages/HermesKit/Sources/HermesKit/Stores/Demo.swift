@@ -427,11 +427,11 @@
                         **Turbopuffer** fits best: it's the cheapest at our size, and search stays fast with \
                         the 40k pages we index today.
 
-                        - **pgvector** keeps everything in Postgres, but index builds slow the database our \
-                        app already leans on.
-                        - **Qdrant** is quick and full-featured; running it ourselves adds a server to watch.
-                        - **Turbopuffer** charges for storage on object storage, about $6 a month for us, and \
-                        needs no server.
+                        | | Runs on | Cost for us | Watch out for |
+                        | --- | --- | ---: | --- |
+                        | **pgvector** | our Postgres | nothing extra | index builds slow the database our app leans on |
+                        | **Qdrant** | a server we run | ~$40 a month | one more server to watch |
+                        | **Turbopuffer** | object storage | ~$6 a month | newer, with a smaller community |
 
                         I'd start with a two-week trial behind the existing search box. Want me to draft the \
                         plan for Forge?

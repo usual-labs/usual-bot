@@ -16,6 +16,7 @@ struct MarkdownBlockTests {
             case .rule: return "hr"
             case .media(let path, let voice): return (voice ? "voice:" : "media:") + path
             case .image(let url, let alt): return "img(\(alt)):" + url.absoluteString
+            case .table(let table): return "table:" + table.lines.joined(separator: " / ")
             }
         }
     }
@@ -106,13 +107,49 @@ struct MarkdownBlockTests {
             ])
     }
 
-    @Test func tableRowsBecomeLines() {
+    @Test func tablesKeepTheirColumns() throws {
         let markdown = """
-            | Path | Size |
-            | --- | --- |
-            | /var/lib/docker | 38 GB |
+            Disk use:
+
+            | Path | Size | Note |
+            | --- | ---: | :---: |
+            | `/var/lib/docker` | 38 GB | |
+            | /home | 2 GB | **old** |
+
+            Done.
             """
-        #expect(kinds(markdown) == ["p:Path  ·  Size", "p:/var/lib/docker  ·  38 GB"])
+        #expect(
+            kinds(markdown) == [
+                "p:Disk use:", "table:Path  ·  Size  ·  Note / /var/lib/docker  ·  38 GB  ·   / /home  ·  2 GB  ·  old",
+                "p:Done.",
+            ])
+        guard case .table(let table) = MarkdownBlock.parse(markdown)[1] else { throw TableMissing() }
+        #expect(table.alignments == [.leading, .trailing, .center])
+        #expect(table.rows.count == 2)
+    }
+
+    @Test func twoTablesInARowStayApart() {
+        let markdown = """
+            | A |
+            | - |
+            | 1 |
+
+            | B |
+            | - |
+            | 2 |
+            """
+        #expect(kinds(markdown) == ["table:A / 1", "table:B / 2"])
+    }
+
+    private struct TableMissing: Error {}
+
+    @Test func wideColumnsGiveWayFirst() {
+        // Room for all: every column keeps its width.
+        #expect(TableLayout.fitted(ideal: [100, 200], minimum: [90, 90], into: 400) == [100, 200])
+        // Short of room: the narrow column keeps its width, the wide ones share the rest.
+        #expect(TableLayout.fitted(ideal: [60, 280, 280], minimum: [60, 90, 90], into: 360) == [60, 150, 150])
+        // Never below the narrowest, even if the table is then too wide and has to scroll.
+        #expect(TableLayout.fitted(ideal: [280, 280], minimum: [90, 90], into: 120) == [90, 90])
     }
 
     @Test func plainTextIsOneParagraph() {

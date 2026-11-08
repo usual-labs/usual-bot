@@ -22,6 +22,8 @@ enum SelectableText {
                 isListItem = true
             case .code(_, let code):
                 line = code
+            case .table(let table):
+                line = table.lines.joined(separator: "\n")
             case .rule, .media, .image:
                 continue
             }

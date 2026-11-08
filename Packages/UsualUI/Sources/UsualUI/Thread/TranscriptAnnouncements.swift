@@ -13,6 +13,7 @@ enum TranscriptAnnouncement {
                 switch block {
                 case .paragraph(let text), .heading(_, let text), .listItem(_, _, let text), .quote(let text):
                     String(text.characters)
+                case .table(let table): table.lines.joined(separator: " ")
                 default: nil
                 }
             }

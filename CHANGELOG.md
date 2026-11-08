@@ -97,6 +97,7 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Changed
 
+- **Tables in replies line up.** An agent's table shows as columns with a bold header, instead of a line per row. Long cells wrap, and a table too wide for the message scrolls sideways inside it.
 - **Larger chat text on iPhone, and more contrast everywhere.** Messages are 18 pt with a 24 pt line, and the message box 18 pt, as in Grok's phone app. Text is pure white in dark mode and near-black in light, secondary text and the message box's buttons are brighter, and dark mode's chat and agent bubbles are a step darker, so text stands out more.
 - **Chats only move up while a Bot works.** The "Thinking…" row no longer leaves and returns around each tool, a finished turn keeps its to-do list and helpers where they were, and an answered card leaves its space until the next message fills it.
 - **A thin, quiet scroll bar in chats and rooms on the Mac,** instead of the wide bright one macOS shows with a mouse connected. It widens under the pointer, and you can drag it.
