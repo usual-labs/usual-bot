@@ -6,6 +6,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+## 0.4.0 - 2026-11-08
+
 ### Added
 
 - **Unread counts follow you.** Read a Bot's chat on the Mac or iPhone and its unread count, and its
