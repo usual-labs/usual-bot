@@ -528,12 +528,20 @@ public final class ChatThread {
             let values = picked[question.id] ?? []
             answers[question.id] = values.isEmpty ? .null : .string(ClarifyPrompt.encode(values, for: question))
         }
-        // Your answers read like your side of the conversation.
-        let summary = prompt.questions.compactMap { picked[$0.id]?.joined(separator: ", ").nonBlank }
-        state.steerLocally(summary.joined(separator: "\n"))
+        state.steerLocally(Self.summary(of: prompt, picked: picked))
         Task {
             await channel.respond(to: prompt.id, result: ["answers": .object(answers), "outcome": "submitted"])
         }
+    }
+
+    /// Your answers as your side of the conversation. The card goes once answered, so with several
+    /// questions each answer sits under its question; one answer reads as a plain reply.
+    static func summary(of prompt: ClarifyPrompt, picked: [String: [String]]) -> String {
+        let answered = prompt.questions.compactMap { question in
+            picked[question.id]?.joined(separator: ", ").nonBlank.map { (question.text, $0) }
+        }
+        guard prompt.questions.count > 1 else { return answered.first?.1 ?? "" }
+        return answered.map { "\($0.0)\n\($0.1)" }.joined(separator: "\n\n")
     }
 
     /// The question a message typed in the box answers, as in Grok ("Or answer in the chat below"):

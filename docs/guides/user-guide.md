@@ -152,7 +152,8 @@ see what it covers; on iPhone the card says so under its buttons.
 When a Bot asks you a question with choices, the same kind of card shows the options; pick one
 or type your own answer. When it asks one thing with one answer, the card is lighter: tap a choice,
 or type your answer in the message box, which says **Answer** while the question waits. **✕** skips
-it. Approvals also wait in the ⌥Space panel on the Mac, so you can answer
+it. Once you answer several questions, your message shows each question above your answer.
+Approvals also wait in the ⌥Space panel on the Mac, so you can answer
 without opening the chat. A card stays where it appeared: a message you send while it waits, and
 the reply, come after it.
 

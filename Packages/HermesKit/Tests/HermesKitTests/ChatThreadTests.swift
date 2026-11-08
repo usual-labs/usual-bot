@@ -163,6 +163,27 @@ struct ChatThreadTests {
         #expect(thread.state.items.last?.content == .user("Yes"))
     }
 
+    @Test func answersToSeveralQuestionsKeepTheirQuestions() async throws {
+        let request: JSONValue = [
+            "id": "srq-2", "method": "clarify",
+            "params": [
+                "session_id": "live-1",
+                "questions": [
+                    ["qid": "q0", "question": "Which folder?", "choices": ["A", "B"]],
+                    ["qid": "q1", "question": "When?"],
+                ],
+            ],
+        ]
+        let (thread, gateway) = try await openThread(resume: [
+            "session_id": "live-1", "running": true, "messages": [], "open_requests": [request],
+        ])
+        let prompt = try #require(thread.questions.first)
+        thread.answer(prompt, with: ["q0": ["B"], "q1": ["Friday"]])
+        try await waitUntil { gateway.socket.sent.count == 2 }
+        // The card goes, so your message says what each answer was to.
+        #expect(thread.state.items.last?.content == .user("Which folder?\nB\n\nWhen?\nFriday"))
+    }
+
     @Test func aMessageInTheBoxAnswersTheQuestion() async throws {
         let (thread, gateway) = try await openThread(resume: [
             "session_id": "live-1", "running": true, "messages": [], "open_requests": [clarifyRequest],
