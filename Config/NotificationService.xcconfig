@@ -15,6 +15,9 @@ SKIP_INSTALL = YES
 ENABLE_PREVIEWS = NO
 APPLICATION_EXTENSION_API_ONLY = YES
 
+// Empty unless scripts/testflight.sh signs with profiles made beforehand.
+PROVISIONING_PROFILE_SPECIFIER = $(USUAL_NOTIFICATIONS_PROFILE)
+
 // Push builds (USUAL_PUSH, in Shared.xcconfig) share a keychain group with the app.
 CODE_SIGN_ENTITLEMENTS[sdk=macosx*] = $(USUAL_NSE_MAC_ENTITLEMENTS_$(USUAL_PUSH))
 CODE_SIGN_ENTITLEMENTS[sdk=iphone*] = $(USUAL_NSE_IOS_ENTITLEMENTS_$(USUAL_PUSH))

@@ -42,8 +42,8 @@
   TestFlight, the only way builds ship (`docs/guides/releasing.md`). The GitHub release workflow
   and the Homebrew cask in `usual-labs/homebrew-tap` were retired after 0.3.0
 - `.github/workflows/testflight.yml` — runs `scripts/testflight.sh` by hand or nightly
-  (`TESTFLIGHT_NIGHTLY`), with the `testflight` environment's API key;
-  `scripts/app-store-certificates.swift` deletes the development certificates each run makes
+  (`TESTFLIGHT_NIGHTLY`), signing with the `testflight` environment's certificates and profiles and
+  uploading with an individual API key
 - `Config/Shared.xcconfig` — shared Xcode settings
 - `UsualBot.xcodeproj` — application project
 - `design/avatars` — avatar reference and artwork
