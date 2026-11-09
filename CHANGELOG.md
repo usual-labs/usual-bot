@@ -6,10 +6,6 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
-### Fixed
-
-- **Replies keep their line breaks.** A reply written a line per item ran its lines together into
-  one paragraph. Each line now shows on its own, in chats, rooms and the ⌥Space panel.
 ### Added
 
 - **Chats on the gateway's Webapp.** Usual Bot now chats through the listener `hermes gateway`
@@ -31,6 +27,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Fixed
 
+- **Replies keep their line breaks.** A reply written a line per item ran its lines together into
+  one paragraph. Each line now shows on its own, in chats, rooms and the ⌥Space panel.
 - The push plugin (`usual-push` 0.3.1) notifies you when a Bot on the Webapp asks for approval or a
   question, and keeps a hidden Bot quiet on a gateway that serves several profiles. Run its install
   script again to update it.
