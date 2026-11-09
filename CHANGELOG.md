@@ -6,6 +6,8 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+## 0.5.0 - 2026-11-09
+
 ### Added
 
 - **Chats on the gateway's Webapp.** Usual Bot now chats through the listener `hermes gateway`
