@@ -65,8 +65,10 @@ Its secrets live in the `testflight` environment, which only `main` may use:
 | `APPSTORE_API_ISSUER_ID` | The issuer ID shown above the team's keys |
 | `APPSTORE_API_KEY_P8` | The contents of the key's `.p8` file |
 
-Make the key under App Store Connect › Users and Access › Integrations › Team Keys, with the
-**Admin** role: Xcode uses it to make the distribution certificates and profiles. Set each secret
+Make a team key, not an individual one, under App Store Connect › Users and Access › Integrations ›
+App Store Connect API, with the **Admin** role: Xcode uses it to make the distribution certificates
+and profiles. Only the team's Account Holder and Admins see that section, and the Account Holder
+has to request API access once before anyone can make a key. Set each secret
 with `gh secret set <name> --env testflight -R usual-labs/usual-bot`, which reads the value from
 standard input.
 
