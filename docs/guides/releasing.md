@@ -67,9 +67,11 @@ An Admin or the Account Holder makes these on a Mac, in the
 1. **Two certificates**, the ordinary kind, not cloud-managed: **Apple Distribution**, which signs
    both apps, and **Mac Installer Distribution**, which signs the Mac package. Make each from a
    certificate signing request (Keychain Access › Certificate Assistant), so its private key stays
-   in your keychain, then download and open it.
-2. **One `.p12`** holding both, with their private keys: select the two in Keychain Access, choose
-   File › Export Items, and give it a password.
+   in your keychain, then download and open it. One request can serve both.
+2. **One `.p12`** holding both, with their private keys: in Keychain Access › login › My
+   Certificates, select the two certificates, not the keys under them, choose File › Export Items,
+   and give it a password. `/usr/bin/openssl pkcs12 -in Usual.p12 -nokeys | grep subject` should
+   print both names.
 3. **Four App Store profiles**, each using that Apple Distribution certificate:
 
    | Type | Bundle ID | Secret |
@@ -124,5 +126,8 @@ with **Upload** off, then revoke the old certificates.
   each minute.
 - **The workflow says a profile is for another app, lists devices, or expires soon**: replace that
   profile's secret with an App Store profile for the bundle ID it names.
-- **The workflow's export can't find a certificate or profile**: the `.p12` lacks one of the two
-  certificates, or a profile was made with another Apple Distribution certificate.
+- **The workflow says the `.p12` has no Apple Distribution or Installer certificate**: export it
+  again with both certificates selected, as in step 2 of the signing material, and replace
+  `SIGNING_P12` and `SIGNING_P12_PASSWORD`.
+- **The workflow's export can't find a certificate or profile**: a profile was made with another
+  Apple Distribution certificate.
