@@ -439,14 +439,24 @@
                         plan for Forge?
                         """),
                 HistoryMessage(
-                    role: "user", text: "Yes, and keep the old search as a fallback.",
+                    role: "user",
+                    text:
+                        "Yes, and keep the old search as a fallback. Our limits are on https://docs.example.com/search",
                     reactions: [Reaction(emoji: "👍", byAgent: true)]),
                 HistoryMessage(
                     role: "assistant",
                     text: """
-                        Done. The plan is in `docs/search/turbopuffer-trial.md` and I've sent Forge the first \
-                        task: index the docs nightly, query Turbopuffer first, and fall back to the current \
-                        search if it errors or takes over 300 ms.
+                        Done. The plan is in `docs/search/turbopuffer-trial.md` and I've sent Forge the first task.
+
+                        ## Trial plan
+                        - Index the docs nightly into Turbopuffer.
+                        - Query Turbopuffer first, and fall back to the current search if it errors or takes \
+                        over 300 ms.
+                        - Compare both for two weeks on [the search dashboard](https://docs.example.com/search/stats).
+
+                        > Keep the old search as a fallback.
+
+                        That stays as you asked, so nobody notices if the trial misbehaves.
                         """,
                     reactions: [Reaction(emoji: "🎉", byAgent: false)]),
                 // What a routine set to post in the chat leaves there, as Hermes stores it.

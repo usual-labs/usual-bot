@@ -36,13 +36,15 @@
             for (index, block) in blocks.enumerated() {
                 let paragraph = NSMutableParagraphStyle()
                 paragraph.lineSpacing = Theme.messageLineSpacing
-                paragraph.paragraphSpacing = index == blocks.count - 1 ? 0 : 10
+                // TextKit leaves the line spacing under a paragraph's last line too.
+                paragraph.paragraphSpacing = index == blocks.count - 1 ? 0 : 10 - Theme.messageLineSpacing
                 let piece: NSMutableAttributedString
                 switch block {
                 case .paragraph(let text):
                     piece = runs(text, size: size, color: ink)
                 case .heading(let level, let text):
-                    piece = runs(text, size: size + (level == 1 ? 5 : level == 2 ? 2 : 0), weight: .semibold, color: ink)
+                    piece = runs(
+                        text, size: size + (level == 1 ? 5 : level == 2 ? 2 : 0), weight: .semibold, color: ink)
                     if index > 0 { paragraph.paragraphSpacingBefore = 4 }
                 case .listItem(let marker, let depth, let text):
                     // "⇥•⇥words": the marker right-aligned in its column, wrapped lines under the words.

@@ -132,9 +132,15 @@ came in while you were away. Scrolling to the end, or sending a message, does th
   waiting for it.
 - **React, reply, copy.** Hover or right-click a message on the Mac, or long-press it on iPhone.
   **More Reactions** has the full set. Reply quotes the message above the box. To copy part of a
-  message, drag across its text on the Mac; on iPhone, long-press it, choose **Select Text**, and
-  select what you want in the sheet that opens. With VoiceOver, each message starts with who wrote
-  it, and these are in its actions.
+  message, drag across its text on the Mac, across paragraphs, headings and list items alike; on
+  iPhone, long-press it, choose **Select Text**, and select what you want in the sheet that opens.
+  With VoiceOver, each message starts with who wrote it, and these are in its actions.
+- **Quote part of a message.** Select some words and choose **Add to Chat**: on the Mac from the
+  button over the selection, by right-clicking it, or with ⌘L; on iPhone from the selection's menu
+  in **Select Text**. The words wait above the message box and go in front of what you write. In a
+  room, quoting a Bot's words addresses that Bot.
+- **Links.** Web and email addresses in messages, yours included, are links: underlined, and blue in
+  the Bot's replies.
 - **Edit and undo.** On your last message, **Edit** puts it back in the box; send it to replace the
   exchange and get a fresh answer. **Undo** takes the last exchange back.
 
@@ -488,6 +494,7 @@ On the Mac these are also in the menu bar: File, View and Go.
 | ⌘Return | Mac message box | Send when chosen in Settings |
 | Shift-Return | Message box | New line |
 | ⌘. | Chat or room, while a reply runs | Stop the reply |
+| ⌘L | Mac, words selected in a message | Add them to the chat as a quote |
 | ↑ / ↓, Tab | `/` or `@` menu | Move, pick |
 | Esc | `/` or `@` menu, reply, edit | Close the menu or cancel |
 | ⇧⌘H | Voice call | End the call |

@@ -63,11 +63,11 @@ extension EnvironmentValues {
                     dismiss()
                     quote(words)
                 }
-                    .navigationTitle("Select Text")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
-                    }
+                .navigationTitle("Select Text")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                }
             }
             .tint(Theme.ink)
             .presentationDetents([.medium, .large])

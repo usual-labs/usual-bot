@@ -12,13 +12,15 @@
 
         var body: some View {
             MessageTextView(content: content, quote: quoteSelection) { selection = $0 }
-                .overlay(alignment: .topLeading) {
-                    if let selection, let quoteSelection {
-                        AddToChatButton { quoteSelection(selection.text) }
+                .overlay {
+                    if let selection, quoteSelection != nil {
+                        AddToChatButton(action: selection.add)
                             // Centred over where the drag ended, just above the selection's first line,
-                            // and never past the text's leading edge.
-                            .alignmentGuide(.leading) { min($0.width / 2 - selection.anchor.x, 8) }
-                            .alignmentGuide(.top) { $0.height + 4 - selection.anchor.y }
+                            // and not far past the text's leading edge.
+                            .position(
+                                x: max(selection.anchor.x, AddToChatButton.width / 2 - 8),
+                                y: selection.anchor.y - AddToChatButton.height / 2 - 4
+                            )
                             .transition(.opacity)
                     }
                 }
@@ -31,11 +33,18 @@
     struct SelectedWords: Equatable {
         let text: String
         let anchor: CGPoint
+        /// Adds them to the chat and clears the selection.
+        let add: () -> Void
+
+        static func == (lhs: Self, rhs: Self) -> Bool { lhs.text == rhs.text && lhs.anchor == rhs.anchor }
     }
 
     /// A small pill over a selection, as in a coding agent's chat.
     private struct AddToChatButton: View {
         let action: () -> Void
+        /// About how wide it is, to keep it in the message.
+        static let width: CGFloat = 130
+        static let height: CGFloat = 30
 
         var body: some View {
             Button(action: action) {
@@ -51,7 +60,7 @@
                 .foregroundStyle(Theme.ink)
                 .padding(.leading, 12)
                 .padding(.trailing, 6)
-                .frame(height: 30)
+                .frame(height: Self.height)
                 .contentShape(Capsule())
             }
             .buttonStyle(.clickable)
@@ -192,22 +201,26 @@
                 let bounds = layoutManager.boundingRect(forGlyphRange: glyphs, in: textContainer)
                 // Over where the drag ended; from the keyboard, over the selection's middle.
                 var x = bounds.midX
-                if let event = NSApp.currentEvent, event.window === window,
+                if let event = NSApp?.currentEvent, event.window === window,
                     [.leftMouseUp, .leftMouseDragged, .leftMouseDown].contains(event.type)
                 {
                     x = convert(event.locationInWindow, from: nil).x
                 }
                 words = SelectedWords(
-                    text: selectedWords, anchor: CGPoint(x: min(max(x, 0), self.bounds.width), y: bounds.minY))
+                    text: selectedWords, anchor: CGPoint(x: min(max(x, 0), self.bounds.width), y: bounds.minY),
+                    add: { [weak self] in self?.addToChat(nil) })
             }
             // Later: this can run while SwiftUI updates the view, which mustn't change its state.
             let selected = selected
             Task { @MainActor in selected(words) }
         }
 
-        @objc private func addToChat(_ sender: Any?) {
-            guard selectedRange().length > 0 else { return }
-            quote?(selectedWords)
+        /// Quotes the selection, then lets go of it: it's in the message box now.
+        @objc func addToChat(_ sender: Any?) {
+            let range = selectedRange()
+            guard range.length > 0, let quote else { return }
+            quote(selectedWords)
+            setSelectedRange(NSRange(location: NSMaxRange(range), length: 0))
         }
 
         override func performKeyEquivalent(with event: NSEvent) -> Bool {
@@ -229,6 +242,7 @@
             guard range.length > 0, index >= range.location, index <= NSMaxRange(range),
                 let menu = super.menu(for: event)
             else { return nil }
+            Self.dropEditing(from: menu)
             if quote != nil {
                 let item = NSMenuItem(
                     title: String(localized: "Add to Chat"), action: #selector(addToChat(_:)), keyEquivalent: "l")
@@ -239,6 +253,29 @@
                 menu.insertItem(.separator(), at: 1)
             }
             return menu
+        }
+
+        /// Leaves Look Up, Translate, Search, Copy, Share and Speech: the words can't be edited, so
+        /// Cut, Paste, Font, Spelling and Substitutions don't apply.
+        private static func dropEditing(from menu: NSMenu) {
+            let editing: Set<Selector> = [
+                #selector(cut(_:)), #selector(paste(_:)), #selector(pasteAsPlainText(_:)),
+                #selector(pasteAsRichText(_:)),
+            ]
+            for item in menu.items.reversed() {
+                let drop: Bool
+                if let submenu = item.submenu {
+                    drop = !submenu.items.contains { $0.action == #selector(startSpeaking(_:)) }
+                } else {
+                    drop = item.action.map(editing.contains) ?? false
+                }
+                if drop { menu.removeItem(item) }
+            }
+            // No separator at either end or two in a row.
+            for (index, item) in menu.items.enumerated().reversed() where item.isSeparatorItem {
+                let next = index + 1 < menu.items.count ? menu.items[index + 1] : nil
+                if index == 0 || next == nil || next?.isSeparatorItem == true { menu.removeItem(item) }
+            }
         }
 
         /// Copies the words as they read, with list markers but no layout tabs.

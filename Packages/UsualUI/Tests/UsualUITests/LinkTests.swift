@@ -19,7 +19,8 @@ struct LinkTests {
     }
 
     @Test func repliesLinkBareAddressesButNotCode() {
-        let blocks = MarkdownBlock.parse("Docs at https://hermes.example.com/docs and `https://hermes.example.com/raw`.")
+        let blocks = MarkdownBlock.parse(
+            "Docs at https://hermes.example.com/docs and `https://hermes.example.com/raw`.")
         guard case .paragraph(let text) = blocks.first else {
             Issue.record("Expected a paragraph")
             return

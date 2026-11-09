@@ -6,6 +6,19 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+### Added
+
+- **Add to Chat.** Select words in a message and add them to your next message as a quote: on the
+  Mac with the button over the selection, the right-click menu or ⌘L, and on iPhone from Select
+  Text. In a room, quoting a Bot's words addresses that Bot.
+
+### Changed
+
+- On the Mac, a drag selects across a reply's paragraphs, headings, list items and quotes, not
+  just within one of them.
+- Web and email addresses written out in messages are links now, yours included, and links are
+  underlined (and blue in replies) so they stand out from the words around them.
+
 ### Fixed
 
 - Selected text in the message box and other text fields is highlighted in blue (your Mac's
