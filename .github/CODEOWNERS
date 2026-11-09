@@ -1,5 +1,5 @@
-# Changes here need a maintainer's approval: they control what CI runs, how releases are
-# signed, and how sign-in and tokens are handled. Everything else follows the normal checks.
+# Changes here ask a maintainer to review: they control what CI runs, how releases are signed,
+# and how sign-in and tokens are handled. Everything else follows the normal checks.
 /.github/ @iamomiid @arminayat
 /.githooks/ @iamomiid @arminayat
 /scripts/ @iamomiid @arminayat

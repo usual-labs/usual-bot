@@ -25,7 +25,8 @@ are retired: they couldn't carry push without hand-made Developer ID profiles.
 2. **Set the version.** Rename `## Unreleased` in `CHANGELOG.md` to the version and date, for
    example `## 0.4.0 - 2026-11-05`, add a fresh empty `## Unreleased` above it, and set
    `MARKETING_VERSION` in `Config/Shared.xcconfig` to match. Commit, tag (`v0.4.0`) and push.
-3. **Upload** from that commit, with a clean working tree:
+3. **Upload** from that commit: run the **TestFlight** workflow from the Actions tab (see
+   [From GitHub Actions](#from-github-actions)), or from your Mac, with a clean working tree:
 
    ```sh
    DEVELOPMENT_TEAM=<team ID> scripts/testflight.sh
@@ -42,6 +43,38 @@ are retired: they couldn't carry push without hand-made Developer ID profiles.
 TestFlight builds expire after 90 days, so testers need a newer one before then. They use Apple's
 production push service; the app works that out from how it was signed (`PushRelay`).
 
+## From GitHub Actions
+
+The [TestFlight workflow](../../.github/workflows/testflight.yml) runs `scripts/testflight.sh` on a
+GitHub macOS runner, signed in with an App Store Connect API key instead of an Xcode account.
+
+- **By hand:** Actions › TestFlight › Run workflow, on `main`. Pick both apps or one, and turn off
+  **Upload** to sign and export without uploading, which is the way to check a new key.
+- **Each night:** set the repository variable `TESTFLIGHT_NIGHTLY` to `true` (Settings › Secrets and
+  variables › Actions › Variables) once a run by hand has worked. A night with nothing new on `main`
+  since the last nightly does nothing. Nightly builds keep the version in `Config/Shared.xcconfig`,
+  so they reach internal testers right away; external testers still wait for beta review of each
+  new version.
+
+Its secrets live in the `testflight` environment, which only `main` may use:
+
+| Secret | Value |
+| --- | --- |
+| `APPLE_TEAM_ID` | The team ID |
+| `APPSTORE_API_KEY_ID` | The API key's ID |
+| `APPSTORE_API_ISSUER_ID` | The issuer ID shown above the team's keys |
+| `APPSTORE_API_KEY_P8` | The contents of the key's `.p8` file |
+
+Make the key under App Store Connect › Users and Access › Integrations › Team Keys, with the
+**Admin** role: Xcode uses it to make the distribution certificates and profiles. Set each secret
+with `gh secret set <name> --env testflight -R usual-labs/usual-bot`, which reads the value from
+standard input.
+
+On a fresh runner Xcode makes a new Apple Development certificate whenever it signs, and Apple
+limits how many a team may have. The workflow notes the team's certificates before it builds and
+afterwards deletes only the development certificates that appeared during the run
+(`scripts/app-store-certificates.swift`).
+
 ## When it fails
 
 - **Signing errors in the archive or export**: Xcode isn't signed in to the team, or the account
@@ -50,3 +83,5 @@ production push service; the app works that out from how it was signed (`PushRel
   platform for the app yet. See setup step 2.
 - **The build number is already used**: run the script again a minute later; it takes a new number
   each minute.
+- **The workflow can't make certificates or profiles**: the API key's role is below Admin. Make a
+  new key with the Admin role and replace the secrets.

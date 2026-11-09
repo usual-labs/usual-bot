@@ -1,0 +1,133 @@
+name: TestFlight
+
+# Archives Usual Bot for the Mac and the iPhone with scripts/testflight.sh and uploads both to
+# TestFlight. Run it by hand from the Actions tab; it also runs each night once the repository
+# variable TESTFLIGHT_NIGHTLY is `true`, and a night with nothing new on main does nothing. Its
+# secrets live in the `testflight` environment, which only main may use; docs/guides/releasing.md
+# lists them.
+
+on:
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: Which apps
+        type: choice
+        options: [both, mac, iphone]
+        default: both
+      upload:
+        description: Upload to TestFlight (off signs and exports only)
+        type: boolean
+        default: true
+  schedule:
+    - cron: '17 2 * * *'
+
+permissions: {}
+
+# One upload at a time, and never cancelled halfway.
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+jobs:
+  due:
+    name: Anything new
+    if: >-
+      github.repository == 'usual-labs/usual-bot' &&
+      (github.event_name == 'workflow_dispatch' || vars.TESTFLIGHT_NIGHTLY == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read # find the commit the last nightly built
+    outputs:
+      run: ${{ steps.due.outputs.run }}
+    steps:
+      - name: Compare with the last nightly
+        id: due
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          run=true
+          if [ "$EVENT" = schedule ]; then
+            last=$(gh run list -R "$GITHUB_REPOSITORY" --workflow testflight.yml --event schedule \
+              --status success --limit 1 --json headSha -q '.[0].headSha // ""')
+            if [ "$last" = "$GITHUB_SHA" ]; then
+              echo "The last nightly already built $GITHUB_SHA."
+              run=false
+            fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+
+  testflight:
+    name: Archive and upload
+    needs: due
+    if: needs.due.outputs.run == 'true'
+    runs-on: macos-26
+    timeout-minutes: 90
+    environment: testflight
+    permissions:
+      contents: read # check out the source; nothing else
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the secrets
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          APPSTORE_API_KEY_P8: ${{ secrets.APPSTORE_API_KEY_P8 }}
+        run: |
+          missing=""
+          for name in APPLE_TEAM_ID APPSTORE_API_KEY_ID APPSTORE_API_ISSUER_ID APPSTORE_API_KEY_P8; do
+            eval "value=\${$name}"
+            [ -n "$value" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing secrets in the testflight environment:$missing. See docs/guides/releasing.md."
+            exit 1
+          fi
+
+      - name: Toolchain
+        run: xcodebuild -version
+
+      - name: Write the App Store Connect key
+        env:
+          APPSTORE_API_KEY_P8: ${{ secrets.APPSTORE_API_KEY_P8 }}
+        run: |
+          umask 077
+          printf '%s\n' "$APPSTORE_API_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+          echo "APP_STORE_CONNECT_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+
+      - name: Note the team's certificates
+        id: certificates
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+        run: swift scripts/app-store-certificates.swift list > "$RUNNER_TEMP/certificates.txt"
+
+      - name: Archive and upload
+        env:
+          DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          PLATFORMS: ${{ inputs.platforms }}
+          UPLOAD: ${{ inputs.upload }}
+        run: |
+          # A nightly has no inputs: both apps, uploaded.
+          check=""
+          [ "$UPLOAD" != false ] || check=--check
+          case "$PLATFORMS" in mac | iphone) only="$PLATFORMS" ;; *) only="" ;; esac
+          scripts/testflight.sh $check $only
+
+      - name: Remove the development certificates this run made
+        if: always() && steps.certificates.outcome == 'success'
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+        run: swift scripts/app-store-certificates.swift delete-new-development "$RUNNER_TEMP/certificates.txt"
+
+      - name: Clean up
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"

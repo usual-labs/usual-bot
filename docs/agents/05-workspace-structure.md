@@ -9,13 +9,14 @@
 - `App/SignInPresenters.swift` — browser/web-auth presenters
 - `App/Assets.xcassets` — the app icon (`AppIcon`; `AppIconDev`, its DEV-banded copy for Debug builds), the iPhone launch image (`LaunchMark`) and its
   background (`LaunchBackground`)
-- `.github/workflows/ci.yml` — lint, the test-wait check, both test suites, Mac and iOS Simulator
-  builds on pushes and PRs
-- `scripts/check.sh` — the same checks locally (`--fast` skips the builds);
+- `.github/workflows/ci.yml` — `scripts/check.sh` split over parallel macOS jobs on pushes and
+  PRs (skipped for documentation-only changes), gated by the required `build` job
+- `scripts/check.sh` — the same checks locally (`--fast` skips the builds; `macos`/`ios` is one);
   `scripts/check-test-waits.sh` — rejects unexplained fixed sleeps in tests; `.githooks/pre-commit`
   — optional lint of staged Swift files (`git config core.hooksPath .githooks`)
-- `.github/CODEOWNERS` — maintainer approval on workflows, signing, scripts, sign-in and tokens, with
-  the `main` ruleset's code owner review
+- `.github/CODEOWNERS` — requests a maintainer's review on workflows, signing, scripts, sign-in and
+  tokens; the `main` ruleset requires a pull request and `build`, not a review, so a maintainer can
+  merge their own
 - `.github/triage/PLAYBOOK.md` and `.github/ISSUE_TEMPLATE/via-triage.yml` — support triage that a
   user runs in their own agent; linked from `docs/guides/troubleshooting.md`
 - `CLAUDE.md` imports `AGENTS.md`; shared agent skills live in `.agents/skills`, linked from
@@ -34,11 +35,15 @@
   `.github/`), findings in code scanning; `.github/workflows/scorecard.yml` — OpenSSF Scorecard
   weekly and on pushes to main, publishes the README badge; `.github/dependabot.yml` — weekly grouped
   updates of the pinned actions (7-day cooldown); `.github/workflows/codeql.yml` — CodeQL for Swift
-  (xcodebuild of the app on `macos-26`, manual build mode) and Actions, on pushes, PRs and weekly.
-  A package-only SwiftPM scan misses `App/`; the tracked workflow builds the app with Xcode
+  (xcodebuild of the app on `macos-26`, manual build mode; on main, weekly and by hand) and Actions
+  (also on PRs). A package-only SwiftPM scan misses `App/`; the tracked workflow builds the app with
+  Xcode
 - `scripts/testflight.sh` — archives the Mac and iPhone apps with push and uploads them to
   TestFlight, the only way builds ship (`docs/guides/releasing.md`). The GitHub release workflow
   and the Homebrew cask in `usual-labs/homebrew-tap` were retired after 0.3.0
+- `.github/workflows/testflight.yml` — runs `scripts/testflight.sh` by hand or nightly
+  (`TESTFLIGHT_NIGHTLY`), with the `testflight` environment's API key;
+  `scripts/app-store-certificates.swift` deletes the development certificates each run makes
 - `Config/Shared.xcconfig` — shared Xcode settings
 - `UsualBot.xcodeproj` — application project
 - `design/avatars` — avatar reference and artwork

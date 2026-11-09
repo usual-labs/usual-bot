@@ -1,5 +1,10 @@
 name: CI
 
+# Lints, tests and builds the app for macOS and the iOS Simulator, each part on its own runner so
+# they finish together. A change to documentation alone skips the macOS jobs. The `build` job at
+# the end is the required status check on main: it passes when every job passed, or was skipped
+# because only documentation changed. Add a job to its `needs` rather than to the ruleset.
+
 on:
   push:
     branches: [main]
@@ -9,15 +14,49 @@ on:
 permissions:
   contents: read # check out the source; nothing else
 
+# A new push to a pull request replaces its older run. Every commit on main is checked to the end.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build:
-    # The name is the required status check on main.
-    name: build
+  changes:
+    name: What changed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      app: ${{ steps.diff.outputs.app }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Documentation only?
+        id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.sha }}
+        run: |
+          # The macOS jobs run unless every changed file is documentation. When the diff can't be
+          # worked out (a new branch, a rewritten base), they run.
+          app=true
+          if files=$(git diff --name-only "$BASE...$HEAD" 2>/dev/null) && [ -n "$files" ]; then
+            printf '%s\n' "$files"
+            others=$(printf '%s\n' "$files" \
+              | grep -Ev '^docs/|\.md$|^\.github/(ISSUE_TEMPLATE|triage)/|^\.github/CODEOWNERS$|^LICENSE' \
+              || true)
+            [ -n "$others" ] || app=false
+          fi
+          echo "Run the macOS jobs: $app"
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+
+  checks:
+    name: Lint and test
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: macos-26
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -26,24 +65,57 @@ jobs:
       - name: Toolchain
         run: xcodebuild -version && swift --version
 
-      - name: Lint
-        run: swift format lint --strict --recursive App NotificationService Packages
+      - name: Lint, checks and both test suites
+        run: scripts/check.sh --fast
 
-      - name: Check test waits
-        run: scripts/check-test-waits.sh
+  macos:
+    name: Build macOS
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Test HermesKit
-        run: swift test --package-path Packages/HermesKit
+      - name: Build
+        run: scripts/check.sh macos
 
-      - name: Test UsualUI
-        run: swift test --package-path Packages/UsualUI
+  ios:
+    name: Build iOS Simulator
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Build macOS
-        run: >
-          xcodebuild build -project UsualBot.xcodeproj -scheme UsualBot
-          -destination 'generic/platform=macOS' CODE_SIGNING_ALLOWED=NO
+      - name: Build
+        run: scripts/check.sh ios
 
-      - name: Build iOS Simulator
-        run: >
-          xcodebuild build -project UsualBot.xcodeproj -scheme UsualBot
-          -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
+  build:
+    # The name is the required status check on main.
+    name: build
+    needs: [changes, checks, macos, ios]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed
+        env:
+          APP: ${{ needs.changes.outputs.app }}
+          CHANGES: ${{ needs.changes.result }}
+          CHECKS: ${{ needs.checks.result }}
+          MACOS: ${{ needs.macos.result }}
+          IOS: ${{ needs.ios.result }}
+        run: |
+          echo "What changed: $CHANGES. Lint and test: $CHECKS. macOS: $MACOS. iOS Simulator: $IOS."
+          [ "$CHANGES" = success ] || exit 1
+          expected=success
+          [ "$APP" = true ] || expected=skipped
+          for result in "$CHECKS" "$MACOS" "$IOS"; do
+            [ "$result" = "$expected" ] || exit 1
+          done
