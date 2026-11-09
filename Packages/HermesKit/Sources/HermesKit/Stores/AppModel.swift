@@ -106,6 +106,8 @@ public final class AppModel {
         auth: { [weak self] in self?.auth }, relay: { [weak self] in self?.relay })
     /// This device's entry in Usual's push relay.
     @ObservationIgnored public internal(set) lazy var relay = PushRelay.fromMainBundle()
+    /// A newer TestFlight build, in TestFlight builds; other builds never ask.
+    @ObservationIgnored public private(set) lazy var update = AppUpdate.fromMainBundle()
     /// Token use across Bots, for Settings › Usage.
     @ObservationIgnored public internal(set) lazy var usage = UsageOverview(
         auth: { [weak self] in self?.auth },

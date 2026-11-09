@@ -191,6 +191,18 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   0.3.0. The entitlements say "development" and exporting for
   TestFlight makes them production, so the app reads which service it's on from its own profile
   (`PushRelay.appleEnvironment`) instead of a build setting that could disagree.
+- **TestFlight builds learn about newer ones from App Store Connect, through `bot.usual.dev`.** An
+  app can't ask TestFlight, and builds upload nightly, so a hand-published version file would lag or
+  name builds still processing. The Worker (`Services/updates`) asks App Store Connect with an API
+  key held as Worker secrets (a team key with `ASC_ISSUER_ID`, or an individual key without it),
+  caches the answer for an hour, and the app checks every
+  6 hours. It reports the newest processed build (internal testers) until `BETA_GROUP` names the
+  external group. Only builds with `USUAL_UPDATES = YES` (`scripts/testflight.sh`) ask, so forks, CI
+  and local builds never contact it. Build numbers are the upload time, so they compare as numbers.
+  Deployed 2026-11-09 with an individual key; `GET /v1/latest` answered the processed 0.5.0 build
+  for both platforms. A Debug build with `USUAL_UPDATES=YES` showed the banner from the live service
+  on the Mac and in the iPhone Simulator, Later hid it, and Settings › About kept the link. Unverified: that `filter[betaGroups]` narrows `/v1/builds` as expected, and
+  that `itms-beta://` opens the app's page in TestFlight on the Mac.
 - **The relay's rate limits are a ceiling, not a guard.** Cloudflare's rate-limit binding counts per
   location and per instance, so bursts get through: on 2026-11-05, 40 sign-ups in a row from one
   address all passed, and 4 of 80 sent at once were turned away. They stop a sustained flood of

@@ -470,6 +470,13 @@ and Settings opens with your gateway at the top. Preferences stay on this device
 The About section has the app version, guide, source and license links. Most Bot settings,
 provider keys and gateway administration stay in Hermes.
 
+### Updates
+
+When TestFlight has a newer build, a note below the chat list says so. **Update in TestFlight**
+opens TestFlight to install it; **Later** hides that build until the next one comes out, and Settings
+› About still has the link. The app checks every few hours and sends nothing about you. TestFlight
+can also update the app on its own: turn on Automatic Updates for Usual Bot in TestFlight.
+
 ## Keyboard shortcuts
 
 On the Mac these are also in the menu bar: File, View and Go.

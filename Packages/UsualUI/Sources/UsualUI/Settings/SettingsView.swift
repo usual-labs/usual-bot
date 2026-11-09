@@ -222,6 +222,15 @@ public struct SettingsView: View {
     private var about: some View {
         Section("About Usual Bot") {
             LabeledContent("Version", value: version)
+            if let newest = model.update.newest {
+                Link(
+                    newest.version.isEmpty || newest.isSameVersion
+                        ? String(localized: "Update in TestFlight")
+                        : String(localized: "Update to \(newest.version) in TestFlight"),
+                    destination: newest.testFlight
+                )
+                .foregroundStyle(Theme.ink)
+            }
             Link(
                 "User Guide",
                 destination: URL(string: "https://github.com/usual-labs/usual-bot/blob/main/docs/guides/user-guide.md")!
