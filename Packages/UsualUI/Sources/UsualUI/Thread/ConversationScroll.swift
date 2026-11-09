@@ -121,8 +121,8 @@ struct ConversationScroll<Content: View>: View {
                 .animation(.easeOut(duration: 0.18), value: scroll.isAwayFromEnd)
             }
             #if os(iOS)
-                .environment(\.selectText) { selecting = SelectingText(text: $0) }
-                .sheet(item: $selecting) { SelectTextSheet(text: $0.text) }
+                .environment(\.selectText) { selecting = SelectingText(text: $0, quote: $1) }
+                .sheet(item: $selecting) { SelectTextSheet(text: $0.text, quote: $0.quote) }
             #endif
         }
     }

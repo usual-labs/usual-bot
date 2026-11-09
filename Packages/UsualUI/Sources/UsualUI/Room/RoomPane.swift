@@ -196,17 +196,29 @@ struct RoomPane: View {
 
     /// Reply and copy; rooms have no reactions.
     private var actions: MessageActions {
-        MessageActions(reply: { item in
-            switch item.content {
-            case .user(let text):
-                replyTo = QuotedMessage(author: String(localized: "You"), text: text)
-            case .member(let id, let text):
-                let handle = room.state.member(id)?.handle
-                replyTo = QuotedMessage(author: author(id)?.name ?? handle ?? id, text: text, mention: handle)
-            default:
-                break
-            }
-        })
+        MessageActions(
+            reply: { item in
+                switch item.content {
+                case .user(let text):
+                    replyTo = QuotedMessage(author: String(localized: "You"), text: text)
+                case .member(let id, let text):
+                    let handle = room.state.member(id)?.handle
+                    replyTo = QuotedMessage(author: author(id)?.name ?? handle ?? id, text: text, mention: handle)
+                default:
+                    break
+                }
+            },
+            // As a reply: words from a member's message address that member.
+            quote: { item, selection in
+                switch item.content {
+                case .member(let id, _):
+                    let handle = room.state.member(id)?.handle
+                    replyTo = QuotedMessage(
+                        author: author(id)?.name ?? handle ?? id, selection: selection, mention: handle)
+                default:
+                    replyTo = QuotedMessage(author: String(localized: "You"), selection: selection)
+                }
+            })
     }
 
     private var mentions: [Mention] {

@@ -366,6 +366,7 @@ struct UserBubble: View {
 struct UserBubbleContent: View {
     let text: String
     @Environment(\.sentImages) private var sentImages
+    @Environment(\.messageTextSize) private var messageSize
     @Environment(\.chatContact) private var contact
 
     var body: some View {
@@ -406,8 +407,15 @@ struct UserBubbleContent: View {
                             }
                     }
                     if !body.isEmpty {
-                        Text(body)
-                            .messageFont()
+                        #if os(macOS)
+                            MessageText(content: .mine(body, size: messageSize))
+                        #else
+                            // Links underlined in the bubble's own ink: the link colour wouldn't
+                            // read on the Bot's colour.
+                            Text(Links.detect(in: body).underliningLinks())
+                                .messageFont()
+                                .tint(Theme.userBubbleInk)
+                        #endif
                     }
                 }
                 .foregroundStyle(Theme.userBubbleInk)

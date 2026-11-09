@@ -97,12 +97,14 @@ enum MarkdownBlock: Equatable {
         var blocks: [MarkdownBlock] = []
         var lastTable: (id: Int, row: Int?)?
         for (intent, range) in document.runs[\.presentationIntent] {
-            let text = AttributedString(document[range])
+            let kinds = intent?.components.map(\.kind) ?? []
+            let isCode = kinds.contains { if case .codeBlock = $0 { true } else { false } }
+            // Addresses typed out bare are links too, except in code.
+            let text = isCode ? AttributedString(document[range]) : Links.detect(in: AttributedString(document[range]))
             guard let intent else {
                 blocks.append(.paragraph(text))
                 continue
             }
-            let kinds = intent.components.map(\.kind)
             if let cell = tableCell(intent) {
                 if lastTable?.id == cell.table, case .table(var table) = blocks.last {
                     table.add(text, row: cell.row, newRow: cell.row != lastTable?.row, column: cell.column)
@@ -230,6 +232,11 @@ struct MarkdownView: View {
                 switch part {
                 case .text(let text, let headed):
                     Text(text).fixedSize(horizontal: false, vertical: true).padding(.top, headed ? 4 : 0)
+                        .tint(Theme.link)
+                case .flow(let blocks, let headed):
+                    #if os(macOS)
+                        MessageText(content: .reply(blocks, size: messageSize)).padding(.top, headed ? 4 : 0)
+                    #endif
                 case .block(let block): view(for: block)
                 }
             }
@@ -239,16 +246,41 @@ struct MarkdownView: View {
         .textSelection(.enabled)
     }
 
-    /// What the reply draws: paragraphs and headings in a row as one text, so dragging selects
-    /// across them, and the Mac makes one selectable view for them instead of one per paragraph.
-    /// Those views were checked on every move of the pointer, which slowed long chats down.
+    /// What the reply draws. On the Mac, paragraphs, headings, list items and quotes in a row are
+    /// one AppKit text view (`MessageText`), so a drag selects across them all. On iPhone, where
+    /// Select Text shows the words in a sheet, paragraphs and headings in a row are one `Text`.
+    /// Either way there's one selectable view where there was one per paragraph: the Mac checked
+    /// each on every move of the pointer, which slowed long chats down.
     private enum Part {
         /// `headed`: it starts with a heading, which gets a little more room above it.
         case text(AttributedString, headed: Bool)
+        case flow([MarkdownBlock], headed: Bool)
         case block(MarkdownBlock)
     }
 
     private var parts: [Part] {
+        #if os(macOS)
+            var parts: [Part] = []
+            for block in blocks {
+                switch block {
+                case .paragraph, .heading, .listItem, .quote:
+                    if case .flow(let run, let headed) = parts.last {
+                        parts[parts.count - 1] = .flow(run + [block], headed: headed)
+                    } else {
+                        let headed = if case .heading = block { true } else { false }
+                        parts.append(.flow([block], headed: headed))
+                    }
+                default:
+                    parts.append(.block(block))
+                }
+            }
+            return parts
+        #else
+            return textParts
+        #endif
+    }
+
+    private var textParts: [Part] {
         var parts: [Part] = []
         for block in blocks {
             let piece: AttributedString
@@ -288,21 +320,23 @@ struct MarkdownView: View {
     @ViewBuilder private func view(for block: MarkdownBlock) -> some View {
         switch block {
         case .paragraph(let text):
-            Text(styled(text)).fixedSize(horizontal: false, vertical: true)
+            Text(styled(text)).fixedSize(horizontal: false, vertical: true).tint(Theme.link)
         case .heading(let level, let text):
             let size = headingSize(level)
             Text(styled(text, size: size, weight: .semibold))
                 .font(.system(size: size, weight: .semibold))
                 .padding(.top, 4)
+                .tint(Theme.link)
         case .listItem(let marker, let depth, let text):
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(marker).foregroundStyle(Theme.secondaryInk).frame(minWidth: 14, alignment: .trailing)
-                Text(styled(text)).fixedSize(horizontal: false, vertical: true)
+                Text(styled(text)).fixedSize(horizontal: false, vertical: true).tint(Theme.link)
             }
             .padding(.leading, CGFloat(depth) * 18)
         case .quote(let text):
             Text(styled(text))
                 .foregroundStyle(Theme.secondaryInk)
+                .tint(Theme.link)
                 .padding(.leading, 12)
                 .overlay(alignment: .leading) { Capsule().fill(Theme.border).frame(width: 3) }
         case .code(let language, let code):
@@ -315,16 +349,18 @@ struct MarkdownView: View {
             ReplyImage(source: .web(url), name: alt.isEmpty ? url.lastPathComponent : alt)
         case .table(let table):
             MarkdownTableView(table: table) { styled($0, weight: $1) }
+                .tint(Theme.link)
         }
     }
 
-    /// Gives bold, italic and inline-code runs their own fonts. Text draws Markdown's bold and
-    /// italic only while no explicit font is set, and the chat always sets one.
+    /// Gives bold, italic and inline-code runs their own fonts, and underlines links (which take
+    /// the tint's colour). Text draws Markdown's bold and italic only while no explicit font is
+    /// set, and the chat always sets one.
     private func styled(
         _ text: AttributedString, size: CGFloat? = nil, weight: Font.Weight = .regular
     ) -> AttributedString {
         let size = size ?? messageSize
-        var text = text
+        var text = text.underliningLinks()
         for (inline, range) in text.runs[\.inlinePresentationIntent] {
             guard let inline, !inline.isEmpty else { continue }
             if inline.contains(.code) {
