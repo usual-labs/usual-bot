@@ -6,6 +6,11 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+### Fixed
+
+- **Replies keep their line breaks.** A reply written a line per item ran its lines together into
+  one paragraph. Each line now shows on its own, in chats, rooms and the ⌥Space panel.
+
 ## 0.4.0 - 2026-11-08
 
 ### Added

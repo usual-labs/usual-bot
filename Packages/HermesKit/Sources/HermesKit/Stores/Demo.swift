@@ -347,8 +347,10 @@
                 HistoryMessage(
                     role: "assistant",
                     text: """
-                        All 3 servers healthy, backups verified. CPU peaked at 61% during the 03:00 \
-                        backup and stayed under 40% the rest of the night.
+                        All 3 servers healthy, backups verified.
+                        web-1: CPU peaked at 61% during the 03:00 backup.
+                        web-2: under 40% all night.
+                        db-1: disk at 78%, up from 74% yesterday.
                         MEDIA:\(Demo.chartPath)
                         """),
             ]
@@ -501,7 +503,12 @@
                     minutesAgo: 40),
                 event(
                     "message.member", from: member("atlas"),
-                    "I checked the three competitors' pricing pages again; nobody changed theirs this week.",
+                    """
+                    I checked the three competitors' pricing pages again; nobody changed theirs this week.
+                    Tallyhouse: $12 a seat
+                    Brightdesk: $15 a seat
+                    Pinwheel: free up to 3 seats
+                    """,
                     minutesAgo: 38),
                 event("message.user", from: you, "@scribe how's the post?", minutesAgo: 33),
                 event(

@@ -32,6 +32,8 @@ enum MarkdownBlock: Equatable {
     /// Splits a reply into blocks: `MEDIA:` lines (Hermes's line-level file delivery) become media
     /// blocks, and everything between them is Markdown.
     static func parse(_ markdown: String) -> [MarkdownBlock] {
+        // "\r\n" is one Character in Swift, so splitting on "\n" alone wouldn't find its lines.
+        let markdown = markdown.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
         var blocks: [MarkdownBlock] = []
         var pending: [Substring] = []
         var inFence = false
@@ -39,7 +41,7 @@ enum MarkdownBlock: Equatable {
         // the gateway strips them for its messaging platforms too.
         let voice = markdown.contains(voiceMarker)
         func flush() {
-            if !pending.isEmpty { blocks += parseMarkdown(pending.joined(separator: "\n")) }
+            if !pending.isEmpty { blocks += parseMarkdown(keepingLineBreaks(pending)) }
             pending = []
         }
         for line in markdown.split(separator: "\n", omittingEmptySubsequences: false) {
