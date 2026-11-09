@@ -22,6 +22,12 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   certificates or profiles. altool takes a key as individual when its file is named
   `ApiKey_<id>.p8`, and still wants an `--api-issuer`, which it ignores. Not yet verified on a real
   upload.
+- **Don't `security import` the signing `.p12` whole.** Certificates made from one signing request
+  share a private key, which Keychain Access writes into the `.p12` once per certificate. Importing
+  it stops at the second copy, still exits 0, and leaves out the certificates after it: CI found no
+  Apple Distribution certificate in a `.p12` that held it. The TestFlight workflow splits the `.p12`
+  with `/usr/bin/openssl` and imports each certificate and each distinct key. Homebrew's OpenSSL 3
+  reads Keychain Access's `.p12` only with `-legacy`.
 - Workflow actions are pinned to full commit SHAs. When adding an action, check both the pin and the
   repository's Actions allow-list. CodeQL builds the app with Xcode; a package-only SwiftPM scan
   doesn't cover `App/`.

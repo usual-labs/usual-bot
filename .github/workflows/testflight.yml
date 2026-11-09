@@ -115,10 +115,38 @@ jobs:
           security set-keychain-settings -lut 21600 "$keychain"
           security unlock-keychain -p "$password" "$keychain"
           echo "KEYCHAIN=$keychain" >> "$GITHUB_ENV"
-          printf '%s' "$SIGNING_P12" | base64 --decode > "$RUNNER_TEMP/signing.p12"
-          security import "$RUNNER_TEMP/signing.p12" -k "$keychain" -P "$SIGNING_P12_PASSWORD" \
-            -f pkcs12 -T /usr/bin/codesign -T /usr/bin/productbuild -T /usr/bin/security
-          rm "$RUNNER_TEMP/signing.p12"
+          # Certificates made from one signing request share a private key, and Keychain Access then
+          # writes it into the .p12 once per certificate. Importing the .p12 whole stops at the second
+          # copy, still exits 0, and leaves out what follows. So import each certificate, and each
+          # distinct key, on its own. /usr/bin/openssl reads the .p12's RC2 encryption, which
+          # OpenSSL 3 refuses without -legacy.
+          umask 077
+          parts="$RUNNER_TEMP/signing-parts"
+          mkdir -p "$parts"
+          printf '%s' "$SIGNING_P12" | base64 --decode > "$parts/signing.p12"
+          # Writes each PEM block the .p12 holds of one kind to its own file.
+          split() {
+            prefix="$parts/$1"
+            shift
+            /usr/bin/openssl pkcs12 -in "$parts/signing.p12" -passin env:SIGNING_P12_PASSWORD "$@" |
+              awk -v prefix="$prefix" \
+                '/-----BEGIN/ { n++; f = prefix n ".pem" } f { print > f } /-----END/ { close(f); f = "" }'
+          }
+          set -o pipefail
+          split certificate -nokeys
+          split key -nocerts -nodes
+          for certificate in "$parts"/certificate*.pem; do
+            security import "$certificate" -k "$keychain"
+          done
+          imported=""
+          for key in "$parts"/key*.pem; do
+            sum=$(shasum < "$key")
+            case "$imported" in *"$sum"*) continue ;; esac
+            imported="$imported $sum"
+            security import "$key" -k "$keychain" \
+              -T /usr/bin/codesign -T /usr/bin/productbuild -T /usr/bin/security
+          done
+          rm -rf "$parts"
           # Apple's intermediate for distribution certificates, in case the runner lacks it.
           curl -fsSL https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer -o "$RUNNER_TEMP/AppleWWDRCAG3.cer"
           security import "$RUNNER_TEMP/AppleWWDRCAG3.cer" -k "$keychain" || true
@@ -176,5 +204,5 @@ jobs:
         if: always()
         run: |
           if [ -n "${KEYCHAIN:-}" ]; then security delete-keychain "$KEYCHAIN" || true; fi
-          rm -rf "$RUNNER_TEMP/profiles" "$RUNNER_TEMP/api-key.p8" \
+          rm -rf "$RUNNER_TEMP/signing-parts" "$RUNNER_TEMP/profiles" "$RUNNER_TEMP/api-key.p8" \
             "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
