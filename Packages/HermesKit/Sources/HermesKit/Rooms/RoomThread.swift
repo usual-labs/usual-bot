@@ -27,10 +27,16 @@ public final class RoomThread {
     public private(set) var isBusy = false
     /// Commands the room's agents wait on, with who asked.
     public private(set) var approvals: [RoomApproval] = []
-    /// Turns that stopped partway and can be run again, by task ID.
+    /// Turns that stopped partway, by task ID. Most can be run again; see `unretryable`.
     public private(set) var retries: [String] = []
+    /// Retries Hermes can only dismiss: it can't tell whether the turn finished (canonical protocol).
+    public private(set) var unretryable: Set<String> = []
     /// Whose turn each retry is, where that could be told (`retryMember`).
     private var retryMembers: [String: String] = [:]
+    /// What the gateway reported with each retry, which retrying or dismissing it must name.
+    private var retryTasks: [String: (member: String, generation: Int)] = [:]
+    /// The gateway takes `groups.discard`, which drops one turn; the legacy one only stops them all.
+    private var discards = false
     /// Members with a turn running or queued at the last read.
     private var lastLive: Set<String> = []
     /// Your messages sent but not yet back in the log.
@@ -168,9 +174,11 @@ public final class RoomThread {
             + retries.map { taskID in
                 (
                     id: taskID,
-                    text: retryMember(taskID).map {
-                        String(localized: "\(state.name($0))'s reply stopped partway. Open the room to try again.")
-                    } ?? String(localized: "A reply stopped partway. Open the room to try again.")
+                    text: unretryable.contains(taskID)
+                        ? String(localized: "A reply may not have finished. Open the room to dismiss it.")
+                        : retryMember(taskID).map {
+                            String(localized: "\(state.name($0))'s reply stopped partway. Open the room to try again.")
+                        } ?? String(localized: "A reply stopped partway. Open the room to try again.")
                 )
             }
         for request in waiting where !announcedRequests.contains(request.id) && !isVisible {
@@ -182,6 +190,7 @@ public final class RoomThread {
     }
 
     private func readStatus(on channel: JSONRPCChannel) async throws {
+        discards = await channel.dialect == .canonical
         let result = try await channel.call("groups.state", params: ["room_id": .string(roomID)])
         if let room = result["room"], case .array(let raw) = room["members"] {
             let members = raw.compactMap(RoomMember.init)
@@ -194,7 +203,9 @@ public final class RoomThread {
             isBusy = false
             approvals = []
             retries = []
+            unretryable = []
             retryMembers = [:]
+            retryTasks = [:]
             lastLive = []
             return
         }
@@ -212,10 +223,22 @@ public final class RoomThread {
         let earlier = Set(retries)
         if case .array(let actions) = status["pending_actions"] {
             approvals = actions.compactMap(RoomApproval.init)
-            retries = actions.filter { $0["kind"]?.stringValue == "retry" }.compactMap { $0["task_id"]?.stringValue }
+            let retryActions = actions.filter { ["retry", "discard"].contains($0["kind"]?.stringValue) }
+            retries = retryActions.compactMap { $0["task_id"]?.stringValue }
+            unretryable = Set(
+                retryActions.filter { $0["kind"]?.stringValue == "discard" }.compactMap { $0["task_id"]?.stringValue })
+            retryTasks = [:]
+            for action in retryActions {
+                guard let task = action["task_id"]?.stringValue, let member = action["member_id"]?.stringValue,
+                    let generation = action["execution_generation"]?.intValue
+                else { continue }
+                retryTasks[task] = (member, generation)
+            }
         } else {
             approvals = []
             retries = []
+            unretryable = []
+            retryTasks = [:]
         }
         noteWhoseRetries(new: retries.filter { !earlier.contains($0) }, stopped: lastLive.subtracting(live))
         lastLive = live
@@ -230,6 +253,9 @@ public final class RoomThread {
 
     /// The member whose turn `taskID` is, when it could be told.
     public func retryMember(_ taskID: String) -> String? { retryMembers[taskID] }
+
+    /// Dismissing `taskID` also stops every other turn running or waiting in the room.
+    public func dismissStopsOthers(_ taskID: String) -> Bool { !(discards && retryTasks[taskID] != nil) }
 
     // MARK: - Your actions
 
@@ -304,10 +330,10 @@ public final class RoomThread {
     public func retry(_ taskID: String) {
         retries.removeAll { $0 == taskID }
         guard let channel = channel() else { return }
+        let params = taskParams(taskID)
         Task {
             do {
-                _ = try await channel.call(
-                    "groups.retry", params: ["room_id": .string(roomID), "task_id": .string(taskID)])
+                _ = try await channel.call("groups.retry", params: params)
             } catch {
                 state.addNotice(String(localized: "The reply wasn't tried again: \(AppModel.describe(error))"))
             }
@@ -315,16 +341,33 @@ public final class RoomThread {
         }
     }
 
+    /// The room, task and, where the gateway reported them, the member and turn a retry names.
+    /// The canonical protocol requires them; the legacy one takes them too.
+    private func taskParams(_ taskID: String) -> JSONValue {
+        var params: [String: JSONValue] = ["room_id": .string(roomID), "task_id": .string(taskID)]
+        if let task = retryTasks[taskID] {
+            params["member_id"] = .string(task.member)
+            params["execution_generation"] = .number(Double(task.generation))
+        }
+        return .object(params)
+    }
+
     /// Gives up on a turn that stopped partway. The dashboard socket has no `groups.discard`, so
-    /// this is `groups.stop`, which also stops any other turn running or waiting in the room.
+    /// there this is `groups.stop`, which also stops any other turn running or waiting in the room.
     public func dismiss(_ taskID: String) {
         retries.removeAll { $0 == taskID }
         guard let channel = channel() else { return }
+        let params = taskParams(taskID)
+        let discardsOne = !dismissStopsOthers(taskID)
         Task {
             do {
-                _ = try await channel.call(
-                    "groups.stop",
-                    params: ["room_id": .string(roomID), "cancel_id": .string("usualbot-\(UUID().uuidString)")])
+                if discardsOne {
+                    _ = try await channel.call("groups.discard", params: params)
+                } else {
+                    _ = try await channel.call(
+                        "groups.stop",
+                        params: ["room_id": .string(roomID), "cancel_id": .string("usualbot-\(UUID().uuidString)")])
+                }
             } catch {
                 state.addNotice(String(localized: "The reply wasn't dismissed: \(AppModel.describe(error))"))
             }

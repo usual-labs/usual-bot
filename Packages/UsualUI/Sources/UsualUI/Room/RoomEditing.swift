@@ -105,12 +105,14 @@ private struct RoomEditor: ViewModifier {
     }
 }
 
-/// A room turn that stopped partway, and can be run again.
-/// A turn that stopped partway. Dismiss is `groups.stop`, the only way the gateway lets go of
-/// it, and that stops every other turn in the room too, so the card says so while there are any.
+/// A room turn that stopped partway, and can be run again. On the legacy protocol Dismiss is
+/// `groups.stop`, the only way the gateway lets go of it, and that stops every other turn in the
+/// room too, so the card says so while there are any.
 struct RetryCard: View {
     /// Whose turn it was, when that could be told.
     let agentName: String?
+    /// `false` when Hermes can't tell whether the turn finished, so it can only be dismissed.
+    var canRetry = true
     /// Other turns are running or waiting, and Dismiss would stop them.
     let othersBusy: Bool
     let retry: () -> Void
@@ -131,10 +133,12 @@ struct RetryCard: View {
                 .foregroundStyle(Theme.secondaryInk)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
-                Button("Try Again", action: retry)
-                    .cardButton(prominent: true)
+                if canRetry {
+                    Button("Try Again", action: retry)
+                        .cardButton(prominent: true)
+                }
                 Button("Dismiss", action: dismiss)
-                    .cardButton()
+                    .cardButton(prominent: !canRetry)
             }
         }
         .cardSurface()
@@ -146,6 +150,16 @@ struct RetryCard: View {
     }
 
     private var detail: String {
+        guard canRetry else {
+            return agentName.map {
+                String(
+                    localized:
+                        "Hermes can't tell whether \($0) finished, so it can't try again. Dismiss it to carry on.")
+            }
+                ?? String(
+                    localized:
+                        "Hermes can't tell whether the Bot finished, so it can't try again. Dismiss it to carry on.")
+        }
         let work =
             agentName.map {
                 String(localized: "\($0) may have done part of the work, so trying again can repeat it.")

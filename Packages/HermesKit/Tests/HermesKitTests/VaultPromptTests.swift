@@ -58,19 +58,27 @@ struct VaultPromptTests {
 
 @MainActor
 struct VaultChatTests {
-    private func openThread(_ openRequests: [JSONValue] = [], unencrypted: Bool = false) async throws
-        -> (ChatThread, ScriptedGateway)
+    private func openThread(_ openRequests: [JSONValue] = [], unencrypted: Bool = false, canonical: Bool = false)
+        async throws -> (ChatThread, ScriptedGateway)
     {
         let gateway = ScriptedGateway()
         let channel = JSONRPCChannel(socket: gateway.socket)
         await channel.start()
+        if canonical {
+            gateway.socket.deliver(
+                #"{"jsonrpc":"2.0","method":"event","params":{"type":"gateway.ready","payload":{"session_authority":true}}}"#
+            )
+            _ = try await channel.waitUntilReady()
+        }
         let thread = ChatThread(contactID: "scout", channel: { channel })
         thread.gatewayIsUnencrypted = { unencrypted }
-        thread.open(knownID: "stored-1", dialect: .legacy)
+        thread.open(knownID: "stored-1", dialect: canonical ? .canonical : .legacy)
         _ = try await gateway.answer(
             0, method: "session.resume",
             result: [
-                "session_id": "live-1", "running": true, "messages": .array([]), "open_requests": .array(openRequests),
+                // Not running on the canonical protocol, which would read the reply so far first.
+                "session_id": "live-1", "running": .bool(!canonical), "messages": .array([]),
+                "open_requests": .array(openRequests),
             ])
         try await waitUntilOnMain { thread.isAttached }
         return (thread, gateway)
@@ -176,6 +184,16 @@ struct VaultChatTests {
         try await waitUntil { gateway.socket.sent.count == 2 }
         let answer = try #require(gateway.socket.sent.dropFirst().first)
         #expect(answer == ["jsonrpc": "2.0", "id": "srq-bad", "result": ["value": ""]])
+    }
+
+    /// There any answer settles it for every app, so the official app may still answer it.
+    @Test func onTheCanonicalProtocolAnUnreadablePromptIsLeftWaiting() async throws {
+        let unreadable = request("srq-bad", "vault.unlock_prompt", ["session_id": "live-1"])
+        let (thread, gateway) = try await openThread([unreadable, codeRequest], canonical: true)
+        let code = try #require(thread.vaultPrompts.first)
+        #expect(thread.answer(code, secret: "123456"))
+        try await waitUntil { gateway.socket.sent.contains { $0["id"] == "srq-c" } }
+        #expect(!gateway.socket.sent.contains { $0["id"] == "srq-bad" })
     }
 
     @Test func goingOfflineDropsPrompts() async throws {

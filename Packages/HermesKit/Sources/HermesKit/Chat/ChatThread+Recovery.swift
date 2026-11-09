@@ -50,7 +50,7 @@ extension ChatThread {
                 "session.events.since",
                 params: ["session_id": .string(sessionID), "last_seen": .number(Double(lastSeq))])
         else { return false }
-        guard result["truncated"]?.boolValue != true, result["epoch"]?.stringValue == replayEpoch,
+        guard result["truncated"]?.boolValue != true, result["epoch"]?.stringValue == seqEpoch,
             case .array(let frames) = result["events"]
         else { return false }
         for frame in frames {

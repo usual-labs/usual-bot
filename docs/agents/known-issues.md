@@ -121,6 +121,14 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   open only the throwaway agent. A debug build keeps its settings under its own bundle ID, apart from
   the installed app's. `CFFIXED_USER_HOME` moves its cache but not `UserDefaults`, so afterwards
   delete `gatewayAddress` from that domain, and the Keychain item for the test address.
+  The Webapp is the same: `webapp.enabled`, a loopback `webapp.host`, a `webapp.public_url` on an
+  `.invalid` name and those variables, then `hermes gateway run` with `HOME` and `HERMES_HOME` in a
+  scratch folder, so it isn't the machine's running gateway.
+- **An unsigned Debug build can't read a sign-in it didn't save itself.** One saved by an earlier
+  build, or added with `security add-generic-password -A`, makes macOS ask for the login password.
+  After rebuilding, delete the test address's item and sign in again. A scratch `HOME` also hides
+  the login Keychain from `security`; to let a test gateway borrow the Claude Code sign-in, link
+  only `~/Library/Keychains` into it.
 
 ## Push notifications
 

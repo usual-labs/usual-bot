@@ -145,10 +145,6 @@ public final class ChatThread {
     /// Safe to call repeatedly; does nothing while attached or already opening.
     func open(knownID: String?, dialect: GatewayReady.Dialect) {
         guard sessionID == nil, openTask == nil else { return }
-        guard dialect == .legacy else {
-            phase = .failed(String(localized: "Chat on this gateway's newer protocol isn't supported yet."))
-            return
-        }
         guard let channel = channel() else { return }
         if case .failed = phase { phase = .loading }
         Self.log.notice("Opening chat \(self.contactID, privacy: .private)")
@@ -157,7 +153,8 @@ public final class ChatThread {
             await released?.value
             released = nil
             do {
-                let opened = try await BotChat.open(profile: contactID, knownID: knownID, on: channel)
+                let opened = try await BotChat.open(
+                    profile: contactID, knownID: knownID, dialect: dialect, on: channel)
                 attach(opened)
                 Self.log.notice("Chat ready: \(opened.history.count, privacy: .public) messages")
             } catch {
@@ -168,13 +165,14 @@ public final class ChatThread {
     }
 
     private func attach(_ opened: BotChat.Opened) {
-        // The same live session in the same gateway process: what a short drop missed can be replayed.
-        let rejoined = opened.sessionID == lastSessionID && seqEpoch == replayEpoch && lastSeq > 0
+        // The same live session with the same event numbering: what a short drop missed can be replayed.
+        let epoch = opened.replayEpoch ?? replayEpoch
+        let rejoined = opened.sessionID == lastSessionID && seqEpoch == epoch && lastSeq > 0
         if !rejoined { lastSeq = 0 }
         elsewhereTurnStart = nil
         sessionID = opened.sessionID
         lastSessionID = opened.sessionID
-        seqEpoch = replayEpoch
+        seqEpoch = epoch
         model = ChatModel(info: opened.info) ?? model
         state = ThreadState(
             history: opened.history, running: opened.running, inflight: opened.inflight, kept: backgroundResults,
@@ -238,6 +236,12 @@ public final class ChatThread {
 
     func apply(_ event: GatewayEvent) {
         if let seq = event.seq { lastSeq = max(lastSeq, seq) }
+        if event.type == "session.replay_gap" {
+            // This app fell too far behind, and the gateway stopped sending it the chat. The next
+            // roster refresh attaches again and reloads it.
+            detach()
+            return
+        }
         if event.type == "request.cancel" {
             withdraw(event.payload)
             announceRequests()
@@ -487,10 +491,20 @@ public final class ChatThread {
             do {
                 let result = try await channel.call(
                     "session.steer", params: ["session_id": .string(sessionID), "text": .string(text)])
-                if result["status"]?.stringValue == "rejected" {
+                switch result["status"]?.stringValue {
+                case "rejected":
                     // The turn ended before the message arrived: send it as the next turn.
                     state.beginTurn()
                     await submit(text, sessionID: sessionID, channel: channel)
+                case "unconfirmed":
+                    // Sending it again could ask the agent twice.
+                    state.addNotice(
+                        String(
+                            localized:
+                                "Hermes couldn't confirm the agent took in your message. If the reply misses it, send it again."
+                        ))
+                default:
+                    break
                 }
             } catch {
                 state.addNotice(AppModel.describe(error))

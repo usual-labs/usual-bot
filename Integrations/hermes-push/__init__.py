@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 
 # Where a person talks to the agent. Leaves out helpers ("subagent"), routines and other platforms.
 _CHAT_PLATFORMS = {"tui", "desktop", "dashboard"}
+# A gateway's own chats (`hermes gateway`) ask for input as "local", whichever app made them, a
+# terminal's or an editor's included; Hermes's plugin session API says which.
+_GATEWAY_PLATFORM = "local"
 _ROOM_PLATFORM = "bot_room"
 # A room's activity reports on a queue of its own, so it can land just after the reply's hook.
 _ROOM_ACTIVITY_DELAY = 1.5
@@ -24,26 +27,30 @@ _HIDDEN = {"message": "New message. Open Usual Bot to read it.", "needs_you": "O
 TEST = {"title": "Usual Bot", "body": "Notifications from your gateway are working."}
 
 
-def _profile() -> str:
+def _home() -> Path:
+    """The profile whose hook is running. Only right in the hook itself: a thread it starts sees
+    the gateway's main home, as a gateway serving several profiles sets the home per call."""
     from hermes_constants import get_hermes_home
 
-    home = Path(get_hermes_home())
+    return Path(get_hermes_home())
+
+
+def _profile() -> str:
+    home = _home()
     return home.name if home.parent.name == "profiles" else "default"
 
 
-def _is_hidden() -> bool:
+def _is_hidden(home: Path) -> bool:
     """Hidden from the sidebar, in Usual Bot or the official app: it keeps working, quietly.
 
     Hermes keeps that in the profile's ``profile.yaml``, under ``ui_meta['hermes-bots'].hidden``.
     """
     try:
-        from hermes_constants import get_hermes_home
-
         try:
             from hermes_yaml import safe_load
         except ImportError:  # A Hermes from before its own YAML module.
             from yaml import safe_load
-        meta = safe_load((Path(get_hermes_home()) / "profile.yaml").read_text(encoding="utf-8-sig")) or {}
+        meta = safe_load((home / "profile.yaml").read_text(encoding="utf-8-sig")) or {}
         return meta.get("ui_meta", {}).get("hermes-bots", {}).get("hidden") is True
     except Exception:  # Missing or odd: notify, as before hiding existed.
         return False
@@ -96,9 +103,10 @@ def _push(kind: str, title: str, preview: str, chat: str) -> None:
 
 def _push_unless_hidden(kind: str, title: str, preview: str, chat: str) -> None:
     """A Bot's own chat. A hidden Bot still speaks up in rooms, which aren't hidden."""
+    home = _home()
 
     def deliver_unless_hidden() -> None:
-        if not _is_hidden():
+        if not _is_hidden(home):
             deliver(kind, title, preview, chat)
 
     threading.Thread(target=_safely, args=(deliver_unless_hidden,), daemon=True).start()
@@ -129,7 +137,19 @@ def _on_reply(assistant_response="", platform="", **_) -> None:
         ).start()
 
 
+def _surface() -> str:
+    """The app a gateway chat's turn runs for: ``tui``, ``desktop``, ``cli`` or ``acp``."""
+    try:
+        from hermes_cli.plugin_session import session_surface
+
+        return session_surface()
+    except Exception:  # A Hermes without it: notify, as for any chat.
+        return "tui"
+
+
 def _on_request(kind="", platform="", prompt="", **_) -> None:
+    if platform == _GATEWAY_PLATFORM:
+        platform = _surface()
     if platform not in _CHAT_PLATFORMS:
         return
     asks = {"approval": f"Wants to run “{prompt}”", "sudo": "Asks for the sudo password"}.get(kind, prompt)

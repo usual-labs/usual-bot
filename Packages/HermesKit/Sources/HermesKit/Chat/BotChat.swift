@@ -1,11 +1,11 @@
 import Foundation
 
-/// Opens a profile's one long-lived conversation, the hidden session titled exactly "Bot Chat",
-/// on a gateway speaking the legacy (dashboard) protocol.
+/// Opens a profile's one long-lived conversation, the hidden session titled exactly "Bot Chat".
 ///
 /// Mirrors the official app's rules: the chat is found by its exact title, a failed lookup is an
 /// error rather than a reason to create one, and a chat is only created when the gateway says none
-/// exists. Creating a second Bot Chat would split the agent's conversation in two.
+/// exists. Creating a second Bot Chat would split the agent's conversation in two. On the canonical
+/// protocol creating with the title finds an existing chat first, under the gateway's own lock.
 enum BotChat {
     static let title = "Bot Chat"
 
@@ -26,14 +26,19 @@ enum BotChat {
         var todoState: JSONValue? = nil
         /// Apps the agent is waiting for you to connect (`connection.request`'s payload).
         var pendingConnection: JSONValue? = nil
+        /// The session's own event numbering, on the canonical protocol. The legacy one numbers
+        /// the gateway's events as a whole (`gateway.ready`).
+        var replayEpoch: String? = nil
     }
 
     /// `knownID` is the stored Bot Chat ID from the roster, when the gateway reported one.
-    static func open(profile: String, knownID: String?, on channel: JSONRPCChannel) async throws -> Opened {
+    static func open(
+        profile: String, knownID: String?, dialect: GatewayReady.Dialect = .legacy, on channel: JSONRPCChannel
+    ) async throws -> Opened {
         var target = knownID
         if target == nil { target = try await find(profile: profile, on: channel) }
         if let target { return try await resume(profile: profile, sessionID: target, on: channel) }
-        return try await create(profile: profile, on: channel)
+        return try await create(profile: profile, dialect: dialect, on: channel)
     }
 
     static func find(profile: String, on channel: JSONRPCChannel) async throws -> String? {
@@ -55,6 +60,11 @@ enum BotChat {
             result = try await channel.call("session.resume", params: params)
             omitted = true
         }
+        return try opened(from: result, omitted: omitted)
+    }
+
+    /// An attach's snapshot, in the legacy shape (`JSONRPCChannel` translates the canonical one).
+    private static func opened(from result: JSONValue, omitted: Bool = false) throws -> Opened {
         guard let live = result["session_id"]?.stringValue else { throw GatewayError.invalidResponse }
         let history = (try? result["messages"]?.decode([HistoryMessage].self)) ?? []
         var requests: [ServerRequest] = []
@@ -75,15 +85,20 @@ enum BotChat {
             sessionID: live, history: history, running: result["running"]?.boolValue ?? false,
             historyOmitted: omitted || result["messages_omitted"]?.boolValue == true, inflight: inflight,
             openRequests: requests, info: result["info"],
-            todoState: result["todo_state"], pendingConnection: result["pending_connection"])
+            todoState: result["todo_state"], pendingConnection: result["pending_connection"],
+            replayEpoch: result["replay_epoch"]?.stringValue)
     }
 
-    static func create(profile: String, on channel: JSONRPCChannel) async throws -> Opened {
+    static func create(profile: String, dialect: GatewayReady.Dialect, on channel: JSONRPCChannel) async throws
+        -> Opened
+    {
         let created = try await channel.call(
             "session.create",
             params: [
                 "profile": .string(profile), "title": .string(title), "hidden": true, "follow_profile_config": true,
             ])
+        // Titled at creation, and maybe a chat another app made meanwhile, with its history.
+        if dialect == .canonical { return try opened(from: created) }
         guard let live = created["session_id"]?.stringValue else { throw GatewayError.invalidResponse }
         do {
             // Title it now so the row exists and the next lookup finds it.

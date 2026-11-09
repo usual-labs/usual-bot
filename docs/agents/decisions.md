@@ -4,8 +4,8 @@ Why the app works the way it does, where the code can't say so. Everything throu
 `git log` and the changelog hold the history.
 
 Gateway facts come from a Hermes source checkout (`81a55437f3f`, 26 September 2026) and its contract
-(`apps/shared/src/gateway-contract.openrpc.json`). The app speaks the dashboard socket (legacy
-dialect) and its REST routes. Confirm a call against a real gateway before building on it.
+(`apps/shared/src/gateway-contract.openrpc.json`). The app speaks the Webapp ([canonical](canonical-protocol.md))
+and the dashboard socket (legacy). Confirm a call against a real gateway before building on it.
 
 ## Scope
 
@@ -118,7 +118,7 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 - Legacy gateways have no room attachments and no per-member usage.
 - **No live activity in rooms.** Members run on hidden sessions, so no tool or helper events reach a
   client; rooms keep "X is replying…" from `driver_status.member_activity`.
-- **Dismiss is `groups.stop`.** `groups.discard` isn't on the dashboard socket's method table, and a
+- **On the dashboard, Dismiss is `groups.stop`.** `groups.discard` isn't on its method table, and a
   retryable task blocks the room (`driver_status.blocked`). `groups.stop` cancels every stoppable task
   in the room, retryable ones included (`_STOPPABLE_STATUSES` in Hermes's `hosted_room_service.py`),
   so it's a real dismissal, not a local hide. It also stops other members' turns, and the retry card
@@ -308,7 +308,8 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
 
 - **Never answer `secret`, `sudo` or `vault.*` with 4404.** With no other client attached, Hermes
   takes the error as the answer (HermesKit known issues). Without a card, answer `{"value": ""}`,
-  which is Hermes's skip. Rooms show no cards, so their requests get the skip too.
+  which is Hermes's skip. Rooms show no cards, so their requests get the skip too. On the
+  [Webapp](canonical-protocol.md) they get no answer at all: any answer settles them for every app.
 - A typed value lives only in the card's state and leaves it on send, skip or disappearing. It isn't
   cached, notices name what was asked for, and the frame recorder blanks it. Swift strings can't be
   wiped, so the bytes stay in process memory until they're overwritten.
@@ -476,9 +477,8 @@ dialect) and its REST routes. Confirm a call against a real gateway before build
   and muting a Bot on one device left the other hearing it. Not yet run: a room approval, a `/bg`
   task, a routine's message and Apple rotating a token. TestFlight builds of 0.3.0 on the same Mac
   and iPhone moved themselves to Apple's production service and got their tests the same day. iOS
-  background
-  check-ins can't be forced in the Simulator, so `BackgroundLink` has only run through unit tests of
-  `AppModel.checkIn`.
+  background check-ins can't be forced in the Simulator, so `BackgroundLink` has only run through
+  unit tests of `AppModel.checkIn`.
 - Apps against a real gateway: nothing in the Apps tab has run against one, by design, since it
   changes real agents. The routes, bodies and flow states are read from source and run against fakes
   and the demo. Unknown: whether the native sign-in's bearer passes `_require_token` on `/auth` and

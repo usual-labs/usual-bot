@@ -6,10 +6,32 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+### Added
+
+- **Chats on the gateway's Webapp.** Usual Bot now chats through the listener `hermes gateway`
+  serves itself (turn on `webapp.enabled`; port 9120), the same place the CLI, the Hermes desktop
+  app and messaging run their chats. There, routine results set to post in the chat and messages
+  from other Bots arrive in your Bot Chats while Usual Bot is open, and the Bot's reply to them
+  notifies you. [Getting started](docs/guides/getting-started.md#2-get-your-gateway-ready) shows
+  how to set it up; sign in again with the Webapp's address. The dashboard keeps working.
+- **Routine results and Bot messages say who sent them.** A routine's result reads "From the
+  routine “Morning brief”", and another Bot's message "Message from Scout", instead of Hermes's
+  instructions to the agent.
+
+### Changed
+
+- Connected to the dashboard, the connection status says that routines and other Bots can't post
+  in chats, and what to do instead.
+- In a room on the Webapp, a reply that stopped partway can only be dismissed when Hermes can't tell
+  whether it finished, and dismissing it no longer stops the room's other replies.
+
 ### Fixed
 
 - **Replies keep their line breaks.** A reply written a line per item ran its lines together into
   one paragraph. Each line now shows on its own, in chats, rooms and the ⌥Space panel.
+- The push plugin (`usual-push` 0.3.1) notifies you when a Bot on the Webapp asks for approval or a
+  question, and keeps a hidden Bot quiet on a gateway that serves several profiles. Run its install
+  script again to update it.
 
 ## 0.4.0 - 2026-11-08
 

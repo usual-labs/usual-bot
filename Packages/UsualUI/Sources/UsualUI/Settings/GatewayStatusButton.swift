@@ -87,7 +87,14 @@ extension AppModel.Link {
     var statusText: String {
         switch self {
         case .online(let dialect):
-            return dialect == .canonical ? String(localized: "Connected") : String(localized: "Connected (dashboard)")
+            // The dashboard holds Bot Chats itself, so the gateway can't deliver into them.
+            return dialect == .canonical
+                ? String(localized: "Connected")
+                : String(
+                    localized: """
+                        Connected to the dashboard, so routines and other Bots can't post in chats. \
+                        Connect to the gateway's web app instead.
+                        """)
         case .connecting: return String(localized: "Connecting…")
         case .offline(let reason): return reason
         }

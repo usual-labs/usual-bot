@@ -269,7 +269,7 @@ public final class AppModel {
         ) {
             isDemo = true
             session = .signedIn(gateway)
-            link = .online(.legacy)
+            link = .online(.canonical)
             self.contacts = contacts
             self.threads = threads
             self.rooms = rooms
@@ -573,14 +573,16 @@ public final class AppModel {
     /// declining settles the request with error text, which the gateway takes for the answer.
     /// Anything else is declined as "not shown here" (4404): the gateway then lets another attached
     /// app, such as the official one, answer, and gives up at once when no app can, so the agent
-    /// never waits on Usual Bot.
+    /// never waits on Usual Bot. On the canonical protocol any answer settles a request for every
+    /// app, a skip included, so a request with no chat here gets none.
     private func handle(_ request: ServerRequest, on channel: JSONRPCChannel) async {
         let thread = threads.values.first { $0.sessionID != nil && $0.sessionID == request.sessionID }
         defer { thread?.announceRequests() }
+        let skips = await channel.dialect == .legacy
         if VaultPrompt.methods.contains(request.method) {
             if let thread, let prompt = VaultPrompt(request) {
                 thread.receive(prompt)
-            } else {
+            } else if skips {
                 await channel.respond(to: request.id, result: VaultPrompt.skipped)
             }
             return
@@ -598,7 +600,7 @@ public final class AppModel {
             // error as the value, and would save that as the secret. An empty value is a skip.
             if let thread, let prompt = SecretPrompt(request) {
                 thread.receive(prompt)
-            } else {
+            } else if skips {
                 await channel.respond(to: request.id, result: ["value": ""])
             }
             return

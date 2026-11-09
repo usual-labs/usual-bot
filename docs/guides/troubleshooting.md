@@ -9,12 +9,14 @@ what to do.
 
 The device can't open a connection to the address you entered.
 
-- Check the address and port, for example `100.101.102.103:9119`.
+- Check the address and port, for example `100.101.102.103:9120` for the gateway's Webapp or
+  `100.101.102.103:9119` for the dashboard.
 - For a Tailscale address (`100.x.y.z` or a `.ts.net` name), make sure Tailscale is on and signed
   in **on this device**. On iPhone this is the most common cause; there you can also turn on
   **Built-in Tailscale** (connect screen, or Settings › your gateway) instead of the VPN.
-- Make sure the dashboard listens on that address, not only on `127.0.0.1`
+- Make sure the Webapp (or the dashboard) listens on that address, not only on `127.0.0.1`
   ([Getting started](getting-started.md#it-must-be-reachable-from-your-device)).
+  `hermes webapp --status` on the gateway says whether the Webapp is serving and, if not, why.
 - From the same device or network, `curl http://<address>/api/status` should answer.
 
 ### "… is on the public internet, so use https:// to keep your sign-in private."
@@ -25,8 +27,7 @@ private and Tailscale addresses. Put the gateway behind `https`, or reach it ove
 ### "This gateway doesn't offer browser sign-in for apps. Update Hermes on it."
 
 The gateway's `/api/status` doesn't list `native_pkce` in `auth_flows`. Either Hermes on the
-gateway is too old, or the dashboard has no interactive sign-in set up (a username and password,
-or OAuth). Update Hermes and set up a sign-in; see
+gateway is too old, or it has no interactive sign-in set up (a username and password, or OAuth). Update Hermes and set up a sign-in; see
 [Get your gateway ready](getting-started.md#2-get-your-gateway-ready).
 
 ### "Sign-in didn't finish" or "Sign-in was cancelled"
@@ -40,12 +41,13 @@ to Usual Bot. Security software that blocks apps from listening on `127.0.0.1` c
 The gateway ended the session: you signed out elsewhere, the refresh token expired after a long
 time offline, or the gateway's sign-in settings changed. Sign in again.
 
-### Connected, but chats don't load
+### "Connected to the dashboard, so routines and other Bots can't post in chats"
 
-Usual Bot supports the Hermes **dashboard** (`hermes dashboard`), which speaks the "legacy"
-session protocol. A gateway started with `hermes gateway` speaks the newer "canonical" protocol:
-the app connects and lists your Bots, but chats there aren't supported yet. Connect to the gateway
-machine's dashboard instead.
+You're signed in to the Hermes dashboard (`hermes dashboard`). Chats work, but the dashboard holds
+your Bot Chats itself, so the gateway can't deliver into them: a routine whose results go to the
+chat, or a message from another Bot, never arrives while Usual Bot is connected. Turn on the
+gateway's Webapp and sign in with its address instead
+([Get your gateway ready](getting-started.md#2-get-your-gateway-ready)).
 
 ## On the Mac
 

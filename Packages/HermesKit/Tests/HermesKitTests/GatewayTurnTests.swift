@@ -64,6 +64,30 @@ struct GatewayTurnTests {
             ])
     }
 
+    /// `cron/scheduler_delivery.py:bot_chat_message`: a routine's output, delivered into its Bot Chat.
+    @Test func aRoutineResultIsTitledByTheRoutine() {
+        let text = """
+            [Cronjob "Morning brief" output — scheduled job, not the user. Review it, act on anything that \
+            needs action, and summarize for the chat.]
+
+            Three meetings today.
+            """
+        #expect(
+            contents([HistoryMessage(role: "user", text: text, displayKind: "internal_notification")]) == [
+                .result(title: "From the routine “Morning brief”", detail: "Three meetings today.")
+            ])
+        #expect(Contact.plainPreview(text) == "From the routine “Morning brief”")
+    }
+
+    /// `tools/bot_mode_dm.py`: another Bot's message, delivered into this Bot's chat.
+    @Test func anotherBotsMessageIsTitledByTheBot() {
+        let text = "Message from 🤖 Scout (@scout): The build is green."
+        #expect(
+            contents([HistoryMessage(role: "user", text: text, displayKind: "internal_notification")]) == [
+                .result(title: "Message from Scout", detail: "The build is green.")
+            ])
+    }
+
     @Test func aResumedTurnIsANotice() {
         let text = "[System note: Your previous turn was interrupted mid-run. Continue.]"
         #expect(

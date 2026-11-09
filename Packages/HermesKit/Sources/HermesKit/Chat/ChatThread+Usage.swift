@@ -66,6 +66,20 @@ extension ChatThread {
             let result = try await channel.call(
                 "session.compress", params: ["session_id": .string(sessionID)], timeout: .seconds(300))
             if let usage = ChatUsage(result["usage"]) { self.usage = usage }
+            if let summary = result["summary"] {
+                // The canonical protocol's receipt: a summary in words rather than token counts.
+                if summary["noop"]?.boolValue == true {
+                    state.addNotice(String(localized: "There was nothing to compress yet."))
+                } else if summary["aborted"]?.boolValue == true {
+                    state.addNotice(
+                        String(localized: "Couldn't compress: no summary could be written, so nothing changed."))
+                } else {
+                    state.addNotice(
+                        summary["headline"]?.stringValue?.nonBlank ?? String(localized: "Compressed the conversation."))
+                }
+                await loadUsage()
+                return
+            }
             guard result["status"]?.stringValue == "compressed", (result["removed"]?.intValue ?? 0) > 0 else {
                 state.addNotice(String(localized: "There was nothing to compress yet."))
                 return
