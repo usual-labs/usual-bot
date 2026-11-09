@@ -7,8 +7,13 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 
 - CI uses `macos-26`: the app needs the macOS 26 / iOS 26 SDK (`ToolbarSpacer`,
   `sharedBackgroundVisibility`), which the `macos-15` image's Xcode can't compile.
-- Keep the CI job's `name: build` aligned with the required status check. Renaming it also needs the
-  repository's branch rule updated.
+- The required status check `build` is CI's last job, which passes only when every other job passed
+  or was skipped for a documentation-only change. Add a new CI job to its `needs`, not to the ruleset,
+  and keep its name: renaming it also needs the repository's branch rule updated. Filtering the
+  workflow itself by path (`paths:`) would leave the required check pending forever on a skipped
+  pull request; the `changes` job skips the macOS jobs instead.
+- CodeQL's Swift scan (about half an hour of traced build) runs on `main`, weekly and by hand, not
+  on pull requests, so a pull request's code scanning results cover the workflows only.
 - Workflow actions are pinned to full commit SHAs. When adding an action, check both the pin and the
   repository's Actions allow-list. CodeQL builds the app with Xcode; a package-only SwiftPM scan
   doesn't cover `App/`.
