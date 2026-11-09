@@ -6,6 +6,11 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+### Fixed
+
+- Selected text in the message box and other text fields is highlighted in blue (your Mac's
+  accent colour) again, instead of grey in dark mode.
+
 ## 0.5.0 - 2026-11-09
 
 ### Added

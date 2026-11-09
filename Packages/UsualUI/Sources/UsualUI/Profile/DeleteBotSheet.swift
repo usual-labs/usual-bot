@@ -48,6 +48,7 @@ struct DeleteBotSheet: View {
             .foregroundStyle(.secondary)
             Section {
                 TextField("Name", text: $typed, prompt: Text(contact.name))
+                    .textInputTint()
                     .labelsHidden()
                     .autocorrectionDisabled()
                     #if os(iOS)

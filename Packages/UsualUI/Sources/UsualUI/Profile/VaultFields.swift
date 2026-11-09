@@ -41,7 +41,7 @@ extension View {
     /// The title is the field's prompt and its VoiceOver label, never a label beside it: a Mac form
     /// row would show it twice.
     fileprivate func vaultFieldStyle() -> some View {
-        scaledFont(size: 14).labelsHidden()
+        scaledFont(size: 14).labelsHidden().textInputTint()
     }
 }
 

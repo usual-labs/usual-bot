@@ -142,6 +142,13 @@ struct ThreadPane: View {
                 default: break
                 }
             },
+            quote: { item, selection in
+                editing = false
+                switch item.content {
+                case .user: replyTo = QuotedMessage(author: String(localized: "You"), selection: selection)
+                default: replyTo = QuotedMessage(author: contact.name, selection: selection)
+                }
+            },
             canRewind: { item in thread.canRewind && item.id == thread.lastSent?.id },
             edit: { item in
                 replyTo = nil

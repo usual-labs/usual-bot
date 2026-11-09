@@ -21,6 +21,21 @@ struct ReplyTests {
         #expect(quote.excerpt == String(repeating: "a", count: 200) + "…")
     }
 
+    @Test func selectedWordsAreQuotedWholeLineByLine() {
+        let quote = QuotedMessage(author: "Scout", selection: "• daily drop\n\n  none of the four personas  ")
+        #expect(quote.excerpt == "• daily drop none of the four personas")
+        #expect(quote.message("Why?") == "> Scout: • daily drop\n> none of the four personas\n\nWhy?")
+        // The bubble shows the quote on one line again.
+        #expect(QuotedMessage.split(quote.message("Why?")).quote == "Scout: • daily drop none of the four personas")
+        #expect(QuotedMessage.split(quote.message("Why?")).text == "Why?")
+    }
+
+    @Test func selectedWordsAreNotShortened() {
+        let long = String(repeating: "a", count: 300)
+        let quote = QuotedMessage(author: "Scout", selection: long, mention: "scout")
+        #expect(quote.message("") == "> Scout: \(long)\n\n@scout")
+    }
+
     @Test func sentRepliesSplitBackIntoQuoteAndText() {
         let sent = QuotedMessage.split("> Atlas: Turbopuffer fits best.\n\nStart the trial")
         #expect(sent.quote == "Atlas: Turbopuffer fits best.")

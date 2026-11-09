@@ -159,6 +159,7 @@ struct SectionNameField: View {
     private var field: some View {
         TextField("Section name", text: $draft, selection: $selection)
             .textFieldStyle(.plain)
+            .textInputTint()
             .scaledFont(size: Self.titleSize, weight: Self.titleWeight)
             .foregroundStyle(Theme.ink)
             .focused($isFocused)
