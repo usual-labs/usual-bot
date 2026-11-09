@@ -65,15 +65,17 @@ run from it with a stand-in model.
 - `tool.complete` sends its result as JSON text and failure as `is_error`.
 - **A routine's turn starts with `message.start {}`**, without the delivered text or its kind. The
   app learns what it was from `session.history` once the turn ends (`finishTurnElsewhere`).
+- **Attaching while Hermes runs a turn it started** (a routine's result, another Bot's message): the
+  snapshot holds the text twice, as the stored row with its `display_kind` and as the running
+  admission's `text`, with no submission id linking them. `legacySnapshot` matches the newest user
+  row with a display kind by text; otherwise the message shows again as yours.
 
 ## Not verified
 
-- Nothing has run against the developer's gateway, or in the app window against any gateway. A
-  script drove HermesKit's `AppModel` against the throwaway gateway: a Bot Chat, a reply, an approval,
-  a question, a routine's result arriving, undo, compress, steering, stopping, reconnecting mid-reply
-  and a two-Bot room.
-- Room retry and discard (they need a member's turn to fail), room approvals, and the Bot-to-Bot
-  message's wording, which is from source only.
+- Verified in the Mac app against a throwaway gateway with Claude, over plain `http` on a tailnet
+  (`tailscale serve --tcp`): sign-in, a reply, an approval, a question, a routine's result arriving
+  in the open chat, Bot-to-Bot messages both ways, steering, stopping, undo, reopening mid-turn and
+  a two-Bot room. Not against the developer's gateway.
+- iPhone, Tailscale Serve over `https`, and Built-in Tailscale with a `.ts.net` name.
+- Room retry and discard (they need a member's turn to fail), and room approvals.
 - `clarify.settled` gives no reason, so a question that timed out shows no notice.
-- Tailscale Serve with `webapp.public_url` from a real device, and Built-in Tailscale with a
-  `.ts.net` name.

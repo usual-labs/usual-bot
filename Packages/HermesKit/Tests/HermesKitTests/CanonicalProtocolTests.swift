@@ -192,6 +192,40 @@ struct CanonicalProtocolTests {
         #expect(canonical.answer("p1", result: ["choice": "deny"])?.method == "approval.respond")
     }
 
+    /// Recorded from Hermes 0.22.7: attaching while a Bot answers another Bot's message. Hermes
+    /// stores the message before the turn starts, and the admission carries no submission id.
+    @Test func aRunningTurnHermesStartedIsntShownAsYours() {
+        let message = "Message from 🤖 Researcher (@scout): Hi Nova."
+        let result: JSONValue = [
+            "session_id": "local-1", "running": true, "replay_epoch": "e1", "last_sequence": 15,
+            "display_messages": [
+                [
+                    "role": "user", "text": .string(message), "row_id": 1, "display_kind": "internal_notification",
+                    "display_metadata": ["gateway_input_owner": "o-1"],
+                ]
+            ],
+            "pending": [["admission_id": "a1", "status": "started", "input_id": "bot:9f", "text": .string(message)]],
+        ]
+        var canonical = CanonicalProtocol()
+        canonical.absorbSnapshot(result, profile: "nova")
+        let legacy = canonical.legacySnapshot(result, replySoFar: "Got it")
+        #expect(legacy["inflight"] == ["user": "", "assistant": "Got it"])
+    }
+
+    /// Sending the same words again still shows the new message while Hermes hasn't stored it.
+    @Test func aRepeatedMessageOfYoursIsStillShownWhileRunning() {
+        let result: JSONValue = [
+            "session_id": "local-1", "running": true, "replay_epoch": "e1", "last_sequence": 3,
+            "display_messages": [
+                ["role": "user", "text": "ok", "row_id": 1, "display_metadata": ["submission_id": "in-1"]]
+            ],
+            "pending": [["admission_id": "a2", "status": "started", "input_id": "in-2", "text": "ok"]],
+        ]
+        var canonical = CanonicalProtocol()
+        canonical.absorbSnapshot(result, profile: "nova")
+        #expect(canonical.legacySnapshot(result, replySoFar: nil)["inflight"] == ["user": "ok", "assistant": ""])
+    }
+
     @Test func theReplySoFarIsReadFromReplayFrames() {
         let frames: JSONValue = [
             ["type": "message.delta", "admission_id": "a0", "payload": ["text": "Earlier turn"]],

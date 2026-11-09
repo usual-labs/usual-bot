@@ -108,6 +108,19 @@ The Webapp listens on `127.0.0.1` only, which other devices can't reach. Pick on
 
   `tailscale serve status` shows the address. On iPhone, keep the Tailscale app's VPN on while you
   use Usual Bot.
+- **Your tailnet only, over plain `http`.** To reach the machine by its tailnet address without a
+  certificate, have Tailscale forward a port instead. Tailscale already encrypts traffic between
+  your devices.
+
+  ```sh
+  tailscale serve --bg --tcp=9121 tcp://127.0.0.1:9120
+  hermes config set webapp.public_url http://100.101.102.103:9121
+  hermes gateway restart
+  ```
+
+  Use the machine's own tailnet address (`tailscale ip -4`), and sign in to Usual Bot with
+  `100.101.102.103:9121`. Use `--tcp`, not `--http`: Tailscale's `--http` mode answers only at the
+  machine's name, and Hermes accepts only the address in `webapp.public_url`.
 - **Every network the machine is on.** `hermes config set webapp.host 0.0.0.0`. The Webapp then
   answers on the machine's local and tailnet addresses, over plain `http`; use it only on networks
   you trust. The first time, iOS asks whether Usual Bot may find devices on your local network;
@@ -116,8 +129,8 @@ The Webapp listens on `127.0.0.1` only, which other devices can't reach. Pick on
   and set `webapp.public_url` to that address. Usual Bot refuses plain `http` to public addresses,
   so your sign-in never travels unencrypted.
 
-`webapp.host` takes only a loopback address, `0.0.0.0` or `::`. A tailnet address there keeps the
-Webapp off.
+`webapp.host` takes only a loopback address, `0.0.0.0` or `::`, because Hermes's own apps on the
+machine reach the Webapp at `127.0.0.1`. A tailnet address there keeps the Webapp off.
 
 ### It must have a sign-in
 

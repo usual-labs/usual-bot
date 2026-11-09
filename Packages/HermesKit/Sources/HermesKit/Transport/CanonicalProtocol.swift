@@ -121,11 +121,15 @@ struct CanonicalProtocol {
         object["open_requests"] = .array(open)
         if result["running"]?.boolValue == true {
             let started = Self.startedAdmission(in: result)
-            // The running prompt is usually stored already; then only the reply so far is new.
+            // The running prompt is usually stored already; then only the reply so far is new. Yours
+            // carries its submission id. One Hermes started (a routine's result, another Bot's
+            // message) carries none, but is stored as the newest user row, with a display kind.
             let input = started?["input_id"]?.stringValue
-            let stored = Self.rows(result["display_messages"]).contains {
-                input != nil && $0["display_metadata"]?["submission_id"]?.stringValue == input
-            }
+            let rows = Self.rows(result["display_messages"])
+            let newest = rows.last { $0["role"]?.stringValue == "user" }
+            let stored =
+                rows.contains { input != nil && $0["display_metadata"]?["submission_id"]?.stringValue == input }
+                || (newest?["display_kind"]?.stringValue != nil && newest?["text"] == started?["text"])
             object["inflight"] = [
                 "user": .string(stored ? "" : started?["text"]?.stringValue ?? ""),
                 "assistant": .string(replySoFar ?? ""),
