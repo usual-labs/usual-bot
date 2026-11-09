@@ -110,7 +110,7 @@
 
             /// Something that takes typing itself: another text field, a web page, or the Bot's
             /// screen while you control it. A list or button doesn't, and gives typing up.
-            private static func takesKeys(_ responder: NSResponder?) -> Bool {
+            static func takesKeys(_ responder: NSResponder?) -> Bool {
                 if let text = responder as? NSTextView { return text.isEditable }
                 if responder is CanvasView { return true }
                 return responder is NSTextInputClient

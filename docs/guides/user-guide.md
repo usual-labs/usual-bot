@@ -111,8 +111,9 @@ read older messages without being pulled back down. The round arrow button above
 takes you back to the newest message and follows replies again; it has a dot when something new
 came in while you were away. Scrolling to the end, or sending a message, does the same.
 
-- **Attachments.** Use **+**, drag and drop, or paste. On iPhone, pick from Photos, the camera or
-  Files. Images up to 25 MB and other files up to 50 MB.
+- **Attachments.** Use **+**, drag and drop, or paste a copied image or file (⌘V on the Mac; on
+  iPhone, iOS 27 or later). On iPhone, pick from Photos, the camera or Files. Images up to 25 MB
+  and other files up to 50 MB.
 - **Images from the Bot.** When a reply names an image (a screenshot, a chart, a generated
   picture), it shows inline. Click it for full size, to share or to save.
 - **Audio and video.** Voice replies (Hermes's text to speech), audio files and videos play in the
