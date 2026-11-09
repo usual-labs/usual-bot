@@ -6,6 +6,13 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+### Added
+
+- **Usual Bot says when a newer build is in TestFlight.** Below the chat list, "Usual Bot 0.6.0 is
+  out" offers **Update in TestFlight**, which opens TestFlight to install it, or **Later**, which
+  hides that build until the next one. Settings › About keeps the update link. TestFlight builds
+  check bot.usual.dev every few hours. The check sends nothing about you; other builds never check.
+
 ## 0.5.0 - 2026-11-09
 
 ### Added

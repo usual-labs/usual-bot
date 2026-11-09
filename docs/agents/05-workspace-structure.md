@@ -29,6 +29,9 @@
   (Python, Hermes and its `aiohttp`; installed on the gateway only for real-profile Bots)
 - `Services/push-relay/` — the push relay at `push.usual.dev`: a Cloudflare Worker (plain JS, no
   dependencies) and D1, deployed with Wrangler, not built with the app
+- `Services/updates/` — the update check at `bot.usual.dev`: a Cloudflare Worker (plain JS, no
+  dependencies, no storage) that asks App Store Connect for the latest TestFlight build of each
+  platform; TestFlight builds ask it (`AppUpdate`)
 - `NotificationService/` — the notification service extension that opens sealed pushes, embedded in
   the app; its settings are `Config/NotificationService*`
 - `.github/workflows/zizmor.yml` — zizmor security lint of the workflows (pushes/PRs touching

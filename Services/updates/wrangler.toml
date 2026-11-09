@@ -1,0 +1,16 @@
+name = "usual-bot-updates"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+# The address built into TestFlight builds (USUAL_UPDATES_URL_YES in Config/Shared.xcconfig).
+routes = [{ pattern = "bot.usual.dev", custom_domain = true }]
+workers_dev = false
+# The account that holds usual.dev. Pinned so nothing lands in another account.
+account_id = "52a1c8e46a3fe3ab777dfdd2c2888832"
+
+# Secrets, set with `wrangler secret put`: ASC_KEY, an App Store Connect API key (the .p8 file's
+# contents), ASC_KEY_ID, its ID, and for a team key ASC_ISSUER_ID, the team's issuer ID.
+[vars]
+BUNDLE_ID = "labs.usual.UsualBot"
+# Empty: the newest processed build, which internal testers get. Set to the external group's ID once
+# the public link opens, so the app offers only builds that passed beta review.
+BETA_GROUP = ""
