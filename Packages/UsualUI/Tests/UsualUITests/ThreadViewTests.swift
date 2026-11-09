@@ -155,6 +155,39 @@ struct MarkdownBlockTests {
     @Test func plainTextIsOneParagraph() {
         #expect(kinds("Just text") == ["p:Just text"])
     }
+
+    // Agents write a line per item and expect it to show that way, as the gateway's other
+    // platforms do; CommonMark would run the lines together into one.
+    @Test func singleLineBreaksStay() {
+        let reply = "Mercury: The smallest planet.\nVenus: The hottest planet.\nEarth: Home."
+        #expect(kinds(reply) == ["p:Mercury: The smallest planet.\nVenus: The hottest planet.\nEarth: Home."])
+        #expect(kinds("One.\nTwo.\n\nThree.") == ["p:One.\nTwo.", "p:Three."])
+        #expect(kinds("> quoted\n> twice") == ["q:quoted\ntwice"])
+    }
+
+    @Test func lineBreaksLeaveListsHeadingsAndTablesAlone() {
+        #expect(kinds("- one\n- two\n  still two\n1. first") == ["li0•one", "li0•two\nstill two", "li01.first"])
+        #expect(kinds("# Title\nText\nMore") == ["h1:Title", "p:Text\nMore"])
+        #expect(kinds("Setext\n---\nAfter") == ["h2:Setext", "p:After"])
+        #expect(kinds("| A |\n| - |\n| 1 |\n| 2 |") == ["table:A / 1 / 2"])
+        #expect(kinds("Use `a`\nthen `b`") == ["p:Use a\nthen b"])
+    }
+
+    @Test func lineBreaksLeaveCodeAlone() {
+        #expect(kinds("Run:\n```sh\nmake\nmake test\n```\nDone.") == ["p:Run:", "code(sh):make\nmake test", "p:Done."])
+        #expect(kinds("Run:\n\n    make\n    make test") == ["p:Run:", "code(-):make\nmake test"])
+        #expect(kinds("> ```\n> a\n> b\n> ```") == ["code(-):a\nb"])
+        // A reply still being written may not have closed its fence yet.
+        #expect(kinds("```\na\nb") == ["code(-):a\nb"])
+    }
+
+    @Test func lineBreaksIgnoreTrailingSpaceAndCarriageReturns() {
+        #expect(kinds("a \nb   \nc\t\nd") == ["p:a\nb\nc\nd"])
+        #expect(kinds("a\\\nb") == ["p:a\nb"])
+        #expect(kinds("a\r\nb\r\n\r\nc\rd") == ["p:a\nb", "p:c\nd"])
+        #expect(kinds("```\r\nx\r\ny\r\n```") == ["code(-):x\ny"])
+        #expect(kinds("End.  \n\nNext.  ") == ["p:End.", "p:Next."])
+    }
 }
 
 struct ActivitySummaryTests {
