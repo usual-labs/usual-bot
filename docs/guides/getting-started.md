@@ -73,43 +73,72 @@ your Keychain password after each rebuild (see [Troubleshooting](troubleshooting
 
 ## 2. Get your gateway ready
 
-Usual Bot talks to the **Hermes dashboard**, the same server the official Hermes desktop app
-connects to (`hermes dashboard`, port 9119 by default). It needs two things from it.
+Usual Bot talks to your Hermes gateway's own web listener, the one Hermes calls the **Webapp**
+(port 9120 by default). Chats there run on the gateway itself, the same process behind the CLI,
+the official desktop app and messaging, so routines and other Bots can post into your Bot Chats.
+
+Usual Bot can also connect to the older **Hermes dashboard** (`hermes dashboard`, port 9119). It
+works, but the dashboard holds your Bot Chats itself, so routine results and messages from other
+Bots can't reach them while you're connected. The app says so in its connection status.
+
+### Turn on the Webapp
+
+On the gateway machine:
+
+```sh
+hermes config set webapp.enabled true
+hermes gateway restart
+```
+
+The gateway reads these settings when it starts, so restart it after each change below too.
+`hermes webapp --status` says whether it's serving and, if not, why.
 
 ### It must be reachable from your device
 
-By default the dashboard listens on `127.0.0.1` only, which other devices can't reach. Pick one:
+The Webapp listens on `127.0.0.1` only, which other devices can't reach. Pick one:
 
-- **Tailscale (recommended).** Put the gateway machine and your devices on the same tailnet and
-  bind the dashboard to the machine's tailnet address, for example
-  `hermes dashboard --host 100.101.102.103`. Nothing is exposed to the internet. On iPhone,
-  either keep the Tailscale app's VPN on while you use Usual Bot, or turn on **Built-in
-  Tailscale** on the connect screen: the app then joins your tailnet as a device of its own (you
-  sign in to Tailscale once) and the VPN can stay off. A gateway that signs in through Google
-  still needs the VPN for that sign-in, because Google doesn't allow signing in inside apps.
-- **Your home network.** Bind to the machine's local address. The first time, iOS asks whether
-  Usual Bot may find devices on your local network; allow it.
-- **The internet.** Put the dashboard behind `https` (a reverse proxy with a certificate). Usual
-  Bot refuses plain `http` to public addresses, so your sign-in never travels unencrypted.
+- **Tailscale Serve (recommended).** Keep the Webapp on `127.0.0.1` and let Tailscale give it an
+  `https` address on your tailnet. Nothing is exposed to the internet.
+
+  ```sh
+  tailscale serve --bg --https=443 http://127.0.0.1:9120
+  hermes config set webapp.public_url https://<machine>.<tailnet>.ts.net
+  hermes gateway restart
+  ```
+
+  `tailscale serve status` shows the address. On iPhone, keep the Tailscale app's VPN on while you
+  use Usual Bot.
+- **Every network the machine is on.** `hermes config set webapp.host 0.0.0.0`. The Webapp then
+  answers on the machine's local and tailnet addresses, over plain `http`; use it only on networks
+  you trust. The first time, iOS asks whether Usual Bot may find devices on your local network;
+  allow it.
+- **The internet.** Put the Webapp behind `https` (a reverse proxy or tunnel with a certificate)
+  and set `webapp.public_url` to that address. Usual Bot refuses plain `http` to public addresses,
+  so your sign-in never travels unencrypted.
+
+`webapp.host` takes only a loopback address, `0.0.0.0` or `::`. A tailnet address there keeps the
+Webapp off.
 
 ### It must have a sign-in
 
-When the dashboard listens on anything other than `127.0.0.1`, Hermes requires a sign-in method,
-and won't start without one. Either works with Usual Bot:
+When the Webapp is reachable from other machines (`0.0.0.0`, `::`, or a `public_url`), Hermes
+requires the same sign-in as the dashboard, and serves the Webapp only once one is set up. Either
+works with Usual Bot:
 
-- **Username and password**, the simplest for a home or tailnet setup. Run
-  `hermes dashboard --host <address>` in a terminal once and Hermes offers to set one up.
+- **Username and password**, the simplest for a home or tailnet setup.
 - **OAuth** through an identity provider, for example Nous Portal.
 
-Hermes's own [web dashboard docs](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/web-dashboard.md)
-cover both, and how to run the dashboard as a service.
+Hermes's [Webapp docs](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/desktop.md#use-the-desktop-workspace-from-a-browser)
+and [dashboard sign-in docs](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/web-dashboard.md#authentication-gated-mode)
+cover both.
 
 ### Check it
 
 From the device you'll use (or any machine on the same network):
 
 ```sh
-curl http://100.101.102.103:9119/api/status
+curl https://hermes.example.com/api/status
+curl http://100.101.102.103:9120/api/status
 ```
 
 Look for `"auth_required": true` and `"native_pkce"` in `auth_flows`. `native_pkce` is the browser
@@ -118,7 +147,7 @@ sign-in for apps that Usual Bot uses. If it's missing, update Hermes on the gate
 ## 3. Sign in
 
 1. Open Usual Bot and enter the gateway's address. The port is part of it, for example
-   `100.101.102.103:9119` or `https://hermes.example.com`. Without a scheme, private and tailnet
+   `100.101.102.103:9120` or `https://hermes.example.com`. Without a scheme, private and tailnet
    addresses use `http` and everything else `https`.
 2. Usual Bot checks the gateway and opens its sign-in page: on the Mac in your default browser, so
    saved passwords and existing sign-ins carry over; on iPhone in a sign-in sheet. Sign in there as
@@ -129,6 +158,12 @@ sign-in for apps that Usual Bot uses. If it's missing, update Hermes on the gate
 The app keeps your sign-in in the Keychain and refreshes it as it goes, so you won't sign in again
 unless the gateway ends your session. To switch gateways, sign out from the connection status at
 the bottom of the sidebar (on iPhone, Settings › your gateway).
+
+**Moving from the dashboard to the Webapp.** The Webapp has its own address, so sign out of the
+dashboard in Usual Bot and sign in again with the Webapp's address. Your Bots and chats are the same
+on both. If you use push notifications, run the push plugin's
+[install script](../../Integrations/hermes-push/README.md#install) again to update it: older
+versions don't notify you when a Bot on the Webapp needs you.
 
 ## What's next
 

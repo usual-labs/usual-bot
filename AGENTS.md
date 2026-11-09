@@ -46,6 +46,7 @@ The likely defect is a change that works where you tested and is missing elsewhe
 - [04-workspace-conventions.md](docs/agents/04-workspace-conventions.md) — Usual Bot: shared conventions.
 - [05-workspace-structure.md](docs/agents/05-workspace-structure.md) — Usual Bot: workspace structure.
 - [app-shell.md](docs/agents/app-shell.md) — Usual Bot: app shell.
+- [canonical-protocol.md](docs/agents/canonical-protocol.md) — Usual Bot: the canonical protocol (the gateway's Webapp).
 - [improvement-ideas.md](docs/agents/improvement-ideas.md) — Usual Bot: cross-project improvement ideas.
 - [decisions.md](docs/agents/decisions.md) — Usual Bot: product and gateway decisions, and what isn't verified.
 - [known-issues.md](docs/agents/known-issues.md) — Usual Bot: cross-project known issues.

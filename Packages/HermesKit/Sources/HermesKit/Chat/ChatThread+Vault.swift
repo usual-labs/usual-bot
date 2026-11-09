@@ -10,12 +10,16 @@ extension ChatThread {
     }
 
     /// Takes over the prompts still waiting when the chat attaches. One that can't be shown is
-    /// skipped, or it would hold the agent until its deadline.
+    /// skipped, or it would hold the agent until its deadline. Not on the canonical protocol, where
+    /// a skip settles it for every app and the official one may still answer it.
     func adoptVaultPrompts(from requests: [ServerRequest]) {
         vaultPrompts = requests.compactMap(VaultPrompt.init)
         let unreadable = requests.filter { VaultPrompt.methods.contains($0.method) && VaultPrompt($0) == nil }
         guard !unreadable.isEmpty, let channel = channel() else { return }
-        Task { for request in unreadable { await channel.respond(to: request.id, result: VaultPrompt.skipped) } }
+        Task {
+            guard await channel.dialect == .legacy else { return }
+            for request in unreadable { await channel.respond(to: request.id, result: VaultPrompt.skipped) }
+        }
     }
 
     /// Answers a vault prompt. Returns whether it went out: not while something is missing, and on

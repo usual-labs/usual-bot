@@ -158,7 +158,7 @@ struct SecretPromptTests {
     // MARK: - Reaching a chat
 
     /// A model online with one agent, Hermes, whose Bot Chat is the live session `live-1`.
-    private func connect() async throws -> (AppModel, FakeSocket) {
+    private func connect(canonical: Bool = false) async throws -> (AppModel, FakeSocket) {
         let store = MemoryTokenStore()
         try store.save(
             TokenSet(
@@ -173,7 +173,8 @@ struct SecretPromptTests {
             cache: OfflineCache(directory: .temporaryDirectory.appending(path: UUID().uuidString)),
             makeSocket: { _ in socket })
         await model.restore()
-        socket.deliver(#"{"jsonrpc":"2.0","method":"event","params":{"type":"gateway.ready","payload":{}}}"#)
+        let ready = canonical ? #"{"session_authority":true}"# : "{}"
+        socket.deliver(#"{"jsonrpc":"2.0","method":"event","params":{"type":"gateway.ready","payload":\#(ready)}}"#)
         let responder = Task {
             var answered = 0
             while !Task.isCancelled {
@@ -238,6 +239,22 @@ struct SecretPromptTests {
             #expect(frame["result"]?["value"] == "")
             #expect(frame["error"] == nil)
         }
+    }
+
+    /// On the gateway's own listener any answer settles a request for every app, a skip included,
+    /// so what this app can't show is left for the official one.
+    @Test func onTheCanonicalProtocolTheyAreLeftUnanswered() async throws {
+        let (model, socket) = try await connect(canonical: true)
+        defer { model.signOut() }
+        let thread = model.thread(for: try #require(model.contacts.first))
+        deliver("srq-1", "secret", session: "elsewhere", extra: #","env_var":"KEY","prompt":"Key?""#, to: socket)
+        deliver("srq-2", "vault.unlock_prompt", session: "elsewhere", to: socket)
+        deliver("srq-3", "secret", session: "live-1", to: socket)
+        deliver("srq-4", "tour", session: "live-1", to: socket)
+        // Requests are handled in order, so once this one shows, the others were handled.
+        deliver("srq-5", "sudo", session: "live-1", extra: #","command":"sudo ls""#, to: socket)
+        try await waitUntilOnMain { thread.secrets.count == 1 }
+        for id in ["srq-1", "srq-2", "srq-3", "srq-4"] { #expect(reply(to: id, on: socket) == nil) }
     }
 
     @Test(arguments: ["preview.read", "terminal.read", "window.read", "tour", "mcp.setup"])

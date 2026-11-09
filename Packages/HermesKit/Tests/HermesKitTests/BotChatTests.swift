@@ -8,15 +8,17 @@ struct ScriptedGateway {
     let socket = FakeSocket()
 
     /// Waits for request number `index` (0-based), checks its method, and replies.
-    func answer(_ index: Int, method: String, result: JSONValue? = nil, error: (Int, String)? = nil)
-        async throws -> JSONValue
-    {
+    func answer(
+        _ index: Int, method: String, result: JSONValue? = nil, error: (Int, String)? = nil, data: JSONValue? = nil
+    ) async throws -> JSONValue {
         try await waitUntil { socket.sent.count > index }
         let request = socket.sent[index]
         #expect(request["method"]?.stringValue == method)
         var reply: [String: JSONValue] = ["jsonrpc": "2.0", "id": request["id"] ?? .null]
         if let error {
-            reply["error"] = ["code": .number(Double(error.0)), "message": .string(error.1)]
+            var fields: [String: JSONValue] = ["code": .number(Double(error.0)), "message": .string(error.1)]
+            fields["data"] = data
+            reply["error"] = .object(fields)
         } else {
             reply["result"] = result ?? [:]
         }

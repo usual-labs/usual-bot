@@ -67,10 +67,15 @@ struct WaitingOnYou: View {
                 detail: approval.prompt.shortCommand, action: .approve { room.answer(approval, with: $0) })
         }
         let retries = room.retries.map { taskID in
-            WaitingRow.Row(
-                id: taskID, contact: contact, title: String(localized: "A reply in \(contact.name) didn't finish"),
-                detail: String(localized: "Trying again can repeat work it already did."),
-                action: .retry { room.retry(taskID) })
+            room.unretryable.contains(taskID)
+                ? WaitingRow.Row(
+                    id: taskID, contact: contact,
+                    title: String(localized: "A reply in \(contact.name) may not have finished"),
+                    detail: String(localized: "Open the room to dismiss it."), action: .open)
+                : WaitingRow.Row(
+                    id: taskID, contact: contact, title: String(localized: "A reply in \(contact.name) didn't finish"),
+                    detail: String(localized: "Trying again can repeat work it already did."),
+                    action: .retry { room.retry(taskID) })
         }
         return approvals + retries
     }

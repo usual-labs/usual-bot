@@ -331,7 +331,7 @@ like "Forge, Atlas & Scribe".
   you choose. The Bot may have done part of the work already, so trying again can repeat it.
   Dismiss gives up on that reply, and also stops any other reply still running in the room.
 
-Rooms are text only on the dashboard gateway: attachments in rooms need Hermes's newer gateway.
+Rooms are text only on the dashboard: attachments in rooms need the gateway's Webapp.
 
 ## A Bot's profile: routines, skills, apps and machine
 

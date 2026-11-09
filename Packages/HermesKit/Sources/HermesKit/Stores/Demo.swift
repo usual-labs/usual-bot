@@ -449,11 +449,34 @@
                         search if it errors or takes over 300 ms.
                         """,
                     reactions: [Reaction(emoji: "🎉", byAgent: false)]),
+                // What a routine set to post in the chat leaves there, as Hermes stores it.
+                HistoryMessage(
+                    role: "user",
+                    text: """
+                        [Cronjob "Competitor pricing watch" output — scheduled job, not the user. Review it, act \
+                        on anything that needs action, and summarize for the chat.]
+
+                        Northwind cut its Team plan from $12 to $10 a seat. The other two pages haven't changed.
+                        """,
+                    displayKind: "internal_notification"),
+                HistoryMessage(
+                    role: "assistant",
+                    text:
+                        "Northwind is now $2 a seat under us on Team. Nothing to do yet; I'll tell you if Pro moves too."
+                ),
             ]
         }
 
         private var forgeChat: [HistoryMessage] {
             [
+                // Another Bot's message, as Hermes stores it.
+                HistoryMessage(
+                    role: "user",
+                    text: """
+                        Message from 🤖 Atlas (@atlas): Index the docs nightly into Turbopuffer and query it \
+                        first, with the current search as the fallback.
+                        """,
+                    displayKind: "internal_notification"),
                 HistoryMessage(
                     role: "user",
                     text: "Add the search index migration and run it on staging.\n\n@file:attachments/search-spec.md"),

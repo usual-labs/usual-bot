@@ -19,7 +19,7 @@ its `AGENTS.md` and `docs/agents/` notes; they're kept up to date with the code.
                                 │ HTTPS: sign-in, REST (routines, media, sessions)
                                 │ WebSocket /api/ws: JSON-RPC requests, events, server requests
                                 ▼
-                      Hermes dashboard (hermes dashboard, :9119)
+         Hermes gateway's Webapp (hermes gateway, :9120)  or  Hermes dashboard (:9119)
 ```
 
 - **HermesKit** owns everything about the gateway and the app's state. It depends only on Apple
@@ -33,9 +33,10 @@ its `AGENTS.md` and `docs/agents/` notes; they're kept up to date with the code.
 
 ## Talking to Hermes
 
-Usual Bot speaks the same protocol as the official Hermes desktop app, to the **dashboard**
-listener (default port 9119). It doesn't use the OpenAI-compatible API server, which has no
-profile list, no streaming per-profile chat and no rooms.
+Usual Bot speaks the same protocol as the official Hermes desktop app, to the gateway's own web
+listener, the **Webapp** (default port 9120), or to the older **dashboard** (default port 9119). It
+doesn't use the OpenAI-compatible API server, which has no profile list, no streaming per-profile
+chat and no rooms.
 
 **Sign-in** (`Auth/`). The app reads `/api/status`, then runs Hermes's native browser sign-in:
 a PKCE challenge, the gateway's `/auth/native/authorize` page in the browser, and a redirect to a
@@ -50,8 +51,13 @@ server-to-client requests (approvals, questions, secret and sudo prompts). `AppM
 15 s) and re-attaches open chats.
 
 **Two dialects.** `gateway.ready` says whether the gateway speaks the **legacy** session protocol
-(`hermes dashboard`) or the newer **canonical** one (`hermes gateway`). Chats are implemented for
-legacy; canonical gateways connect but chats aren't supported yet.
+(`hermes dashboard`) or the newer **canonical** one (the Webapp, which `hermes gateway` serves).
+The rest of the app speaks legacy; on canonical, `JSONRPCChannel` translates
+(`CanonicalProtocol`, `JSONRPCChannel+Canonical`). Canonical fences each session: calls carry the
+session's profile, its `revision` and `execution_generation`, which move on every turn and edit and
+are taken from every result, refusal and event. Approvals and questions arrive as events and are
+handed on as the requests the app already answers. Only canonical lets routines and other Bots post
+into an open Bot Chat: the dashboard holds the chat itself, so the gateway can't deliver into it.
 
 **Chats** (`Chat/`). Each contact is a Hermes profile; its chat is the profile's hidden
 "Bot Chat" session, found or created exactly like the official app does (and never duplicated:

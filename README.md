@@ -33,7 +33,7 @@ Bots are working and which need you. It does one thing well: talking to your Bot
 skill setup and everything else stay in the official Hermes app.
 
 > [!NOTE]
-> Usual Bot is young, and it's tested against the Hermes dashboard gateway. See
+> Usual Bot is young. It's tested against Hermes's gateway Webapp and its older dashboard. See
 > [What you need](#what-you-need).
 
 ## Install
@@ -65,9 +65,10 @@ That opens a made-up team of Bots, a room and some routines. Nothing is sent any
 
 1. `open UsualBot.xcodeproj`, pick the **UsualBot** scheme and **My Mac** (or an iPhone simulator),
    and press **Run**.
-2. Make sure your Hermes dashboard can be reached from this device and has a sign-in set up.
-   [Getting started](docs/guides/getting-started.md#2-get-your-gateway-ready) shows how.
-3. In Usual Bot, enter the gateway's address, for example `100.101.102.103:9119`, and sign in
+2. Turn on your Hermes gateway's Webapp, and make sure this device can reach it and it has a
+   sign-in set up. [Getting started](docs/guides/getting-started.md#2-get-your-gateway-ready)
+   shows how.
+3. In Usual Bot, enter the gateway's address, for example `https://hermes.example.com`, and sign in
    on the gateway's page that opens. Your Bots appear as contacts.
 
 To run it on your own iPhone, set your Apple team in `Config/Local.xcconfig` first; see
@@ -149,13 +150,13 @@ The [user guide](docs/guides/user-guide.md) walks through each of these.
 
 ## What you need
 
-- **A Hermes gateway** running the dashboard (`hermes dashboard`, port 9119), reachable from your
+- **A Hermes gateway** with its Webapp on (`webapp.enabled`, port 9120), reachable from your
   device: on your tailnet, your home network, or the internet over `https`. Plain `http` is
-  allowed only for private and Tailscale addresses.
-- **Sign-in on the gateway.** The dashboard needs a sign-in method (username and password, or
-  OAuth); Usual Bot uses its browser sign-in for apps (`native_pkce` in `/api/status`).
-- **Tested with** Hermes Agent 0.21.5 and 0.22.5. Gateways that speak Hermes's newer canonical
-  session protocol (`hermes gateway`) connect, but chats there aren't supported yet.
+  allowed only for private and Tailscale addresses. The older dashboard (`hermes dashboard`, port
+  9119) works too, but there routines and other Bots can't post into your chats.
+- **Sign-in on the gateway.** It needs a sign-in method (username and password, or OAuth); Usual
+  Bot uses its browser sign-in for apps (`native_pkce` in `/api/status`).
+- **Tested with** Hermes Agent 0.22.7 (the Webapp), and 0.21.5 and 0.22.5 (the dashboard).
 - **The app** runs on macOS 26 and iOS 26 or later. Building it needs Xcode 26 or newer.
 
 ## Documentation

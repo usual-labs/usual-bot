@@ -153,7 +153,9 @@ struct RoomPane: View {
             ForEach(room.retries, id: \.self) { taskID in
                 RetryCard(
                     agentName: room.retryMember(taskID).flatMap { author($0)?.name },
-                    othersBusy: room.isBusy || !room.pending.isEmpty || room.retries.count > 1,
+                    canRetry: !room.unretryable.contains(taskID),
+                    othersBusy: room.dismissStopsOthers(taskID)
+                        && (room.isBusy || !room.pending.isEmpty || room.retries.count > 1),
                     retry: { room.retry(taskID) },
                     dismiss: { room.dismiss(taskID) })
             }

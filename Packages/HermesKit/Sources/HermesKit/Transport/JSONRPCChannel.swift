@@ -11,6 +11,8 @@ public struct GatewayEvent: Sendable, Equatable {
 
 /// A question the gateway asks the app and waits on, e.g. `approval`. Answer it with
 /// `JSONRPCChannel.respond(to:result:)` or refuse it with `JSONRPCChannel.decline(_:code:message:)`.
+/// On the canonical protocol approvals and questions come as events; the channel hands them on
+/// as requests, under their `prompt_id`.
 public struct ServerRequest: Sendable, Equatable {
     /// `srq-…`: strings, so they never collide with the app's own numeric request IDs.
     public let id: String
@@ -34,6 +36,9 @@ public struct GatewayReady: Sendable, Equatable {
 /// JSON-RPC 2.0 over one WebSocket: numbered requests with replies, a stream of events, the
 /// gateway's own requests to the app, and a heartbeat (`gateway.ping` every 15 s; the socket is
 /// dead after 45 s of silence).
+///
+/// The app speaks the legacy protocol throughout. On a canonical gateway the channel translates
+/// each call, event and answer (`JSONRPCChannel+Canonical.swift`).
 public actor JSONRPCChannel {
     public nonisolated let events: AsyncStream<GatewayEvent>
     public nonisolated let requests: AsyncStream<ServerRequest>
@@ -49,6 +54,12 @@ public actor JSONRPCChannel {
     private let heartbeatInterval: Duration
     private let silenceLimit: Duration
     private var nextID = 1
+    /// Which protocol the gateway speaks, from `gateway.ready`.
+    public private(set) var dialect: GatewayReady.Dialect = .legacy
+    var canonical = CanonicalProtocol()
+    /// Canonical calls still waiting, with the session they're about: their replies carry fences
+    /// that frames right behind them may need.
+    private var callContexts: [Int: (method: String, sessionID: String?, profile: String?)] = [:]
     /// Calls that carried a secret. Kept after they finish: a late reply may still quote it.
     private var sensitiveCalls: Set<Int> = []
     private var pending: [Int: CheckedContinuation<JSONValue, any Error>] = [:]
@@ -93,10 +104,23 @@ public actor JSONRPCChannel {
     public func call(
         _ method: String, params: JSONValue = [:], timeout: Duration = .seconds(30), sensitive: Bool = false
     ) async throws -> JSONValue {
+        if dialect == .canonical {
+            return try await canonicalCall(method, params: params, timeout: timeout, sensitive: sensitive)
+        }
+        return try await send(method, params: params, timeout: timeout, sensitive: sensitive)
+    }
+
+    /// Sends `method` as it is, with no translation.
+    func send(
+        _ method: String, params: JSONValue = [:], timeout: Duration = .seconds(30), sensitive: Bool = false
+    ) async throws -> JSONValue {
         if let closedError { throw closedError }
         let id = nextID
         nextID += 1
         if sensitive { sensitiveCalls.insert(id) }
+        if dialect == .canonical {
+            callContexts[id] = (method, params["session_id"]?.stringValue, params["profile"]?.stringValue)
+        }
         let frame: JSONValue = [
             "jsonrpc": "2.0", "id": .number(Double(id)), "method": .string(method), "params": params,
         ]
@@ -112,11 +136,26 @@ public actor JSONRPCChannel {
 
     /// Answers the server request with ID `requestID`.
     public func respond(to requestID: String, result: JSONValue) {
+        if dialect == .canonical, let answer = canonical.answer(requestID, result: result) {
+            let params = canonical.routed(answer.method, answer.params)
+            Task { [weak self] in
+                do {
+                    _ = try await self?.send(answer.method, params: params)
+                } catch {
+                    Self.log.error(
+                        "The answer to a prompt didn't arrive: \(String(describing: error), privacy: .public)")
+                }
+            }
+            return
+        }
         write(["jsonrpc": "2.0", "id": .string(requestID), "result": result])
     }
 
-    /// Refuses a server request, so the agent doesn't wait out its deadline for an answer.
+    /// Refuses a server request, so the agent doesn't wait out its deadline for an answer. Not on
+    /// the canonical protocol: any answer settles a request there, for every app, so one this app
+    /// doesn't show is left for the others.
     public func decline(_ requestID: String, code: Int, message: String) {
+        guard dialect == .legacy else { return }
         write([
             "jsonrpc": "2.0", "id": .string(requestID),
             "error": ["code": .number(Double(code)), "message": .string(message)],
@@ -174,13 +213,27 @@ public actor JSONRPCChannel {
             return
         }
         if let id = frame["id"]?.intValue, frame["method"] == nil {
+            let context = callContexts.removeValue(forKey: id)
             if let error = frame["error"] {
-                let rpc = GatewayError.rpc(
-                    code: error["code"]?.intValue ?? 0,
-                    message: error["message"]?.stringValue ?? String(localized: "The gateway refused the request."))
-                resolve(id: id, with: .failure(rpc))
+                let code = error["code"]?.intValue ?? 0
+                let message = error["message"]?.stringValue ?? String(localized: "The gateway refused the request.")
+                if let context, let reason = error["data"]?["reason"]?.stringValue {
+                    // A refusal over a stale fence carries the fresh ones.
+                    if let session = context.sessionID, let data = error["data"] {
+                        canonical.absorbFences(data, session: session)
+                    }
+                    let refusal = CanonicalRefusal(
+                        code: code, reason: reason, message: message, detail: error["data"]?["detail"]?.stringValue)
+                    resolve(id: id, with: .failure(refusal))
+                } else {
+                    resolve(id: id, with: .failure(GatewayError.rpc(code: code, message: message)))
+                }
             } else {
-                resolve(id: id, with: .success(frame["result"] ?? .null))
+                let result = frame["result"] ?? .null
+                if let context {
+                    absorb(result, of: context.method, session: context.sessionID, profile: context.profile)
+                }
+                resolve(id: id, with: .success(result))
             }
             return
         }
@@ -193,9 +246,18 @@ public actor JSONRPCChannel {
         else { return }
         let payload = params["payload"] ?? .null
         if type == "gateway.ready" {
-            let dialect: GatewayReady.Dialect = payload["session_authority"]?.boolValue == true ? .canonical : .legacy
-            Self.log.info("Gateway ready, \(dialect.rawValue, privacy: .public) protocol")
+            dialect = payload["session_authority"]?.boolValue == true ? .canonical : .legacy
+            Self.log.info("Gateway ready, \(self.dialect.rawValue, privacy: .public) protocol")
             resolveReady(.success(GatewayReady(dialect: dialect, replayEpoch: payload["replay_epoch"])))
+            return
+        }
+        if dialect == .canonical {
+            for inbound in canonical.inbound(params) {
+                switch inbound {
+                case .event(let event): eventSink.yield(event)
+                case .request(let request): requestSink.yield(request)
+                }
+            }
             return
         }
         eventSink.yield(
@@ -205,6 +267,7 @@ public actor JSONRPCChannel {
     }
 
     private func resolve(id: Int, with result: Result<JSONValue, any Error>) {
+        callContexts[id] = nil  // A call that timed out gets no reply to take it.
         pending.removeValue(forKey: id)?.resume(with: result)
     }
 

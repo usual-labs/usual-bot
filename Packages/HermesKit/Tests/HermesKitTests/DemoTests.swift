@@ -14,7 +14,13 @@ struct DemoTests {
 
         let room = try #require(contacts.first { $0.kind != .agent })
         #expect(model.room(for: room)?.state.items.count == 6)
-        #expect(model.thread(for: try #require(contacts.first { $0.id == "atlas" })).state.items.count == 5)
+        let atlas = model.thread(for: try #require(contacts.first { $0.id == "atlas" }))
+        #expect(atlas.state.items.count == 7)
+        #expect(
+            atlas.state.items[5].content
+                == .result(
+                    title: "From the routine “Competitor pricing watch”",
+                    detail: "Northwind cut its Team plan from $12 to $10 a seat. The other two pages haven't changed."))
 
         let ops = model.thread(for: try #require(contacts.first { $0.id == "ops" }))
         #expect(!ops.isLinkUnencrypted)
