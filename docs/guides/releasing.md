@@ -46,34 +46,73 @@ production push service; the app works that out from how it was signed (`PushRel
 ## From GitHub Actions
 
 The [TestFlight workflow](../../.github/workflows/testflight.yml) runs `scripts/testflight.sh` on a
-GitHub macOS runner, signed in with an App Store Connect API key instead of an Xcode account.
+GitHub macOS runner. It signs with certificates and profiles a maintainer made beforehand, and
+uploads with an individual App Store Connect API key that can reach only Usual Bot, so nothing it
+runs can make, change or revoke anything in the Apple account.
 
 - **By hand:** Actions › TestFlight › Run workflow, on `main`. Pick both apps or one, and turn off
-  **Upload** to sign and export without uploading, which is the way to check a new key.
+  **Upload** to sign and export without uploading, which is the way to check new certificates or
+  profiles.
 - **Each night:** set the repository variable `TESTFLIGHT_NIGHTLY` to `true` (Settings › Secrets and
   variables › Actions › Variables) once a run by hand has worked. A night with nothing new on `main`
   since the last nightly does nothing. Nightly builds keep the version in `Config/Shared.xcconfig`,
   so they reach internal testers right away; external testers still wait for beta review of each
   new version.
 
-Its secrets live in the `testflight` environment, which only `main` may use:
+### Signing material
+
+An Admin or the Account Holder makes these on a Mac, in the
+[developer portal](https://developer.apple.com/account/resources/certificates/list):
+
+1. **Two certificates**, the ordinary kind, not cloud-managed: **Apple Distribution**, which signs
+   both apps, and **Mac Installer Distribution**, which signs the Mac package. Make each from a
+   certificate signing request (Keychain Access › Certificate Assistant), so its private key stays
+   in your keychain, then download and open it.
+2. **One `.p12`** holding both, with their private keys: select the two in Keychain Access, choose
+   File › Export Items, and give it a password.
+3. **Four App Store profiles**, each using that Apple Distribution certificate:
+
+   | Type | Bundle ID | Secret |
+   | --- | --- | --- |
+   | App Store Connect (iOS) | `labs.usual.UsualBot` | `PROFILE_IOS_APP` |
+   | App Store Connect (iOS) | `labs.usual.UsualBot.NotificationService` | `PROFILE_IOS_NOTIFICATIONS` |
+   | Mac App Store Connect | `labs.usual.UsualBot` | `PROFILE_MAC_APP` |
+   | Mac App Store Connect | `labs.usual.UsualBot.NotificationService` | `PROFILE_MAC_NOTIFICATIONS` |
+
+   The App IDs need Push Notifications on. The workflow reads each profile's name from the file, so
+   name them as you like.
+
+### The upload key
+
+The key belongs to a user whose App Store Connect access is limited to Usual Bot (App Manager is
+enough), so it can't touch the team's other apps. Individual keys can't make or download
+certificates and profiles, which is why those are made beforehand.
+
+1. An Admin lets that user generate an individual key, under Users and Access › People.
+2. Signed in as that user, generate one under Users and Access › Integrations › Individual Keys,
+   and download the `.p8`. Apple offers the download once.
+
+### Secrets
+
+They live in the `testflight` environment, which only `main` may use. Set each with
+`gh secret set <name> --env testflight -R usual-labs/usual-bot`, which reads the value from
+standard input; the files are base64 first, as in `base64 -i Usual.p12 | gh secret set SIGNING_P12 …`.
 
 | Secret | Value |
 | --- | --- |
-| `APPLE_TEAM_ID` | The team ID |
-| `APPSTORE_API_KEY_ID` | The API key's ID |
-| `APPSTORE_API_ISSUER_ID` | The issuer ID shown above the team's keys |
-| `APPSTORE_API_KEY_P8` | The contents of the key's `.p8` file |
+| `APPLE_TEAM_ID` | The team ID, from Membership details in the developer account |
+| `SIGNING_P12` | The `.p12`, base64 |
+| `SIGNING_P12_PASSWORD` | Its password |
+| `PROFILE_IOS_APP`, `PROFILE_IOS_NOTIFICATIONS`, `PROFILE_MAC_APP`, `PROFILE_MAC_NOTIFICATIONS` | The four profiles, base64 |
+| `APPSTORE_API_KEY_ID` | The individual key's ID |
+| `APPSTORE_API_KEY_P8` | The contents of its `.p8` file |
 
-Make the key under App Store Connect › Users and Access › Integrations › Team Keys, with the
-**Admin** role: Xcode uses it to make the distribution certificates and profiles. Set each secret
-with `gh secret set <name> --env testflight -R usual-labs/usual-bot`, which reads the value from
-standard input.
+### Once a year
 
-On a fresh runner Xcode makes a new Apple Development certificate whenever it signs, and Apple
-limits how many a team may have. The workflow notes the team's certificates before it builds and
-afterwards deletes only the development certificates that appeared during the run
-(`scripts/app-store-certificates.swift`).
+The certificates last a year, and a profile stops working when its certificate does. The workflow
+fails 30 days before either expires and says which. Make new certificates and profiles as above,
+replace `SIGNING_P12`, `SIGNING_P12_PASSWORD` and the four profile secrets, run the workflow by hand
+with **Upload** off, then revoke the old certificates.
 
 ## When it fails
 
@@ -83,5 +122,7 @@ afterwards deletes only the development certificates that appeared during the ru
   platform for the app yet. See setup step 2.
 - **The build number is already used**: run the script again a minute later; it takes a new number
   each minute.
-- **The workflow can't make certificates or profiles**: the API key's role is below Admin. Make a
-  new key with the Admin role and replace the secrets.
+- **The workflow says a profile is for another app, lists devices, or expires soon**: replace that
+  profile's secret with an App Store profile for the bundle ID it names.
+- **The workflow's export can't find a certificate or profile**: the `.p12` lacks one of the two
+  certificates, or a profile was made with another Apple Distribution certificate.

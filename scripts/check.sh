@@ -9,13 +9,9 @@ set -eu
 cd "$(dirname "$0")/.."
 
 checks() {
-    swift format lint --strict --recursive App NotificationService Packages scripts/fixtures \
-        scripts/app-store-certificates.swift
+    swift format lint --strict --recursive App NotificationService Packages scripts/fixtures
     scripts/check-test-waits.sh
     scripts/check-shortcuts.sh
-    # The TestFlight workflow runs this script; type-checking it here catches a break before a
-    # nightly does.
-    swiftc -typecheck scripts/app-store-certificates.swift
     swift test --package-path Packages/HermesKit
     swift test --package-path Packages/UsualUI
 }

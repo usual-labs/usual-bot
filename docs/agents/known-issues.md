@@ -14,6 +14,14 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   pull request; the `changes` job skips the macOS jobs instead.
 - CodeQL's Swift scan (about half an hour of traced build) runs on `main`, weekly and by hand, not
   on pull requests, so a pull request's code scanning results cover the workflows only.
+- **CI signs with certificates and profiles made beforehand, not Xcode's cloud signing.** Cloud
+  signing from an App Store Connect API key needs a team key with the Admin role: an App Manager
+  key failed with "Cloud signing permission error" and "No profiles for … were found". Team keys
+  reach every app on the team, so the workflow uploads with an individual key limited to Usual Bot
+  instead. Individual keys can't use the provisioning API, so CI never makes or fetches
+  certificates or profiles. altool takes a key as individual when its file is named
+  `ApiKey_<id>.p8`, and still wants an `--api-issuer`, which it ignores. Not yet verified on a real
+  upload.
 - Workflow actions are pinned to full commit SHAs. When adding an action, check both the pin and the
   repository's Actions allow-list. CodeQL builds the app with Xcode; a package-only SwiftPM scan
   doesn't cover `App/`.
