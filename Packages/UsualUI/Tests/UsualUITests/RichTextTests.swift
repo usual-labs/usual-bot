@@ -70,6 +70,33 @@
             #expect(view.selectedRange().length == 0)
         }
 
+        @Test func thePointerIsAHandOverAddToChatAndAnIBeamAroundIt() throws {
+            let view = SelectableTextView()
+            view.frame = NSRect(x: 0, y: 0, width: 400, height: 200)
+            // In a window, as in a conversation: on its own its visible part has no edges.
+            let window = NSWindow(
+                contentRect: view.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+            window.contentView?.addSubview(view)
+            #expect(view.visibleRect == view.bounds)
+            // Nothing over the text: the text view's own I-beam.
+            #expect(view.pointerRects() == nil)
+
+            // Over the text's second line, and past its leading edge.
+            view.button = NSRect(x: -8, y: 20, width: 130, height: 30)
+            let rects = try #require(view.pointerRects())
+            let hand = rects.filter { $0.cursor == .pointingHand }.map(\.rect)
+            #expect(hand == [NSRect(x: 0, y: 20, width: 122, height: 30)])
+            let beams = rects.filter { $0.cursor == .iBeam }.map(\.rect)
+            #expect(beams.allSatisfy { !$0.intersects(hand[0]) })
+            // Together they still cover the text.
+            let covered = rects.reduce(0) { $0 + $1.rect.width * $1.rect.height }
+            #expect(covered == view.bounds.width * view.bounds.height)
+
+            // Above the text's first line it's off this view, which is all text again.
+            view.button = NSRect(x: 40, y: -34, width: 130, height: 30)
+            #expect(view.pointerRects() == nil)
+        }
+
         @Test func aShortMessageIsAsWideAsItsWords() {
             let view = SelectableTextView()
             view.show(.mine("Hi", size: 15))

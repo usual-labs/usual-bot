@@ -17,6 +17,8 @@ public enum Theme {
     static let bubble = Color(light: 0xF0F0F0, dark: 0x202020)
     /// What floats over a conversation: the message box, the name pill and their kin.
     static let surface = Color(light: 0xFFFFFF, dark: 0x1F1F1F)
+    /// What floats over a message's own words and has to hide them: a step lighter than `bubble`.
+    static let floating = Color(light: 0xFFFFFF, dark: 0x2C2C2C)
     /// Chat text: 15 pt on the Mac, and 18 pt with a 24 pt line on iPhone, as in Grok's phone app,
     /// since a phone is held further from the eye.
     #if os(macOS)

@@ -34,8 +34,8 @@ struct ThreadPane: View {
 
     /// Files waiting to go with the next message.
     @State private var attachments: [Attachment] = []
-    /// The message you're replying to.
-    @State private var replyTo: QuotedMessage?
+    /// What your next message quotes: messages you're replying to and words you added from them.
+    @State private var quotes: [QuotedMessage] = []
     /// You're rewriting your last message.
     @State private var editing = false
     @State private var calling = false
@@ -76,7 +76,7 @@ struct ThreadPane: View {
                 if let thread, thread.phase == .ready {
                     Composer(
                         thread: thread, agentName: contact.name, agentDefault: contact.details,
-                        attachments: $attachments, replyTo: $replyTo,
+                        attachments: $attachments, quotes: $quotes,
                         editing: $editing,
                         inCall: calling, startCall: { calling = true }
                     )
@@ -123,7 +123,7 @@ struct ThreadPane: View {
             .onChange(of: contact.id) {
                 attachments = []
                 calling = false
-                replyTo = nil
+                quotes = []
                 editing = false
             }
             .paneChrome()
@@ -137,21 +137,21 @@ struct ThreadPane: View {
             reply: { item in
                 editing = false
                 switch item.content {
-                case .user(let text): replyTo = QuotedMessage(author: String(localized: "You"), text: text)
-                case .assistant(let text): replyTo = QuotedMessage(author: contact.name, text: text)
+                case .user(let text): quotes.add(QuotedMessage(author: String(localized: "You"), text: text))
+                case .assistant(let text): quotes.add(QuotedMessage(author: contact.name, text: text))
                 default: break
                 }
             },
             quote: { item, selection in
                 editing = false
                 switch item.content {
-                case .user: replyTo = QuotedMessage(author: String(localized: "You"), selection: selection)
-                default: replyTo = QuotedMessage(author: contact.name, selection: selection)
+                case .user: quotes.add(QuotedMessage(author: String(localized: "You"), selection: selection))
+                default: quotes.add(QuotedMessage(author: contact.name, selection: selection))
                 }
             },
             canRewind: { item in thread.canRewind && item.id == thread.lastSent?.id },
             edit: { item in
-                replyTo = nil
+                quotes = []
                 editing = true
                 thread.prefill = ChatThread.editableText(of: item)
             },

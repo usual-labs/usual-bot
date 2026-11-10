@@ -11,7 +11,7 @@ struct Composer: View {
     /// The agent's default model, for the model menu's Make Default.
     var agentDefault: AgentDetails?
     @Binding var attachments: [Attachment]
-    @Binding var replyTo: QuotedMessage?
+    @Binding var quotes: [QuotedMessage]
     /// You're rewriting your last message: Send replaces it.
     @Binding var editing: Bool
     /// A call holds the microphone: no dictation or second call meanwhile.
@@ -42,7 +42,7 @@ struct Composer: View {
             attaching: AttachmentSending(
                 attachments: $attachments, canSend: thread.canSendAttachments, isUploading: thread.isUploading,
                 send: thread.send(_:attachments:)),
-            replyTo: $replyTo, editing: $editing, startCall: thread.isAttached ? startCall : nil, inCall: inCall,
+            quotes: $quotes, editing: $editing, startCall: thread.isAttached ? startCall : nil, inCall: inCall,
             commands: SlashCommands(
                 list: thread.commands, load: { Task { await thread.loadCommands() } },
                 prefill: Binding(get: { thread.prefill }, set: { thread.prefill = $0 })),

@@ -7,74 +7,13 @@ import SwiftUI
     import UIKit
 #endif
 
-/// A message you're replying to: shown above the message box, then sent as a `>` quote line
-/// before your text. In a room the reply also @mentions the author, so only it answers.
-struct QuotedMessage: Equatable {
-    let author: String
-    /// One line, for the chip above the message box.
-    let excerpt: String
-    /// The room member to address; `nil` in a chat with one agent.
-    var mention: String?
-    /// The lines sent as the quote: the excerpt, or the words you selected.
-    private var quoted: [String]
-
-    /// Part of a message you selected, kept whole and line by line: you picked those words.
-    init(author: String, selection: String, mention: String? = nil) {
-        self.author = author
-        self.mention = mention
-        quoted = selection.split(whereSeparator: \.isNewline)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-        let flat = quoted.joined(separator: " ")
-        excerpt = flat.count > 200 ? String(flat.prefix(200)) + "…" : flat
-    }
-
-    init(author: String, text: String, mention: String? = nil) {
-        self.author = author
-        self.mention = mention
-        // Plain words: no attachment or `MEDIA:` lines, no Markdown marks.
-        let lines = AttachmentRef.split(text).text.split(whereSeparator: \.isNewline)
-            .filter {
-                !$0.trimmingCharacters(in: .whitespaces).hasPrefix("MEDIA:") && !MarkdownBlock.isDeliveryMarker($0)
-            }
-        let joined = lines.joined(separator: " ")
-        let flat =
-            (try? AttributedString(
-                markdown: joined, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
-            .map { String($0.characters) } ?? joined
-        excerpt = flat.count > 200 ? String(flat.prefix(200)) + "…" : flat
-        quoted = [excerpt]
-    }
-
-    /// Your message with the quote in front.
-    func message(_ text: String) -> String {
-        let reply = [mention.map { "@\($0)" }, text.isEmpty ? nil : text].compactMap(\.self).joined(separator: " ")
-        let quote = quoted.enumerated().map { index, line in index == 0 ? "> \(author): \(line)" : "> \(line)" }
-        return quote.joined(separator: "\n") + "\n\n\(reply)"
-    }
-
-    /// Splits a leading quote off a sent message: the `> ` lines, and the rest.
-    static func split(_ text: String) -> (quote: String?, text: String) {
-        var lines = text.components(separatedBy: "\n")
-        var quoted: [String] = []
-        while let first = lines.first, first.hasPrefix("> ") {
-            quoted.append(String(first.dropFirst(2)))
-            lines.removeFirst()
-        }
-        guard !quoted.isEmpty else { return (nil, text) }
-        return (
-            quoted.joined(separator: " "), lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-        )
-    }
-}
-
 /// What you can do to a message. Set by the chat or room; reactions exist only in chats with one
 /// agent (rooms have no reaction call).
 struct MessageActions {
     var canReact: (TranscriptItem) -> Bool = { _ in false }
     var react: (String?, TranscriptItem) -> Void = { _, _ in }
     var reply: (TranscriptItem) -> Void = { _ in }
-    /// Replies to the words you selected in a message, quoting only those.
+    /// Quotes the words you selected in a message in your next one.
     var quote: (TranscriptItem, String) -> Void = { _, _ in }
     /// Chats only: your last message, between replies, can be edited or taken back.
     var canRewind: (TranscriptItem) -> Bool = { _ in false }
@@ -424,50 +363,5 @@ private struct ReactionPicker: View {
         }
         .buttonStyle(.clickable(.borderless))
         .accessibilityLabel(Text("React \(emoji)"))
-    }
-}
-
-/// What your message will be, above the message box: the one you're replying to, or that
-/// you're editing. The button drops it.
-struct ReplyChip: View {
-    let text: String
-    let cancelLabel: String
-    let cancel: () -> Void
-
-    init(quote: QuotedMessage, cancel: @escaping () -> Void) {
-        text = "\(quote.author): \(quote.excerpt)"
-        cancelLabel = String(localized: "Don't reply to \(quote.author)")
-        self.cancel = cancel
-    }
-
-    init(text: String, cancelLabel: String, cancel: @escaping () -> Void) {
-        self.text = text
-        self.cancelLabel = cancelLabel
-        self.cancel = cancel
-    }
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Text(text)
-                .scaledFont(size: 13)
-                .foregroundStyle(Theme.secondaryInk)
-                .lineLimit(1, accessibility: 3)
-            Spacer(minLength: 0)
-            Button(action: cancel) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .semibold))
-                    .frame(width: 24, height: 24)
-                    .contentShape(Rectangle())
-                    .touchTarget(width: 24, height: 24)
-            }
-            .buttonStyle(.clickable(.borderless))
-            .foregroundStyle(.secondary)
-            .keyboardShortcut(.cancelAction)
-            .accessibilityLabel(Text(cancelLabel))
-        }
-        .padding(.leading, 12)
-        .padding(.trailing, 4)
-        .frame(minHeight: 34)
-        .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }

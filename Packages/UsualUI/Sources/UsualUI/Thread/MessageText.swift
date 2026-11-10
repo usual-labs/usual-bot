@@ -9,18 +9,22 @@
         let content: MessageTextContent
         @Environment(\.quoteSelection) private var quoteSelection
         @State private var selection: SelectedWords?
+        /// The button's size once it's laid out: its words and their size vary.
+        @State private var buttonSize = CGSize(width: 130, height: AddToChatButton.height)
 
         var body: some View {
-            MessageTextView(content: content, quote: quoteSelection) { selection = $0 }
+            let anchor = quoteSelection == nil ? nil : selection?.anchor
+            let button = anchor.map { AddToChatButton.frame(over: $0, size: buttonSize) }
+            MessageTextView(content: content, quote: quoteSelection, button: button) { selection = $0 }
                 .overlay {
-                    if let selection, quoteSelection != nil {
+                    if let selection, let button {
                         AddToChatButton(action: selection.add)
-                            // Centred over where the drag ended, just above the selection's first line,
-                            // and not far past the text's leading edge.
-                            .position(
-                                x: max(selection.anchor.x, AddToChatButton.width / 2 - 8),
-                                y: selection.anchor.y - AddToChatButton.height / 2 - 4
-                            )
+                            .onGeometryChange(for: CGSize.self) {
+                                $0.size
+                            } action: {
+                                buttonSize = $0
+                            }
+                            .position(x: button.midX, y: button.midY)
                             .transition(.opacity)
                     }
                 }
@@ -39,12 +43,19 @@
         static func == (lhs: Self, rhs: Self) -> Bool { lhs.text == rhs.text && lhs.anchor == rhs.anchor }
     }
 
-    /// A small pill over a selection, as in a coding agent's chat.
+    /// A small pill over a selection, as in a coding agent's chat. Solid, with a hairline and a
+    /// soft shadow: as glass, the words under it showed through its own.
     private struct AddToChatButton: View {
         let action: () -> Void
-        /// About how wide it is, to keep it in the message.
-        static let width: CGFloat = 130
         static let height: CGFloat = 30
+
+        /// Where it sits in the text view: centred over where the drag ended, just above the
+        /// selection's first line, and not far past the text's leading edge.
+        static func frame(over anchor: CGPoint, size: CGSize) -> CGRect {
+            CGRect(
+                x: max(anchor.x - size.width / 2, -8), y: anchor.y - size.height - 4, width: size.width,
+                height: size.height)
+        }
 
         var body: some View {
             Button(action: action) {
@@ -61,10 +72,12 @@
                 .padding(.leading, 12)
                 .padding(.trailing, 6)
                 .frame(height: Self.height)
+                .background(Theme.floating, in: Capsule())
+                .overlay(Capsule().strokeBorder(Theme.ink.opacity(0.12), lineWidth: 1))
                 .contentShape(Capsule())
             }
             .buttonStyle(.clickable)
-            .glassEffect(.regular, in: Capsule())
+            .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
             .fixedSize()
             .help("Quote the selected words in your next message")
             .accessibilityLabel(Text("Add to Chat"))
@@ -74,6 +87,8 @@
     private struct MessageTextView: NSViewRepresentable {
         let content: MessageTextContent
         let quote: ((String) -> Void)?
+        /// Where Add to Chat is drawn over the text.
+        let button: CGRect?
         let selected: (SelectedWords?) -> Void
 
         func makeNSView(context: Context) -> SelectableTextView {
@@ -83,6 +98,7 @@
         func updateNSView(_ view: SelectableTextView, context: Context) {
             view.quote = quote
             view.selected = selected
+            view.button = button
             view.show(content)
         }
 
@@ -97,6 +113,11 @@
     final class SelectableTextView: NSTextView {
         var quote: ((String) -> Void)?
         var selected: (SelectedWords?) -> Void = { _ in }
+        /// Where Add to Chat is drawn over this text, in its coordinates. The pointer there is the
+        /// button's.
+        var button: CGRect? {
+            didSet { if button != oldValue { window?.invalidateCursorRects(for: self) } }
+        }
         private var content: MessageTextContent?
         private let measuring = NSLayoutManager()
         private let measuringContainer = NSTextContainer()
@@ -283,6 +304,46 @@
             let written = super.writeSelection(to: pboard, types: types)
             if written, types.contains(.string) { pboard.setString(selectedWords, forType: .string) }
             return written
+        }
+
+        // MARK: Pointer
+
+        // A text view shows the I-beam all over itself, by a cursor rectangle and again each time
+        // the pointer moves. SwiftUI draws Add to Chat over it and sets the pointing hand only as
+        // the pointer arrives, so the I-beam came back while it moved across the button.
+
+        /// With Add to Chat over the text, the pointing hand there and the I-beam around it; `nil`
+        /// without, when the text view's own I-beam is right.
+        func pointerRects() -> [(rect: NSRect, cursor: NSCursor)]? {
+            let text = visibleRect
+            guard let button = button?.intersection(text), !button.isEmpty else { return nil }
+            let around = [
+                NSRect(x: text.minX, y: text.minY, width: text.width, height: button.minY - text.minY),
+                NSRect(x: text.minX, y: button.maxY, width: text.width, height: text.maxY - button.maxY),
+                NSRect(x: text.minX, y: button.minY, width: button.minX - text.minX, height: button.height),
+                NSRect(x: button.maxX, y: button.minY, width: text.maxX - button.maxX, height: button.height),
+            ]
+            return [(button, .pointingHand)] + around.filter { !$0.isEmpty }.map { ($0, .iBeam) }
+        }
+
+        override func resetCursorRects() {
+            guard let rects = pointerRects() else { return super.resetCursorRects() }
+            for (rect, cursor) in rects { addCursorRect(rect, cursor: cursor) }
+        }
+
+        override func mouseMoved(with event: NSEvent) {
+            if isOverAddToChat(event) { NSCursor.pointingHand.set() } else { super.mouseMoved(with: event) }
+        }
+
+        override func cursorUpdate(with event: NSEvent) {
+            if isOverAddToChat(event) { NSCursor.pointingHand.set() } else { super.cursorUpdate(with: event) }
+        }
+
+        /// The button belongs to the text with the selection, and can reach over the text above it.
+        private func isOverAddToChat(_ event: NSEvent) -> Bool {
+            let owner = button == nil ? window?.firstResponder as? SelectableTextView : self
+            guard let owner, let button = owner.button else { return false }
+            return button.contains(owner.convert(event.locationInWindow, from: nil))
         }
 
         // MARK: Drawing

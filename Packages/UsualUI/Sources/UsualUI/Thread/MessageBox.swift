@@ -13,8 +13,8 @@ struct MessageBox: View {
     var mentions: [Mention] = []
     /// Chats only: files waiting to go with the message.
     var attaching: AttachmentSending?
-    /// The message you're replying to, quoted in front of yours.
-    var replyTo: Binding<QuotedMessage?>?
+    /// Messages you're replying to and words you added from them, quoted in front of yours.
+    var quotes: Binding<[QuotedMessage]>?
     /// Chats only: you're editing your last message; Send replaces it.
     var editing: Binding<Bool>?
     /// Chats only: starts a voice call with the agent.
@@ -167,8 +167,8 @@ struct MessageBox: View {
                 focused = true
             }
             // Replying, or adding words you selected, is for typing on.
-            .onChange(of: replyTo?.wrappedValue) { _, quote in
-                if quote != nil { focused = true }
+            .onChange(of: quotes?.wrappedValue.count ?? 0) { old, new in
+                if new > old { focused = true }
             }
             // Initial too: the Plugins sheet fills a chat's box before the chat opens.
             .onChange(of: commands?.prefill, initial: true) { _, prefill in
@@ -196,9 +196,7 @@ struct MessageBox: View {
                 }
             #endif
             VStack(alignment: .leading, spacing: 4) {
-                if let quote = replyTo?.wrappedValue {
-                    ReplyChip(quote: quote) { replyTo?.wrappedValue = nil }
-                }
+                if let quotes, !quotes.wrappedValue.isEmpty { QuoteChips(quotes: quotes) }
                 if editing?.wrappedValue == true {
                     ReplyChip(
                         text: String(localized: "Editing your last message"),
@@ -330,7 +328,7 @@ struct MessageBox: View {
 
     private var field: some View {
         TextField(
-            replyTo?.wrappedValue == nil ? placeholder : String(localized: "Reply…"), text: $text,
+            quotes?.wrappedValue.isEmpty == false ? String(localized: "Reply…") : placeholder, text: $text,
             selection: $selection, axis: .vertical
         )
         .textFieldStyle(.plain)
@@ -443,23 +441,24 @@ struct MessageBox: View {
         guard canSubmit else { return }
         // Sending ends dictation; words still arriving would land in the next message.
         dictation.stop()
-        let quote = replyTo?.wrappedValue
+        let quoted = quotes?.wrappedValue ?? []
         if let attaching, !attaching.attachments.isEmpty, editing?.wrappedValue != true {
             // Text and files leave together once every file is up; a failure keeps both here.
             let draft = text
             let files = attaching.attachments
             putKeyboardAway()
             Task {
-                guard await attaching.send(quote?.message(draft) ?? draft, files) else { return }
+                guard await attaching.send(quoted.message(draft), files) else { return }
                 if text == draft { text = "" }
-                if replyTo?.wrappedValue == quote { replyTo?.wrappedValue = nil }
+                // Quotes added while the files went up wait for the next message.
+                quotes?.wrappedValue.removeAll(where: quoted.contains)
                 attaching.attachments.removeAll { sent in files.contains { $0.id == sent.id } }
             }
             return
         }
-        send(quote?.message(text) ?? text)
+        send(quoted.message(text))
         text = ""
-        replyTo?.wrappedValue = nil
+        quotes?.wrappedValue = []
         putKeyboardAway()
     }
 

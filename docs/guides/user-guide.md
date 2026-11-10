@@ -159,8 +159,10 @@ sending also puts the keyboard away; tap the message box to write again.
   With VoiceOver, each message starts with who wrote it, and these are in its actions.
 - **Quote part of a message.** Select some words and choose **Add to Chat**: on the Mac from the
   button over the selection, by right-clicking it, or with ⌘L; on iPhone from the selection's menu
-  in **Select Text**. The words wait above the message box and go in front of what you write. In a
-  room, quoting a Bot's words addresses that Bot.
+  in **Select Text**. The words wait above the message box and go in front of what you write. Add
+  as many as you like, from any messages, and Reply adds to them too; the ✕ beside each drops it,
+  and on the Mac Escape drops the newest. In a room, quoting a Bot's words addresses that Bot, and
+  quoting several Bots addresses each of them.
 - **Links.** Web and email addresses in messages, yours included, are links: underlined, and blue in
   the Bot's replies.
 - **Edit and undo.** On your last message, **Edit** puts it back in the box; send it to replace the

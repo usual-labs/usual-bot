@@ -64,6 +64,13 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   selection when it gives up first responder, so clicking another message or the box lets go of it
   as a web page would, and a right-click outside the selection returns no menu so the message's own
   React/Reply/Copy menu shows.
+- **A text view owns the pointer over all of itself,** whatever SwiftUI draws on top: it lays an
+  I-beam cursor rectangle over its visible part and sets the I-beam again on each move, so a
+  `pointerStyle` on an overlay shows only until the pointer moves. `SelectableTextView` is told
+  where Add to Chat sits (`button`) and gives that area the pointing hand in both places; the
+  text view with the selection is first responder, which is how the text view above it, which the
+  button can reach over, finds it. The cursor rectangles have a test; the pointer itself wasn't
+  watched in the running app.
 - **Anything that asks a scroll view its size measures every message in it.** `safeAreaBar`
   asks for the conversation's minimum on each update, and so does the window for its minimum size:
   about a fifth of switching chats. `ConversationScroll` sits in `TakesOfferedSize`, which answers
