@@ -13,7 +13,8 @@ yourself as below. Once it's out:
 1. Install Apple's [TestFlight](https://apps.apple.com/app/testflight/id899247664) app on your Mac
    or iPhone.
 2. Open the Usual Bot beta link on that device and choose **Accept**, then **Install**.
-3. Open Usual Bot. TestFlight updates it when a new build is out; your sign-in and settings stay.
+3. Open Usual Bot. TestFlight updates it when a new build is out, and the app says so too; your
+   sign-in and settings stay.
 
 Each build lasts 90 days, and a newer one arrives before then. If you installed Usual Bot with
 Homebrew or from a GitHub download, those stopped at 0.3.0. Install the beta over it; you may have

@@ -106,6 +106,8 @@ public final class AppModel {
         auth: { [weak self] in self?.auth }, relay: { [weak self] in self?.relay })
     /// This device's entry in Usual's push relay.
     @ObservationIgnored public internal(set) lazy var relay = PushRelay.fromMainBundle()
+    /// A newer TestFlight build, in TestFlight builds; other builds never ask.
+    @ObservationIgnored public private(set) lazy var update = AppUpdate.fromMainBundle()
     /// Token use across Bots, for Settings › Usage.
     @ObservationIgnored public internal(set) lazy var usage = UsageOverview(
         auth: { [weak self] in self?.auth },
@@ -155,6 +157,10 @@ public final class AppModel {
         sections.save = { [weak self] profile, placement in
             guard let channel = self?.channel else { throw GatewayError.disconnected }
             try await BotMetaWrite.setSection(placement, profile: profile, on: channel)
+        }
+        sections.savePin = { [weak self] profile, isPinned in
+            guard let channel = self?.channel else { throw GatewayError.disconnected }
+            try await BotMetaWrite.setPinned(isPinned, profile: profile, on: channel)
         }
     }
 
@@ -280,6 +286,7 @@ public final class AppModel {
             vaultLists = vaults
             appLists = apps
             sections.save = { _, _ in }
+            sections.savePin = { _, _ in }
             sections.reconcile(contacts)
             push.showDemo()
         }

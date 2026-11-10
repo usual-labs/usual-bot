@@ -4,7 +4,8 @@ import SwiftUI
 /// One sidebar row: avatar, name, preview and an unread count, with a dot on the avatar when the
 /// agent needs you. As in Grok, the phone's list says when each chat was last active and the Mac's
 /// sidebar doesn't. Compact, in the narrow window's rail, it's the avatar alone with the count as a
-/// badge too.
+/// badge too. A pinned chat is a row only in a search and the rail (`PinnedTiles` otherwise), and
+/// a search marks it with a pin.
 struct ContactRow: View {
     let contact: Contact
     /// Resolved members when `contact` is a room; empty for agents.
@@ -17,7 +18,7 @@ struct ContactRow: View {
     var body: some View {
         if compact {
             avatar
-                .overlay(alignment: .topTrailing) { badge.offset(x: 6, y: -4) }
+                .overlay(alignment: .topTrailing) { AvatarBadge(contact: contact).offset(x: 6, y: -4) }
                 .padding(.vertical, 4)
                 .help(contact.name)
                 .accessibilityElement(children: .ignore)
@@ -40,10 +41,17 @@ struct ContactRow: View {
                     ? AnyLayout(VStackLayout(alignment: .leading, spacing: Self.lineGap))
                     : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 8))
                 nameLine {
-                    Text(contact.name)
-                        .scaledFont(size: Self.nameSize, weight: Self.nameWeight)
-                        .foregroundStyle(Theme.ink)
-                        .lineLimit(1, accessibility: 2)
+                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                        Text(contact.name)
+                            .scaledFont(size: Self.nameSize, weight: Self.nameWeight)
+                            .foregroundStyle(Theme.ink)
+                            .lineLimit(1, accessibility: 2)
+                        if contact.isPinned {
+                            Image(systemName: "pin.fill")
+                                .scaledFont(size: Self.previewSize - 3)
+                                .foregroundStyle(Theme.secondaryInk.opacity(0.75))
+                        }
+                    }
                     #if os(iOS)
                         if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
                         if let lastActive = contact.lastActive {
@@ -119,8 +127,18 @@ struct ContactRow: View {
         #endif
     }
 
-    /// The rail's corner badge: the unread count, or a dot when the agent needs you.
-    @ViewBuilder private var badge: some View {
+    private var previewText: String {
+        if contact.activity == .working, contact.preview == nil { return String(localized: "Working…") }
+        return contact.preview ?? ""
+    }
+}
+
+/// The badge on an avatar that stands alone, in the rail and on a pinned chat: the unread count, or
+/// a dot when the agent needs you.
+struct AvatarBadge: View {
+    let contact: Contact
+
+    var body: some View {
         if contact.activity == .needsYou {
             NeedsYouDot()
         } else if contact.unreadCount > 0 {
@@ -132,11 +150,6 @@ struct ContactRow: View {
                 .background(Capsule().fill(Theme.primary))
                 .overlay(Capsule().strokeBorder(Theme.window, lineWidth: 2))
         }
-    }
-
-    private var previewText: String {
-        if contact.activity == .working, contact.preview == nil { return String(localized: "Working…") }
-        return contact.preview ?? ""
     }
 }
 

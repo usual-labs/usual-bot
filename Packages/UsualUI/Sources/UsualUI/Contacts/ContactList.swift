@@ -1,9 +1,9 @@
 import HermesKit
 import SwiftUI
 
-/// The sidebar: every agent and room in roster order, grouped into sections once there are any.
-/// A search lists its matches together, then on iPhone the messages that match, and the rail
-/// groups without headings.
+/// The sidebar: the pinned chats as tiles, then every other agent and room in roster order, grouped
+/// into sections once there are any. A search lists its matches together, then on iPhone the
+/// messages that match, and the rail groups without tiles or headings.
 struct ContactList: View {
     let contacts: [Contact]
     /// How the list is grouped; `nil` lists everything together.
@@ -104,8 +104,17 @@ struct ContactList: View {
     }
 
     private func blocks(of matching: [Contact]) -> [SidebarBlock] {
-        if isGrouped, let sections { return sections.blocks(for: matching) }
-        return [SidebarBlock(section: nil, contacts: matching.sorted(by: Contact.rosterOrder))]
+        if isSearching { return [SidebarBlock(section: nil, contacts: matching.sorted(by: Contact.rosterOrder))] }
+        return SidebarBlock.blocks(for: matching, in: sections?.sections ?? [])
+    }
+
+    /// Animated, so the chat is seen going to the top or back to its place.
+    private func setPinned(_ isPinned: Bool, _ contact: Contact) {
+        withAnimation(.smooth(duration: 0.25)) { sections?.setPinned(isPinned, contact) }
+    }
+
+    private func pinnedTiles(_ block: SidebarBlock, byID: [Contact.ID: Contact]) -> some View {
+        PinnedTiles(contacts: block.contacts, byID: byID, selection: $selection) { rowMenu($0) }
     }
 
     /// The rail has no heading to open a folded section with, so it folds nothing.
@@ -139,12 +148,12 @@ struct ContactList: View {
             // A plain stack instead of `List`, so the selected row gets the light grey pill from the
             // mockups rather than the system accent highlight. Arrow keys move the selection.
             let shown = blocks.flatMap { isFolded($0) ? [] : $0.contacts }
+            // Without headings an empty block shows nothing.
+            let visible = blocks.filter { showsHeadings || !$0.contacts.isEmpty }
             ScrollView {
                 LazyVStack(spacing: 4) {
-                    ForEach(blocks) { block in
-                        if showsHeadings || !block.contacts.isEmpty {
-                            blockView(block, byID: byID, isFirst: block.id == blocks.first?.id)
-                        }
+                    ForEach(visible) { block in
+                        blockView(block, byID: byID, isFirst: block.id == visible.first?.id)
                     }
                 }
                 .padding(.horizontal, compact ? 6 : 10)
@@ -161,17 +170,26 @@ struct ContactList: View {
         #else
             List(selection: $selection) {
                 ForEach(blocks) { block in
-                    Section {
-                        if !isFolded(block) {
-                            if showsHeadings, block.contacts.isEmpty { emptyHint(.phone) }
-                            ForEach(block.contacts) { contact in
-                                ContactRow(contact: contact, members: Self.members(of: contact, in: byID))
-                                    .tag(contact.id)
-                                    .contextMenu { rowMenu(contact) }
-                            }
+                    if block.isPinned {
+                        Section {
+                            pinnedTiles(block, byID: byID)
+                                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                                .listRowSeparator(.hidden)
+                                .selectionDisabled()
                         }
-                    } header: {
-                        if showsHeadings { heading(block) }
+                    } else {
+                        Section {
+                            if !isFolded(block) {
+                                if showsHeadings, block.contacts.isEmpty { emptyHint(.phone) }
+                                ForEach(block.contacts) { contact in
+                                    ContactRow(contact: contact, members: Self.members(of: contact, in: byID))
+                                        .tag(contact.id)
+                                        .contextMenu { rowMenu(contact) }
+                                }
+                            }
+                        } header: {
+                            if showsHeadings { heading(block) }
+                        }
                     }
                 }
                 if searchesMessages { messageSection(byID: byID) }
@@ -256,7 +274,8 @@ struct ContactList: View {
             .disabled(list.last?.id == section.id)
         Divider()
         Button("Delete", role: .destructive) {
-            if block.contacts.isEmpty {
+            // A pinned chat is filed under it too, though it isn't listed there.
+            if !contacts.contains(where: { $0.sectionID == section.id }) {
                 sections?.delete(section, contacts: contacts)
             } else {
                 deleting = section
@@ -264,21 +283,31 @@ struct ContactList: View {
         }
     }
 
-    /// Where to file a chat.
+    /// Pin a chat, and where to file it. A pinned chat shows in no section, so it's filed again
+    /// once it's unpinned.
     @ViewBuilder private func rowMenu(_ contact: Contact) -> some View {
         if let sections {
-            if sections.sections.isEmpty {
-                Button("Move to New Section") { createSection(moving: contact) }
+            if contact.isPinned {
+                Button("Unpin", systemImage: "pin.slash") { setPinned(false, contact) }
             } else {
-                Menu("Move to Section") {
-                    ForEach(sections.sections.filter { $0.id != contact.sectionID }) { section in
-                        Button(section.name) { sections.move(contact, to: section) }
+                Button("Pin", systemImage: "pin") { setPinned(true, contact) }
+                if sections.sections.isEmpty {
+                    Button("Move to New Section", systemImage: "folder.badge.plus") {
+                        createSection(moving: contact)
                     }
-                    Divider()
-                    Button("New Section") { createSection(moving: contact) }
-                }
-                if sections.sections.contains(where: { $0.id == contact.sectionID }) {
-                    Button("Remove from Section") { sections.move(contact, to: nil) }
+                } else {
+                    Menu("Move to Section", systemImage: "folder") {
+                        ForEach(sections.sections.filter { $0.id != contact.sectionID }) { section in
+                            Button(section.name) { sections.move(contact, to: section) }
+                        }
+                        Divider()
+                        Button("New Section", systemImage: "folder.badge.plus") { createSection(moving: contact) }
+                    }
+                    if sections.sections.contains(where: { $0.id == contact.sectionID }) {
+                        Button("Remove from Section", systemImage: "folder.badge.minus") {
+                            sections.move(contact, to: nil)
+                        }
+                    }
                 }
             }
         }
@@ -296,15 +325,21 @@ struct ContactList: View {
     #if os(macOS)
         /// A heading and its rows, which together are where a dragged chat lands.
         private func blockView(_ block: SidebarBlock, byID: [Contact.ID: Contact], isFirst: Bool) -> some View {
-            VStack(spacing: 4) {
-                if showsHeadings {
-                    heading(block)
-                } else if isGrouped, !isFirst {
-                    Divider().overlay(Theme.border).padding(.vertical, 4)
-                }
-                if !isFolded(block) {
-                    if showsHeadings, block.contacts.isEmpty { emptyHint(.mac) }
-                    ForEach(block.contacts) { row($0, byID: byID) }
+            // A section takes a chat dragged to it; the pinned chats aren't one.
+            let takesDrops = isGrouped && !block.isPinned
+            return VStack(spacing: 4) {
+                if block.isPinned, !compact {
+                    pinnedTiles(block, byID: byID).padding(.bottom, 6)
+                } else {
+                    if showsHeadings, !block.isPinned {
+                        heading(block)
+                    } else if compact, !isFirst {
+                        Divider().overlay(Theme.border).padding(.vertical, 4)
+                    }
+                    if !isFolded(block) {
+                        if showsHeadings, block.contacts.isEmpty { emptyHint(.mac) }
+                        ForEach(block.contacts) { row($0, byID: byID) }
+                    }
                 }
             }
             .padding(.top, showsHeadings && !isFirst ? 8 : 0)
@@ -312,12 +347,12 @@ struct ContactList: View {
                 dropTarget == block.id ? Theme.selection : .clear, in: RoundedRectangle(cornerRadius: 12)
             )
             .dropDestination(for: SidebarDrag.self) { drags, _ in
-                guard isGrouped, let drag = drags.first, let contact = contacts.first(where: { $0.id == drag.id })
+                guard takesDrops, let drag = drags.first, let contact = contacts.first(where: { $0.id == drag.id })
                 else { return false }
                 sections?.move(contact, to: block.section)
                 return true
             } isTargeted: { targeted in
-                if targeted, isGrouped {
+                if targeted, takesDrops {
                     dropTarget = block.id
                 } else if dropTarget == block.id {
                     dropTarget = nil
@@ -325,10 +360,10 @@ struct ContactList: View {
             }
         }
 
-        private func row(_ contact: Contact, byID: [Contact.ID: Contact]) -> some View {
+        @ViewBuilder private func row(_ contact: Contact, byID: [Contact.ID: Contact]) -> some View {
             let isSelected = contact.id == selection
             let members = Self.members(of: contact, in: byID)
-            return Button {
+            let row = Button {
                 selection = contact.id
             } label: {
                 ContactRow(contact: contact, members: members, compact: compact)
@@ -343,8 +378,13 @@ struct ContactList: View {
             .buttonStyle(.clickable)
             .accessibilityAddTraits(isSelected ? .isSelected : [])
             .contextMenu { rowMenu(contact) }
-            .draggable(SidebarDrag(id: contact.id)) {
-                ContactRow(contact: contact, members: members, compact: true)
+            // A pinned chat shows in no section, so dragging it to one would show nothing.
+            if contact.isPinned {
+                row
+            } else {
+                row.draggable(SidebarDrag(id: contact.id)) {
+                    ContactRow(contact: contact, members: members, compact: true)
+                }
             }
         }
 

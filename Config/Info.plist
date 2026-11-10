@@ -41,6 +41,9 @@
 	<string>$(USUAL_PUSH_RELAY_URL)</string>
 	<key>UsualPushKeychainGroup</key>
 	<string>$(USUAL_PUSH_KEYCHAIN_GROUP)</string>
+	<!-- Usual's update check, set only in TestFlight builds (Shared.xcconfig). -->
+	<key>UsualUpdatesURL</key>
+	<string>$(USUAL_UPDATES_URL)</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Dictate messages to your Bots.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

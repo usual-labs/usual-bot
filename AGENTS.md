@@ -24,7 +24,8 @@ The likely defect is a change that works where you tested and is missing elsewhe
 - **States:** light and dark, VoiceOver, offline and reconnecting, a reply running.
 - **Demo:** new behaviour shows in `AppModel.demo()` where it makes sense.
 - **Reverse states:** a way in needs a way out and a way to see it.
-- **Docs:** the matching guide and the changelog's Unreleased section, when users would notice.
+- **Docs:** the matching guide and a changelog entry in the pull request's description, when users
+  would notice. Leave `CHANGELOG.md` alone: a release writes it.
 
 ## Verifying
 

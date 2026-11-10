@@ -26,6 +26,8 @@ Problems in this repository's code, for example:
 - the offline cache, notifications or logs exposing conversations;
 - the push relay (`Services/push-relay`) or the gateway plugin (`Integrations/hermes-push`)
   letting anyone read a notification, or push to a device that didn't give them its send key;
+- the update check (`Services/updates`) exposing its App Store Connect key, or making the app open
+  anything but TestFlight;
 - a secret or sudo password reaching anything but the gateway that asked for it;
 - an approval being granted without the person choosing it;
 - the GPT-Live web view reaching more than it should.
@@ -50,6 +52,8 @@ releases don't get separate patches.
 - Push notifications are sealed on your gateway with a key only that device and the gateway hold;
   Usual's relay and Apple carry them without being able to read them. The relay stores only each
   device's push token and hashes of its two secrets.
+- TestFlight builds ask Usual's update check at `bot.usual.dev` which build is the latest. The
+  request carries nothing about you, and the service stores nothing.
 - Debug-only switches (such as recording socket frames) are compiled out of Release builds.
 - Builds ship through Apple's TestFlight, signed by the team and checked by Apple. Each version is
   tagged in this repository. The older Homebrew and GitHub downloads (up to 0.3.0) were signed with

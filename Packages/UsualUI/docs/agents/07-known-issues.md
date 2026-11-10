@@ -24,6 +24,14 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   by frame: up only. A new row that comes and goes at the end needs the same care; `GrowsOnly` hides
   the bounce but leaves a gap. The demo can't answer a card, so that case is covered by
   `GrowsOnlyTests`, not seen.
+- **A scroll by hand can still be under way when you ask for the end.** While the scroll view
+  reports a hand phase the policy corrects nothing, and the phase's end decides anew whether the
+  chat follows. So a message sent mid-scroll stayed out of sight and its reply wasn't followed:
+  seen on the Mac by feeding the conversation's scroll view a trackpad scroll with no end phase
+  (fingers still resting, or the last phase lost), then sending. Sending and Jump to latest now end
+  the hand scroll in `ConversationScrollState` (`showEnd`); any new way to ask for the end must go
+  through it. If the same gesture then moves on without a phase change, the policy pulls it back
+  to the end until it ends. Not tried with a real trackpad, a Magic Mouse or a flick on a phone.
 - **The non-lazy transcript costs every built message on every layout.** A 165-message demo chat
   took about 800 ms to open and 37 ms per resize step even in Release. `TranscriptWindow` builds the
   newest page and adds a page when the reader nears the top; `ConversationScrollState` then moves

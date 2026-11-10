@@ -83,6 +83,7 @@ extension AppModel {
         rooms[contact.id] = nil
         contacts.removeAll { $0.id == contact.id }
         sections.move(contact, to: nil)
+        sections.setPinned(false, contact)
     }
 
     #if DEBUG

@@ -61,6 +61,13 @@ USUAL_PUSH = NO
 USUAL_PUSH_RELAY_URL = $(USUAL_PUSH_RELAY_URL_$(USUAL_PUSH))
 USUAL_PUSH_RELAY_URL_NO =
 USUAL_PUSH_RELAY_URL_YES = https:/$()/push.usual.dev
+// Usual's update check (Services/updates), which tells TestFlight builds a newer one is out.
+// scripts/testflight.sh sets USUAL_UPDATES = YES; other builds don't install from TestFlight, so
+// they never ask.
+USUAL_UPDATES = NO
+USUAL_UPDATES_URL = $(USUAL_UPDATES_URL_$(USUAL_UPDATES))
+USUAL_UPDATES_URL_NO =
+USUAL_UPDATES_URL_YES = https:/$()/bot.usual.dev/v1/latest
 // Shared with the notification extension, which opens what the gateway sealed.
 USUAL_PUSH_KEYCHAIN_GROUP = $(DEVELOPMENT_TEAM).$(BUNDLE_ID_PREFIX).UsualBot.push
 
