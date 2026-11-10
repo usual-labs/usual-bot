@@ -300,14 +300,19 @@ struct ItemView: View {
                 UserBubbleContent(text: text)
             }
         case .assistant(let text):
-            MessageRow(item: item, text: text, author: agentName, agentName: agentName, isMine: false) {
+            MessageRow(
+                item: item, text: text, author: agentName, agentName: agentName, isMine: false, readsAloud: true
+            ) {
                 AgentBubble(joinsAbove: joinsAbove, joinsBelow: joinsBelow) { MarkdownView(text) }
                     .environment(\.spokenTexts, spokenTexts)
             }
             .joined(joinsAbove)
         case .member(let id, let text):
             let author = author(id)
-            MessageRow(item: item, text: text, author: author?.name ?? id, agentName: agentName, isMine: false) {
+            MessageRow(
+                item: item, text: text, author: author?.name ?? id, agentName: agentName, isMine: false,
+                readsAloud: true, bubbleInset: author == nil ? 0 : 38
+            ) {
                 HStack(alignment: .top, spacing: 10) {
                     if let author {
                         AgentAvatar(contact: author.contact, size: 28)
@@ -338,7 +343,9 @@ struct ItemView: View {
                 CommandOutput(text: text)
             }
         case .background(let task, let result):
-            MessageRow(item: item, text: result, author: agentName, agentName: agentName, isMine: false) {
+            MessageRow(
+                item: item, text: result, author: agentName, agentName: agentName, isMine: false, readsAloud: true
+            ) {
                 VStack(alignment: .leading, spacing: 6) {
                     Label {
                         Text("Background task: \(task)").lineLimit(2)

@@ -17,6 +17,10 @@ final class MediaPlayback {
     /// The last file that turned out not to play.
     private(set) var failedKey: String?
 
+    /// Called before a file plays and when a scope is left: `ReadAloud` stops its reading there.
+    @ObservationIgnored var willPlay: () -> Void = {}
+    @ObservationIgnored var left: (String) -> Void = { _ in }
+
     @ObservationIgnored let player = AVPlayer()
     @ObservationIgnored private var timeObserver: Any?
     @ObservationIgnored private var statusObservation: NSKeyValueObservation?
@@ -39,6 +43,7 @@ final class MediaPlayback {
 
     /// Plays `url` from where it was, or from the start if another file was loaded.
     func play(_ url: URL, key: String, at speed: Float = 1) {
+        willPlay()
         if failedKey == key { failedKey = nil }
         if self.key != key {
             player.replaceCurrentItem(with: AVPlayerItem(url: url))
@@ -71,16 +76,12 @@ final class MediaPlayback {
         key = nil
         elapsed = 0
         isPlaying = false
-        #if os(iOS)
-            // Lets music another app was playing carry on.
-            if AVAudioSession.sharedInstance().category == .playback {
-                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-            }
-        #endif
+        Self.releaseAudioSession()
     }
 
     /// Stops what plays in `scope` (see `playbackScope`), and leaves the rest playing.
     func stop(in scope: String) {
+        left(scope)
         if key?.hasPrefix(scope + "\u{0}") == true { stop() }
     }
 
@@ -135,12 +136,21 @@ final class MediaPlayback {
 
     /// On iPhone, plays through the speaker even with the ring switch on silent, as a voice
     /// message would. A call or dictation that has the microphone keeps its own setup.
-    private static func activateAudioSession() {
+    static func activateAudioSession() {
         #if os(iOS)
             let session = AVAudioSession.sharedInstance()
             guard session.category != .playAndRecord, session.category != .record else { return }
             try? session.setCategory(.playback, mode: .default)
             try? session.setActive(true)
+        #endif
+    }
+
+    /// Lets music another app was playing carry on.
+    static func releaseAudioSession() {
+        #if os(iOS)
+            if AVAudioSession.sharedInstance().category == .playback {
+                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            }
         #endif
     }
 }
