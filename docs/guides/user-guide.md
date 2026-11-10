@@ -353,6 +353,20 @@ Rooms are group chats with several Bots. Create one with **+** › **New Room…
 like "Forge, Atlas & Scribe".
 
 - A message goes to every Bot in the room; `@name` talks to just one.
+- **Who answers** a message without an `@name` is the room's choice, made in New Room and changed
+  later under **Room Settings…** in the room's panel:
+  - **Everyone answers**, the default.
+  - **A lead picks.** You choose one Bot as the lead. It reads the message first and picks who
+    answers, itself included. A small line says what it chose, like "Forge, the lead, gave this to
+    Scribe", and the panel marks it **Lead**.
+  - **The room picks.** Hermes chooses with one short model call on the gateway, and a line says
+    who. If it can't choose, everyone answers.
+
+  An `@name` always goes straight to that Bot. This needs Hermes 0.23 or later on the gateway; on
+  an older one every Bot answers and the choice isn't shown.
+- Room Settings also holds the room's **purpose**, one line on what it's for, and its **notes**,
+  facts every Bot should keep in mind. Each Bot gets both with every message, starting with the
+  next one. The panel shows them.
 - Each reply shows who wrote it. Bots can hand work to each other, shown as small lines in the
   conversation.
 - Type `/` for the members' skills. ⌘I (or the room's name) shows its members.
@@ -365,6 +379,10 @@ like "Forge, Atlas & Scribe".
   card naming the Bot, when it can tell, with **Try Again** and **Dismiss**. The room waits until
   you choose. The Bot may have done part of the work already, so trying again can repeat it.
   Dismiss gives up on that reply, and also stops any other reply still running in the room.
+- Hermes stops Bots that keep replying to each other after a few rounds, so they don't go round in
+  circles. The room then shows **The Bots paused** with **Continue**, which gives them as many
+  rounds again (up to five times for one message), and **Leave It**, which hides the card. Nothing
+  went wrong and nothing waits on you; sending a new message moves on as well.
 
 Rooms are text only on the dashboard: attachments in rooms need the gateway's Webapp.
 

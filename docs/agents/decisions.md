@@ -126,6 +126,30 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
 - **Whose retry it is is a guess.** A `retry` action carries only `task_id`. The card names the member
   who left `member_activity` as the retry appeared, and only when exactly one did; otherwise it says
   "A reply". The guess isn't cached, so after a relaunch the card is unnamed.
+- **A room's lead, routing, purpose and notes are one record,** Hermes's room "context", read from
+  `groups.state` and saved whole by `groups.context` (`gateway/hosted_room_context.py`, v0.23.1).
+  So Room Settings is one sheet, and a change of lead sends the purpose and notes as they are.
+  `groups.create` takes none of it: New Room creates, then sets the routing, and a refusal there is
+  said in the room, which exists by then. A lead exists only while routing is `lead`.
+- **What the gateway takes is read, not assumed.** No `context` in `groups.state` means no room
+  settings (the panel says they need Hermes 0.23); a context without `routing` means purpose and
+  notes only, and routing keys aren't sent, as the canonical listener refuses keys it doesn't know;
+  `driver_status.routing_modes` lists the choices, and without it they're everyone and a lead.
+  New Room has no room to read, so it takes the modes from a room already read, else from
+  `groups.capabilities.methods`: `groups.context` for a lead, and `groups.continue` for `auto`,
+  which came in the same Hermes change. That last step is an inference.
+- **Routing applies to every message the app sends,** because each goes out as a new thread:
+  Hermes skips the lead and the router for an `@name`, `@all`, a routine's post and a message in a
+  thread already going (`routes_through_lead`).
+- **"X is picking who answers…" is worked out from the log.** The lead's routing turn shows in
+  `member_activity` as an ordinary running turn, so `RoomState.choosingLead` applies Hermes's rule
+  to the newest message until its `room.assignment` lands. `auto` shows nothing while it picks:
+  the room isn't `working` during the router's call.
+- **Continue is for the newest message only.** `groups.continue` reopens a discussion paused at
+  its cap (`room.activity` `bounded`), up to `max_continues` times. Hermes would take one past a
+  later message in another thread; the app shows one conversation, so a later message or a stop
+  ends the offer. The card isn't shown beside a retry or an approval, and isn't a needs-you state.
+  **Leave It** hides it on this device until the app restarts: Hermes has no call to decline one.
 - **"Delete" is `groups.disband`,** which stops the room and then tombstones it. A room list read
   before an edit landed is thrown away (`roomEdits`), or it would bring the room or its old name back.
 

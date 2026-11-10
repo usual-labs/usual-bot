@@ -3,8 +3,12 @@ import SwiftUI
 
 /// What can be done to a room as a whole, for the menus and panels that offer it.
 struct RoomEditing {
+    /// Why nothing can be changed right now, such as being offline; `nil` when it can.
+    var unavailable: String? = nil
     let rename: (Contact, String) async throws -> Void
     let delete: (Contact) async throws -> Void
+    /// Saves who answers in a room, its purpose and its notes.
+    var saveSettings: (Contact, RoomSettings) async throws -> Void = { _, _ in }
 }
 
 extension EnvironmentValues {
@@ -166,5 +170,74 @@ struct RetryCard: View {
             } ?? String(localized: "The Bot may have done part of the work, so trying again can repeat it.")
         guard othersBusy else { return work }
         return work + " " + String(localized: "Dismiss also stops the replies still running or waiting in this room.")
+    }
+}
+
+/// A discussion the gateway paused at its cap, which can carry on. Unlike a reply that didn't
+/// finish, nothing went wrong and nothing waits on you: the Bots were stopped from going round in
+/// circles. It isn't shown beside a retry, which holds the room until it's answered.
+struct PauseCard: View {
+    let limit: PausedDiscussion.Limit
+    /// How many more times this discussion can carry on, this one included.
+    let left: Int
+    /// Why it can't carry on right now, such as being offline.
+    var unavailable: String? = nil
+    /// Off while the room can't be reached. Leave It needs no gateway.
+    var canContinue = true
+    let carryOn: () -> Void
+    let leave: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label {
+                Text("The Bots paused")
+                    .scaledFont(size: 13.5, weight: .semibold)
+                    .foregroundStyle(Theme.ink)
+            } icon: {
+                Image(systemName: "pause.circle")
+                    .foregroundStyle(Theme.secondaryInk)
+            }
+            Text(detail)
+                .scaledFont(size: 13)
+                .foregroundStyle(Theme.secondaryInk)
+                .fixedSize(horizontal: false, vertical: true)
+            if let unavailable {
+                Text(unavailable)
+                    .scaledFont(size: 13)
+                    .foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(spacing: 8) {
+                Button("Continue", action: carryOn)
+                    .cardButton(prominent: true)
+                    .disabled(!canContinue || unavailable != nil)
+                    .accessibilityHint(Text("Lets the Bots keep discussing your last message"))
+                Button("Leave It", action: leave)
+                    .cardButton()
+                    .accessibilityHint(Text("Hides this. The Bots stay stopped."))
+            }
+        }
+        .cardSurface()
+    }
+
+    private var detail: String {
+        let why =
+            switch limit {
+            case .rounds:
+                String(
+                    localized:
+                        "Hermes stops a discussion after a few rounds of Bots replying to each other, so they don't go round in circles."
+                )
+            case .messages:
+                String(
+                    localized:
+                        "Hermes stops a discussion after a number of replies to one message, so the Bots don't go round in circles."
+                )
+            }
+        let more =
+            left == 1
+            ? String(localized: "Continue gives them as many again, for the last time.")
+            : String(localized: "Continue gives them as many again.")
+        return why + " " + more
     }
 }

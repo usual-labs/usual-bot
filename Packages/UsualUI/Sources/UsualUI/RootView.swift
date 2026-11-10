@@ -79,7 +79,10 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                 settings: showSettings,
                 requested: model.requestedContactID,
                 openedRequested: { model.requestedContactID = nil },
-                createRoom: { try await model.createRoom(named: $0, agents: $1) },
+                createRoom: { try await model.createRoom(named: $0, agents: $1, routing: $2, lead: $3) },
+                newRoomRouting: { await model.newRoomRouting() },
+                roomsUnavailable: model.roomEditingUnavailable,
+                saveRoomSettings: { try await model.saveRoomSettings($0, $1) },
                 renameRoom: { try await model.renameRoom($0, to: $1) },
                 deleteRoom: { try await model.deleteRoom($0) },
                 botEditing: BotEditing(model),
@@ -217,7 +220,12 @@ struct ContactsSplitView<Footer: View>: View {
     var requested: Contact.ID?
     var openedRequested: () -> Void = {}
     /// Creates a room from a name and its agents and returns the room's ID; `nil` hides New Room.
-    var createRoom: ((String, [Contact]) async throws -> Contact.ID)?
+    var createRoom: ((String, [Contact], RoomRouting, Contact?) async throws -> Contact.ID)?
+    /// The ways of choosing who answers that a new room can start with.
+    var newRoomRouting: () async -> [RoomRouting] = { [] }
+    /// Why rooms can't be changed right now, such as being offline.
+    var roomsUnavailable: String?
+    var saveRoomSettings: (Contact, RoomSettings) async throws -> Void = { _, _ in }
     /// `nil` hides renaming and deleting rooms.
     var renameRoom: ((Contact, String) async throws -> Void)?
     var deleteRoom: ((Contact) async throws -> Void)?
@@ -276,7 +284,7 @@ struct ContactsSplitView<Footer: View>: View {
             )
             .sheet(isPresented: $showsNewRoom) {
                 if let createRoom {
-                    NewRoomSheet(agents: agents, create: createRoom) { selection = $0 }
+                    NewRoomSheet(agents: agents, create: createRoom, routings: newRoomRouting) { selection = $0 }
                 }
             }
             .sheet(isPresented: $showsNewBot) {
@@ -320,10 +328,12 @@ struct ContactsSplitView<Footer: View>: View {
 
     private var roomEditing: RoomEditing? {
         guard let renameRoom, let deleteRoom else { return nil }
-        return RoomEditing(rename: renameRoom) { contact in
-            try await deleteRoom(contact)
-            if selection == contact.id { selection = nil }
-        }
+        return RoomEditing(
+            unavailable: roomsUnavailable, rename: renameRoom,
+            delete: { contact in
+                try await deleteRoom(contact)
+                if selection == contact.id { selection = nil }
+            }, saveSettings: saveRoomSettings)
     }
 
     @ViewBuilder private var content: some View {

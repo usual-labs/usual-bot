@@ -37,6 +37,14 @@ public final class RoomThread {
     private var retryTasks: [String: (member: String, generation: Int)] = [:]
     /// The gateway takes `groups.discard`, which drops one turn; the legacy one only stops them all.
     private var discards = false
+    /// The room's purpose, notes and who answers; `nil` where the gateway's Hermes has none (before 0.23).
+    public internal(set) var settings: RoomSettings?
+    /// The ways of choosing who answers that the gateway takes; empty where it has none.
+    public internal(set) var routingModes: [RoomRouting] = []
+    /// How many times one discussion can carry on past its cap; `nil` where the gateway can't.
+    var maxContinues: Int?
+    /// Pauses you answered here: carried on, or left alone until the app next starts.
+    var answeredPauses: Set<String> = []
     /// Members with a turn running or queued at the last read.
     private var lastLive: Set<String> = []
     /// Your messages sent but not yet back in the log.
@@ -59,7 +67,7 @@ public final class RoomThread {
     private var lastViewed: Date?
     private var syncing = false
     private var announcedRequests: Set<String> = []
-    private let channel: @MainActor () -> JSONRPCChannel?
+    let channel: @MainActor () -> JSONRPCChannel?
 
     private static let log = Logger(subsystem: "UsualBot", category: "rooms")
 
@@ -76,6 +84,8 @@ public final class RoomThread {
         /// The log event ID the gateway gives it: `user:` + SHA-256 of the client's event ID.
         let eventID: String
     }
+
+    func addNotice(_ text: String) { state.addNotice(text) }
 
     /// The last event applied; the roster compares it with the room's newest.
     var cursor: Int { state.cursor }
@@ -198,6 +208,7 @@ public final class RoomThread {
             let members = raw.compactMap(RoomMember.init)
             if !members.isEmpty, members != state.members { state.replaceMembers(members) }
         }
+        readSettings(result)
         // The gateway leaves the status out when its room service isn't running.
         guard let status = result["driver_status"] else {
             driverRunning = false
@@ -426,9 +437,13 @@ public final class RoomThread {
     #if DEBUG
         /// Tests and previews: a room already showing `events`.
         static func sample(
-            _ summary: RoomSummary, events: [JSONValue], retries: [String: String?] = [:]
+            _ summary: RoomSummary, events: [JSONValue], retries: [String: String?] = [:],
+            settings: RoomSettings? = nil, maxContinues: Int? = nil
         ) -> RoomThread {
             let room = RoomThread(summary: summary, channel: { nil })
+            room.settings = settings
+            room.routingModes = settings == nil ? [] : RoomRouting.allCases
+            room.maxContinues = maxContinues
             room.state.apply(events.compactMap(RoomEvent.init))
             room.retries = retries.keys.sorted()
             room.retryMembers = retries.compactMapValues { $0 }

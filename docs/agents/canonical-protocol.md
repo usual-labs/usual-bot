@@ -78,4 +78,12 @@ run from it with a stand-in model.
   a two-Bot room. Not against the developer's gateway.
 - iPhone, Tailscale Serve over `https`, and Built-in Tailscale with a `.ts.net` name.
 - Room retry and discard (they need a member's turn to fail), and room approvals.
+- Room settings and routing (Hermes v0.23.1). Run in-process against a copy of the source with its
+  own Hermes home and no model, on the dashboard's handlers (`tui_gateway/methods_groups.py`):
+  `groups.capabilities`, `groups.state`'s `context` with `routing_modes` and `max_continues`,
+  `groups.context` and its refusals, the `room.context_set` event, `groups.continue` refusing a
+  discussion that isn't paused, and a lead room running the lead's turn alone first. From source
+  only: the same calls on the canonical listener (`gateway/session_group_controls.py`), and the
+  `room.assignment`, `room.routed` and `room.continued` events and a real pause, which need a model.
+  None of it in the app against a gateway.
 - `clarify.settled` gives no reason, so a question that timed out shows no notice.
