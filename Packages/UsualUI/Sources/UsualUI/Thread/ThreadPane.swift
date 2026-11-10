@@ -467,7 +467,7 @@ private struct ChatBars<Top: View, Actions: View, Bottom: View>: ViewModifier {
                         // Centres the name on the line of the window buttons and the sidebar's.
                         .padding(.top, ThreadPane.barEdgeMargin)
                         .padding(.bottom, 8)
-                        .background { HeaderGlass().padding(.bottom, -HeaderGlass.fade) }
+                        .background { HeaderGlass(ground: Theme.pane).padding(.bottom, -HeaderGlass.fade) }
                 }
                 .safeAreaBar(edge: .bottom, spacing: 0, content: bottom)
                 .scrollEdgeEffectStyle(.soft, for: [.top, .bottom])

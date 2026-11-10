@@ -93,6 +93,11 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   API gives the iOS look, so the Mac header has a glass strip behind it; an unmasked strip ends in a
   visible rim and shadow, hence its gradient mask. Judge edges with the window in front (`tell application id … to activate`,
   then `screencapture -l`): an inactive window draws them more plainly still.
+- **Regular glass is a flat grey haze, with no blur, in a window you aren't at.** Tinted or not, in
+  light and dark, and setting `appearsActive` in the environment doesn't change it. A full-width
+  strip of it read as a grey band across the window's top, so `HeaderGlass` draws the colour under
+  it there instead, under the same mask: text fades into the pane without blur. `.clear` glass
+  stays clear in an inactive window, but its look in the window you're at wasn't compared.
 - **Hand-made blur behind the bars was tried and dropped (November 2026).** SwiftUI materials turn
   opaque grey in an inactive window; in `.withinWindow` mode `.contentBackground` and `.sheet` are a
   plain fill with no blur (read as a white shadow); Core Image `backgroundFilters` don't see SwiftUI

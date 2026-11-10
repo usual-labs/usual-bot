@@ -404,7 +404,7 @@ struct ContactsSplitView<Footer: View>: View {
         #if os(macOS)
             // The list scrolls under the window buttons and the toolbar, on the chat header's glass,
             // and under the footer, which floats in glass like the chat's message box.
-            .overlay(alignment: .top) { HeaderGlass().frame(height: 0) }
+            .overlay(alignment: .top) { HeaderGlass(ground: Theme.window).frame(height: 0) }
             .safeAreaBar(edge: .bottom, spacing: 0) { sidebarFooter(compact: compact) }
             .scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
             .background(Theme.window)
