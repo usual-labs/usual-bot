@@ -8,12 +8,6 @@ Changes that aren't in a release yet are in the
 [merged pull requests](https://github.com/usual-labs/usual-bot/pulls?q=is%3Apr+is%3Amerged+sort%3Aupdated-desc),
 each under its **Changelog** heading.
 
-### Fixed
-
-- **Pasting images and files.** On the Mac, ⌘V in a chat attaches a copied image (a screenshot,
-  Copy Image) or files copied in Finder; it used to do nothing. On iPhone with iOS 27, Paste
-  attaches a copied photo or file. Text pastes as before.
-
 ## 0.5.0 - 2026-11-09
 
 ### Added
