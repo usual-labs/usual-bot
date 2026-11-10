@@ -110,8 +110,17 @@ struct MessageBox: View {
                 .animation(.smooth(duration: 0.25), value: expanded)
                 .onAppear { focused = true }
                 .typingFocuses($focused, enabled: takesTyping)
+                .pastesAttachments(enabled: attaching != nil && takesTyping, focused: focused) {
+                    attaching?.attachments.append(contentsOf: $0)
+                }
                 .onChange(of: text) { if text.isEmpty { hasWrapped = false } }
             #else
+                // Around the field, not on it: the field pastes text first and passes on what it can't.
+                .modifier(
+                    PastesAttachmentsOnPhone(enabled: attaching != nil) {
+                        attaching?.attachments.append(contentsOf: $0)
+                    }
+                )
                 // In the keyboard's own animation, which this change arrives in.
                 .onChange(of: keyboardUp) { _, up in open = up && focused }
                 // The level picker closes as you type on, put the keyboard away, or tap the chat.
@@ -353,12 +362,6 @@ struct MessageBox: View {
             return .handled
         }
         .onSubmit(submit)
-        #if os(macOS)
-            // Pasted files and images become attachments; text pastes as usual.
-            .onPasteCommand(of: attaching == nil ? [] : [.fileURL, .image]) { providers in
-                Task { attaching?.attachments.append(contentsOf: await AttachmentLoader.load(providers)) }
-            }
-        #endif
         .padding(.leading, expanded ? 8 : (attaching == nil ? 12 : 0))
         .padding(.vertical, Self.fieldPadding)
         #if os(macOS)
