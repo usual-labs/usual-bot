@@ -16,6 +16,18 @@ for review; it doesn't guarantee a merge.
 <!-- For a feature or a change in behaviour: link where a maintainer agreed to it.
 For a small fix of an obvious bug: say why it needs no prior discussion. -->
 
+## Changelog
+
+<!-- What people using the app would notice, written for them: one "- " entry each under
+"### Added", "### Changed" or "### Fixed". Write "None" if they wouldn't notice. Entries are
+gathered into CHANGELOG.md at the next release, so leave that file alone. For example:
+
+### Fixed
+
+- **Replies keep their line breaks.** A reply written a line per item ran its lines together into
+  one paragraph. Each line now shows on its own.
+-->
+
 ## Verification
 
 <!-- What you ran and what you saw, for the behaviour you changed. "Tests pass" alone doesn't show

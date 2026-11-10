@@ -100,6 +100,10 @@ doesn't show that the change works. Say what you couldn't check, such as a devic
 For UI changes, add before and after screenshots of the Mac and the iPhone (the demo is fine), in
 light and dark mode if colours changed. Attach them to the pull request rather than committing them.
 
+If people using the app would notice the change, write its changelog entry in the pull request's
+**Changelog** section, and update the matching guide. Don't edit `CHANGELOG.md`: the entries are
+gathered into it at each release, so that open pull requests never conflict over it.
+
 Changes to workflows, signing, scripts, sign-in and tokens get a maintainer's review
 (`.github/CODEOWNERS`). CI runs on a pull request from a fork once a maintainer approves the run. If we close a pull request, we'll name the reason, point to what supports
 it, and say how to address it. Meeting this guide makes a pull request ready for review; it doesn't

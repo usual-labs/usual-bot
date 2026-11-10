@@ -23,7 +23,7 @@ iPhone unless a section says otherwise.
 Usual Bot follows Hermes [Bot Mode](https://hermes-agent.nousresearch.com/docs/user-guide/bot-mode).
 Each Bot (a Hermes profile) on your gateway is a contact, with one ongoing chat: the same "Bot
 Chat" the Hermes desktop app keeps for it. Bot Mode's group chats are the rooms, in the same
-list. The most recent conversation is at the top.
+list. Pinned chats come first, then the most recent conversation.
 
 - A Bot shows the picture you gave it, here or in the Hermes app. Without one, it gets one of Usual Bot's
   characters.
@@ -46,8 +46,24 @@ list. The most recent conversation is at the top.
   sign out. On iPhone the dot sits on the settings gear at the top left; tap it, then your gateway,
   for its details, Built-in Tailscale and Sign Out.
 
-On the Mac, press the sidebar button or drag the sidebar narrower and it becomes a rail of avatars, with a line between
-sections.
+On the Mac, press the sidebar button or drag the sidebar narrower and it becomes a rail of avatars, with a line under
+the pinned chats and between sections.
+
+### Pinned chats
+
+Pin the chats you use most and they stay at the top of the sidebar as large avatars, above every
+section.
+
+- **Pin one:** right-click a chat on the Mac, or touch and hold it on iPhone, and choose **Pin**.
+- **Unpin it:** choose **Unpin** from the same menu on its avatar. It goes back to the section it
+  was in.
+- A pinned chat shows its name without a preview. A number on its avatar counts unread replies, and
+  a dot means it needs you.
+- A search lists pinned chats first, marked with a pin. Quick Message lists them first too.
+
+A Bot's pin is saved on the Bot, so it's pinned on your other devices and in the Hermes desktop
+app. A room's pin stays on the device where you pinned it. Pinning a Bot needs the gateway: offline,
+the pin is undone and the app says why.
 
 ### Sections
 
@@ -66,7 +82,8 @@ Sections group the sidebar however you like. Until you make one, the list has no
 
 A Bot's section is saved on the Bot, so it shows on your other devices and in the Hermes desktop
 app. Each device keeps its own order of sections, what's folded, and which section a room is in.
-Searching lists every match together, without headings.
+Searching lists every match together, without headings. A pinned chat keeps its section but isn't
+listed in it until you unpin it.
 
 ## Making and changing Bots
 
@@ -109,7 +126,8 @@ or an hour passes. Hover a message on the Mac to see its time, or long-press it 
 A chat opens at its newest message and follows new replies while you’re at the end. Scroll up to
 read older messages without being pulled back down. The round arrow button above the message box
 takes you back to the newest message and follows replies again; it has a dot when something new
-came in while you were away. Scrolling to the end, or sending a message, does the same.
+came in while you were away. Scrolling to the end, or sending a message, does the same. On iPhone,
+sending also puts the keyboard away; tap the message box to write again.
 
 - **Attachments.** Use **+**, drag and drop, or paste a copied image or file (⌘V on the Mac; on
   iPhone, iOS 27 or later). On iPhone, pick from Photos, the camera or Files. Images up to 25 MB
@@ -470,6 +488,13 @@ and Settings opens with your gateway at the top. Preferences stay on this device
 
 The About section has the app version, guide, source and license links. Most Bot settings,
 provider keys and gateway administration stay in Hermes.
+
+### Updates
+
+When TestFlight has a newer build, a note below the chat list says so. **Update in TestFlight**
+opens TestFlight to install it; **Later** hides that build until the next one comes out, and Settings
+› About still has the link. The app checks every few hours and sends nothing about you. TestFlight
+can also update the app on its own: turn on Automatic Updates for Usual Bot in TestFlight.
 
 ## Keyboard shortcuts
 

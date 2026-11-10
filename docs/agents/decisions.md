@@ -191,6 +191,18 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   0.3.0. The entitlements say "development" and exporting for
   TestFlight makes them production, so the app reads which service it's on from its own profile
   (`PushRelay.appleEnvironment`) instead of a build setting that could disagree.
+- **TestFlight builds learn about newer ones from App Store Connect, through `bot.usual.dev`.** An
+  app can't ask TestFlight, and builds upload nightly, so a hand-published version file would lag or
+  name builds still processing. The Worker (`Services/updates`) asks App Store Connect with an API
+  key held as Worker secrets (a team key with `ASC_ISSUER_ID`, or an individual key without it),
+  caches the answer for an hour, and the app checks every
+  6 hours. It reports the newest processed build (internal testers) until `BETA_GROUP` names the
+  external group. Only builds with `USUAL_UPDATES = YES` (`scripts/testflight.sh`) ask, so forks, CI
+  and local builds never contact it. Build numbers are the upload time, so they compare as numbers.
+  Deployed 2026-11-09 with an individual key; `GET /v1/latest` answered the processed 0.5.0 build
+  for both platforms. A Debug build with `USUAL_UPDATES=YES` showed the banner from the live service
+  on the Mac and in the iPhone Simulator, Later hid it, and Settings › About kept the link. Unverified: that `filter[betaGroups]` narrows `/v1/builds` as expected, and
+  that `itms-beta://` opens the app's page in TestFlight on the Mac.
 - **The relay's rate limits are a ceiling, not a guard.** Cloudflare's rate-limit binding counts per
   location and per instance, so bursts get through: on 2026-11-05, 40 sign-ups in a row from one
   address all passed, and 4 of 80 sent at once were turned away. They stop a sustained flood of
@@ -284,6 +296,21 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   it. Heading actions are a `…` button on iPhone because list headers there have no context menu.
 - **Search and the ⌥Space panel stay flat,** and the rail shows lines instead of headings and folds
   nothing, because it has no heading to unfold with.
+
+## Pinned chats
+
+- **A Bot's pin is the official app's `pinned` in `ui_meta['hermes-bots']`,** so a Bot pinned in
+  either app is pinned in both. A room's pin stays on the device, as in the official app, which
+  keeps it with its own list of rooms. `SidebarSections` saves a pin through the same queue and
+  holds as a section move, so the two can't overwrite each other's write of `hermes-bots`.
+- **Pinned chats are tiles above the sections, as in Grok,** not rows with a pin as in the official
+  app. A tile has no preview, so its badge carries what's waiting.
+- **A pinned chat keeps its section but isn't listed in it,** so folding a section can't hide a
+  chat you pinned, and unpinning puts it back. Its menu leaves out the section items and it can't
+  be dragged, since moving it would show nothing. Deleting a section still asks when only pinned
+  chats are filed under it.
+- **Search and the rail have no tiles.** They list pinned chats first as rows; a search marks them
+  with a pin, and the rail draws a line under them.
 
 ## Search
 

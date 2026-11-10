@@ -4,7 +4,9 @@ All notable changes to Usual Bot are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+Changes that aren't in a release yet are in the
+[merged pull requests](https://github.com/usual-labs/usual-bot/pulls?q=is%3Apr+is%3Amerged+sort%3Aupdated-desc),
+each under its **Changelog** heading.
 
 ### Fixed
 

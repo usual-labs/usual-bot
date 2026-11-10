@@ -63,6 +63,7 @@ struct UsualBotApp: App {
             rootView
                 .task { await model.restore() }
                 .task { PushRegistration.start(model.relay) }
+                .task { await model.update.watch() }
                 .onOpenURL { model.open($0) }
                 // Asked once you're in, not from the background, where iOS can't show the question.
                 .onChange(of: model.session, initial: true) { _, session in

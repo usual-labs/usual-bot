@@ -2,6 +2,9 @@
 
 ## Planned/aspirational
 
+- **Split `RootView.swift` (723 lines).** `ContactsSplitView` and its Mac layout, search jumps and
+  sidebar footer share the file with `RootView`; moving `ContactsSplitView` to its own file is the
+  obvious first cut.
 - **Hermes features the app doesn't surface yet.** From a Hermes source read (`bf0203a794`,
   22 October 2026); none confirmed against a live gateway. Check each call on the app's
   dashboard socket first.

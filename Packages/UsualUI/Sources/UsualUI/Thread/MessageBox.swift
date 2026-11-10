@@ -443,6 +443,7 @@ struct MessageBox: View {
             // Text and files leave together once every file is up; a failure keeps both here.
             let draft = text
             let files = attaching.attachments
+            putKeyboardAway()
             Task {
                 guard await attaching.send(quote?.message(draft) ?? draft, files) else { return }
                 if text == draft { text = "" }
@@ -454,6 +455,15 @@ struct MessageBox: View {
         send(quote?.message(text) ?? text)
         text = ""
         replyTo?.wrappedValue = nil
+        putKeyboardAway()
+    }
+
+    /// iPhone: sending puts the keyboard away, so the chat has the screen for your message and
+    /// the reply. A hardware keyboard raises no keys and keeps the cursor, to type the next one.
+    private func putKeyboardAway() {
+        #if os(iOS)
+            if keyboardUp { focused = false }
+        #endif
     }
 
     /// The word being typed, when it starts with `@`.

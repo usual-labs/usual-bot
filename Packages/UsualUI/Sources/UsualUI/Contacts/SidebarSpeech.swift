@@ -3,9 +3,11 @@ import HermesKit
 /// What VoiceOver says for the sidebar. A row's dot, count and moving avatar are each one fact,
 /// so they're spoken as words rather than left to whichever child views SwiftUI combines.
 enum SidebarSpeech {
-    /// "Forge, needs you, 2 unread, Needs your OK…, 10:44 AM".
+    /// "Forge, pinned, needs you, 2 unread, Needs your OK…, 10:44 AM".
     static func row(_ contact: Contact, preview: String, stamp: String?) -> String {
-        ([contact.name] + facts(activity: contact.activity, unreadCount: contact.unreadCount) + [preview, stamp ?? ""])
+        let pinned = contact.isPinned ? [String(localized: "pinned")] : []
+        let facts = facts(activity: contact.activity, unreadCount: contact.unreadCount)
+        return ([contact.name] + pinned + facts + [preview, stamp ?? ""])
             .filter { !$0.isEmpty }
             .joined(separator: ", ")
     }

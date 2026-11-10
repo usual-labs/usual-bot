@@ -31,6 +31,15 @@ struct ChatOrderTests {
         #expect(ChatOrder.step(from: "atlas", by: 1, in: ids) == "room:crew")
     }
 
+    @Test func pinnedChatsComeFirstEvenFromAFoldedSection() {
+        var pinned = ops
+        pinned.isPinned = true
+        pinned.sectionID = "back"
+        let sections = [ContactSection(id: "back", name: "Back office")]
+        let blocks = SidebarBlock.blocks(for: [forge, pinned], in: sections)
+        #expect(ChatOrder.shown(blocks, isFolded: { $0 == "back" }).map(\.id) == ["ops", "forge"])
+    }
+
     @Test func withNoChatOpenNextIsTheFirstAndPreviousTheLast() {
         let ids = ["forge", "atlas", "ops"]
         #expect(ChatOrder.step(from: nil, by: 1, in: ids) == "forge")

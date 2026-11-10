@@ -96,7 +96,8 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                         link: model.link,
                         gatewayDetails: model.gatewayDetails, loadGatewayDetails: { await model.loadGatewayDetails() },
                         thread: model.thread(for: contact), close: close)
-                }
+                },
+                update: model.update
             ) { compact in
                 #if os(macOS)
                     // The connection in a capsule, then Plugins and Settings in circles. The rail
@@ -227,6 +228,8 @@ struct ContactsSplitView<Footer: View>: View {
     var search = MessageSearching()
     /// The profile panel for a contact, given a way to close it; `nil` when it has none.
     var profile: (Contact, @escaping () -> Void) -> ProfilePanel? = { _, _ in nil }
+    /// Offers a newer TestFlight build below the list; not in the rail.
+    var update: AppUpdate?
     /// Below the list; told whether the sidebar is the narrow window's rail.
     @ViewBuilder let footer: (_ compact: Bool) -> Footer
 
@@ -405,6 +408,10 @@ struct ContactsSplitView<Footer: View>: View {
             .safeAreaBar(edge: .bottom, spacing: 0) { sidebarFooter(compact: compact) }
             .scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
             .background(Theme.window)
+        #else
+            .safeAreaInset(edge: .bottom) {
+                if let update { UpdateBanner(update: update).padding(.horizontal, 16).padding(.bottom, 8) }
+            }
         #endif
     }
 
@@ -421,6 +428,7 @@ struct ContactsSplitView<Footer: View>: View {
                         .frame(width: 32, height: 32)
                         .roundGlass()
                 }
+                if !compact, let update { UpdateBanner(update: update) }
                 footer(compact)
             }
             // The list's 10 pt side inset, so the glass lines up with the rows' highlight and the
@@ -454,10 +462,7 @@ struct ContactsSplitView<Footer: View>: View {
             let free = !showsNewBot && !showsNewRoom
             let canMakeRoom = createRoom != nil && agents.count >= NewRoomSheet.seats.lowerBound
             let grouped = sections?.sections.isEmpty == false
-            let blocks =
-                grouped
-                ? sections?.blocks(for: contacts) ?? []
-                : [SidebarBlock(section: nil, contacts: contacts.sorted(by: Contact.rosterOrder))]
+            let blocks = SidebarBlock.blocks(for: contacts, in: sections?.sections ?? [])
             let folds = !showsRail && grouped
             let ids = ChatOrder.shown(blocks) { folds && sections?.isFolded($0) == true }.map(\.id)
             var commands = WindowCommands(search: { showsPalette.toggle() })

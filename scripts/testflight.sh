@@ -134,7 +134,7 @@ EOF
     rm -rf "$archive" "$out/$platform"
     xcodebuild archive -quiet -project UsualBot.xcodeproj -scheme UsualBot -configuration Release \
         -destination "$generic" -archivePath "$archive" "$@" \
-        DEVELOPMENT_TEAM="$team" BUNDLE_ID_PREFIX="$prefix" USUAL_PUSH=YES \
+        DEVELOPMENT_TEAM="$team" BUNDLE_ID_PREFIX="$prefix" USUAL_PUSH=YES USUAL_UPDATES=YES \
         MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$build"
     if [ -n "$profiles" ]; then
         xcodebuild -exportArchive -archivePath "$archive" -exportPath "$out/$platform" \

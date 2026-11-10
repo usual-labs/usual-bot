@@ -102,10 +102,7 @@ struct ConversationScrollState {
     }
 
     /// The jump-to-latest button: back to the newest message, and follow it again.
-    mutating func jumpToEnd() -> CGFloat? {
-        followsEnd = true
-        return correction
-    }
+    mutating func jumpToEnd() -> CGFloat? { showEnd() }
 
     /// You sent a message: show it and what comes back, wherever you'd scrolled to. Another load
     /// holds other messages, so it says nothing about sending.
@@ -115,6 +112,14 @@ struct ConversationScrollState {
         // An undo took your message back: what went with it was your doing.
         if messages.count < lastSent.count { releases += 1 }
         guard messages.count > lastSent.count else { return nil }
+        return showEnd()
+    }
+
+    /// You asked for the end, so it outranks a scroll by hand still under way: one that coasts,
+    /// fingers resting on the trackpad, or one whose last phase never came. Left as scrolling, the
+    /// chat would stay where it was and stop following.
+    private mutating func showEnd() -> CGFloat? {
+        isScrollingByHand = false
         followsEnd = true
         return correction
     }

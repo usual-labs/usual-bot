@@ -18,13 +18,27 @@ are retired: they couldn't carry push without hand-made Developer ID profiles.
 4. In TestFlight, a test group. For people outside the team, an external group with a public link;
    its **Beta App Description** should say that Usual Bot isn't made by, affiliated with or
    endorsed by Nous Research, the makers of Hermes Agent.
+5. The **update check** at `bot.usual.dev`, which tells TestFlight builds that a newer one is out:
+   deploy [`Services/updates`](../../Services/updates/README.md) with an App Store Connect key. When
+   the public link opens, set its `BETA_GROUP` to the external group, so the app offers only builds
+   that passed beta review.
 
 ## Making a release
 
 1. **Check CI is green** on the commit you want to ship.
-2. **Set the version.** Rename `## Unreleased` in `CHANGELOG.md` to the version and date, for
-   example `## 0.4.0 - 2026-11-05`, add a fresh empty `## Unreleased` above it, and set
-   `MARKETING_VERSION` in `Config/Shared.xcconfig` to match. Commit, tag (`v0.4.0`) and push.
+2. **Write the changelog and set the version.** Pull requests carry their changelog entries in
+   their descriptions, so `CHANGELOG.md` changes only here. On that commit, run:
+
+   ```sh
+   scripts/changelog.sh
+   ```
+
+   It prints the entries of every pull request merged since the last tag, and names the pull
+   requests that have none; it needs `gh`, signed in. Put what it prints at the top of
+   `CHANGELOG.md` under a heading with the version and date, for example `## 0.4.0 - 2026-11-05`,
+   and read it through: order the entries by what matters most to users and write any that are
+   missing. Set `MARKETING_VERSION` in `Config/Shared.xcconfig` to match. Commit, tag (`v0.4.0`)
+   and push.
 3. **Upload** from that commit: run the **TestFlight** workflow from the Actions tab (see
    [From GitHub Actions](#from-github-actions)), or from your Mac, with a clean working tree:
 
@@ -40,7 +54,8 @@ are retired: they couldn't carry push without hand-made Developer ID profiles.
    into **What to Test**, and add the builds to the test groups. An external group's first build of
    each version waits for Apple's beta review, usually about a day.
 
-TestFlight builds expire after 90 days, so testers need a newer one before then. They use Apple's
+Within an hour of a build being processed, the app offers it to testers (`Services/updates`); there
+is nothing to publish. TestFlight builds expire after 90 days, so testers need a newer one before then. They use Apple's
 production push service; the app works that out from how it was signed (`PushRelay`).
 
 ## From GitHub Actions

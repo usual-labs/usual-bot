@@ -107,7 +107,7 @@
                 agent(
                     "atlas", "Atlas", preview: "Turbopuffer fits best: cheapest at our size, and…", minutesAgo: 14,
                     about: "Researches tools, papers and competitors, and writes short recommendations.",
-                    section: Self.product),
+                    section: Self.product, isPinned: true),
                 agent(
                     "scribe", "Scribe", preview: "Two headline options for the launch post", minutesAgo: 95,
                     about: "Drafts posts, release notes and emails in the house style."),
@@ -133,10 +133,11 @@
 
         private func agent(
             _ id: String, _ name: String, preview: String, minutesAgo: Double, about: String,
-            section: ContactSection? = nil
+            section: ContactSection? = nil, isPinned: Bool = false
         ) -> Contact {
             Contact(
-                id: id, name: name, preview: preview, lastActive: ago(minutesAgo), chatID: "demo-\(id)",
+                id: id, name: name, preview: preview, lastActive: ago(minutesAgo), isPinned: isPinned,
+                chatID: "demo-\(id)",
                 details: AgentDetails(
                     profile: id, description: about, model: "claude-sonnet-5-5", provider: "anthropic", skillCount: 12),
                 sectionID: section?.id, sectionName: section?.name)
