@@ -38,6 +38,22 @@ struct ChatAlertTests {
         #expect(thread.unreadCount == 1)
     }
 
+    @Test func aReplyAlertsWithoutItsMarkdownMarks() {
+        let (thread, box) = makeChat()
+        reply(thread, "## Done\n\n- **Two** files changed\n- See [the diff](https://hermes.example.com/diff)")
+        #expect(box.alerts.first?.preview == "Done Two files changed See the diff")
+    }
+
+    @Test func aCommandToApproveAlertsAsWritten() {
+        let (thread, box) = makeChat()
+        thread.receive(
+            ApprovalPrompt(
+                id: "a1", sessionID: "sample", command: "grep __init__ *.py *.txt", description: "",
+                choices: [.once, .deny]))
+        thread.announceRequests()
+        #expect(box.alerts.first?.preview.contains("grep __init__ *.py *.txt") == true)
+    }
+
     @Test func aReplyOnScreenDoesntAlert() {
         let (thread, box) = makeChat(visible: true)
         reply(thread, "All done")
@@ -80,6 +96,36 @@ struct ChatAlertTests {
         thread.isVisible = false
         thread.announceRequests()
         #expect(box.alerts.isEmpty)
+    }
+}
+
+@Suite("An alert's plain words")
+struct AlertPlainTextTests {
+    @Test(arguments: [
+        ("# Summary\nAll **done** and _checked_.", "Summary All done and checked."),
+        ("- one\n* two\n+ three\n1. four", "one two three 1. four"),
+        ("> quoted\n> > twice", "quoted twice"),
+        ("Run `swift test` or see [the guide](https://hermes.example.com/guide).", "Run swift test or see the guide."),
+        ("Before\n\n---\n\nAfter\n===", "Before After"),
+        ("| Name | Runs |\n|:---|---:|\n| Forge | 3 |", "Name · Runs Forge · 3"),
+        ("Like this:\n```swift\nlet glob = \"**/*.swift\"\n```", "Like this: let glob = \"**/*.swift\""),
+        ("~~Old~~ ***new*** and *a **b** c*", "Old new and a b c"),
+        ("**Run `make __init__` now** in `**/*.py`", "Run make __init__ now in **/*.py"),
+        (#"5 \* 3 and snake\_case"#, "5 * 3 and snake_case"),
+    ])
+    func dropsTheMarks(markdown: String, plain: String) {
+        #expect(AgentAlert.plain(markdown) == plain)
+    }
+
+    @Test(arguments: [
+        "Set MY_API_KEY in my_settings_file.py",
+        "2 * 3 * 4 is 24, and 5 - 3 is 2",
+        "Issue #12 is fixed",
+        "ls *.txt and *.md",
+        "All done",
+    ])
+    func keepsWhatOnlyLooksLikeAMark(text: String) {
+        #expect(AgentAlert.plain(text) == text)
     }
 }
 

@@ -437,7 +437,9 @@ public final class AppModel {
         thread.alert = { [weak self] in self?.heard($0, from: id) }
         thread.alertWithdrawn = { [weak self] in self?.alertWithdrawn?($0) }
         thread.backgroundTaskFinished = { [weak self] task, result in
-            self?.heard(.init(id: UUID().uuidString, kind: .taskFinished, subtitle: task, preview: result), from: id)
+            let alert = AgentAlert(
+                id: UUID().uuidString, kind: .taskFinished, subtitle: task, preview: AgentAlert.plain(result))
+            self?.heard(alert, from: id)
         }
     }
 
