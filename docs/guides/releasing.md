@@ -26,9 +26,19 @@ are retired: they couldn't carry push without hand-made Developer ID profiles.
 ## Making a release
 
 1. **Check CI is green** on the commit you want to ship.
-2. **Set the version.** Rename `## Unreleased` in `CHANGELOG.md` to the version and date, for
-   example `## 0.4.0 - 2026-11-05`, add a fresh empty `## Unreleased` above it, and set
-   `MARKETING_VERSION` in `Config/Shared.xcconfig` to match. Commit, tag (`v0.4.0`) and push.
+2. **Write the changelog and set the version.** Pull requests carry their changelog entries in
+   their descriptions, so `CHANGELOG.md` changes only here. On that commit, run:
+
+   ```sh
+   scripts/changelog.sh
+   ```
+
+   It prints the entries of every pull request merged since the last tag, and names the pull
+   requests that have none; it needs `gh`, signed in. Put what it prints at the top of
+   `CHANGELOG.md` under a heading with the version and date, for example `## 0.4.0 - 2026-11-05`,
+   and read it through: order the entries by what matters most to users and write any that are
+   missing. Set `MARKETING_VERSION` in `Config/Shared.xcconfig` to match. Commit, tag (`v0.4.0`)
+   and push.
 3. **Upload** from that commit: run the **TestFlight** workflow from the Actions tab (see
    [From GitHub Actions](#from-github-actions)), or from your Mac, with a clean working tree:
 
