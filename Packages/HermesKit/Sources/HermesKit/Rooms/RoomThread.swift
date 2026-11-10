@@ -156,7 +156,9 @@ public final class RoomThread {
     private func announceNewestReply() {
         for item in state.items.reversed() {
             guard case .member(let id, let text) = item.content else { continue }
-            alert?(AgentAlert(id: UUID().uuidString, kind: .message, subtitle: state.name(id), preview: text))
+            alert?(
+                AgentAlert(
+                    id: UUID().uuidString, kind: .message, subtitle: state.name(id), preview: AgentAlert.plain(text)))
             return
         }
     }

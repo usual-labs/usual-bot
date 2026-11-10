@@ -87,7 +87,7 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
         }
         if defaults.object(forKey: AppPreferences.notificationPreviewsKey) as? Bool != false {
             content.subtitle = alert.subtitle ?? ""
-            content.body = plain(alert.preview)
+            content.body = alert.preview.count > 240 ? String(alert.preview.prefix(239)) + "…" : alert.preview
         } else {
             content.body =
                 switch alert.kind {
@@ -119,16 +119,6 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
         let delivered = await center.deliveredNotifications()
         let ids = delivered.filter { $0.request.content.threadIdentifier == contact }.map(\.request.identifier)
         if !ids.isEmpty { center.removeDeliveredNotifications(withIdentifiers: ids) }
-    }
-
-    /// The text without Markdown marks, short enough for a notification.
-    private static func plain(_ markdown: String) -> String {
-        let flat =
-            (try? AttributedString(
-                markdown: markdown, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
-            .map { String($0.characters) } ?? markdown
-        let line = flat.split(whereSeparator: \.isNewline).joined(separator: " ")
-        return line.count > 240 ? String(line.prefix(239)) + "…" : line
     }
 
     // MARK: - UNUserNotificationCenterDelegate

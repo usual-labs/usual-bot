@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 
 from . import relay, store
+from .plain import plain
 
 logger = logging.getLogger(__name__)
 
@@ -129,12 +130,11 @@ def _deliver_room_reply(profile: str, text: str) -> None:
 def _on_reply(assistant_response="", platform="", **_) -> None:
     if not assistant_response.strip():
         return
+    said = plain(assistant_response)
     if platform in _CHAT_PLATFORMS:
-        _push_unless_hidden("message", "{name}", assistant_response, _profile())
+        _push_unless_hidden("message", "{name}", said, _profile())
     elif platform == _ROOM_PLATFORM:
-        threading.Thread(
-            target=_safely, args=(_deliver_room_reply, _profile(), assistant_response), daemon=True
-        ).start()
+        threading.Thread(target=_safely, args=(_deliver_room_reply, _profile(), said), daemon=True).start()
 
 
 def _surface() -> str:
@@ -152,7 +152,7 @@ def _on_request(kind="", platform="", prompt="", **_) -> None:
         platform = _surface()
     if platform not in _CHAT_PLATFORMS:
         return
-    asks = {"approval": f"Wants to run “{prompt}”", "sudo": "Asks for the sudo password"}.get(kind, prompt)
+    asks = {"approval": f"Wants to run “{prompt}”", "sudo": "Asks for the sudo password"}.get(kind) or plain(prompt)
     _push_unless_hidden("needs_you", "{name} needs you", asks, _profile())
 
 

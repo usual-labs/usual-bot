@@ -465,7 +465,8 @@ and Settings opens with your gateway at the top. Preferences stay on this device
   **Restore Default** tries ⌥Space, then ⌃⌥Space if needed. The menu bar shows the active shortcut.
   Quick Message itself always uses Return to send and ⌘Return to open the full chat.
 - **Notifications:** choose what alerts you: messages and replies, a Bot needing you, and
-  background tasks finishing, plus sounds and previews. With previews off, new alerts say only who
+  background tasks finishing, plus sounds and previews. A preview shows a reply's words without its
+  Markdown marks (pushed ones need the push plugin 0.3.2 or later). With previews off, new alerts say only who
   it's from. System notification settings and Focus also apply. A chat you're reading doesn't alert;
   any other does, even while you're in the app. Tapping one opens that chat.
 - **Push:** with the plugin in [`Integrations/hermes-push`](../../Integrations/hermes-push/README.md)
