@@ -307,7 +307,7 @@ struct ItemView: View {
             let author = author(id)
             MessageRow(
                 item: item, text: text, author: author?.name ?? id, agentName: agentName, isMine: false,
-                readsAloud: true
+                readsAloud: true, bubbleInset: author == nil ? 0 : 38
             ) {
                 HStack(alignment: .top, spacing: 10) {
                     if let author {

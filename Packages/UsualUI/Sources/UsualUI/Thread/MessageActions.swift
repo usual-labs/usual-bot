@@ -48,6 +48,8 @@ struct MessageRow<Content: View>: View {
     let isMine: Bool
     /// A Bot's words can be read aloud; your own messages and command output can't.
     var readsAloud = false
+    /// How far the bubble starts from the row's edge: a room member's avatar sits before it.
+    var bubbleInset: CGFloat = 0
     @ViewBuilder let content: Content
 
     @Environment(\.messageActions) private var actions
@@ -104,7 +106,7 @@ struct MessageRow<Content: View>: View {
         VStack(alignment: isMine ? .trailing : .leading, spacing: 4) {
             content
                 .environment(\.quoteSelection, actions.map { actions in { actions.quote(item, $0) } })
-            if isReading { stopReadingPill }
+            if isReading { stopReadingPill.padding(.leading, bubbleInset) }
             if !item.reactions.isEmpty { reactionPills }
         }
         // On each part of the message, so VoiceOver offers them wherever it lands.
