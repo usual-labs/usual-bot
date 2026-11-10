@@ -46,11 +46,24 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   CPU to animate one working avatar that Release draws for nothing, and resized about six times
   slower. Profile and dogfood Release.
 - **Selectable text costs an AppKit view per `Text` on the Mac,** and SwiftUI hit-tests them on
-  every pointer move: about half that work in a long chat. `MarkdownView` joins a reply's
-  paragraphs and headings into one `Text`. `Text` ignores `NSParagraphStyle` spacing and indents,
-  so the gaps are blank lines in a 2 pt (5 pt before a heading) font, tuned against
-  `messageFont()`'s 4 pt `lineSpacing`: change either and compare a reply before and after.
-  Lists, quotes and code stay separate views.
+  every pointer move: about half that work in a long chat. On the Mac, `MarkdownView` puts a
+  reply's paragraphs, headings, list items and quotes in a row into one `NSTextView`
+  (`MessageText`, built by `RichText`), which is also what lets a drag select across them and
+  Add to Chat read the selection; SwiftUI's `Text` exposes neither. Code, tables and media stay
+  separate views. TextKit puts the line spacing under a paragraph's last line too, so paragraph
+  spacing is 10 pt minus `Theme.messageLineSpacing`; its line height for 15 pt SF is 18 pt against
+  SwiftUI's 19, so Mac lines sit 1 pt closer than iPhone's. On iPhone the paragraphs and headings
+  are still one `Text`, whose gaps are blank lines in a 2 pt (5 pt before a heading) font because
+  `Text` ignores `NSParagraphStyle`: change the spacing and compare a reply before and after.
+- **`MessageText` sizes itself with a second layout manager on the same text storage.** Measuring
+  with the shown one would rewrap the view SwiftUI is drawing. Widths are cached until the text
+  changes; a streaming reply measures again on each change. It compares `MessageTextContent`, not
+  the attributed string: colours are made fresh each build, so comparing strings would reset the
+  text, and the selection with it, on every update.
+- **A text view's selection is the conversation's selection.** `SelectableTextView` clears its
+  selection when it gives up first responder, so clicking another message or the box lets go of it
+  as a web page would, and a right-click outside the selection returns no menu so the message's own
+  React/Reply/Copy menu shows.
 - **Anything that asks a scroll view its size measures every message in it.** `safeAreaBar`
   asks for the conversation's minimum on each update, and so does the window for its minimum size:
   about a fifth of switching chats. `ConversationScroll` sits in `TakesOfferedSize`, which answers

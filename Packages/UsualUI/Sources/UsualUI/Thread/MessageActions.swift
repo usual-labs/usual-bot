@@ -11,9 +11,23 @@ import SwiftUI
 /// before your text. In a room the reply also @mentions the author, so only it answers.
 struct QuotedMessage: Equatable {
     let author: String
+    /// One line, for the chip above the message box.
     let excerpt: String
     /// The room member to address; `nil` in a chat with one agent.
     var mention: String?
+    /// The lines sent as the quote: the excerpt, or the words you selected.
+    private var quoted: [String]
+
+    /// Part of a message you selected, kept whole and line by line: you picked those words.
+    init(author: String, selection: String, mention: String? = nil) {
+        self.author = author
+        self.mention = mention
+        quoted = selection.split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        let flat = quoted.joined(separator: " ")
+        excerpt = flat.count > 200 ? String(flat.prefix(200)) + "…" : flat
+    }
 
     init(author: String, text: String, mention: String? = nil) {
         self.author = author
@@ -29,12 +43,14 @@ struct QuotedMessage: Equatable {
                 markdown: joined, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             .map { String($0.characters) } ?? joined
         excerpt = flat.count > 200 ? String(flat.prefix(200)) + "…" : flat
+        quoted = [excerpt]
     }
 
     /// Your message with the quote in front.
     func message(_ text: String) -> String {
         let reply = [mention.map { "@\($0)" }, text.isEmpty ? nil : text].compactMap(\.self).joined(separator: " ")
-        return "> \(author): \(excerpt)\n\n\(reply)"
+        let quote = quoted.enumerated().map { index, line in index == 0 ? "> \(author): \(line)" : "> \(line)" }
+        return quote.joined(separator: "\n") + "\n\n\(reply)"
     }
 
     /// Splits a leading quote off a sent message: the `> ` lines, and the rest.
@@ -58,6 +74,8 @@ struct MessageActions {
     var canReact: (TranscriptItem) -> Bool = { _ in false }
     var react: (String?, TranscriptItem) -> Void = { _, _ in }
     var reply: (TranscriptItem) -> Void = { _ in }
+    /// Replies to the words you selected in a message, quoting only those.
+    var quote: (TranscriptItem, String) -> Void = { _, _ in }
     /// Chats only: your last message, between replies, can be edited or taken back.
     var canRewind: (TranscriptItem) -> Bool = { _ in false }
     var edit: (TranscriptItem) -> Void = { _ in }
@@ -66,6 +84,9 @@ struct MessageActions {
 
 extension EnvironmentValues {
     @Entry var messageActions: MessageActions?
+    /// Quotes words selected in the message around it in the next message; `nil` where a message
+    /// can't be replied to.
+    @Entry var quoteSelection: ((String) -> Void)?
 }
 
 /// The quick reactions, as in Messages and Grok Bot, and the rest behind + (or More Reactions).
@@ -140,6 +161,7 @@ struct MessageRow<Content: View>: View {
     private var message: some View {
         VStack(alignment: isMine ? .trailing : .leading, spacing: 4) {
             content
+                .environment(\.quoteSelection, actions.map { actions in { actions.quote(item, $0) } })
             if !item.reactions.isEmpty { reactionPills }
         }
         // On each part of the message, so VoiceOver offers them wherever it lands.
@@ -315,7 +337,7 @@ struct MessageRow<Content: View>: View {
         // Only iPhone provides this: the Mac selects within the message itself.
         if let selectText, !text.isEmpty {
             Button("Select Text", systemImage: "selection.pin.in.out") {
-                selectText(SelectableText.plain(text))
+                selectText(SelectableText.plain(text)) { actions.quote(item, $0) }
             }
         }
         rewindButtons(actions)

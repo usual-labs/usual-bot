@@ -166,6 +166,10 @@ struct MessageBox: View {
                 self.unsent?.wrappedValue = nil
                 focused = true
             }
+            // Replying, or adding words you selected, is for typing on.
+            .onChange(of: replyTo?.wrappedValue) { _, quote in
+                if quote != nil { focused = true }
+            }
             // Initial too: the Plugins sheet fills a chat's box before the chat opens.
             .onChange(of: commands?.prefill, initial: true) { _, prefill in
                 guard let prefill else { return }
