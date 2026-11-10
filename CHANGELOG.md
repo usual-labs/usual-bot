@@ -13,6 +13,17 @@ All notable changes to Usual Bot are listed here. The format follows
   hides that build until the next one. Settings › About keeps the update link. TestFlight builds
   check bot.usual.dev every few hours. The check sends nothing about you; other builds never check.
 
+### Changed
+
+- **Sending puts the iPhone keyboard away,** so your message and the reply have the screen. Tap the
+  message box to write again. With a hardware keyboard the cursor stays in the box.
+
+### Fixed
+
+- **Sending always shows your message.** A message sent while the chat was still scrolling, such as
+  with fingers resting on the trackpad or just after a flick, left you further up and no longer
+  following the reply. The round arrow button now works mid-scroll too.
+
 ## 0.5.0 - 2026-11-09
 
 ### Added

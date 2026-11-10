@@ -8,7 +8,7 @@ RootView owns top-level routing; ContactsSplitView handles selection; ContactLis
 
 - **Mac and iPhone differ on purpose.** The Mac lays its sidebar out itself, puts the chat's model and thinking menus in the agent's profile panel (`ChatModelSection`, "This Chat", above the tabs; since November 2026 at the developer's request) together with the context meter (since then nothing sits under the message box). iPhone keeps NavigationSplitView and puts all three in the box (`ComposerLayout`, `ComposerControls`). See 07-known-issues.md for why.
 - **The iPhone gateway button shows the address** (`footer(false)`) and is `fixedSize`, since the navigation bar otherwise squeezes it to "…".
-- **iPhone doesn't autofocus the message box,** and scrolling or tapping the conversation dismisses the keyboard, so the resting pill stays reachable.
+- **iPhone doesn't autofocus the message box,** and scrolling or tapping the conversation dismisses the keyboard, so the resting pill stays reachable. Sending dismisses it too (the developer's call, November 2026), but only when keys are up (`keyboardUp`): a hardware keyboard keeps the cursor for the next message.
 - **Attachments are for chats, not rooms.** HEIC, HEIF and TIFF become JPEG because the gateway takes only PNG, JPEG, GIF, WebP and BMP as images. The draft stays if an upload fails.
 - **Suggestion menus.** Only letters, digits, `-` and `_` open the `/` menu, so paths don't. iPhone menus that open upward list their items in reverse (system behaviour).
 - **Message actions.** The Mac's 104 pt hover slot is always reserved so nothing moves, and the bar stays up 250 ms after the pointer leaves so it can reach the bar. Undo asks no confirmation.
