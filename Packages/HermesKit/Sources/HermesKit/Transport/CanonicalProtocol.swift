@@ -41,7 +41,8 @@ struct CanonicalProtocol {
     /// Methods that take `profile` next to `session_id`. Others refuse keys they don't know.
     static let profileRouted: Set<String> = [
         "session.resume", "session.info", "session.history", "session.events.since", "session.interrupt",
-        "session.steer", "session.mutate", "session.detach", "prompt.submit", "prompt.btw", "prompt.background",
+        "session.steer", "session.mutate", "session.detach", "prompt.submit", "prompt.cancel", "prompt.btw",
+        "prompt.background",
         "approval.respond", "clarify.respond", "message.react", "file.attach", "image.attach_bytes",
         "commands.catalog", "command.dispatch", "slash.exec", "model.options", "config.set", "reload.mcp",
         "connection.respond",
@@ -206,8 +207,10 @@ struct CanonicalProtocol {
         case "message.delta" where payload["text"] == .null:
             // Where one stretch of streamed text ends, as `already_streamed` said in the legacy protocol.
             return event("message.interim", ["already_streamed": true])
-        case "message.complete" where payload["status"] == nil && payload["outcome"] == "cancelled":
-            // A queued message taken back: no turn ran, so none ends.
+        case "message.complete"
+        where payload["status"] == nil && ["cancelled", "steered"].contains(payload["outcome"]?.stringValue):
+            // A queued message taken back, or steered into the running reply: no turn of its own
+            // ran, so none ends.
             return []
         case "tool.complete":
             payload = Self.legacyToolResult(payload)

@@ -39,7 +39,9 @@
             defer { try? FileManager.default.removeItem(at: url) }
             let synthesizer = AVSpeechSynthesizer()
             let utterance = AVSpeechUtterance(string: text)
-            utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+            // Looked up off the main thread: in a simulator without its voices yet, the lookup waits
+            // there for good and the app freezes on the chat that holds the memo.
+            utterance.voice = await Task.detached { Voice(AVSpeechSynthesisVoice(language: "en-US")) }.value.voice
             let writer = SpeechWriter(url: url)
             let finished = await withCheckedContinuation { continuation in
                 writer.onFinish = { continuation.resume(returning: $0) }
@@ -52,6 +54,11 @@
             }
             withExtendedLifetime(synthesizer) {}
             return finished ? try? Data(contentsOf: url) : nil
+        }
+
+        private struct Voice: @unchecked Sendable {
+            let voice: AVSpeechSynthesisVoice?
+            init(_ voice: AVSpeechSynthesisVoice?) { self.voice = voice }
         }
 
         /// Collects the synthesizer's buffers into a file. Its callbacks come on a queue of its own.

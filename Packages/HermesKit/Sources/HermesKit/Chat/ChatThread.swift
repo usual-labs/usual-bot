@@ -55,6 +55,9 @@ public final class ChatThread {
     public internal(set) var backgroundTasks: [BackgroundTask] = []
     /// How full the context is and the tokens used; from `loadUsage()` and every reply.
     public internal(set) var usage: ChatUsage?
+    /// Messages waiting for the running reply to end, in the order they'll go, then any held on
+    /// this device (`ChatThread+Queue.swift`).
+    public internal(set) var queue: [QueuedMessage] = []
     /// `compress()` is running.
     public internal(set) var isCompressing = false
     /// Set by the app: whether vault secrets would cross the network unencrypted. Assumes so until told.
@@ -87,8 +90,17 @@ public final class ChatThread {
     /// what was asked.
     var elsewhereTurnStart: Int?
 
+    /// The gateway is the one that keeps a queue of messages (the canonical protocol).
+    var queuesOnGateway = false
+    /// Submission IDs of messages sent as turns, not queued. The gateway lists every message as
+    /// queued for a moment before it starts, these included.
+    var sentDirectly: Set<String> = []
+    /// Queued messages taken back, or on their way back: the gateway's lists may still have them.
+    var takenBack: Set<String> = []
+
     /// The live session the gateway routes this chat's events to; `nil` while offline.
     private(set) var sessionID: String?
+    var liveSessionID: String? { sessionID }
     /// The transcript holds the whole chat as the gateway last sent it, not the offline cache's
     /// last messages or an attach without the history (`historyOmitted`).
     var hasFullHistory = false
@@ -124,6 +136,7 @@ public final class ChatThread {
             sideQuestions = cached.sideQuestions ?? []
             backgroundTasks = cached.backgroundTasks ?? []
             backgroundResults = cached.backgroundResults ?? []
+            queue = cached.heldMessages ?? []
             phase = .ready
         }
     }
@@ -146,6 +159,7 @@ public final class ChatThread {
     func open(knownID: String?, dialect: GatewayReady.Dialect) {
         guard sessionID == nil, openTask == nil else { return }
         guard let channel = channel() else { return }
+        queuesOnGateway = dialect == .canonical
         if case .failed = phase { phase = .loading }
         Self.log.notice("Opening chat \(self.contactID, privacy: .private)")
         openTask = Task {
@@ -187,6 +201,7 @@ public final class ChatThread {
         questions = opened.openRequests.compactMap(ClarifyPrompt.init)
         secrets = opened.openRequests.compactMap(SecretPrompt.init)
         adoptConnection(opened.pendingConnection)
+        adoptQueue(from: opened.queue, attaching: true)
         announceRequests()
         if isVisible {
             markViewed()
@@ -249,6 +264,7 @@ public final class ChatThread {
         }
         if event.type == "session.info" {
             model = ChatModel(info: event.payload) ?? model
+            adoptQueue(from: event.payload)
             return
         }
         if event.type == "connection.request" || event.type == "connection.update" {
@@ -280,6 +296,9 @@ public final class ChatThread {
             announce(reply)
         }
         if event.type == "message.complete" { finishTurnElsewhere(event.payload) }
+        #if DEBUG
+            if event.type == "message.complete" { startNextDemoQueued() }
+        #endif
         if isVisible {
             lastViewed = Date()
             if event.type == "message.complete" { wasRead?() }
@@ -325,6 +344,11 @@ public final class ChatThread {
             if playsDemoReplies, canSend, !text.isEmpty, !state.isRunning {
                 state.sendLocally(text)
                 playDemoReply()
+                return
+            }
+            // Nor one to steer: the message shows, as it would.
+            if playsDemoReplies, canSend, !text.isEmpty, channel() == nil {
+                state.steerLocally(text)
                 return
             }
         #endif
@@ -477,7 +501,12 @@ public final class ChatThread {
 
     func submit(_ text: String, sessionID: String, channel: JSONRPCChannel, extra: [String: JSONValue] = [:]) async {
         do {
-            let params = ["session_id": JSONValue.string(sessionID), "text": .string(text)].merging(extra) { $1 }
+            var params = ["session_id": JSONValue.string(sessionID), "text": .string(text)].merging(extra) { $1 }
+            if queuesOnGateway, params["submission_id"] == nil {
+                let id = UUID().uuidString
+                sentDirectly.insert(id)
+                params["submission_id"] = .string(id)
+            }
             _ = try await channel.call("prompt.submit", params: .object(params))
         } catch {
             state.addNotice(AppModel.describe(error))
@@ -513,10 +542,12 @@ public final class ChatThread {
     }
 
     /// Asks the agent to stop the running turn. The gateway confirms with an "interrupted" reply.
+    /// Queued messages are held first, so stopping doesn't start the next one.
     public func stop() {
         #if DEBUG
             // The demo's running reply has no gateway to interrupt it.
             if playsDemoReplies, state.isRunning, channel() == nil {
+                for index in queue.indices { queue[index].isHeld = true }
                 apply(
                     GatewayEvent(
                         type: "message.complete", sessionID: "sample", seq: nil, payload: ["status": "interrupted"]))
@@ -525,6 +556,7 @@ public final class ChatThread {
         #endif
         guard state.isRunning, let sessionID, let channel = channel() else { return }
         Task {
+            await holdQueue()
             do {
                 _ = try await channel.call("session.interrupt", params: ["session_id": .string(sessionID)])
             } catch {
@@ -605,7 +637,7 @@ public final class ChatThread {
         CachedThread(
             state: state.trimmed(to: CachedThread.itemLimit), lastViewed: lastViewed, unreadCount: unreadCount,
             sideQuestions: sideQuestions, backgroundTasks: backgroundTasks,
-            backgroundResults: Array(backgroundResults.suffix(20)))
+            backgroundResults: Array(backgroundResults.suffix(20)), heldMessages: queue.filter(\.isHeld))
     }
 
     #if DEBUG

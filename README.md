@@ -125,7 +125,8 @@ The film and all screenshots come from the built-in demo, with made-up Bots.
 
 - **Approvals and questions inline.** When a Bot wants to run a command, allow it once, for this
   chat, always, or deny it, right in the conversation. Secrets and sudo passwords are asked for in a masked field.
-- **Stop and steer.** Stop a running reply, or send a message while it runs to change course.
+- **Stop, steer and queue.** Stop a running reply, send a message while it runs to change course,
+  or queue one for when it ends.
 - **Model and thinking.** Pick each chat's model and how hard it thinks from the message box (on
   iPhone, a gauge while you type). A small meter shows how full the context is, with a button to
   compress it.

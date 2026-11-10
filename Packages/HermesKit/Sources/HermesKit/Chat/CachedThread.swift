@@ -11,6 +11,8 @@ struct CachedThread: Codable, Equatable, Sendable {
     var sideQuestions: [SideQuestion]? = nil
     var backgroundTasks: [BackgroundTask]? = nil
     var backgroundResults: [BackgroundResult]? = nil
+    /// Queued messages held on this device. The ones waiting on the gateway come with its snapshot.
+    var heldMessages: [QueuedMessage]? = nil
 }
 
 extension TranscriptItem {
