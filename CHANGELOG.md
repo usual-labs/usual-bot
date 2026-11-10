@@ -6,6 +6,13 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ## Unreleased
 
+### Changed
+
+- **Quieter text in dark mode.** Text is off-white instead of pure white and the grey of previews,
+  dates and labels is a step darker, so regular text no longer looks bold on the dark background.
+  On the Mac the sidebar's names, its section titles and the name above a chat are a little smaller
+  and lighter. Inline code in a reply is smaller and grey on a faint background.
+
 ## 0.5.0 - 2026-11-09
 
 ### Added

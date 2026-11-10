@@ -91,7 +91,7 @@ struct ContactRow: View {
     #else
         private static let gap: CGFloat = 12
         private static let lineGap: CGFloat = 2
-        private static let nameSize: CGFloat = 15
+        private static let nameSize: CGFloat = 14
         private static let nameWeight: Font.Weight? = .medium
         private static let previewSize: CGFloat = 13
         private static let previewLineHeight: CGFloat = 16
