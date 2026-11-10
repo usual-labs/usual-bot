@@ -15,9 +15,16 @@ struct MessageActions {
     var reply: (TranscriptItem) -> Void = { _ in }
     /// Quotes the words you selected in a message in your next one.
     var quote: (TranscriptItem, String) -> Void = { _, _ in }
-    /// Chats only: your last message, between replies, can be edited or taken back.
+    /// Chats only: a message of yours, which can be edited.
+    var canEdit: (TranscriptItem) -> Bool = { _ in false }
+    /// Chats only: the Bot's last reply, which can be asked again.
+    var canRetry: (TranscriptItem) -> Bool = { _ in false }
+    /// Chats only: your last message, which can be taken back.
     var canRewind: (TranscriptItem) -> Bool = { _ in false }
+    /// Why those can't run on this message right now; they show greyed out with it.
+    var rewindUnavailable: (TranscriptItem) -> String? = { _ in nil }
     var edit: (TranscriptItem) -> Void = { _ in }
+    var retry: (TranscriptItem) -> Void = { _ in }
     var undo: (TranscriptItem) -> Void = { _ in }
 }
 
@@ -112,9 +119,11 @@ struct MessageRow<Content: View>: View {
         if canReact(actions) { Button("React") { picking = true } }
         Button("Reply") { actions.reply(item) }
         Button("Copy", action: copy)
-        if actions.canRewind(item) {
-            Button("Edit") { actions.edit(item) }
-            Button("Undo") { actions.undo(item) }
+        // VoiceOver can't grey an action out, so they're offered only while they'd run.
+        if actions.rewindUnavailable(item) == nil {
+            if actions.canEdit(item) { Button("Edit") { actions.edit(item) } }
+            if actions.canRetry(item) { Button("Try Again") { actions.retry(item) } }
+            if actions.canRewind(item) { Button("Undo") { actions.undo(item) } }
         }
     }
 
@@ -287,11 +296,23 @@ struct MessageRow<Content: View>: View {
         #endif
     }
 
-    /// Edit and Undo, for your last message.
+    /// Edit for your messages, Try Again for the Bot's last reply, Undo for your last message.
+    /// Between replies and online; otherwise greyed out, with the reason under them.
     @ViewBuilder private func rewindButtons(_ actions: MessageActions) -> some View {
-        if actions.canRewind(item) {
-            Button("Edit", systemImage: "pencil") { actions.edit(item) }
-            Button("Undo", systemImage: "arrow.uturn.backward", role: .destructive) { actions.undo(item) }
+        let canEdit = actions.canEdit(item)
+        let canRetry = actions.canRetry(item)
+        let canUndo = actions.canRewind(item)
+        if canEdit || canRetry || canUndo {
+            let reason = actions.rewindUnavailable(item)
+            Group {
+                if canEdit { Button("Edit", systemImage: "pencil") { actions.edit(item) } }
+                if canRetry { Button("Try Again", systemImage: "arrow.clockwise") { actions.retry(item) } }
+                if canUndo {
+                    Button("Undo", systemImage: "arrow.uturn.backward", role: .destructive) { actions.undo(item) }
+                }
+            }
+            .disabled(reason != nil)
+            if let reason { Text(reason) }
         }
     }
 

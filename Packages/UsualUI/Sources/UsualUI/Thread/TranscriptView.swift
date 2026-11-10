@@ -268,9 +268,13 @@ struct ItemView: View {
     /// Rooms only: resolves a member ID to its author.
     var author: (String) -> MemberAuthor? = { _ in nil }
     @Environment(\.highlightedItem) private var highlighted
+    @Environment(\.editingFrom) private var editingFrom
 
     var body: some View {
         content
+            // Sending the edit removes what follows the message being edited.
+            .opacity(editingFrom.map { item.id > $0 } == true ? 0.4 : 1)
+            .animation(.easeOut(duration: 0.15), value: editingFrom)
             // Behind the row, not over it: a reply runs the column's full width.
             .background {
                 if highlighted == item.id {

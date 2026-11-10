@@ -48,6 +48,11 @@ run from it with a stand-in model.
 - **Undo rewinds to your last message.** There's no `session.undo`: the app reads `session.history`
   and rewinds to the newest row `GatewayTurn` reads as yours, skipping routine results and other
   rows Hermes starts itself.
+- **Editing an earlier message is a `rewind` to its row, then a plain `prompt.submit`,** as Hermes's
+  desktop app does (`splitRewindSubmit`): the owner's `prompt.submit` takes no truncation keys. Two
+  calls, so a failed send can leave the chat cut; the app then shows the gateway's copy and gives
+  the text back. `rewind` takes any active user row, needs the session idle, and refuses a row
+  compression summarised (`invalid_params`, detail `compacted: …`).
 - **Closing detaches this app's subscription only** (`session.detach`). A `session.replay_gap`
   detaches too; the next roster refresh attaches again with a fresh snapshot.
 - **Rooms dismiss with `groups.discard`** when the retry action offers only discard, which needs the
@@ -78,4 +83,6 @@ run from it with a stand-in model.
   a two-Bot room. Not against the developer's gateway.
 - iPhone, Tailscale Serve over `https`, and Built-in Tailscale with a `.ts.net` name.
 - Room retry and discard (they need a member's turn to fail), and room approvals.
+- Rewinding past the last exchange, on either dialect: read from Hermes v0.23.1's source and run
+  against fakes and the demo only. Undo's `rewind` to the last row is the same call and did run.
 - `clarify.settled` gives no reason, so a question that timed out shows no notice.

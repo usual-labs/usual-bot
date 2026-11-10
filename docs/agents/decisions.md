@@ -43,9 +43,24 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
 - **Agents often name images in plain text.** `MEDIA:` lines appear only when Hermes tells an agent
   the surface renders them, and sessions the desktop app didn't create may get terminal
   instructions. So an absolute path ending in an image type also becomes an image.
-- **Undo is `session.undo`, then `session.history`.** Edit is undo plus an ordinary send, as the Ink
-  TUI's `/retry` does. An edit keeps text and `@file:` references; images must be attached again.
-  `truncate_before_row_id` (rewinding further back) isn't used.
+- **Undo is `session.undo`, then `session.history`.** Editing your last message, and Try Again on
+  the Bot's last reply, are undo plus an ordinary send, as the Ink TUI's `/retry` does. An edit
+  keeps text and `@file:` references; images must be sent again, so Try Again is refused for a
+  message that had one.
+- **Editing an earlier message is `prompt.submit` with `truncate_before_row_id`** and the three
+  confirm flags (`confirm_truncate`, `confirm_deep_truncate`, and `confirm_empty_truncate` for the
+  chat's first message): the app has already asked. The Webapp has no such keys; see
+  `canonical-protocol.md`. A message sent since the chat opened has no row ID here, so
+  `session.history` is read and the row found by its words, counted from the newest that say the
+  same: this device's copy holds lines the gateway's doesn't (an answer to a question, a steer).
+- **Going back is one chat, cut shorter:** no branches and no plain "rewind to here". Edit already
+  reaches any point, and Undo covers the last exchange without retyping. Try Again is offered only
+  where the reply answers a message of yours, not a routine's result or another Bot's message.
+- **The app asks before a cut only when it's more than the last exchange, or the Bot acted in it**
+  (`ChatThread.RewindCost`), and says that the Bot's actions stay done. Hermes's checkpoints
+  (`undo_hint`, `rollback.*`) could undo file changes; the app doesn't offer that.
+- **Rooms have no edit or regenerate.** `groups.retry` reruns one member's stopped turn; Hermes has
+  no call that cuts a room's transcript.
 - **Reactions are display-only in Hermes.** The agent's model never sees them, and rooms have no
   reaction call.
 

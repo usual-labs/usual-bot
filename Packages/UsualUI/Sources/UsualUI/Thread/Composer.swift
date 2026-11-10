@@ -14,13 +14,15 @@ struct Composer: View {
     var agentDefault: AgentDetails?
     @Binding var attachments: [Attachment]
     @Binding var quotes: [QuotedMessage]
-    /// You're rewriting your last message: Send replaces it.
-    @Binding var editing: Bool
+    /// The message of yours you're rewriting: Send replaces it, and removes what came after it.
+    @Binding var editing: TranscriptItem.ID?
+    /// Asks before an edit that removes more than the last exchange, or what the Bot acted in.
+    var confirm: (RewindRequest) -> Void = { _ in }
     /// A call holds the microphone: no dictation or second call meanwhile.
     var inCall = false
     var startCall: (() -> Void)?
     @Environment(\.drafts) private var drafts
-    /// The text while you rewrite your last message. Your draft waits meanwhile, and is back in
+    /// The text while you rewrite a message. Your draft waits meanwhile, and is back in
     /// the box once the edit is sent or stopped.
     @State private var edit = ""
 
@@ -37,7 +39,10 @@ struct Composer: View {
             box
         }
         .task(id: thread.isAttached) { await thread.loadModelsAndUsage() }
-        .onChange(of: editing) { if !editing { edit = "" } }
+        .onChange(of: editing) { if editing == nil { edit = "" } }
+        // Item IDs start over with each copy of the chat, so an edit can't outlast one.
+        .onChange(of: thread.transcriptLoad) { editing = nil }
+        .onChange(of: edited == nil) { _, gone in if gone { editing = nil } }
         .animation(.smooth(duration: 0.2), value: thread.sideQuestions)
         .animation(.smooth(duration: 0.2), value: thread.backgroundTasks)
     }
@@ -46,14 +51,20 @@ struct Composer: View {
         MessageBox(
             conversation: chatID,
             text: Binding(
-                get: { editing ? edit : drafts?[chatID] ?? "" },
-                set: { if editing { edit = $0 } else { drafts?[chatID] = $0 } }),
+                get: { editing != nil ? edit : drafts?[chatID] ?? "" },
+                set: { if editing != nil { edit = $0 } else { drafts?[chatID] = $0 } }),
             placeholder: placeholder, isRunning: thread.state.isRunning, canSend: thread.canSend,
             stopLabel: String(localized: "Stop \(agentName)"),
             attaching: AttachmentSending(
                 attachments: $attachments, canSend: thread.canSendAttachments, isUploading: thread.isUploading,
                 send: thread.send(_:attachments:)),
-            quotes: $quotes, editing: $editing, startCall: thread.isAttached ? startCall : nil, inCall: inCall,
+            quotes: $quotes, editing: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } }),
+            // The reason an earlier message can't be replaced yet, in place of what would go.
+            editingLabel: edited.map {
+                (isLast($0) ? nil : thread.rewindUnavailable)
+                    ?? RewindRequest.editingLabel(for: thread.rewindCost(of: $0))
+            },
+            startCall: thread.isAttached ? startCall : nil, inCall: inCall,
             commands: SlashCommands(
                 list: thread.commands, load: { Task { await thread.loadCommands() } },
                 prefill: Binding(get: { thread.prefill }, set: { thread.prefill = $0 })),
@@ -61,11 +72,37 @@ struct Composer: View {
             send: send, stop: thread.stop)
     }
 
+    private var edited: TranscriptItem? {
+        editing.flatMap { id in thread.state.items.first { $0.id == id } }
+    }
+
+    private func isLast(_ item: TranscriptItem) -> Bool { item.id == thread.lastSent?.id }
+
     private func send(_ text: String) {
-        guard editing else { return thread.send(text) }
-        editing = false
-        // A reply that started meanwhile can't be undone under it; the text goes as a new message.
-        if thread.canRewind { Task { await thread.edit(text) } } else { thread.send(text) }
+        guard let item = edited else {
+            editing = nil
+            return thread.send(text)
+        }
+        guard thread.canRewind, let cost = thread.rewindCost(of: item) else {
+            if isLast(item) {
+                // A reply that started meanwhile can't be undone under it; the text goes as a new message.
+                editing = nil
+                thread.send(text)
+            } else {
+                // Steering the reply with words meant for an earlier point would make no sense: the
+                // edit waits, and the box says for what.
+                edit = text
+            }
+            return
+        }
+        if cost.needsConfirmation {
+            // The box emptied as it sent; the text stays until you've said yes.
+            edit = text
+            confirm(RewindRequest(kind: .edit(item, text: text), cost: cost))
+            return
+        }
+        editing = nil
+        Task { await thread.edit(item, to: text) }
     }
 
     private var placeholder: String {
