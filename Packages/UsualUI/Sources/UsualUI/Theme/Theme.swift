@@ -40,8 +40,14 @@ public enum Theme {
     /// A conversation's column, and the message box under it.
     static let columnWidth: CGFloat = 960
     public static let border = Color(light: 0xE6E6E6, dark: 0x2E2E2E)
-    public static let ink = Color(light: 0x111111, dark: 0xFFFFFF)
-    public static let secondaryInk = Color(light: 0x5C5C5C, dark: 0xB0B0B0)
+    /// Off-white and a mid grey in dark mode, as measured in Grok's Mac app: pure white on these
+    /// near-black surfaces made regular text look bold. The grey still reads at 4.5:1 or more on
+    /// every surface here, the glass message box included.
+    public static let ink = Color(light: 0x111111, dark: 0xF0F0F0)
+    public static let secondaryInk = Color(light: 0x5C5C5C, dark: 0x9E9E9E)
+    /// Inline code in a reply: quieter than the words around it, on a faint chip.
+    static let codeInk = Color(light: 0x4D4D4D, dark: 0xA8A8A8)
+    static let codeChip = ink.opacity(0.05)
     /// The selected contact row in the sidebar.
     public static let selection = Color(light: 0xEBEBEB, dark: 0x2A2A2A)
     /// Primary buttons and unread badges.

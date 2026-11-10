@@ -328,7 +328,10 @@ struct MarkdownView: View {
         for (inline, range) in text.runs[\.inlinePresentationIntent] {
             guard let inline, !inline.isEmpty else { continue }
             if inline.contains(.code) {
-                text[range].font = .system(size: size - 0.5, design: .monospaced)
+                // Monospaced letters run large beside the text's, so they're set a step smaller.
+                text[range].font = .system(size: size * 0.9, design: .monospaced)
+                text[range].foregroundColor = Theme.codeInk
+                text[range].backgroundColor = Theme.codeChip
                 continue
             }
             var font = Font.system(size: size, weight: inline.contains(.stronglyEmphasized) ? .semibold : weight)

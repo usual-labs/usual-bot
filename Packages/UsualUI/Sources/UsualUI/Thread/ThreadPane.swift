@@ -335,12 +335,14 @@ struct NamePill: View {
         private static let height: CGFloat = 44
         private static let avatar: CGFloat = 32
         private static let nameSize: CGFloat = 17
+        private static let nameWeight: Font.Weight = .semibold
         private static let leading: CGFloat = 6
         private static let trailing: CGFloat = 18
     #else
         private static let height = ThreadPane.barItemHeight
         private static let avatar: CGFloat = 26
-        private static let nameSize: CGFloat = 15
+        private static let nameSize: CGFloat = 14
+        private static let nameWeight: Font.Weight = .medium
         private static let leading: CGFloat = 5
         private static let trailing: CGFloat = 16
     #endif
@@ -385,7 +387,7 @@ struct NamePill: View {
             case .room: RoomAvatar(members: members, size: Self.avatar)
             }
             Text(contact.name)
-                .scaledFont(size: Self.nameSize, weight: .semibold)
+                .scaledFont(size: Self.nameSize, weight: Self.nameWeight)
                 .foregroundStyle(Theme.ink)
                 .lineLimit(1)
         }

@@ -197,8 +197,8 @@ struct SectionNameField: View {
     }
 
     #if os(macOS)
-        static var titleSize: CGFloat { 13 }
-        static var titleWeight: Font.Weight? { .medium }
+        static var titleSize: CGFloat { 12 }
+        static var titleWeight: Font.Weight? { nil }
     #else
         static var titleSize: CGFloat { 17 }
         static var titleWeight: Font.Weight? { nil }
