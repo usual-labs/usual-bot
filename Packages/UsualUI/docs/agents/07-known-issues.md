@@ -177,6 +177,13 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **One `AVPlayer` for the app (`MediaPlayback.shared`).** Views compare its key, so reading
   `elapsed` outside the playing view would redraw every player ten times a second. A finished file
   stays loaded at its start, so a full-screen video isn't pulled out from under AVKit.
+- **Read Aloud hangs off the player.** `ReadAloud` sets `MediaPlayback`'s `willPlay` and `left`,
+  so a file starting, a chat being left and the panel closing stop the reading with no call at
+  those sites. A new way to make sound has to go through `MediaPlayback.play` or stop the reading
+  itself, as `CallBar` does. It shares `SpokenReply`'s cleaning with on-device calls, so a change
+  to what's spoken changes both. Unverified: that sound comes out (the state and timing were
+  checked on the Mac, not heard), the iPhone's silent switch and other apps' music resuming
+  afterwards, and VoiceOver speaking over a reading.
 - **AVPlayerView exposed nothing to the accessibility tree** inline in a chat (macOS 27, checked
   with AX queries, not VoiceOver itself), so on the Mac the playing video is one element with
   Play, Pause and Play from the start. Its full-screen button shows on hover only; unverified with

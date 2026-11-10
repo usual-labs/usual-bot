@@ -46,11 +46,14 @@ struct MessageRow<Content: View>: View {
     let agentName: String
     /// Your own messages sit on the right, so their reactions do too.
     let isMine: Bool
+    /// A Bot's words can be read aloud; your own messages and command output can't.
+    var readsAloud = false
     @ViewBuilder let content: Content
 
     @Environment(\.messageActions) private var actions
     @Environment(\.selectText) private var selectText
     @Environment(\.chatContact) private var chatContact
+    @Environment(\.playbackScope) private var playbackScope
     /// The pointer is over the message, or left it a moment ago (on its way to the bar).
     @State private var overMessage = false
     @State private var overBar = false
@@ -101,6 +104,7 @@ struct MessageRow<Content: View>: View {
         VStack(alignment: isMine ? .trailing : .leading, spacing: 4) {
             content
                 .environment(\.quoteSelection, actions.map { actions in { actions.quote(item, $0) } })
+            if isReading { stopReadingPill }
             if !item.reactions.isEmpty { reactionPills }
         }
         // On each part of the message, so VoiceOver offers them wherever it lands.
@@ -112,6 +116,7 @@ struct MessageRow<Content: View>: View {
         if canReact(actions) { Button("React") { picking = true } }
         Button("Reply") { actions.reply(item) }
         Button("Copy", action: copy)
+        if canRead { Button(readLabel, action: readAloud) }
         if actions.canRewind(item) {
             Button("Edit") { actions.edit(item) }
             Button("Undo") { actions.undo(item) }
@@ -123,6 +128,44 @@ struct MessageRow<Content: View>: View {
     /// An outlined face. macOS 26 swaps the face symbols with the appearance: `face.smiling` is
     /// filled in dark mode, and `.inverse` is the outline there.
     private var reactSymbol: String { colorScheme == .dark ? "face.smiling.inverse" : "face.smiling" }
+
+    // MARK: Read aloud
+
+    private var readingKey: String {
+        ReadAloud.key(scope: playbackScope, chat: chatContact?.id ?? "", item: item.id)
+    }
+
+    private var isReading: Bool { readsAloud && ReadAloud.shared.key == readingKey }
+
+    /// Not during a call, which speaks for itself, and not a reply that's only code or a file.
+    private var canRead: Bool {
+        readsAloud && (isReading || (!ReadAloud.shared.inCall && SpokenReply.hasWords(in: text)))
+    }
+
+    private var readLabel: String { isReading ? String(localized: "Stop Reading") : String(localized: "Read Aloud") }
+
+    @ViewBuilder private var readButton: some View {
+        if canRead {
+            Button(readLabel, systemImage: isReading ? "stop.circle" : "speaker.wave.2", action: readAloud)
+        }
+    }
+
+    private func readAloud() {
+        if isReading { ReadAloud.shared.stop() } else { ReadAloud.shared.read(text, key: readingKey) }
+    }
+
+    /// Under the message being read, so you can see which one it is and stop it without the menu.
+    private var stopReadingPill: some View {
+        Button(action: readAloud) {
+            Label("Stop Reading", systemImage: "stop.fill").scaledFont(size: 12, weight: .medium)
+        }
+        .buttonStyle(.clickable(.bordered))
+        .buttonBorderShape(.capsule)
+        .controlSize(.small)
+        .tint(Theme.ink)
+        .help("Stop reading this message aloud")
+        .transition(.opacity)
+    }
 
     // MARK: Reactions under the message
 
@@ -199,6 +242,7 @@ struct MessageRow<Content: View>: View {
                 barButton("arrowshape.turn.up.left", String(localized: "Reply")) { actions.reply(item) }
                 Menu {
                     Button("Copy", systemImage: "doc.on.doc", action: copy)
+                    readButton
                     rewindButtons(actions)
                 } label: {
                     Image(systemName: "ellipsis").frame(width: 28, height: 28)
@@ -273,6 +317,7 @@ struct MessageRow<Content: View>: View {
         }
         Button("Reply", systemImage: "arrowshape.turn.up.left") { actions.reply(item) }
         Button("Copy", systemImage: "doc.on.doc", action: copy)
+        readButton
         // Only iPhone provides this: the Mac selects within the message itself.
         if let selectText, !text.isEmpty {
             Button("Select Text", systemImage: "selection.pin.in.out") {
