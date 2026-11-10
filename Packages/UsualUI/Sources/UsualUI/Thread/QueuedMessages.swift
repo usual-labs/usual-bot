@@ -6,6 +6,9 @@ import SwiftUI
 /// can be edited (back into the box), sent now or removed.
 struct QueuedMessages: View {
     let thread: ChatThread
+    /// About four one-line rows before the list scrolls. It grows with the text, short of taking
+    /// the chat's place.
+    @ScaledMetric(relativeTo: .body) private var listHeight: CGFloat = 136
 
     var body: some View {
         let held = thread.queue.filter(\.isHeld)
@@ -46,6 +49,8 @@ struct QueuedMessages: View {
         Text(text)
             .scaledFont(size: 12, weight: .semibold)
             .foregroundStyle(Theme.secondaryInk)
+            // Wraps at large text sizes, where one line would cut the sentence short.
+            .fixedSize(horizontal: false, vertical: true)
             .accessibilityAddTraits(.isHeader)
     }
 
@@ -60,7 +65,7 @@ struct QueuedMessages: View {
         }
         .thinScroller()
         .scrollBounceBehavior(.basedOnSize)
-        .frame(maxHeight: 136)
+        .frame(maxHeight: min(listHeight, 260))
         .fixedSize(horizontal: false, vertical: true)
     }
 }
