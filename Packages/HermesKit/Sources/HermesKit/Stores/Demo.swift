@@ -529,8 +529,19 @@
                     message.role == "user" ? "message.user" : "message.member",
                     from: message.role == "user" ? you : member("atlas"), message.text ?? "", minutesAgo: 60)
             }
+            events.append(event("message.user", from: you, "Launch is Thursday. What's left?", minutesAgo: 42))
+            // Forge leads: it read the question first and gave it to itself and Atlas.
+            seq += 1
+            events.append([
+                "room_id": "launch", "seq": .number(Double(seq)), "event_id": "demo-assignment",
+                "kind": "room.assignment", "actor": ["kind": "gateway", "id": "demo"],
+                "payload": [
+                    "discussion_event_id": "demo-question", "thread_id": "main", "task_id": "demo-routing",
+                    "lead_member_id": "forge", "member_ids": ["forge", "atlas"], "fallback": false,
+                ],
+                "created_at": .number(ago(41).timeIntervalSince1970),
+            ])
             events += [
-                event("message.user", from: you, "Launch is Thursday. What's left?", minutesAgo: 42),
                 event(
                     "message.member", from: member("forge"),
                     "Search on Turbopuffer ships behind a flag tomorrow. Staging is waiting on one migration.",
@@ -551,7 +562,11 @@
                     minutesAgo: 31),
                 event("message.member", from: member("scribe"), DemoMedia.clipReply, minutesAgo: 30),
             ]
-            return RoomThread.sample(roomSummary, events: events)
+            return RoomThread.sample(
+                roomSummary, events: events,
+                settings: RoomSettings(
+                    purpose: "Ship the Thursday launch", notes: "Staging first. Pricing stays as it is.",
+                    routing: .lead, leadID: "forge"))
         }
 
         private var roomSummary: RoomSummary {
