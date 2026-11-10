@@ -194,6 +194,11 @@
                     id: "demo-queued-2", text: "When both are done, write up what to delete and what to keep.",
                     admissionID: "demo"),
             ]
+            // And Ops is three turns into a goal, which shows above the queue.
+            threads["ops"]?.goal = Goal(
+                text: "Free 20 GB on db-1 without touching the backups", turnsUsed: 3, turnsAllowed: 20,
+                criteria: ["Leave /var/backups alone"],
+                lastCheck: "The old logs are gone, but only 12 GB is free so far.")
             threads["ops"]?.usage = ChatUsage(
                 context: .init(used: 172_000, max: 200_000, percent: 86, estimated: false), input: 2_340_000,
                 output: 96_000, calls: 212, compressions: 2)

@@ -61,7 +61,26 @@ final class FakeSocket: WebSocketConnection {
         waiter?.resume(returning: text)
     }
 
-    func send(_ text: String) async throws { outbound.withLock { $0.append(text) } }
+    /// The goal a chat reads when it attaches (`session.control.read`), answered here so tests
+    /// about anything else don't have to: `nil` is a gateway without goals, which refuses the
+    /// call. The read stays out of `sent`.
+    let goalControl = Mutex<JSONValue?>(nil)
+
+    func send(_ text: String) async throws {
+        if let frame = try? JSONDecoder().decode(JSONValue.self, from: Data(text.utf8)),
+            frame["method"] == "session.control.read"
+        {
+            var reply: [String: JSONValue] = ["jsonrpc": "2.0", "id": frame["id"] ?? .null]
+            if let control = goalControl.withLock({ $0 }) {
+                reply["result"] = ["control": control]
+            } else {
+                reply["error"] = ["code": -32601, "message": "unknown method: session.control.read"]
+            }
+            deliver(String(decoding: try JSONEncoder().encode(JSONValue.object(reply)), as: UTF8.self))
+            return
+        }
+        outbound.withLock { $0.append(text) }
+    }
 
     func receive() async throws -> String {
         let text: String? = await withCheckedContinuation { continuation in

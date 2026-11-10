@@ -78,16 +78,26 @@ struct QueueTests {
         let (thread, gateway, routing) = try await open(resume: recording.result(of: "session.resume"))
         var swaps: [String: String] = [:]
         var requestIDs: [JSONValue: JSONValue] = [:]
+        var delivered = 0
+        // `session.resume` was the first.
+        var answered = 1
         var steps = steps(thread)[...]
         let afterResume = try #require(recording.entries.firstIndex { $0.frame["result"]?["display_messages"] != nil })
         for entry in recording.entries[(afterResume + 1)...] {
             if entry.direction == "out" {
                 let next = steps.popFirst()
                 let step = try #require(next, "The recording has a request the test doesn't make")
+                // The gateway sent these before it got the request, so the app has seen them by
+                // then. An answer can overtake the events before it, and an old list of what's
+                // waiting would take a just-queued message out for a moment.
+                let seen = delivered
+                try await waitUntilOnMain { thread.lastSeq >= seen }
                 try await waitUntilOnMain(step.ready)
-                let sent = gateway.socket.sent.count
+                // Counted in order: one the app sends by itself may already be out.
+                let sent = answered
+                answered += 1
                 step.act()
-                try await waitUntil { gateway.socket.sent.count == sent + 1 }
+                try await waitUntil { gateway.socket.sent.count > sent }
                 let request = gateway.socket.sent[sent]
                 #expect(request["method"]?.stringValue == step.method)
                 #expect(entry.frame["method"]?.stringValue == step.method)
@@ -110,6 +120,10 @@ struct QueueTests {
             }
             var text = String(decoding: try JSONEncoder().encode(frame), as: UTF8.self)
             for (recorded, own) in swaps { text = text.replacingOccurrences(of: recorded, with: own) }
+            // A queued message taken back ends no turn, so the chat never hears of it.
+            if frame["params"]?["payload"]?["outcome"] != "cancelled" || frame["params"]?["payload"]?["status"] != nil {
+                delivered = max(delivered, frame["params"]?["seq"]?.intValue ?? 0)
+            }
             gateway.socket.deliver(text)
         }
         #expect(steps.isEmpty)

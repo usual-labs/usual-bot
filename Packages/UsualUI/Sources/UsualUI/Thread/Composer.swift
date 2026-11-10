@@ -27,6 +27,9 @@ struct Composer: View {
     var body: some View {
         // Background tasks and side answers float above the box.
         VStack(alignment: .trailing, spacing: 0) {
+            if let goal = thread.goal, let phase = thread.goalPhase {
+                GoalBar(thread: thread, goal: goal, phase: phase, agentName: agentName).padding(.bottom, 6)
+            }
             if !thread.backgroundTasks.isEmpty {
                 BackgroundTasksBar(tasks: thread.backgroundTasks).padding(.bottom, 6)
             }
@@ -44,6 +47,7 @@ struct Composer: View {
         .animation(.smooth(duration: 0.2), value: thread.sideQuestions)
         .animation(.smooth(duration: 0.2), value: thread.backgroundTasks)
         .animation(.smooth(duration: 0.2), value: thread.queue)
+        .animation(.smooth(duration: 0.2), value: thread.goal == nil)
     }
 
     private var box: some View {
@@ -53,7 +57,7 @@ struct Composer: View {
                 get: { editing ? edit : drafts?[chatID] ?? "" },
                 set: { if editing { edit = $0 } else { drafts?[chatID] = $0 } }),
             placeholder: placeholder, isRunning: thread.state.isRunning, canSend: thread.canSend,
-            stopLabel: String(localized: "Stop \(agentName)"),
+            stopLabel: stopLabel,
             attaching: AttachmentSending(
                 attachments: $attachments, canSend: thread.canSendAttachments, isUploading: thread.isUploading,
                 send: thread.send(_:attachments:)),
@@ -76,6 +80,12 @@ struct Composer: View {
         editing = false
         // A reply that started meanwhile can't be undone under it; the text goes as a new message.
         if thread.canRewind { Task { await thread.edit(text) } } else { thread.send(text) }
+    }
+
+    /// With a goal at work, the box's Stop ends only the reply: the goal bar's Stop Goal ends the goal.
+    private var stopLabel: String {
+        thread.goalPhase == .working
+            ? String(localized: "Stop this reply. The goal carries on.") : String(localized: "Stop \(agentName)")
     }
 
     private var placeholder: String {

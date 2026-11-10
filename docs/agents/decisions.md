@@ -60,6 +60,40 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   interrupted, which reads as Stop not working (the official app parks its queue for the same
   reason). The app takes the queued messages back first and keeps them on the device, in the
   offline cache, until Resume.
+- **A goal is Hermes's state, shown and never kept here.** `/goal` sets a standing goal on the
+  chat's session; after each turn an auxiliary model judges it (done, blocked, wait, continue) and
+  the gateway admits the next turn itself, with no app attached. The app reads it
+  (`session.control.read`, `session.control.update`) and changes it only through
+  `session.control`. It never calls `session.automation`: that marks the session as driven by its
+  viewer, and the gateway then stops judging and continuing it.
+- **Hermes's "paused" reads "stopped" here, with its reason.** Hermes has no stopped state: you,
+  the turn budget and a "blocked" verdict all pause. The bar says which. Stop Goal is
+  `goal.pause`, then taking back any continuation already queued, then interrupting the reply,
+  in that order: an interrupted reply that said anything is judged like any other and the next
+  turn starts at once. Pausing alone would let the reply run on, which isn't what Stop means.
+  Continue is `goal.resume` (which resets the budget) and Clear is `goal.clear`.
+- **The message box's Stop doesn't stop a goal.** It ends one reply, as it always has, and the
+  goal carries on; the chat says so, and the button's label does while a goal works. Making it
+  stop the goal too would leave no way to cut one reply short.
+- **"Not running" is a state of its own.** A goal can be active with nothing running and nothing
+  queued (a reply stopped before any text, a failed turn, a gateway restart: seen on the
+  throwaway gateway). Showing that as working would be a lie, so it has its own words and
+  Continue.
+- **A goal's own turns are a line in the chat, not a message.** Hermes stores its continuation
+  prompt as a user row; the app shows "Carried on with the goal" there, by the prompt's wording,
+  so it also holds for the one Continue sends from here. Undo therefore goes back past them.
+- **`/goal` and `/subgoal` run while a reply does**, as Hermes allows; other commands still wait.
+  What they print is left out when the goal bar already shows the change. A new goal typed
+  mid-reply is refused here, in the app's words, instead of with Hermes's line about `/stop`.
+- **No form for setting a goal, and no editing of added criteria.** `/goal <words>` from the
+  message box is the way in; criteria added with `/subgoal` show in the bar. A sheet for either
+  wasn't small.
+- **A goal ending by itself notifies like a background task** (the same setting), only while the
+  app is connected: Hermes has no hook the push plugin could send it from.
+- **Rooms have no goals.** A goal belongs to one session and its queue; a room's turns are run by
+  the room.
+- **Loops and heartbeats aren't shown.** They share the goal's calls and snapshot
+  (`session.control`'s `loop` and `heartbeat`) and would be the same kind of bar.
 - **Rooms and the ⌥Space panel don't queue.** A room message already runs as its own task per
   member beside the replies under way, so there's nothing to wait behind. The panel is for one
   message and its answer; what it sends to a busy Bot steers, as before.
@@ -520,6 +554,13 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
 
 ## Not verified
 
+- Goals ran against a throwaway Hermes 0.23.1 gateway with a stand-in model and a stand-in judge,
+  from a script on its socket (`canonical-protocol.md`), and in the app only in the demo. Not run:
+  the app itself on a real gateway; anything on the dashboard, whose goal calls and events are
+  from the source only (it ends a reply before judging it, which `isCheckingGoal` covers); an
+  approval or question during a goal's turn; a goal parked on a background process; quality
+  gates and contracts (`/goal gate`, `/goal draft`), which the bar doesn't show; and the official
+  app showing the same goal.
 - The message queue ran against a throwaway Hermes 0.23.1 gateway with a stand-in model, from a
   script on its socket (`canonical-protocol.md`), and in the app only in the demo, on the Mac and
   in the iPhone Simulator. Not run: the app itself on a real gateway, an iPhone device, a queued

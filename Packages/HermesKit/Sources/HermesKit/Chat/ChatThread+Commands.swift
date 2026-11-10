@@ -80,6 +80,14 @@ extension ChatThread {
         async
     {
         let argument = String(text.dropFirst(command.name.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+        // The goal shows above the message box, so what its commands print is said there instead.
+        let isGoal = Self.goalCommands.contains(command.name.lowercased())
+        let goalBefore = goal
+        if state.isRunning, command.name.lowercased() == "/goal", !Self.controlsGoal(argument) {
+            // Hermes refuses a new goal mid-reply, in words about its terminal.
+            state.addNotice(Self.goalWhileReplying)
+            return
+        }
         do {
             let result = try await channel.call(
                 "command.dispatch",
@@ -91,8 +99,10 @@ extension ChatThread {
             case "skill", "send":
                 guard let message = result["message"]?.stringValue, !message.isEmpty else { break }
                 // The bubble shows what you typed (or the gateway's short form), not the skill's text.
-                state.sendLocally(result["display"]?.stringValue?.nonBlank ?? text)
-                if let notice = result["notice"]?.stringValue?.nonBlank { state.addNotice(notice) }
+                let shown = result["display"]?.stringValue?.nonBlank ?? text
+                // `/goal resume` typed mid-reply: its turn waits for the reply to end.
+                if state.isRunning { state.steerLocally(shown) } else { state.sendLocally(shown) }
+                if !isGoal, let notice = result["notice"]?.stringValue?.nonBlank { state.addNotice(notice) }
                 await submit(message, sessionID: sessionID, channel: channel)
             case "prefill":
                 prefill = result["message"]?.stringValue
@@ -105,6 +115,10 @@ extension ChatThread {
                     channel: channel, depth: depth + 1)
             default:
                 // `exec` and `plugin`: output to read, no turn.
+                if isGoal {
+                    await loadGoal()
+                    if goal != goalBefore { break }
+                }
                 state.showCommand(text)
                 if let output = result["output"]?.stringValue?.nonBlank {
                     state.addOutput(output)

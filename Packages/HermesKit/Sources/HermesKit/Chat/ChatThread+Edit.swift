@@ -7,7 +7,10 @@ extension ChatThread {
     }
 
     /// Undo and Edit work between replies, one at a time.
-    public var canRewind: Bool { canSend && !state.isRunning && !isUploading && !isRewinding && lastSent != nil }
+    /// Not while a goal is between two of its replies: the next one is about to start.
+    public var canRewind: Bool {
+        canSend && !state.isRunning && !isUploading && !isRewinding && lastSent != nil && goalPhase != .working
+    }
 
     /// What Edit puts back in the message box: the text and any file references. Images went with
     /// the old message and would have to be attached again.
