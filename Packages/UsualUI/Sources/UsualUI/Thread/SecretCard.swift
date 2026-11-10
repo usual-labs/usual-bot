@@ -34,6 +34,7 @@ struct SecretCard: View {
             details
             SecureField(placeholder, text: $value)
                 .textFieldStyle(.roundedBorder)
+                .textInputTint()
                 .scaledFont(size: 14)
                 .autocorrectionDisabled()
                 .privacySensitive()

@@ -193,3 +193,15 @@ public struct SystemSwitchStyle: ToggleStyle {
 extension ToggleStyle where Self == SystemSwitchStyle {
     public static var systemSwitch: SystemSwitchStyle { SystemSwitchStyle() }
 }
+
+extension View {
+    /// A text field's cursor and selected text in the system's own blue (the Mac's accent). A field
+    /// takes both from the tint, and the app's ink tint would draw selection grey in dark mode.
+    public func textInputTint() -> some View {
+        #if os(macOS)
+            tint(Color(nsColor: .controlAccentColor))
+        #else
+            tint(.blue)
+        #endif
+    }
+}

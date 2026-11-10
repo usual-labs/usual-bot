@@ -100,10 +100,12 @@ struct RoutineTemplateForm: View {
                     TextField(text: value, prompt: Text(verbatim: Self.sentence(field.help))) {
                         Text(verbatim: field.label)
                     }
+                    .textInputTint()
                 #else
                     TextField(text: value, prompt: Text(verbatim: Self.sentence(field.help))) {
                         Text(verbatim: field.label)
                     }
+                    .textInputTint()
                 #endif
             }
             if let problem {
