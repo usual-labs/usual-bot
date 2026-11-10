@@ -469,11 +469,14 @@ private struct ChatBars<Top: View, Actions: View, Bottom: View>: ViewModifier {
 
     #if os(iOS)
         /// The box is a bar the conversation scrolls under, softly blurred and faded as in Grok's
-        /// phone app, and the top edge fades the same way under the name and buttons.
+        /// phone app, and the top edge fades the same way under the name and buttons. The scrims
+        /// fade it into the pane's colour behind both bars.
         private func iPhoneBottomBar(_ conversation: some View, _ bar: some View) -> some View {
             conversation
+                .topEdgeScrim()
                 .safeAreaBar(edge: .bottom, spacing: 0) {
                     bar.environment(\.keyboardUp, bottomInset > homeIndicator)
+                        .bottomEdgeScrim()
                 }
                 .softScrollEdges()
         }
