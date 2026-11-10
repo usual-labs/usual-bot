@@ -29,6 +29,8 @@ enum BotChat {
         /// The session's own event numbering, on the canonical protocol. The legacy one numbers
         /// the gateway's events as a whole (`gateway.ready`).
         var replayEpoch: String? = nil
+        /// The canonical snapshot's `pending` and `running`: what's queued behind the running turn.
+        var queue: JSONValue? = nil
     }
 
     /// `knownID` is the stored Bot Chat ID from the roster, when the gateway reported one.
@@ -86,7 +88,8 @@ enum BotChat {
             historyOmitted: omitted || result["messages_omitted"]?.boolValue == true, inflight: inflight,
             openRequests: requests, info: result["info"],
             todoState: result["todo_state"], pendingConnection: result["pending_connection"],
-            replayEpoch: result["replay_epoch"]?.stringValue)
+            replayEpoch: result["replay_epoch"]?.stringValue,
+            queue: result["pending"].map { ["pending": $0, "running": result["running"] ?? false] })
     }
 
     static func create(profile: String, dialect: GatewayReady.Dialect, on channel: JSONRPCChannel) async throws

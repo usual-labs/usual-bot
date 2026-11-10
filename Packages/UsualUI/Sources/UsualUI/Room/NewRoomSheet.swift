@@ -6,8 +6,10 @@ import SwiftUI
 struct NewRoomSheet: View {
     /// The agents on this gateway, in sidebar order.
     let agents: [Contact]
-    /// Creates the room and returns its contact ID.
-    let create: (String, [Contact]) async throws -> Contact.ID
+    /// Creates the room and returns its contact ID. The last two say who answers, and the lead.
+    let create: (String, [Contact], RoomRouting, Contact?) async throws -> Contact.ID
+    /// The ways of choosing who answers that the gateway takes; empty where it has none.
+    var routings: () async -> [RoomRouting] = { [] }
     /// Told the new room's contact ID, to open it.
     let created: (Contact.ID) -> Void
 
@@ -17,6 +19,11 @@ struct NewRoomSheet: View {
     @State private var picked: [Contact.ID] = []
     @State private var isCreating = false
     @State private var problem: String?
+    /// What `routings` answered; the choice shows once it has.
+    @State private var modes: [RoomRouting] = []
+    /// Everyone, as in the official app.
+    @State private var routing = RoomRouting.everyone
+    @State private var lead: Contact.ID?
 
     static let seats = 2...6
 
@@ -29,8 +36,9 @@ struct NewRoomSheet: View {
             form
         }
         #if os(macOS)
-            .frame(width: 420, height: 560)
+            .frame(width: 420, height: modes.isEmpty ? 560 : 640)
         #endif
+        .task { modes = await routings() }
     }
 
     private var form: some View {
@@ -50,8 +58,12 @@ struct NewRoomSheet: View {
                     if let note = Self.seatsNote(picked: picked.count, available: agents.count) {
                         Text(note).foregroundStyle(Theme.ink)
                     }
-                    Text("A message without an @mention goes to all of them.")
+                    // With a choice of who answers, its own section says this.
+                    if modes.isEmpty { Text("A message without an @mention goes to all of them.") }
                 }
+            }
+            if !modes.isEmpty {
+                WhoAnswersSection(modes: modes, members: leadChoices, routing: $routing, lead: $lead)
             }
             if let problem {
                 Section {
@@ -118,6 +130,8 @@ struct NewRoomSheet: View {
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
 
+    private var leadChoices: [LeadChoice] { pickedAgents.map { LeadChoice(id: $0.id, name: $0.name) } }
+
     private var canCreate: Bool {
         !isCreating && Self.seats.contains(picked.count)
     }
@@ -126,11 +140,13 @@ struct NewRoomSheet: View {
         guard canCreate else { return }
         let members = pickedAgents
         let name = trimmedName.isEmpty ? suggestion : trimmedName
+        let leadID = LeadChoice.resolved(lead, among: leadChoices)
+        let leader = routing == .lead ? members.first { $0.id == leadID } : nil
         isCreating = true
         problem = nil
         Task {
             do {
-                let id = try await create(name, members)
+                let id = try await create(name, members, routing, leader)
                 created(id)
                 dismiss()
             } catch {
@@ -143,5 +159,6 @@ struct NewRoomSheet: View {
 
 #Preview("New room") {
     NewRoomSheet(
-        agents: SampleData.contacts().filter { $0.kind == .agent }, create: { _, _ in "room:new" }, created: { _ in })
+        agents: SampleData.contacts().filter { $0.kind == .agent }, create: { _, _, _, _ in "room:new" },
+        routings: { RoomRouting.allCases }, created: { _ in })
 }

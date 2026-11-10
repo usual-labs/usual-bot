@@ -41,12 +41,17 @@ extension AppModel {
     }
 
     /// Creates a room with `agents`, two to six of this gateway's agents, and lists it at once.
-    /// Returns the room's contact ID, to open it.
-    public func createRoom(named name: String, agents: [Contact]) async throws -> Contact.ID {
+    /// `lead` picks who answers a message without an @mention, when `routing` is `.lead`. Returns
+    /// the room's contact ID, to open it.
+    public func createRoom(
+        named name: String, agents: [Contact], routing: RoomRouting = .everyone, lead: Contact? = nil
+    ) async throws -> Contact.ID {
         let profiles = agents.map { $0.details?.profile ?? $0.id }
+        // A new room seats each Bot under its profile name, so that's the lead's member ID.
+        let settings = RoomSettings(routing: routing, leadID: lead.map { $0.details?.profile ?? $0.id })
         if isDemo {
             #if DEBUG
-                return addDemoRoom(named: name, profiles: profiles)
+                return addDemoRoom(named: name, profiles: profiles, settings: settings)
             #endif
         }
         guard let channel else { throw GatewayError.disconnected }
@@ -56,8 +61,58 @@ extension AppModel {
         rooms[contact.id] = room
         contacts.removeAll { $0.id == contact.id }
         contacts.append(contact)
+        if settings.routing != .everyone {
+            // The room exists by now, so a refusal is said in it rather than failing the sheet.
+            do {
+                try await RoomThread.setRouting(settings, roomID: summary.id, on: channel)
+            } catch {
+                room.addNotice(
+                    String(
+                        localized:
+                            "The room was made, but everyone answers in it for now: who answers wasn't saved. \(Self.describe(error))"
+                    ))
+            }
+        }
         Task { await room.sync() }
         return contact.id
+    }
+
+    /// The ways of choosing who answers that a new room can start with; empty where the gateway's
+    /// Hermes has none. A room already read says exactly. Without one, `groups.capabilities` lists
+    /// the calls: `groups.context` sets the routing, and `auto` came with `groups.continue`.
+    public func newRoomRouting() async -> [RoomRouting] {
+        if isDemo { return RoomRouting.allCases }
+        if let known = rooms.values.first(where: { $0.settings != nil })?.routingModes {
+            // The room's own choice is listed even where the gateway no longer takes it.
+            return known.isEmpty ? [] : RoomRouting.allCases.filter(known.contains)
+        }
+        guard let channel, let result = try? await channel.call("groups.capabilities", params: [:]),
+            case .array(let listed) = result["methods"], listed.contains("groups.context")
+        else { return [] }
+        return listed.contains("groups.continue") ? RoomRouting.allCases : [.everyone, .lead]
+    }
+
+    /// Why a room can't be changed right now, such as being offline; `nil` when it can.
+    public var roomEditingUnavailable: String? {
+        if isDemo { return nil }
+        switch link {
+        case .online: return nil
+        case .connecting: return String(localized: "Connecting to the gateway. Try again in a moment.")
+        case .offline:
+            return String(localized: "You're offline. Rooms can be changed once the gateway is back.")
+        }
+    }
+
+    /// Saves a room's purpose, notes and who answers, for everyone in it.
+    public func saveRoomSettings(_ contact: Contact, _ settings: RoomSettings) async throws {
+        guard let room = rooms[contact.id], settings != room.settings else { return }
+        if isDemo {
+            room.adopt(settings)
+            return
+        }
+        guard let channel else { throw GatewayError.disconnected }
+        try await room.save(settings, on: channel)
+        Task { await room.sync() }
     }
 
     /// Renames a room for everyone in it.
@@ -91,7 +146,7 @@ extension AppModel {
 
     #if DEBUG
         /// The demo has no gateway: a new room starts empty, and its members don't answer.
-        private func addDemoRoom(named name: String, profiles: [String]) -> Contact.ID {
+        private func addDemoRoom(named name: String, profiles: [String], settings: RoomSettings) -> Contact.ID {
             let members: [JSONValue] = profiles.map {
                 ["member_id": .string($0), "profile": .string($0), "handle": .string($0)]
             }
@@ -100,7 +155,7 @@ extension AppModel {
                 "members": .array(members), "updated_at": .number(Date.now.timeIntervalSince1970),
             ])!
             let contact = Contact(room: summary)
-            rooms[contact.id] = RoomThread.sample(summary, events: [])
+            rooms[contact.id] = RoomThread.sample(summary, events: [], settings: settings)
             contacts.append(contact)
             return contact.id
         }

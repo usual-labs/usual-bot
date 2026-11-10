@@ -24,6 +24,7 @@ struct RoomPane: View {
     /// A message a search jumped to, kept in what's shown.
     @State private var jumpedTo: MessageJump?
     @Environment(\.drafts) private var drafts
+    @Environment(\.roomEditing) private var roomEditing
 
     var body: some View {
         content
@@ -65,12 +66,12 @@ struct RoomPane: View {
                 ) {
                     showsInfo = false
                 } panel: {
-                    RoomPanel(room: contact, members: members)
+                    RoomPanel(room: contact, members: members, thread: room)
                 }
             #else
                 // Pushed, as a Bot's profile is. A compact inspector drops the name from the bar.
                 .navigationDestination(isPresented: $showsInfo) {
-                    RoomPanel(room: contact, members: members)
+                    RoomPanel(room: contact, members: members, thread: room)
                 }
             #endif
             // Rooms push nothing: read new events while the room is on screen.
@@ -109,7 +110,10 @@ struct RoomPane: View {
 
     private var transcript: some View {
         ConversationScroll(
-            arrival: [room.state.items.count, room.pending.count, room.working.count, room.retries.count],
+            arrival: [
+                room.state.items.count, room.pending.count, room.working.count, room.retries.count,
+                shownPause == nil ? 0 : 1,
+            ],
             // A message stays the same count from sending to the room confirming it.
             sent: SentMessages(count: room.state.items.count(where: \.isYours) + room.pending.count),
             jump: jump, jumped: jumped,
@@ -139,7 +143,13 @@ struct RoomPane: View {
             }
             ForEach(room.working.sorted(), id: \.self) { memberID in
                 if let author = author(memberID) {
-                    replyingRow(String(localized: "\(author.name) is replying…")) {
+                    // A lead's first turn on a message picks who answers it; the reply comes after.
+                    let picking = memberID == room.leadID && memberID == room.state.choosingLead
+                    replyingRow(
+                        picking
+                            ? String(localized: "\(author.name) is picking who answers…")
+                            : String(localized: "\(author.name) is replying…")
+                    ) {
                         AgentAvatar(contact: author.contact.with(activity: .working), size: 24)
                     }
                 }
@@ -162,6 +172,12 @@ struct RoomPane: View {
                     retry: { room.retry(taskID) },
                     dismiss: { room.dismiss(taskID) })
             }
+            if let pause = shownPause {
+                PauseCard(
+                    limit: pause.limit, left: room.continuesLeft(pause), unavailable: roomEditing?.unavailable,
+                    canContinue: room.canSend, carryOn: { room.carryOn(pause) },
+                    leave: { room.leavePaused(pause) })
+            }
         }
         // Each room's transcript is its own view, so this runs as each one opens.
         .onAppear { window.reset(room.state.items) }
@@ -175,6 +191,12 @@ struct RoomPane: View {
             else { return }
             TranscriptAnnouncement.post(text)
         }
+    }
+
+    /// The paused discussion, once the room is quiet. A reply that didn't finish comes first: it
+    /// holds the room, and two cards with a way to carry on would be one too many.
+    private var shownPause: PausedDiscussion? {
+        room.retries.isEmpty && room.approvals.isEmpty && !room.isBusy && room.pending.isEmpty ? room.pause : nil
     }
 
     private func replyingRow(_ text: String, @ViewBuilder avatar: () -> some View) -> some View {
@@ -233,7 +255,10 @@ struct RoomPane: View {
     }
 
     private var placeholder: String {
-        String(localized: "Ask everyone, or @ one Bot")
+        switch room.settings?.routing ?? .everyone {
+        case .everyone: String(localized: "Ask everyone, or @ one Bot")
+        case .lead, .auto: String(localized: "Ask the room, or @ one Bot")
+        }
     }
 
     /// The members' skills after `/`; reloaded each time the menu opens.
