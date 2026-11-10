@@ -497,10 +497,9 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
 ## Not verified
 
 - The message queue ran against a throwaway Hermes 0.23.1 gateway with a stand-in model, from a
-  script on its socket (`canonical-protocol.md`), and in the app only in the demo, on the Mac. Not
-  run: the app itself on a real gateway, the iPhone (the build runs; the Simulator tooling failed
-  on the day), a queued message behind an approval, the official app showing the same queue, and
-  `queue_full`.
+  script on its socket (`canonical-protocol.md`), and in the app only in the demo, on the Mac and
+  in the iPhone Simulator. Not run: the app itself on a real gateway, an iPhone device, a queued
+  message behind an approval, the official app showing the same queue, and `queue_full`.
 - Read state: its routes were run on the developer's gateway on 2026-11-08 by a script signed in
   the app's way (native PKCE on the dashboard): the snapshot, a PATCH on a hidden Bot Chat, a stale
   revision's 409 and `sessions.changed` on the dashboard socket. The app itself hasn't: a Mac and an
