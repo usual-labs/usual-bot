@@ -247,6 +247,8 @@ struct ContactsSplitView<Footer: View>: View {
         /// The open profile or room panel's usual width; 0 with none.
         @State private var panelWidth: CGFloat = 0
         @State private var showsPalette = false
+        /// ⌘ is held, so the sidebar shows which number opens each chat.
+        @State private var commandHeld = false
         /// The open chat, reopened at the next launch.
         @AppStorage("selectedContact") private var selection: Contact.ID?
         @AppStorage("showsProfile") private var showsProfile = false
@@ -329,6 +331,7 @@ struct ContactsSplitView<Footer: View>: View {
             // or more and won't let an app set its width, so it can't become the 78 pt rail.
             HStack(spacing: 0) {
                 sidebar(compact: showsRail)
+                    .environment(\.chatShortcuts, commandHeld ? ChatOrder.numbered(shownChats.map(\.id)) : [:])
                     .frame(width: sidebarWidth)
                     .overlay(alignment: .trailing) { resizeEdge }
                 detailPane
@@ -352,6 +355,7 @@ struct ContactsSplitView<Footer: View>: View {
                 windowWidth = $0
             }
             .focusedSceneValue(\.windowCommands, windowCommands)
+            .tracksCommandHeld($commandHeld)
             .environment(\.messageBoxTakesTyping, !showsPalette)
             .overlay {
                 if showsPalette {
@@ -461,10 +465,8 @@ struct ContactsSplitView<Footer: View>: View {
             // One sheet at a time.
             let free = !showsNewBot && !showsNewRoom
             let canMakeRoom = createRoom != nil && agents.count >= NewRoomSheet.seats.lowerBound
-            let grouped = sections?.sections.isEmpty == false
-            let blocks = SidebarBlock.blocks(for: contacts, in: sections?.sections ?? [])
-            let folds = !showsRail && grouped
-            let ids = ChatOrder.shown(blocks) { folds && sections?.isFolded($0) == true }.map(\.id)
+            let shown = shownChats
+            let ids = shown.map(\.id)
             var commands = WindowCommands(search: { showsPalette.toggle() })
             if botEditing != nil, free {
                 commands.newBot = {
@@ -485,7 +487,18 @@ struct ContactsSplitView<Footer: View>: View {
                 commands.previousChat = { selection = ChatOrder.step(from: selection, by: -1, in: ids) }
                 commands.nextChat = { selection = ChatOrder.step(from: selection, by: 1, in: ids) }
             }
+            let numbers = ChatOrder.numbered(ids)
+            commands.numberedChats = shown.filter { numbers[$0.id] != nil }.map { chat in
+                (chat.name, { selection = chat.id })
+            }
             return commands
+        }
+
+        /// The sidebar's chats in order, without those in folded sections. The rail folds nothing.
+        private var shownChats: [Contact] {
+            let blocks = SidebarBlock.blocks(for: contacts, in: sections?.sections ?? [])
+            let folds = !showsRail && sections?.sections.isEmpty == false
+            return ChatOrder.shown(blocks) { folds && sections?.isFolded($0) == true }
         }
 
         private func toggleSidebar() {

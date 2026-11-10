@@ -16,6 +16,11 @@ enum ChatOrder {
         }
         return ids[((index + step) % ids.count + ids.count) % ids.count]
     }
+
+    /// ⌘1 to ⌘9 open the first nine chats of that order.
+    static func numbered(_ ids: [Contact.ID]) -> [Contact.ID: Int] {
+        Dictionary(zip(ids.prefix(9), 1...9), uniquingKeysWith: { first, _ in first })
+    }
 }
 
 #if os(macOS)
@@ -28,6 +33,8 @@ enum ChatOrder {
         var sidebar: (title: LocalizedStringKey, toggle: () -> Void)?
         var previousChat: (() -> Void)?
         var nextChat: (() -> Void)?
+        /// The chats ⌘1 to ⌘9 open, in order.
+        var numberedChats: [(name: String, open: () -> Void)] = []
     }
 
     /// The open chat's side panel: an agent's profile or a room's details.
@@ -99,6 +106,13 @@ enum ChatOrder {
                 Button("Next Chat") { window?.nextChat?() }
                     .keyboardShortcut(.tab, modifiers: .control)
                     .disabled(window?.nextChat == nil)
+                if let chats = window?.numberedChats, !chats.isEmpty {
+                    Divider()
+                    ForEach(Array(chats.enumerated()), id: \.offset) { index, chat in
+                        Button(chat.name, action: chat.open)
+                            .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")))
+                    }
+                }
             }
             CommandGroup(replacing: .help) {
                 Link("Usual Bot Help", destination: Self.guide)

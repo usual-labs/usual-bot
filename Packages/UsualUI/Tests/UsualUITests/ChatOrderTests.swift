@@ -48,4 +48,15 @@ struct ChatOrderTests {
         #expect(ChatOrder.step(from: "hidden", by: 1, in: ids) == "forge")
         #expect(ChatOrder.step(from: nil, by: 1, in: []) == nil)
     }
+
+    @Test func commandAndANumberOpenTheFirstNineShownChats() {
+        let ids = ChatOrder.shown(blocks, isFolded: { $0 == "back" }).map(\.id)
+        #expect(ChatOrder.numbered(ids) == ["forge": 1, "atlas": 2, "room:crew": 3])
+        let many = (1...12).map { "bot\($0)" }
+        let numbers = ChatOrder.numbered(many)
+        #expect(numbers.count == 9)
+        #expect(numbers["bot9"] == 9)
+        #expect(numbers["bot10"] == nil)
+        #expect(ChatOrder.numbered([]).isEmpty)
+    }
 }
