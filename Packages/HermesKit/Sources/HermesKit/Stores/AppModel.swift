@@ -116,6 +116,8 @@ public final class AppModel {
     @ObservationIgnored public let pictures = BotPictures()
     /// How the sidebar is grouped.
     @ObservationIgnored public let sections: SidebarSections
+    /// What's typed and not sent in each chat and room, on this device only.
+    @ObservationIgnored public let drafts: Drafts
     /// How far each Bot Chat was read, shared with your other devices through the gateway.
     @ObservationIgnored lazy var readSync: ReadSync = {
         let sync = ReadSync(auth: { [weak self] in self?.auth }, chats: { [weak self] in self?.readableChats ?? [] })
@@ -128,7 +130,9 @@ public final class AppModel {
     private static let log = Logger(subsystem: "UsualBot", category: "app")
 
     public convenience init() {
-        self.init(tokenStore: KeychainTokenStore(), http: URLSession.shared, defaults: .standard, cache: OfflineCache())
+        self.init(
+            tokenStore: KeychainTokenStore(), http: URLSession.shared, defaults: .standard, cache: OfflineCache(),
+            draftsDirectory: Drafts.deviceDirectory)
     }
 
     /// Sends all gateway traffic, requests and the socket alike, through the session `session`
@@ -136,12 +140,14 @@ public final class AppModel {
     public convenience init(session: @escaping @Sendable () async throws -> URLSession) {
         self.init(
             tokenStore: KeychainTokenStore(), http: SessionTransport(session: session), defaults: .standard,
-            cache: OfflineCache(), makeSocket: { URLSessionWebSocket(url: $0, session: try await session()) },
+            cache: OfflineCache(), draftsDirectory: Drafts.deviceDirectory,
+            makeSocket: { URLSessionWebSocket(url: $0, session: try await session()) },
             makeScreenSocket: { URLSessionScreenSocket(url: $0, session: try await session()) })
     }
 
     init(
         tokenStore: any TokenStore, http: any HTTPTransport, defaults: UserDefaults, cache: OfflineCache,
+        draftsDirectory: URL? = nil,
         makeSocket: @escaping GatewayConnector.SocketFactory = { URLSessionWebSocket(url: $0) },
         makeScreenSocket: @escaping ScreenSocketFactory = { URLSessionScreenSocket(url: $0) }
     ) {
@@ -152,6 +158,7 @@ public final class AppModel {
         self.cache = cache
         self.makeSocket = makeSocket
         sections = SidebarSections(defaults: defaults)
+        drafts = Drafts(directory: draftsDirectory)
         gatewayInput = defaults.string(forKey: Self.gatewayKey) ?? ""
         isRestoring = defaults.string(forKey: Self.gatewayKey) != nil
         sections.save = { [weak self] profile, placement in
@@ -251,6 +258,7 @@ public final class AppModel {
         media.clear()
         pictures.clear()
         sections.clear()
+        drafts.clear()
         push.clear()
         usage.clear()
         rooms = [:]
@@ -299,6 +307,7 @@ public final class AppModel {
         session = .signedIn(auth.gateway)
         sections.load(for: auth.gateway)
         sections.reconcile(contacts)
+        drafts.load(for: auth.gateway)
         connect(auth)
     }
 

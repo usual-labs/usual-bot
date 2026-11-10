@@ -23,6 +23,7 @@ struct RoomPane: View {
     @State private var window = TranscriptWindow()
     /// A message a search jumped to, kept in what's shown.
     @State private var jumpedTo: MessageJump?
+    @Environment(\.drafts) private var drafts
 
     var body: some View {
         content
@@ -33,6 +34,8 @@ struct RoomPane: View {
             } bottom: {
                 if room.phase == .ready {
                     MessageBox(
+                        conversation: contact.id,
+                        text: Binding(get: { drafts?[contact.id] ?? "" }, set: { drafts?[contact.id] = $0 }),
                         placeholder: placeholder, isRunning: !room.working.isEmpty, canSend: room.canSend,
                         stopLabel: String(localized: "Stop everyone in \(contact.name)"), mentions: mentions,
                         quotes: $quotes, commands: roomSkills,

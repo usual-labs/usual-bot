@@ -33,10 +33,15 @@ struct OfflineCache: Sendable {
         try? FileManager.default.removeItem(at: fileURL(for: gateway))
     }
 
-    /// One file per gateway, named by a hash so the address isn't spelled out on disk.
     private func fileURL(for gateway: GatewayAddress) -> URL {
-        let digest = SHA256.hash(data: Data(gateway.baseURL.absoluteString.utf8))
-        let name = digest.prefix(12).map { String(format: "%02x", $0) }.joined()
-        return directory.appending(path: "\(name).json")
+        directory.appending(path: gateway.fileName)
+    }
+}
+
+extension GatewayAddress {
+    /// The name of a file kept for this gateway, a hash so the address isn't spelled out on disk.
+    var fileName: String {
+        let digest = SHA256.hash(data: Data(baseURL.absoluteString.utf8))
+        return digest.prefix(12).map { String(format: "%02x", $0) }.joined() + ".json"
     }
 }

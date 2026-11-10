@@ -7,6 +7,8 @@ import SwiftUI
 /// go with a message between turns.
 struct Composer: View {
     let thread: ChatThread
+    /// Whose chat this is, for its draft.
+    let chatID: Contact.ID
     let agentName: String
     /// The agent's default model, for the model menu's Make Default.
     var agentDefault: AgentDetails?
@@ -17,6 +19,10 @@ struct Composer: View {
     /// A call holds the microphone: no dictation or second call meanwhile.
     var inCall = false
     var startCall: (() -> Void)?
+    @Environment(\.drafts) private var drafts
+    /// The text while you rewrite your last message. Your draft waits meanwhile, and is back in
+    /// the box once the edit is sent or stopped.
+    @State private var edit = ""
 
     var body: some View {
         // Background tasks and side answers float above the box.
@@ -31,12 +37,17 @@ struct Composer: View {
             box
         }
         .task(id: thread.isAttached) { await thread.loadModelsAndUsage() }
+        .onChange(of: editing) { if !editing { edit = "" } }
         .animation(.smooth(duration: 0.2), value: thread.sideQuestions)
         .animation(.smooth(duration: 0.2), value: thread.backgroundTasks)
     }
 
     private var box: some View {
         MessageBox(
+            conversation: chatID,
+            text: Binding(
+                get: { editing ? edit : drafts?[chatID] ?? "" },
+                set: { if editing { edit = $0 } else { drafts?[chatID] = $0 } }),
             placeholder: placeholder, isRunning: thread.state.isRunning, canSend: thread.canSend,
             stopLabel: String(localized: "Stop \(agentName)"),
             attaching: AttachmentSending(
@@ -71,4 +82,9 @@ struct Mention: Identifiable, Equatable {
     let id: String
     let name: String
     let contact: Contact
+}
+
+extension EnvironmentValues {
+    /// Where message boxes keep what's typed and not sent; without it nothing is kept.
+    @Entry var drafts: Drafts?
 }

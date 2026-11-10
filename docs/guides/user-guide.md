@@ -132,6 +132,10 @@ takes you back to the newest message and follows replies again; it has a dot whe
 came in while you were away. Scrolling to the end, or sending a message, does the same. On iPhone,
 sending also puts the keyboard away; tap the message box to write again.
 
+- **Drafts.** What you type and don't send stays in that chat's message box. Switch to another
+  chat or a room, or quit the app, and it's there when you come back. Rooms keep theirs the same
+  way. Drafts are kept on this device only, so your other devices don't show them, and signing out
+  deletes them. A reply quote and attached files aren't kept: they go when you leave the chat.
 - **Attachments.** Use **+** or drag and drop, or on the Mac paste a copied image or file with ⌘V.
   On iPhone, pick from Photos, the camera or Files. Images up to 25 MB and other files up to
   50 MB.
@@ -166,7 +170,8 @@ sending also puts the keyboard away; tap the message box to write again.
 - **Links.** Web and email addresses in messages, yours included, are links: underlined, and blue in
   the Bot's replies.
 - **Edit and undo.** On your last message, **Edit** puts it back in the box; send it to replace the
-  exchange and get a fresh answer. **Undo** takes the last exchange back.
+  exchange and get a fresh answer. Anything you had typed waits meanwhile, and is back in the box
+  once you send the edit or stop editing. **Undo** takes the last exchange back.
 
 ## Approvals and questions
 
