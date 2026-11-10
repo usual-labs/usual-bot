@@ -23,31 +23,60 @@ public struct ContactPlacement: Hashable, Sendable {
     }
 }
 
-/// One group of sidebar rows in order: a section, or with no `section` whatever isn't in one.
+/// One group of sidebar rows in order: the pinned chats, a section, or with no `section` whatever
+/// isn't in one.
 public struct SidebarBlock: Identifiable, Hashable, Sendable {
     public static let unassignedID = "unassigned"
+    public static let pinnedID = "pinned"
 
     public let section: ContactSection?
     public let contacts: [Contact]
+    /// The pinned chats, which come first and leave their sections while they're pinned.
+    public let isPinned: Bool
 
     public init(section: ContactSection?, contacts: [Contact]) {
         self.section = section
         self.contacts = contacts
+        isPinned = false
     }
 
-    public var id: String { section?.id ?? Self.unassignedID }
+    private init(pinned contacts: [Contact]) {
+        section = nil
+        self.contacts = contacts
+        isPinned = true
+    }
+
+    public var id: String { isPinned ? Self.pinnedID : section?.id ?? Self.unassignedID }
     public var needsYou: Bool { contacts.contains { $0.activity == .needsYou } }
     public var unreadCount: Int { contacts.reduce(0) { $0 + $1.unreadCount } }
+
+    /// The sidebar's groups for `contacts`: the pinned ones if any, each of `sections`, then what's
+    /// left, including anything filed under a section this device doesn't have. With no sections
+    /// what isn't pinned is one block, and the sidebar shows no headings.
+    public static func blocks(for contacts: [Contact], in sections: [ContactSection]) -> [SidebarBlock] {
+        let ordered = contacts.sorted(by: Contact.rosterOrder)
+        let pinned = ordered.filter(\.isPinned)
+        let unpinned = ordered.filter { !$0.isPinned }
+        let known = Set(sections.map(\.id))
+        var blocks = pinned.isEmpty ? [] : [SidebarBlock(pinned: pinned)]
+        blocks += sections.map { section in
+            SidebarBlock(section: section, contacts: unpinned.filter { $0.sectionID == section.id })
+        }
+        let rest = unpinned.filter { contact in contact.sectionID.map { !known.contains($0) } ?? true }
+        if !rest.isEmpty || sections.isEmpty { blocks.append(SidebarBlock(section: nil, contacts: rest)) }
+        return blocks
+    }
 }
 
-/// How the sidebar is grouped. As in the official app, a Bot's section is saved on the Bot, so it
-/// follows you between devices and clients, while the list of sections, their order and what's
-/// folded belong to this device, and so does a room's section. A section made elsewhere is rebuilt
-/// here from the Bots filed under it.
+/// How the sidebar is arranged. As in the official app, a Bot's section and whether it's pinned are
+/// saved on the Bot, so they follow you between devices and clients, while the list of sections,
+/// their order and what's folded belong to this device, and so do a room's section and pin. A
+/// section made elsewhere is rebuilt here from the Bots filed under it.
 @MainActor
 @Observable
 public final class SidebarSections {
     public typealias Save = @MainActor (_ profile: String, _ placement: ContactPlacement) async throws -> Void
+    public typealias SavePin = @MainActor (_ profile: String, _ isPinned: Bool) async throws -> Void
 
     public private(set) var sections: [ContactSection] = []
     /// The IDs of folded blocks, which can include `SidebarBlock.unassignedID`.
@@ -56,61 +85,74 @@ public final class SidebarSections {
     public var problem: String?
 
     private var roomSections: [Contact.ID: String] = [:]
+    private var pinnedRooms: Set<Contact.ID> = []
     /// Moves the roster doesn't show yet. The roster is read every few seconds, and a read can
     /// land before the write it should reflect, so a move holds until the roster catches up.
-    private var pending: [Contact.ID: Pending] = [:]
+    private var pending: [Contact.ID: Pending<ContactPlacement>] = [:]
+    /// Pins and unpins the roster doesn't show yet, held the same way.
+    private var pendingPins: [Contact.ID: Pending<Bool>] = [:]
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored var save: Save
+    @ObservationIgnored var savePin: SavePin
     @ObservationIgnored private var storageKey: String?
     /// Writes run one at a time, each reading what the last one stored.
     @ObservationIgnored private var lastWrite: Task<Void, Never>?
 
-    private struct Pending {
-        var placement: ContactPlacement
+    private struct Pending<Value: Equatable> {
+        var value: Value
         /// Set once the write is done: how many more roster reads to hold for. Two, because the
         /// first may have started before the write; after that the gateway's word stands, so a
-        /// move made elsewhere at the same time can't leave this one stuck.
+        /// change made elsewhere at the same time can't leave this one stuck.
         var readsLeft: Int?
+
+        /// Counts a roster read that reports `reported`, and says whether the hold is over.
+        mutating func settles(with reported: Value) -> Bool {
+            guard let left = readsLeft else { return false }
+            readsLeft = left - 1
+            return reported == value || left <= 1
+        }
     }
 
     private struct Stored: Codable {
         var sections: [ContactSection]
         var folded: Set<String>
         var roomSections: [Contact.ID: String]
+        /// Absent in what a version before pinning stored.
+        var pinnedRooms: Set<Contact.ID>?
     }
 
-    init(defaults: UserDefaults, save: @escaping Save = { _, _ in throw GatewayError.disconnected }) {
+    init(
+        defaults: UserDefaults, save: @escaping Save = { _, _ in throw GatewayError.disconnected },
+        savePin: @escaping SavePin = { _, _ in throw GatewayError.disconnected }
+    ) {
         self.defaults = defaults
         self.save = save
+        self.savePin = savePin
     }
 
     // MARK: - Reading
 
-    /// `contact` as the sidebar shows it, with moves still saving and its room section applied.
+    /// `contact` as the sidebar shows it, with moves and pins still saving, and a room's section
+    /// and pin, applied.
     public func placed(_ contact: Contact) -> Contact {
         var contact = contact
         if contact.kind != .agent {
             contact.sectionID = roomSections[contact.id]
-        } else if let placement = pending[contact.id]?.placement {
-            contact.sectionID = placement.id
-            contact.sectionName = placement.name
+            contact.isPinned = pinnedRooms.contains(contact.id)
+        } else {
+            if let placement = pending[contact.id]?.value {
+                contact.sectionID = placement.id
+                contact.sectionName = placement.name
+            }
+            if let isPinned = pendingPins[contact.id]?.value { contact.isPinned = isPinned }
         }
         return contact
     }
 
-    /// The sidebar's groups for contacts already `placed(_:)`: each section, then what's left,
-    /// including anything filed under a section this device doesn't have. With no sections,
-    /// everything is in the one block and the sidebar shows no headings.
+    /// The sidebar's groups for contacts already `placed(_:)` (`SidebarBlock.blocks`).
     public func blocks(for contacts: [Contact]) -> [SidebarBlock] {
-        let ordered = contacts.sorted(by: Contact.rosterOrder)
-        let known = Set(sections.map(\.id))
-        var blocks = sections.map { section in
-            SidebarBlock(section: section, contacts: ordered.filter { $0.sectionID == section.id })
-        }
-        let rest = ordered.filter { contact in contact.sectionID.map { !known.contains($0) } ?? true }
-        if !rest.isEmpty || sections.isEmpty { blocks.append(SidebarBlock(section: nil, contacts: rest)) }
-        return blocks
+        SidebarBlock.blocks(for: contacts, in: sections)
     }
 
     public func isFolded(_ blockID: String) -> Bool {
@@ -142,6 +184,24 @@ public final class SidebarSections {
             write(ContactPlacement(id: section?.id, name: section?.name), for: contact)
         } else {
             roomSections[contact.id] = section?.id
+            persist()
+        }
+    }
+
+    /// Pins `contact` above the sections, or with `false` puts it back where it was filed.
+    public func setPinned(_ isPinned: Bool, _ contact: Contact) {
+        if contact.kind == .agent {
+            guard contact.isPinned != isPinned else { return }
+            pendingPins[contact.id] = Pending(value: isPinned)
+            let profile = contact.details?.profile ?? contact.id
+            enqueue { [savePin] in
+                try await savePin(profile, isPinned)
+            } finished: { [weak self] error in
+                guard let self, pendingPins[contact.id]?.value == isPinned else { return }
+                if error == nil { pendingPins[contact.id]?.readsLeft = 2 } else { pendingPins[contact.id] = nil }
+            }
+        } else if isPinned != pinnedRooms.contains(contact.id) {
+            if isPinned { pinnedRooms.insert(contact.id) } else { pinnedRooms.remove(contact.id) }
             persist()
         }
     }
@@ -182,13 +242,12 @@ public final class SidebarSections {
 
     // MARK: - The roster
 
-    /// Takes a fresh roster: settles saved moves, then adopts what other clients did.
+    /// Takes a fresh roster: settles saved moves and pins, then adopts what other clients did.
     func reconcile(_ contacts: [Contact]) {
         for contact in contacts {
-            guard let entry = pending[contact.id], let readsLeft = entry.readsLeft else { continue }
             let reported = ContactPlacement(id: contact.sectionID, name: contact.sectionName)
-            pending[contact.id]?.readsLeft = readsLeft - 1
-            if reported == entry.placement || readsLeft <= 1 { pending[contact.id] = nil }
+            if pending[contact.id]?.settles(with: reported) == true { pending[contact.id] = nil }
+            if pendingPins[contact.id]?.settles(with: contact.isPinned) == true { pendingPins[contact.id] = nil }
         }
         let adopted = Self.adopting(contacts.map(placed), into: sections)
         guard adopted != sections else { return }
@@ -218,41 +277,47 @@ public final class SidebarSections {
         return adopted
     }
 
-    /// A Bot's unsaved move follows it to the ID the gateway renamed it to.
+    /// A Bot's unsaved move and pin follow it to the ID the gateway renamed it to.
     func renameAgent(from old: Contact.ID, to new: Contact.ID) {
         if let entry = pending.removeValue(forKey: old) { pending[new] = entry }
+        if let entry = pendingPins.removeValue(forKey: old) { pendingPins[new] = entry }
     }
 
-    /// Drops the unsaved move of a Bot that's gone.
+    /// Drops the unsaved move and pin of a Bot that's gone.
     func forget(_ id: Contact.ID) {
         pending[id] = nil
+        pendingPins[id] = nil
     }
 
     // MARK: - Saving
 
     private func write(_ placement: ContactPlacement, for contact: Contact) {
-        pending[contact.id] = Pending(placement: placement)
+        pending[contact.id] = Pending(value: placement)
         let profile = contact.details?.profile ?? contact.id
-        let previous = lastWrite
-        lastWrite = Task { [weak self, save] in
-            await previous?.value
-            do {
-                try await save(profile, placement)
-                self?.finish(contact.id, placement, error: nil)
-            } catch {
-                self?.finish(contact.id, placement, error: error)
-            }
+        enqueue { [save] in
+            try await save(profile, placement)
+        } finished: { [weak self] error in
+            // A newer move of this Bot keeps its own entry.
+            guard let self, pending[contact.id]?.value == placement else { return }
+            if error == nil { pending[contact.id]?.readsLeft = 2 } else { pending[contact.id] = nil }
         }
     }
 
-    private func finish(_ id: Contact.ID, _ placement: ContactPlacement, error: (any Error)?) {
-        if let error { problem = AppModel.describe(error) }
-        // A newer move of this Bot keeps its own entry.
-        guard pending[id]?.placement == placement else { return }
-        if error == nil {
-            pending[id]?.readsLeft = 2
-        } else {
-            pending[id] = nil
+    /// Runs `save` after the writes before it, then `finished` with what went wrong, which is also
+    /// left in `problem`.
+    private func enqueue(
+        _ save: @escaping @MainActor () async throws -> Void, finished: @escaping @MainActor ((any Error)?) -> Void
+    ) {
+        let previous = lastWrite
+        lastWrite = Task { [weak self] in
+            await previous?.value
+            do {
+                try await save()
+                finished(nil)
+            } catch {
+                self?.problem = AppModel.describe(error)
+                finished(error)
+            }
         }
     }
 
@@ -271,6 +336,7 @@ public final class SidebarSections {
         sections = stored?.sections ?? []
         folded = stored?.folded ?? []
         roomSections = stored?.roomSections ?? [:]
+        pinnedRooms = stored?.pinnedRooms ?? []
     }
 
     /// Forgets everything on signing out.
@@ -280,13 +346,16 @@ public final class SidebarSections {
         sections = []
         folded = []
         roomSections = [:]
+        pinnedRooms = []
         pending = [:]
+        pendingPins = [:]
         problem = nil
     }
 
     private func persist() {
         guard let storageKey else { return }
-        let stored = Stored(sections: sections, folded: folded, roomSections: roomSections)
+        let stored = Stored(
+            sections: sections, folded: folded, roomSections: roomSections, pinnedRooms: pinnedRooms)
         defaults.set(try? JSONEncoder().encode(stored), forKey: storageKey)
     }
 }

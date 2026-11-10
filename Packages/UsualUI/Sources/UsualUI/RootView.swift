@@ -462,10 +462,7 @@ struct ContactsSplitView<Footer: View>: View {
             let free = !showsNewBot && !showsNewRoom
             let canMakeRoom = createRoom != nil && agents.count >= NewRoomSheet.seats.lowerBound
             let grouped = sections?.sections.isEmpty == false
-            let blocks =
-                grouped
-                ? sections?.blocks(for: contacts) ?? []
-                : [SidebarBlock(section: nil, contacts: contacts.sorted(by: Contact.rosterOrder))]
+            let blocks = SidebarBlock.blocks(for: contacts, in: sections?.sections ?? [])
             let folds = !showsRail && grouped
             let ids = ChatOrder.shown(blocks) { folds && sections?.isFolded($0) == true }.map(\.id)
             var commands = WindowCommands(search: { showsPalette.toggle() })

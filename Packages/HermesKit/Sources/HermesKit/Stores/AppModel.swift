@@ -158,6 +158,10 @@ public final class AppModel {
             guard let channel = self?.channel else { throw GatewayError.disconnected }
             try await BotMetaWrite.setSection(placement, profile: profile, on: channel)
         }
+        sections.savePin = { [weak self] profile, isPinned in
+            guard let channel = self?.channel else { throw GatewayError.disconnected }
+            try await BotMetaWrite.setPinned(isPinned, profile: profile, on: channel)
+        }
     }
 
     /// Resumes the saved session, if this device has one.
@@ -282,6 +286,7 @@ public final class AppModel {
             vaultLists = vaults
             appLists = apps
             sections.save = { _, _ in }
+            sections.savePin = { _, _ in }
             sections.reconcile(contacts)
             push.showDemo()
         }

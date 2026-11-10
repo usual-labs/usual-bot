@@ -40,6 +40,18 @@ struct BotMetaWriteTests {
                 ])
     }
 
+    @Test func aPinKeepsEverythingElseOnTheBot() async throws {
+        let gateway = ScriptedGateway()
+        let channel = await channel(gateway)
+        async let write: Void = BotMetaWrite.setPinned(true, profile: "scout", on: channel)
+
+        _ = try await gateway.answer(
+            0, method: "profiles.list", result: list(meta: ["title": "Scout", "sectionId": "sec-1"], revision: 2))
+        let sent = try await gateway.answer(1, method: "profiles.configure", result: saved)
+        try await write
+        #expect(sent["ui_meta"]?["hermes-bots"] == ["title": "Scout", "sectionId": "sec-1", "pinned": true])
+    }
+
     @Test func takingABotOutSendsNulls() async throws {
         let gateway = ScriptedGateway()
         let channel = await channel(gateway)
@@ -124,7 +136,13 @@ struct SidebarSectionsTests {
     @MainActor
     final class Saver {
         var saved: [(profile: String, placement: ContactPlacement)] = []
+        var pins: [(profile: String, isPinned: Bool)] = []
         var failing = false
+
+        func pin(_ profile: String, _ isPinned: Bool) async throws {
+            if failing { throw GatewayError.disconnected }
+            pins.append((profile, isPinned))
+        }
 
         func save(_ profile: String, _ placement: ContactPlacement) async throws {
             if failing { throw GatewayError.disconnected }
@@ -138,12 +156,16 @@ struct SidebarSectionsTests {
     private let work = ContactSection(id: "sec-1", name: "Work")
 
     private func store() -> SidebarSections {
-        SidebarSections(defaults: defaults, save: { [saver] in try await saver.save($0, $1) })
+        SidebarSections(
+            defaults: defaults, save: { [saver] in try await saver.save($0, $1) },
+            savePin: { [saver] in try await saver.pin($0, $1) })
     }
 
-    private func bot(_ id: String, section: ContactSection? = nil, active minutes: Double = 0) -> Contact {
+    private func bot(
+        _ id: String, section: ContactSection? = nil, active minutes: Double = 0, pinned: Bool = false
+    ) -> Contact {
         Contact(
-            id: id, name: id, lastActive: Date(timeIntervalSince1970: 1000 - minutes * 60),
+            id: id, name: id, lastActive: Date(timeIntervalSince1970: 1000 - minutes * 60), isPinned: pinned,
             details: AgentDetails(profile: id), sectionID: section?.id, sectionName: section?.name)
     }
 
@@ -172,6 +194,83 @@ struct SidebarSectionsTests {
         let sections = store()
         sections.reconcile([bot("a", section: work)])
         #expect(sections.blocks(for: [bot("a", section: work)]).map(\.id) == ["sec-1"])
+    }
+
+    @Test func pinnedChatsComeFirstAndLeaveTheirSections() {
+        let sections = store()
+        sections.reconcile([bot("a", section: work)])
+        let blocks = sections.blocks(for: [
+            bot("a", section: work), bot("kept", section: work, pinned: true), bot("free"),
+            bot("loose", active: 5, pinned: true),
+        ])
+        #expect(blocks.map(\.id) == [SidebarBlock.pinnedID, "sec-1", SidebarBlock.unassignedID])
+        #expect(blocks.map(\.isPinned) == [true, false, false])
+        #expect(blocks[0].contacts.map(\.id) == ["kept", "loose"])
+        #expect(blocks[1].contacts.map(\.id) == ["a"])
+        #expect(blocks[2].contacts.map(\.id) == ["free"])
+    }
+
+    @Test func pinnedChatsAreABlockWithoutSectionsToo() {
+        let blocks = SidebarBlock.blocks(for: [bot("a"), bot("b", pinned: true)], in: [])
+        #expect(blocks.map(\.id) == [SidebarBlock.pinnedID, SidebarBlock.unassignedID])
+        #expect(blocks.map { $0.contacts.map(\.id) } == [["b"], ["a"]])
+    }
+
+    @Test func aPinShowsAtOnceAndSurvivesAStaleRead() async {
+        let sections = store()
+        sections.setPinned(true, bot("a"))
+        #expect(sections.placed(bot("a")).isPinned)
+        await sections.writesFinished()
+        #expect(saver.pins.map(\.profile) == ["a"])
+        #expect(saver.pins.map(\.isPinned) == [true])
+
+        // This read started before the write landed.
+        sections.reconcile([bot("a")])
+        #expect(sections.placed(bot("a")).isPinned)
+    }
+
+    @Test func anUnpinMadeElsewhereWinsOnceTheRosterIsFresh() async {
+        let sections = store()
+        sections.setPinned(true, bot("a"))
+        await sections.writesFinished()
+        sections.reconcile([bot("a")])
+        #expect(sections.placed(bot("a")).isPinned)
+        sections.reconcile([bot("a")])
+        #expect(sections.placed(bot("a")).isPinned == false)
+    }
+
+    @Test func aFailedPinGoesBackAndSaysWhy() async {
+        let sections = store()
+        saver.failing = true
+        sections.setPinned(false, bot("a", pinned: true))
+        #expect(sections.placed(bot("a", pinned: true)).isPinned == false)
+        await sections.writesFinished()
+        #expect(sections.placed(bot("a", pinned: true)).isPinned)
+        #expect(sections.problem != nil)
+    }
+
+    @Test func aPinnedBotKeepsItsSectionForLater() async {
+        let sections = store()
+        sections.reconcile([bot("a", section: work)])
+        sections.setPinned(true, bot("a", section: work))
+        await sections.writesFinished()
+        #expect(saver.saved.isEmpty)
+        #expect(sections.placed(bot("a", section: work)).sectionID == work.id)
+    }
+
+    @Test func aRoomsPinStaysOnThisDevice() async {
+        let first = store()
+        first.load(for: gateway)
+        first.setPinned(true, room)
+        await first.writesFinished()
+        #expect(saver.pins.isEmpty)
+        #expect(first.placed(room).isPinned)
+
+        let second = store()
+        second.load(for: gateway)
+        #expect(second.placed(room).isPinned)
+        second.setPinned(false, second.placed(room))
+        #expect(second.placed(room).isPinned == false)
     }
 
     @Test func aMoveShowsAtOnceAndSurvivesAStaleRead() async {

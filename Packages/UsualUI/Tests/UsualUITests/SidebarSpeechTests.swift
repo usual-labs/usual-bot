@@ -16,6 +16,11 @@ struct SidebarSpeechTests {
         #expect(SidebarSpeech.row(Contact(id: "a", name: "Scribe"), preview: "", stamp: nil) == "Scribe")
     }
 
+    @Test func aPinnedChatSaysSo() {
+        let pinned = Contact(id: "atlas", name: "Atlas", unreadCount: 3, isPinned: true)
+        #expect(SidebarSpeech.row(pinned, preview: "", stamp: nil) == "Atlas, pinned, 3 unread")
+    }
+
     @Test func aFoldedSectionSaysWhatItsHiddenRowsWould() {
         let block = SidebarBlock(section: nil, contacts: [forge, atlas, ops])
         #expect(SidebarSpeech.section(block, isFolded: true) == "Folded, needs you, 5 unread")
