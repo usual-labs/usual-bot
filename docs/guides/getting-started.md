@@ -69,6 +69,11 @@ Remove the variable again before you sign in to a real gateway.
    to register the device, and iOS asks you to trust the developer in **Settings › General › VPN &
    Device Management**.
 
+A signed build also carries the share extension, which needs an App Group
+(`group.<your prefix>.UsualBot`) in your team. Xcode registers it when it signs for you; if it
+reports a missing App Group, let it fix signing or build with `-allowProvisioningUpdates`. Builds
+that aren't signed for a team run without sharing from other apps.
+
 Setting a team also helps on the Mac: builds keep the same signature, so macOS stops asking for
 your Keychain password after each rebuild (see [Troubleshooting](troubleshooting.md#the-mac-asks-for-my-keychain-password-after-every-build)).
 

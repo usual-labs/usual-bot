@@ -615,6 +615,17 @@ public final class ChatThread {
         /// older one (`loadDemoHistory()`).
         var demoFullHistory: [HistoryMessage]?
 
+        /// The demo: a message with files shows as sent, as there's no gateway to upload them to.
+        func sendDemo(_ text: String, attachments: [Attachment]) {
+            let refs = attachments.map { AttachmentRef(kind: $0.kind, path: "/home/hermes/shared/" + $0.name) }
+            for (ref, attachment) in zip(refs, attachments) where ref.kind == .image {
+                sentImages[ref.path] = attachment.data
+            }
+            state.sendLocally(
+                ([text] + [refs.map(\.line).joined(separator: "\n")]).filter { !$0.isEmpty }.joined(separator: "\n\n"))
+            playDemoReply()
+        }
+
         /// Tests and previews: a chat already open and showing `state`.
         static func sample(_ contactID: Contact.ID, state: ThreadState) -> ChatThread {
             let thread = ChatThread(contactID: contactID, channel: { nil })

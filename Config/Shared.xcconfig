@@ -33,14 +33,14 @@ INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad[sdk=iphone*] = UIInterfaceOr
 // App/Assets.xcassets: the Hermes doodle on white, rounded by the system on both platforms.
 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
 CODE_SIGN_STYLE = Automatic
-// Empty unless scripts/testflight.sh signs with profiles made beforehand; the notification
-// extension takes its own in NotificationService.xcconfig.
+// Empty unless scripts/testflight.sh signs with profiles made beforehand; the notification and
+// share extensions take their own in NotificationService.xcconfig and ShareExtension.xcconfig.
 PROVISIONING_PROFILE_SPECIFIER = $(USUAL_APP_PROFILE)
 CODE_SIGN_ENTITLEMENTS[sdk=macosx*] = $(USUAL_MAC_ENTITLEMENTS_$(USUAL_PUSH))
 CODE_SIGN_ENTITLEMENTS[sdk=iphone*] = $(USUAL_IOS_ENTITLEMENTS_$(USUAL_PUSH))
 USUAL_MAC_ENTITLEMENTS_NO = Config/UsualBot-macOS.entitlements
 USUAL_MAC_ENTITLEMENTS_YES = Config/UsualBot-macOS-Push.entitlements
-USUAL_IOS_ENTITLEMENTS_NO =
+USUAL_IOS_ENTITLEMENTS_NO = Config/UsualBot-iOS.entitlements
 USUAL_IOS_ENTITLEMENTS_YES = Config/UsualBot-iOS-Push.entitlements
 ENABLE_HARDENED_RUNTIME[sdk=macosx*] = YES
 LD_RUNPATH_SEARCH_PATHS[sdk=macosx*] = $(inherited) @executable_path/../Frameworks
@@ -68,6 +68,10 @@ USUAL_UPDATES = NO
 USUAL_UPDATES_URL = $(USUAL_UPDATES_URL_$(USUAL_UPDATES))
 USUAL_UPDATES_URL_NO =
 USUAL_UPDATES_URL_YES = https:/$()/bot.usual.dev/v1/latest
+// The App Group the app and the share extension both reach: the extension leaves what you shared
+// there and the app sends it. A signed build needs the group registered for its team and turned
+// on for both bundle IDs; an unsigned one has no group and takes nothing shared.
+USUAL_SHARE_GROUP = group.$(BUNDLE_ID_PREFIX).UsualBot
 // Shared with the notification extension, which opens what the gateway sealed.
 USUAL_PUSH_KEYCHAIN_GROUP = $(DEVELOPMENT_TEAM).$(BUNDLE_ID_PREFIX).UsualBot.push
 

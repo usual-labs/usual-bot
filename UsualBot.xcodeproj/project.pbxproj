@@ -11,6 +11,9 @@
 		5B0B00000000000000000102 /* UsualUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5B0B00000000000000000202 /* UsualUI */; };
 		5B0B00000000000000000103 /* Tailnet in Frameworks */ = {isa = PBXBuildFile; productRef = 5B0B00000000000000000203 /* Tailnet */; };
 		5B0B0000000000000000A003 /* UsualBotNotifications.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5B0B0000000000000000A001 /* UsualBotNotifications.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5B0B0000000000000000B003 /* UsualBotShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5B0B0000000000000000B001 /* UsualBotShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5B0B0000000000000000B101 /* HermesKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5B0B0000000000000000B201 /* HermesKit */; };
+		5B0B0000000000000000B102 /* UsualUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5B0B0000000000000000B202 /* UsualUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -20,6 +23,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 5B0B0000000000000000A010;
 			remoteInfo = UsualBotNotifications;
+		};
+		5B0B0000000000000000B005 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5B0B00000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5B0B0000000000000000B010;
+			remoteInfo = UsualBotShare;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -31,6 +41,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				5B0B0000000000000000A003 /* UsualBotNotifications.appex in Embed Foundation Extensions */,
+				5B0B0000000000000000B003 /* UsualBotShare.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -47,11 +58,14 @@
 		5B0B00000000000000000307 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5B0B0000000000000000A001 /* UsualBotNotifications.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = UsualBotNotifications.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B0B0000000000000000A030 /* NotificationService.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = NotificationService.xcconfig; sourceTree = "<group>"; };
+		5B0B0000000000000000B001 /* UsualBotShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = UsualBotShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		5B0B0000000000000000B030 /* ShareExtension.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = ShareExtension.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		5B0B00000000000000000401 /* App */ = {isa = PBXFileSystemSynchronizedRootGroup; path = App; sourceTree = "<group>"; };
 		5B0B0000000000000000A002 /* NotificationService */ = {isa = PBXFileSystemSynchronizedRootGroup; path = NotificationService; sourceTree = "<group>"; };
+		5B0B0000000000000000B002 /* ShareExtension */ = {isa = PBXFileSystemSynchronizedRootGroup; path = ShareExtension; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,6 +86,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5B0B0000000000000000B012 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5B0B0000000000000000B101 /* HermesKit in Frameworks */,
+				5B0B0000000000000000B102 /* UsualUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -80,6 +103,7 @@
 			children = (
 				5B0B00000000000000000401 /* App */,
 				5B0B0000000000000000A002 /* NotificationService */,
+				5B0B0000000000000000B002 /* ShareExtension */,
 				5B0B00000000000000000603 /* Config */,
 				5B0B00000000000000000602 /* Products */,
 			);
@@ -90,6 +114,7 @@
 			children = (
 				5B0B00000000000000000301 /* UsualBot.app */,
 				5B0B0000000000000000A001 /* UsualBotNotifications.appex */,
+				5B0B0000000000000000B001 /* UsualBotShare.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -104,6 +129,7 @@
 				5B0B00000000000000000306 /* UsualBot-macOS.entitlements */,
 				5B0B00000000000000000307 /* Info.plist */,
 				5B0B0000000000000000A030 /* NotificationService.xcconfig */,
+				5B0B0000000000000000B030 /* ShareExtension.xcconfig */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -124,6 +150,7 @@
 			);
 			dependencies = (
 				5B0B0000000000000000A006 /* PBXTargetDependency */,
+				5B0B0000000000000000B006 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				5B0B00000000000000000401 /* App */,
@@ -158,6 +185,30 @@
 			productReference = 5B0B0000000000000000A001 /* UsualBotNotifications.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		5B0B0000000000000000B010 /* UsualBotShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5B0B0000000000000000B020 /* Build configuration list for PBXNativeTarget "UsualBotShare" */;
+			buildPhases = (
+				5B0B0000000000000000B011 /* Sources */,
+				5B0B0000000000000000B012 /* Frameworks */,
+				5B0B0000000000000000B013 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5B0B0000000000000000B002 /* ShareExtension */,
+			);
+			name = UsualBotShare;
+			packageProductDependencies = (
+				5B0B0000000000000000B201 /* HermesKit */,
+				5B0B0000000000000000B202 /* UsualUI */,
+			);
+			productName = UsualBotShare;
+			productReference = 5B0B0000000000000000B001 /* UsualBotShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -172,6 +223,9 @@
 						CreatedOnToolsVersion = 26.0;
 					};
 					5B0B0000000000000000A010 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					5B0B0000000000000000B010 = {
 						CreatedOnToolsVersion = 26.0;
 					};
 				};
@@ -197,6 +251,7 @@
 			targets = (
 				5B0B00000000000000000701 /* UsualBot */,
 				5B0B0000000000000000A010 /* UsualBotNotifications */,
+				5B0B0000000000000000B010 /* UsualBotShare */,
 			);
 		};
 /* End PBXProject section */
@@ -210,6 +265,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		5B0B0000000000000000A013 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5B0B0000000000000000B013 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -233,6 +295,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5B0B0000000000000000B011 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -240,6 +309,11 @@
 			isa = PBXTargetDependency;
 			target = 5B0B0000000000000000A010 /* UsualBotNotifications */;
 			targetProxy = 5B0B0000000000000000A005 /* PBXContainerItemProxy */;
+		};
+		5B0B0000000000000000B006 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5B0B0000000000000000B010 /* UsualBotShare */;
+			targetProxy = 5B0B0000000000000000B005 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -284,6 +358,20 @@
 			};
 			name = Release;
 		};
+		5B0B0000000000000000B021 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B0B0000000000000000B030 /* ShareExtension.xcconfig */;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		5B0B0000000000000000B022 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5B0B0000000000000000B030 /* ShareExtension.xcconfig */;
+			buildSettings = {
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -310,6 +398,15 @@
 			buildConfigurations = (
 				5B0B0000000000000000A021 /* Debug */,
 				5B0B0000000000000000A022 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5B0B0000000000000000B020 /* Build configuration list for PBXNativeTarget "UsualBotShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5B0B0000000000000000B021 /* Debug */,
+				5B0B0000000000000000B022 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -346,6 +443,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5B0B00000000000000000503 /* XCLocalSwiftPackageReference "Packages/Tailnet" */;
 			productName = Tailnet;
+		};
+		5B0B0000000000000000B201 /* HermesKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5B0B00000000000000000501 /* XCLocalSwiftPackageReference "Packages/HermesKit" */;
+			productName = HermesKit;
+		};
+		5B0B0000000000000000B202 /* UsualUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5B0B00000000000000000502 /* XCLocalSwiftPackageReference "Packages/UsualUI" */;
+			productName = UsualUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

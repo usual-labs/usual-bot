@@ -13,8 +13,10 @@
 #
 # To sign with profiles made beforehand, as the workflow does, also set:
 #   SIGNING_PROFILES  a folder holding ios-app.mobileprovision, ios-notifications.mobileprovision,
-#                     macos-app.provisionprofile and macos-notifications.provisionprofile. A keychain
-#                     must hold the Apple Distribution and Mac Installer Distribution certificates.
+#                     ios-share.mobileprovision, macos-app.provisionprofile,
+#                     macos-notifications.provisionprofile and macos-share.provisionprofile. A
+#                     keychain must hold the Apple Distribution and Mac Installer Distribution
+#                     certificates.
 #   APP_STORE_CONNECT_KEY_PATH, APP_STORE_CONNECT_KEY_ID
 #                     an individual API key (the .p8 file and its ID), for the upload
 set -eu
@@ -42,7 +44,8 @@ fail() {
 }
 
 # Installs a provisioning profile and prints its name, after checking that it's an App Store
-# profile for this bundle ID with at least 30 days left.
+# profile for this bundle ID with at least 30 days left. With a third argument, the profile must
+# also carry that App Group, which the app and the share extension both need.
 install_profile() {
     file="$profiles/$1"
     [ -f "$file" ] || fail "$file is missing."
@@ -55,6 +58,11 @@ install_profile() {
     [ "$identifier" = "$team.$2" ] || fail "$1 is for $identifier, not $team.$2."
     if /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "$plist" > /dev/null 2>&1; then
         fail "$1 lists devices, so it's a development or ad hoc profile. Make an App Store one."
+    fi
+    if [ -n "${3:-}" ]; then
+        /usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.security.application-groups' "$plist" \
+            2>/dev/null | grep -qx "[[:space:]]*$3" ||
+            fail "$1 doesn't have the App Group $3. Turn it on for $2 and make the profile again."
     fi
     expires=$(plutil -extract ExpirationDate raw -o - "$plist")
     days=$((($(date -j -u -f '%Y-%m-%dT%H:%M:%SZ' "$expires" +%s) - $(date +%s)) / 86400))
@@ -106,12 +114,16 @@ EOF
 
     # The positional parameters are read; from here they hold how this platform is signed.
     if [ -n "$profiles" ]; then
-        app_profile=$(install_profile "$type-app.$ext" "$prefix.UsualBot")
+        group="group.$prefix.UsualBot"
+        app_profile=$(install_profile "$type-app.$ext" "$prefix.UsualBot" "$group")
         notifications_profile=$(install_profile "$type-notifications.$ext" \
             "$prefix.UsualBot.NotificationService")
-        # Shared.xcconfig and NotificationService.xcconfig give each target its own profile.
+        share_profile=$(install_profile "$type-share.$ext" "$prefix.UsualBot.Share" "$group")
+        # Shared.xcconfig, NotificationService.xcconfig and ShareExtension.xcconfig give each target
+        # its own profile.
         set -- CODE_SIGN_STYLE=Manual 'CODE_SIGN_IDENTITY=Apple Distribution' \
-            "USUAL_APP_PROFILE=$app_profile" "USUAL_NOTIFICATIONS_PROFILE=$notifications_profile"
+            "USUAL_APP_PROFILE=$app_profile" "USUAL_NOTIFICATIONS_PROFILE=$notifications_profile" \
+            "USUAL_SHARE_PROFILE=$share_profile"
         plutil -replace destination -string export "$options"
         plutil -replace signingStyle -string manual "$options"
         plutil -insert signingCertificate -string 'Apple Distribution' "$options"
@@ -120,6 +132,7 @@ EOF
         /usr/libexec/PlistBuddy \
             -c "Add :provisioningProfiles:$prefix.UsualBot string $app_profile" \
             -c "Add :provisioningProfiles:$prefix.UsualBot.NotificationService string $notifications_profile" \
+            -c "Add :provisioningProfiles:$prefix.UsualBot.Share string $share_profile" \
             "$options"
         if [ "$platform" = mac ]; then
             [ -n "$installer" ] || fail "No Mac Installer Distribution certificate is in a keychain."

@@ -78,5 +78,8 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<!-- The App Group folder the share extension leaves what you shared in (ShareContainer). -->
+	<key>UsualShareGroup</key>
+	<string>$(USUAL_SHARE_GROUP)</string>
 </dict>
 </plist>

@@ -479,8 +479,52 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
 - **The Browser button shows only for a Bot whose status says `available`**: real profile on and
   headless. A gateway without the plugin answers 404, so the button stays hidden.
 
+## Sharing from other apps
+
+- **The share extension hands the item to the app; it doesn't send.** It writes what was shared
+  into the App Group folder (`ShareContainer`) and the app sends it through the chat's ordinary
+  send (`AppModel.sendShared`). Sending from the extension was ruled out for three reasons. The
+  iPhone's built-in Tailscale device lives in the app (state in its Application Support, one node
+  per state folder, a Go runtime in a process iOS holds to about 120 MB), so an extension couldn't
+  reach a tailnet gateway unless the Tailscale app's VPN happened to be on. The sign-in sits in the
+  app's own keychain group and its refresh token rotates: a second process refreshing it could sign
+  the app out. And a send is a socket handshake, a session resume, an upload at up to 50 MB as
+  base64 and a turn, inside an extension's time limit, with nowhere to show a failure afterwards.
+- **Nothing opens the app.** iOS gives a share extension no supported way to open its app, so the
+  extension says "Waiting to send" and the item goes the next time the app is open and online:
+  after each roster read (every 5 s) and when the app comes to the front. Only in the foreground:
+  a background check-in is cut off after two roster reads, which would turn a slow upload into a
+  failure.
+- **An item is deleted only once it's in the chat.** It's shown below the chat list until then
+  (`SharedItemsBanner`). It waits, without failing, while offline, while the chat loads, while a
+  reply runs (a message then would steer the turn) and while a question is open that the message
+  box would answer. It fails, and stays with the reason, when the Bot is gone, an upload is
+  refused or the room service is down. A room gets it through `RoomThread.send`, whose own failure
+  puts the text back in the room's message box.
+- **Rooms take shared text and links only,** like the room's message box: `groups.send` has no
+  attachments here. The picker greys a room out when files are shared.
+- **The folder holds as little as the picker needs:** names, pins, colours and pictures, no
+  previews or profile details, in a roster keyed by a hash of the gateway address. Items carry that
+  key, so another sign-in (or the demo) leaves them alone. Sign-out deletes the whole folder. Files
+  are written with complete protection and left out of backups.
+- **The demo leaves the folder alone** unless started with `USUALBOT_DEMO_SHARE=1` or
+  `--demo-share`: a demo run on a device that's also signed in would otherwise replace the real
+  roster with made-up Bots.
+- **One App Group ID on both platforms,** `group.<prefix>.UsualBot`. On the Mac the folder is asked
+  for only when the build has the entitlement and a team (`ShareContainer.appGroup`): a build
+  signed to run locally would get macOS's "access data from other apps" question instead.
+- **The extension links UsualUI,** for the same avatars and colours as the sidebar. Its files are
+  copied, never read into memory, and photos are converted to JPEG by the app when it sends.
+
 ## Not verified
 
+- Sharing from other apps ran on 2026-11-10 in the iPhone Simulator with the demo
+  (`--demo --demo-share`): a page from Safari and a photo from Photos, to a Bot and to the room,
+  the waiting and failed states below the chat list, and the signed-out notice. Not run: the Mac's
+  Share menu at all (the extension needs a build signed for a team with the App Group, and one
+  wasn't made), a signed build on an iPhone, a file from Files, a send to a real gateway (the
+  upload and `prompt.submit` ran against the test fake only), VoiceOver itself (the labels were
+  read from the accessibility tree), and `scripts/testflight.sh` with the two new profiles.
 - Read state: its routes were run on the developer's gateway on 2026-11-08 by a script signed in
   the app's way (native PKCE on the dashboard): the snapshot, a PATCH on a hidden Bot Chat, a stale
   revision's 409 and `sessions.changed` on the dashboard socket. The app itself hasn't: a Mac and an

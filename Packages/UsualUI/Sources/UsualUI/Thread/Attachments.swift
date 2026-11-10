@@ -26,26 +26,9 @@ enum AttachmentLoader {
         }.value
     }
 
-    /// The gateway takes PNG, JPEG, GIF, WebP and BMP as images. Photos (HEIC) and TIFFs are
-    /// converted to JPEG, so the agent sees them instead of getting a file it can't open.
+    /// A file ready for the gateway: photos (HEIC) and TIFFs become JPEG.
     static func make(name: String, data: Data) -> Attachment {
-        let ext = (name as NSString).pathExtension.lowercased()
-        guard ["heic", "heif", "tif", "tiff"].contains(ext), let jpeg = jpeg(from: data) else {
-            return Attachment(name: name, data: data)
-        }
-        return Attachment(name: ((name as NSString).deletingPathExtension) + ".jpg", data: jpeg)
-    }
-
-    /// Re-encodes an image as JPEG, keeping its orientation and metadata.
-    static func jpeg(from data: Data) -> Data? {
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
-        let output = NSMutableData()
-        guard
-            let destination = CGImageDestinationCreateWithData(output, UTType.jpeg.identifier as CFString, 1, nil)
-        else { return nil }
-        CGImageDestinationAddImageFromSource(
-            destination, source, 0, [kCGImageDestinationLossyCompressionQuality: 0.85] as CFDictionary)
-        return CGImageDestinationFinalize(destination) ? output as Data : nil
+        .converting(name: name, data: data)
     }
 
     /// Files dropped or pasted: Finder and Files hand over URLs; browsers and Photos often only
