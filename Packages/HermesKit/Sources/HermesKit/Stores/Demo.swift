@@ -187,6 +187,13 @@
                 GatewayEvent(
                     type: "tool.start", sessionID: "sample", seq: nil,
                     payload: ["tool_id": "demo-du", "name": "terminal", "context": "ssh db-1 du -sh /var/* | sort -h"]))
+            // Two messages wait for Ops to finish, so the queue above the message box shows.
+            threads["ops"]?.queue = [
+                QueuedMessage(id: "demo-queued-1", text: "Then check the same on db-2.", admissionID: "demo"),
+                QueuedMessage(
+                    id: "demo-queued-2", text: "When both are done, write up what to delete and what to keep.",
+                    admissionID: "demo"),
+            ]
             threads["ops"]?.usage = ChatUsage(
                 context: .init(used: 172_000, max: 200_000, percent: 86, estimated: false), input: 2_340_000,
                 output: 96_000, calls: 212, compressions: 2)

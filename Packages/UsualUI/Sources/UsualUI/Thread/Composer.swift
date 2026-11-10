@@ -3,8 +3,8 @@ import SwiftUI
 
 /// The message box under a chat with one agent. On iPhone its model, thinking and context sit
 /// inside it while you type; on the Mac they're in the agent's panel (ChatModelSection). Return
-/// sends. While the agent works, a message steers it and the empty box's button stops it. Files can
-/// go with a message between turns.
+/// sends. While the agent works, a message steers it, or waits in the queue above the box for the
+/// reply to end, and the empty box's button stops it. Files can go with a message between turns.
 struct Composer: View {
     let thread: ChatThread
     /// Whose chat this is, for its draft.
@@ -34,12 +34,16 @@ struct Composer: View {
                 SideQuestionCard(question: question) { thread.dismiss(question) }
                     .padding(.bottom, 6)
             }
+            if !thread.queue.isEmpty {
+                QueuedMessages(thread: thread).padding(.bottom, 6)
+            }
             box
         }
         .task(id: thread.isAttached) { await thread.loadModelsAndUsage() }
         .onChange(of: editing) { if !editing { edit = "" } }
         .animation(.smooth(duration: 0.2), value: thread.sideQuestions)
         .animation(.smooth(duration: 0.2), value: thread.backgroundTasks)
+        .animation(.smooth(duration: 0.2), value: thread.queue)
     }
 
     private var box: some View {
@@ -58,7 +62,13 @@ struct Composer: View {
                 list: thread.commands, load: { Task { await thread.loadCommands() } },
                 prefill: Binding(get: { thread.prefill }, set: { thread.prefill = $0 })),
             chat: ChatControls(thread: thread, agentName: agentName, agentDefault: agentDefault),
-            send: send, stop: thread.stop)
+            queue: queue, send: send, stop: thread.stop)
+    }
+
+    /// An edit replaces your last message; it isn't one to queue.
+    private var queue: ((String) -> Void)? {
+        guard thread.canQueue, !editing else { return nil }
+        return { thread.enqueue($0) }
     }
 
     private func send(_ text: String) {
