@@ -16,8 +16,8 @@ struct RoomPane: View {
     var jump: MessageJump? = nil
     var jumped: () -> Void = {}
 
-    /// The message you're replying to; a reply to an agent goes to that agent only.
-    @State private var replyTo: QuotedMessage?
+    /// What your next message quotes; quoting an agent sends it to that agent only.
+    @State private var quotes: [QuotedMessage] = []
     @State private var showsInfo = false
     /// As in a chat: the newest messages, and earlier ones as you scroll up.
     @State private var window = TranscriptWindow()
@@ -35,7 +35,7 @@ struct RoomPane: View {
                     MessageBox(
                         placeholder: placeholder, isRunning: !room.working.isEmpty, canSend: room.canSend,
                         stopLabel: String(localized: "Stop everyone in \(contact.name)"), mentions: mentions,
-                        replyTo: $replyTo, commands: roomSkills,
+                        quotes: $quotes, commands: roomSkills,
                         unsent: Binding(get: { room.unsent }, set: { room.unsent = $0 }), send: room.send,
                         stop: room.stop
                     )
@@ -44,7 +44,7 @@ struct RoomPane: View {
                 }
             }
             .onChange(of: room.roomID) {
-                replyTo = nil
+                quotes = []
                 showsInfo = false
             }
             // Inside the side panel's row: outside, the name drops below the window buttons' line.
@@ -200,10 +200,11 @@ struct RoomPane: View {
             reply: { item in
                 switch item.content {
                 case .user(let text):
-                    replyTo = QuotedMessage(author: String(localized: "You"), text: text)
+                    quotes.add(QuotedMessage(author: String(localized: "You"), text: text))
                 case .member(let id, let text):
                     let handle = room.state.member(id)?.handle
-                    replyTo = QuotedMessage(author: author(id)?.name ?? handle ?? id, text: text, mention: handle)
+                    quotes.add(
+                        QuotedMessage(author: author(id)?.name ?? handle ?? id, text: text, mention: handle))
                 default:
                     break
                 }
@@ -213,10 +214,11 @@ struct RoomPane: View {
                 switch item.content {
                 case .member(let id, _):
                     let handle = room.state.member(id)?.handle
-                    replyTo = QuotedMessage(
-                        author: author(id)?.name ?? handle ?? id, selection: selection, mention: handle)
+                    quotes.add(
+                        QuotedMessage(
+                            author: author(id)?.name ?? handle ?? id, selection: selection, mention: handle))
                 default:
-                    replyTo = QuotedMessage(author: String(localized: "You"), selection: selection)
+                    quotes.add(QuotedMessage(author: String(localized: "You"), selection: selection))
                 }
             })
     }

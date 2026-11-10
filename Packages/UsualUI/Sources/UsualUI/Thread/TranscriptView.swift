@@ -372,7 +372,7 @@ struct UserBubbleContent: View {
     var body: some View {
         // Attachments travel as `@image:`/`@file:` lines after the text; they show above it.
         let (withQuote, attachments) = AttachmentRef.split(text)
-        let (quote, body) = QuotedMessage.split(withQuote)
+        let (quotes, body) = QuotedMessage.split(withQuote)
         // Audio and video you sent get a player; the rest show as tiles.
         let (playable, tiles) = (
             attachments.filter { $0.kind == .file && MediaLoading.kind(of: $0.path).isPlayable },
@@ -393,10 +393,10 @@ struct UserBubbleContent: View {
                     }
                 }
             }
-            if !body.isEmpty || quote != nil {
+            if !body.isEmpty || !quotes.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
-                    if let quote {
-                        // The message this one replies to.
+                    // What this one replies to.
+                    ForEach(Array(quotes.enumerated()), id: \.offset) { _, quote in
                         Text(quote)
                             .scaledFont(size: 13)
                             .foregroundStyle(Theme.userBubbleInk.opacity(0.7))
