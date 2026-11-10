@@ -34,14 +34,42 @@ struct SpokenReply {
 
     private mutating func line(_ line: String) -> [String] {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
-        if trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") {
+        if Self.isFence(trimmed) {
             inCode.toggle()
             return []
         }
-        guard !inCode, !trimmed.hasPrefix("MEDIA:"), !trimmed.hasPrefix("@image:"), !trimmed.hasPrefix("@file:"),
-            !MarkdownBlock.isDeliveryMarker(trimmed)
-        else { return [] }
-        return Self.split(Self.plain(trimmed))
+        guard !inCode, !Self.isUnspoken(trimmed) else { return [] }
+        return Self.split(Self.plain(Self.cells(trimmed)))
+    }
+
+    private static func isFence(_ line: String) -> Bool { line.hasPrefix("```") || line.hasPrefix("~~~") }
+
+    /// File and delivery lines, and the rules of tables and sections: nothing a voice would say.
+    private static func isUnspoken(_ line: String) -> Bool {
+        line.hasPrefix("MEDIA:") || line.hasPrefix("@image:") || line.hasPrefix("@file:")
+            || MarkdownBlock.isDeliveryMarker(line) || !line.contains { $0.isLetter || $0.isNumber }
+    }
+
+    /// A table row as its cells with commas between; any other line unchanged.
+    private static func cells(_ line: String) -> String {
+        guard line.hasPrefix("|"), line.hasSuffix("|"), line.count > 1 else { return line }
+        return line.dropFirst().dropLast().split(separator: "|")
+            .map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.joined(separator: ", ")
+    }
+
+    /// Whether any of `markdown` would be spoken: not a reply that's only code or a file. Cheap
+    /// enough to ask for every message on screen.
+    static func hasWords(in markdown: String) -> Bool {
+        var inCode = false
+        for line in markdown.split(separator: "\n") {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if isFence(trimmed) {
+                inCode.toggle()
+            } else if !inCode, !isUnspoken(trimmed) {
+                return true
+            }
+        }
+        return false
     }
 
     /// Where the last sentence on a line ends (after its `.`, `!` or `?` and the space after it).
@@ -68,13 +96,15 @@ struct SpokenReply {
     }
 
     /// Markdown as it would be read aloud: list and heading marks, emphasis and inline code
-    /// marks dropped, links read by their text, web addresses as "a link".
+    /// marks dropped, links read by their text, web addresses as "a link", file paths as the file's name.
     static func plain(_ markdown: String) -> String {
         var text = markdown
         let rules: [(String, String)] = [
             (#"^\s{0,3}(#{1,6}|[-*+]|\d+[.)]|>)\s+"#, ""),
             (#"!?\[([^\]]*)\]\([^)]*\)"#, "$1"),
             (#"https?://\S+"#, String(localized: "a link")),
+            // A file's name, not the folders it's in.
+            (#"(?<![\w/.~])(?:~/(?:[\w.@+\-]+/)*|(?:/[\w.@+\-]+)+/)([\w.@+\-]+)/?"#, "$1"),
             (#"(\*\*|__|\*|_|`|~~)"#, ""),
             (#"\s+"#, " "),
         ]

@@ -50,4 +50,12 @@ enum CallSettings {
         return voices.first { $0.identifier == chosen } ?? voices.first
             ?? AVSpeechSynthesisVoice(language: language.identifier(.bcp47))
     }
+
+    /// `text` to be said in the chosen voice, at the chosen speed.
+    static func utterance(_ text: String) -> AVSpeechUtterance {
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = voice
+        utterance.rate = min(AVSpeechUtteranceDefaultSpeechRate * Float(speed), AVSpeechUtteranceMaximumSpeechRate)
+        return utterance
+    }
 }

@@ -223,10 +223,7 @@ final class VoiceCall {
             transcript.append(Line(fromYou: false, text: sentence))
         }
         phase = .speaking
-        let utterance = AVSpeechUtterance(string: sentence)
-        utterance.voice = CallSettings.voice
-        utterance.rate = min(
-            AVSpeechUtteranceDefaultSpeechRate * Float(CallSettings.speed), AVSpeechUtteranceMaximumSpeechRate)
+        let utterance = CallSettings.utterance(sentence)
         let token = speechToken
         // `@Sendable`: the synthesizer hands buffers over on its own queue. An empty buffer
         // means the sentence is done.
