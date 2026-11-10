@@ -177,6 +177,33 @@ struct ConversationScrollTests {
         #expect(state.followsEnd)
     }
 
+    @Test func sendingOutranksAScrollStillUnderWay() {
+        var state = ConversationScrollState()
+        _ = state.sent(.init(load: 1, count: 3))
+        // Fingers still rest on the trackpad, the scroll still coasts, or its last phase never came.
+        _ = state.scrollingByHand(true)
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 1_500))
+        #expect(state.sent(.init(load: 1, count: 4)) == 4_300)
+        // Your message and the reply are followed as they're laid out.
+        #expect(state.update(.init(contentHeight: 5_100, height: 700, offset: 4_300)) == 4_400)
+        _ = state.update(.init(contentHeight: 5_100, height: 700, offset: 4_400))
+        // The scroll's end, when it comes, doesn't take you away again.
+        #expect(state.scrollingByHand(false) == nil)
+        #expect(state.followsEnd)
+    }
+
+    @Test func theWayBackWorksWhileTheScrollStillCoasts() {
+        var state = ConversationScrollState()
+        _ = state.scrollingByHand(true)
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 1_500))
+        #expect(state.isAwayFromEnd)
+        #expect(state.jumpToEnd() == 4_300)
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 4_300))
+        _ = state.scrollingByHand(false)
+        #expect(state.followsEnd)
+        #expect(!state.isAwayFromEnd)
+    }
+
     @Test func aReloadOrAnUndoIsntSending() {
         var state = ConversationScrollState()
         _ = state.sent(.init(load: 1, count: 3))

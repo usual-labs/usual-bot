@@ -109,7 +109,8 @@ or an hour passes. Hover a message on the Mac to see its time, or long-press it 
 A chat opens at its newest message and follows new replies while you’re at the end. Scroll up to
 read older messages without being pulled back down. The round arrow button above the message box
 takes you back to the newest message and follows replies again; it has a dot when something new
-came in while you were away. Scrolling to the end, or sending a message, does the same.
+came in while you were away. Scrolling to the end, or sending a message, does the same. On iPhone,
+sending also puts the keyboard away; tap the message box to write again.
 
 - **Attachments.** Use **+**, drag and drop, or paste. On iPhone, pick from Photos, the camera or
   Files. Images up to 25 MB and other files up to 50 MB.
