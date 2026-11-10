@@ -42,6 +42,9 @@ list. Pinned chats come first, then the most recent conversation.
   yet, the gateway searches the rest and adds its best match, marked "Earlier"; opening it loads the
   chat and goes to the message. The gateway's search doesn't cover rooms, and a chat too long for
   the gateway to send can't be opened at an older message.
+- On the Mac, ⌘1 to ⌘9 open the first nine chats in the sidebar, counting from the pinned chats
+  and skipping folded sections. Hold ⌘ for a moment and each of them shows its number. The Go menu
+  lists them too.
 - The dot at the bottom of the sidebar shows the connection. Click it to see the gateway and to
   sign out. On iPhone the dot sits on the settings gear at the top left; tap it, then your gateway,
   for its details, Built-in Tailscale and Sign Out.
@@ -513,6 +516,7 @@ On the Mac these are also in the menu bar: File, View and Go.
 | ⌘K or ⌘F | Anywhere in the window | Search chats, messages and actions |
 | ↑ / ↓ | Sidebar | Move between chats |
 | ⌃Tab / ⌃⇧Tab | Mac | Next / previous chat, in sidebar order, skipping folded sections |
+| ⌘1 to ⌘9 | Mac | Open one of the first nine chats, in sidebar order, skipping folded sections. Hold ⌘ to see the numbers |
 | ⌃⌘S | Mac | Collapse or expand the sidebar |
 | ⌘, | Mac | Open Settings |
 | ⌘I | Chat or room | Show the profile or room details |

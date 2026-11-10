@@ -13,12 +13,20 @@ struct ContactRow: View {
     var compact = false
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.chatShortcuts) private var shortcuts
     @ScaledMetric(relativeTo: .body) private var scaledAvatar: CGFloat = 44
 
     var body: some View {
         if compact {
             avatar
-                .overlay(alignment: .topTrailing) { AvatarBadge(contact: contact).offset(x: 6, y: -4) }
+                .overlay(alignment: .topTrailing) {
+                    // The number takes the badge's corner while ⌘ is held.
+                    if let number = shortcuts[contact.id] {
+                        ShortcutHint(number: number).offset(x: 12, y: -4)
+                    } else {
+                        AvatarBadge(contact: contact).offset(x: 6, y: -4)
+                    }
+                }
                 .padding(.vertical, 4)
                 .help(contact.name)
                 .accessibilityElement(children: .ignore)
@@ -73,6 +81,7 @@ struct ContactRow: View {
                 // the row when a count appears. At accessibility sizes the preview wraps instead.
                 .frame(height: dynamicTypeSize.isAccessibilitySize ? nil : previewLineHeight)
             }
+            if let number = shortcuts[contact.id] { ShortcutHint(number: number) }
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .ignore)

@@ -33,15 +33,18 @@ private struct PinnedTile: View {
     let members: [Contact]
     let isSelected: Bool
     let open: () -> Void
+    @Environment(\.chatShortcuts) private var shortcuts
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 12)
+        let number = shortcuts[contact.id]
         Button(action: open) {
             VStack(spacing: Self.gap) {
                 avatar.overlay(alignment: .topTrailing) {
-                    // On the circle's edge, which is this far in from the avatar's corner.
+                    // On the circle's edge, which is this far in from the avatar's corner. The
+                    // number takes its place while ⌘ is held.
                     let inward = Self.avatarSize * 0.146 - 9
-                    AvatarBadge(contact: contact).offset(x: -inward, y: inward)
+                    if number == nil { AvatarBadge(contact: contact).offset(x: -inward, y: inward) }
                 }
                 Text(contact.name)
                     .scaledFont(size: Self.nameSize)
@@ -52,6 +55,9 @@ private struct PinnedTile: View {
             .padding(.horizontal, 4)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity)
+            .overlay(alignment: .topTrailing) {
+                if let number { ShortcutHint(number: number).padding(.top, 4).padding(.trailing, 6) }
+            }
             #if os(macOS)
                 // The phone pushes the chat, so nothing there stays selected.
                 .background(isSelected ? Theme.selection : .clear, in: shape)
