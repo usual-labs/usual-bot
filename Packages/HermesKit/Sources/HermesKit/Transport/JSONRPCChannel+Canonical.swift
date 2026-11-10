@@ -192,6 +192,14 @@ extension JSONRPCChannel {
 
     private func submit(_ params: JSONValue, session: String, timeout: Duration) async throws -> JSONValue {
         var fields = Self.fields(params)
+        // The dashboard cuts the chat as it takes the message. Here the cut is its own fenced edit
+        // on the row, then a plain message, as Hermes's desktop app does it.
+        if let row = fields["truncate_before_row_id"] {
+            for key in [
+                "truncate_before_row_id", "confirm_truncate", "confirm_deep_truncate", "confirm_empty_truncate",
+            ] { fields[key] = nil }
+            _ = try await mutate(session, "rewind", payload: ["target_message_id": row], timeout: timeout)
+        }
         // Lets the gateway tell a retry from a second message.
         fields["submission_id"] = fields["submission_id"] ?? .string(UUID().uuidString)
         let staged = canonical.session(session)?.stagedImages ?? []

@@ -328,6 +328,50 @@ struct CanonicalCallTests {
         #expect(try await undone == ["removed": 2])
     }
 
+    /// The Webapp's `prompt.submit` takes no truncation keys: the cut is a `rewind` on the row.
+    @Test func replacingAnEarlierMessageRewindsThenSends() async throws {
+        let (channel, gateway) = try await attach()
+        async let sent = channel.call(
+            "prompt.submit",
+            params: [
+                "session_id": "local-1", "text": "Plan my month", "truncate_before_row_id": 8, "confirm_truncate": true,
+                "confirm_deep_truncate": true,
+            ])
+        let rewind = try await gateway.answer(
+            1, method: "session.mutate", result: ["revision": 6, "execution_generation": 4, "rewound_count": 6])
+        #expect(rewind["operation"] == "rewind")
+        #expect(rewind["payload"] == ["target_message_id": 8])
+        #expect(rewind["expected_revision"] == 5)
+        let submit = try await gateway.answer(2, method: "prompt.submit", result: ["status": "queued"])
+        #expect(submit["text"] == "Plan my month")
+        #expect(submit["truncate_before_row_id"] == nil)
+        #expect(submit["confirm_truncate"] == nil)
+        #expect(submit["confirm_deep_truncate"] == nil)
+        _ = try await sent
+    }
+
+    @Test func aRefusedRewindSendsNothing() async throws {
+        let (channel, gateway) = try await attach()
+        async let sent = channel.call(
+            "prompt.submit",
+            params: [
+                "session_id": "local-1", "text": "Plan my month", "truncate_before_row_id": 8, "confirm_truncate": true,
+            ])
+        _ = try await gateway.answer(
+            1, method: "session.mutate", error: (4004, "invalid_params"),
+            data: [
+                "reason": "invalid_params", "field": "target_message_id",
+                "detail": "compacted: target user message was summarized when the session was compressed",
+            ])
+        do {
+            _ = try await sent
+            Issue.record("The refusal should reach the chat")
+        } catch {
+            #expect(ChatThread.rewindRefusal(error).hasPrefix("it was summarised"))
+        }
+        #expect(gateway.socket.sent.count == 2)
+    }
+
     /// The gateway moves the generation when it takes a message, before the turn's first event, so
     /// Stop pressed straight after sending carries the old one.
     @Test func stopRightAfterSendingStopsTheNewTurn() async throws {
