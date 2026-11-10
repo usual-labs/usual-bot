@@ -297,6 +297,21 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
 - **Search and the ⌥Space panel stay flat,** and the rail shows lines instead of headings and folds
   nothing, because it has no heading to unfold with.
 
+## Pinned chats
+
+- **A Bot's pin is the official app's `pinned` in `ui_meta['hermes-bots']`,** so a Bot pinned in
+  either app is pinned in both. A room's pin stays on the device, as in the official app, which
+  keeps it with its own list of rooms. `SidebarSections` saves a pin through the same queue and
+  holds as a section move, so the two can't overwrite each other's write of `hermes-bots`.
+- **Pinned chats are tiles above the sections, as in Grok,** not rows with a pin as in the official
+  app. A tile has no preview, so its badge carries what's waiting.
+- **A pinned chat keeps its section but isn't listed in it,** so folding a section can't hide a
+  chat you pinned, and unpinning puts it back. Its menu leaves out the section items and it can't
+  be dragged, since moving it would show nothing. Deleting a section still asks when only pinned
+  chats are filed under it.
+- **Search and the rail have no tiles.** They list pinned chats first as rows; a search marks them
+  with a pin, and the rail draws a line under them.
+
 ## Search
 
 - **The device first, the gateway for chats it doesn't hold.** Online, every agent with a Bot Chat

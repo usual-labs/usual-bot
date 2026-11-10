@@ -8,6 +8,11 @@ All notable changes to Usual Bot are listed here. The format follows
 
 ### Added
 
+- **Pin a chat.** Choose **Pin** from a chat's menu in the sidebar (right-click on the Mac, touch
+  and hold on iPhone) and it stays at the top as a large avatar, above your sections, with its
+  unread count or needs-you dot on the avatar. **Unpin** puts it back where it was. A Bot's pin
+  shows on your other devices and in the Hermes app, and Bots pinned there show pinned here; a
+  room's pin stays on the device.
 - **Usual Bot says when a newer build is in TestFlight.** Below the chat list, "Usual Bot 0.6.0 is
   out" offers **Update in TestFlight**, which opens TestFlight to install it, or **Later**, which
   hides that build until the next one. Settings › About keeps the update link. TestFlight builds
