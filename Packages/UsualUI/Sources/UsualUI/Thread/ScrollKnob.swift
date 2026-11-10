@@ -90,6 +90,9 @@ extension View {
     /// it. Drag the knob to scroll; it widens under the pointer.
     struct ScrollKnob: View {
         let model: ScrollKnobModel
+        /// At rest it's barely there over a conversation. A text field's says more: it's the only
+        /// sign of text out of sight.
+        var idleOpacity = 0.06
         /// Scrolls to an offset from the top of the content.
         let scroll: (CGFloat) -> Void
         /// A drag is a scroll by hand: the conversation stops following its end.
@@ -111,7 +114,7 @@ extension View {
                     let progress = min(max(g.offset / g.maxOffset, 0), 1)
                     let active = hovering || dragStart != nil
                     Capsule()
-                        .fill(Theme.ink.opacity(active ? 0.25 : 0.06))
+                        .fill(Theme.ink.opacity(active ? 0.25 : idleOpacity))
                         .frame(width: active ? 8 : 5, height: length)
                         // A wider strip than it draws, so it's easy to grab.
                         .frame(width: 14, height: length)
