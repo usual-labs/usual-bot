@@ -38,6 +38,7 @@ struct NewRoomSheet: View {
             Section {
                 // Left blank, the room takes its agents' names.
                 TextField("Name", text: $name, prompt: Text(suggestion.isEmpty ? "Room name" : suggestion))
+                    .textInputTint()
                     .onSubmit(submit)
             }
             Section {

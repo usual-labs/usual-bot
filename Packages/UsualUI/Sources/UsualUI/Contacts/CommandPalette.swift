@@ -56,6 +56,7 @@
             return VStack(spacing: 0) {
                 TextField("Search chats, messages and actions", text: $query)
                     .textFieldStyle(.plain)
+                    .textInputTint()
                     .scaledFont(size: 15)
                     .focused($fieldIsFocused)
                     .padding(.horizontal, 18)

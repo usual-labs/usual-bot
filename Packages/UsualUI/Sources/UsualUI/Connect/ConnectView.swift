@@ -25,6 +25,7 @@ struct ConnectView<Options: View>: View {
                         "Gateway address", text: $model.gatewayInput,
                         prompt: Text("100.64.0.1:9119 or hermes.example.com")
                     )
+                    .textInputTint()
                     .autocorrectionDisabled()
                     #if os(iOS)
                         .textInputAutocapitalization(.never)

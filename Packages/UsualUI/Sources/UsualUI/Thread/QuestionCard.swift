@@ -115,6 +115,7 @@ struct QuestionCard: View {
                     set: { typed[question.id] = $0 }), axis: .vertical
             )
             .textFieldStyle(.roundedBorder)
+            .textInputTint()
             .scaledFont(size: 14)
             .lineLimit(1...4)
         }

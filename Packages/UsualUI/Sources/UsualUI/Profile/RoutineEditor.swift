@@ -49,6 +49,7 @@ struct RoutineEditor: View {
             Form {
                 field("Name") {
                     TextField("Name", text: $draft.name, prompt: Text("Optional, like Morning brief"))
+                        .textInputTint()
                         .labelsHidden()
                 }
                 whatToDo
@@ -79,6 +80,7 @@ struct RoutineEditor: View {
         } else {
             field("What to do") {
                 TextEditor(text: $draft.prompt)
+                    .textInputTint()
                     .focused($writingPrompt)
                     .scaledFont(size: 14)
                     .scrollContentBackground(.hidden)

@@ -59,8 +59,10 @@ struct NewBotSheet: View {
             }
             Section {
                 TextField("Name", text: $name, prompt: Text("Bot name"))
+                    .textInputTint()
                     .onSubmit(submit)
                 TextField("What it's for", text: $about, prompt: Text("What it's for (optional)"), axis: .vertical)
+                    .textInputTint()
                     .lineLimit(1...4)
             } footer: {
                 VStack(alignment: .leading, spacing: 6) {

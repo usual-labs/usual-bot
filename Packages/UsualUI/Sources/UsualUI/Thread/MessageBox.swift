@@ -321,6 +321,7 @@ struct MessageBox: View {
             selection: $selection, axis: .vertical
         )
         .textFieldStyle(.plain)
+        .textInputTint()
         .scaledFont(size: Self.fontSize)
         .lineLimit(1...8)
         .focused($focused)

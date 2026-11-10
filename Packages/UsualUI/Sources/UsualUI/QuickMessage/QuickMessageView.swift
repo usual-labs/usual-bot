@@ -141,6 +141,7 @@ public struct QuickMessageView: View {
         HStack(spacing: 8) {
             TextField(placeholder, text: $text)
                 .textFieldStyle(.plain)
+                .textInputTint()
                 .scaledFont(size: 17)
                 .focused($fieldFocused)
                 .onSubmit(submit)
