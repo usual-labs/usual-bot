@@ -56,7 +56,8 @@
   architecture), linked from the README; `docs/screenshots/` — demo-mode screenshots they use
 - `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md`,
   `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md` — open-source project files.
-  When users would notice a change, update the matching guide and the changelog's Unreleased section.
+  When users would notice a change, update the matching guide and write the changelog entry in the
+  pull request's description ([why](04-workspace-conventions.md#changelog)).
 
 The `design/avatars/2026-10-24-hermes/` folder holds the Hermes doodle (a monochrome-doodle take
 on the official Hermes app icon's headphone character), its prompt, source attribution and alpha
