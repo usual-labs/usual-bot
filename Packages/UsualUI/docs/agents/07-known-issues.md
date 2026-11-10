@@ -182,7 +182,7 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   those sites. A new way to make sound has to go through `MediaPlayback.play` or stop the reading
   itself, as `CallBar` does. It shares `SpokenReply`'s cleaning with on-device calls, so a change
   to what's spoken changes both. Unverified: that sound comes out (the state and timing were
-  checked on the Mac, not heard), the iPhone's silent switch and other apps' music resuming
+  checked on the Mac and the iPhone simulator, not heard), a real iPhone's silent switch and other apps' music resuming
   afterwards, and VoiceOver speaking over a reading.
 - **AVPlayerView exposed nothing to the accessibility tree** inline in a chat (macOS 27, checked
   with AX queries, not VoiceOver itself), so on the Mac the playing video is one element with
