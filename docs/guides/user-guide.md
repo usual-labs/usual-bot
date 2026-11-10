@@ -186,8 +186,10 @@ sending also puts the keyboard away; tap the message box to write again.
   was stopped before it said anything or a gateway restart: Continue picks it up.
   While a goal runs, everything else works as usual. A message you send steers the reply, or
   queues behind it; either way it counts as one of the goal's turns, and the goal goes on after
-  it. Approvals and questions still wait for you, and the goal waits with them. Undo and Edit are
-  off between a goal's replies, as during any reply; they change the conversation, never the goal.
+  it. Approvals and questions still wait for you, and the goal waits with them. Undo, Edit and
+  Try Again are off while a goal works, between its replies too; once it's stopped or done they
+  change the conversation as usual, never the goal. Try Again isn't offered on a reply to one of
+  the goal's own turns: there's no message of yours to ask again.
   A new goal can't be set while a reply runs: stop this one first. The goal line
   was checked with Hermes 0.23.1; on a gateway too old to report goals, nothing shows. Rooms have
   no goals.
@@ -212,9 +214,24 @@ sending also puts the keyboard away; tap the message box to write again.
   quoting several Bots addresses each of them.
 - **Links.** Web and email addresses in messages, yours included, are links: underlined, and blue in
   the Bot's replies.
-- **Edit and undo.** On your last message, **Edit** puts it back in the box; send it to replace the
-  exchange and get a fresh answer. Anything you had typed waits meanwhile, and is back in the box
-  once you send the edit or stop editing. **Undo** takes the last exchange back.
+- **Edit, Try Again and Undo.** These take the chat back to an earlier point; there's still one
+  chat per Bot, with no branches.
+  - **Edit**, on any message of yours, puts it back in the box. Send it to replace that message and
+    everything after it with a fresh answer. While you edit, what would be removed is faded and the
+    box says how many messages go. Anything you had typed waits meanwhile, and is back in the box
+    once you send the edit or stop editing. Text and file references come back; a picture doesn't,
+    so send it again in a new message.
+  - **Try Again**, on the Bot's last reply, asks your last message again for a different answer.
+    It isn't offered on a reply to something Hermes delivered itself, such as a routine's result,
+    or when your message had a picture.
+  - **Undo**, on your last message, takes the last exchange back.
+
+  What's removed can't be brought back, so the app asks first when more than the last exchange
+  would go, or when the Bot ran commands or changed files in what would go. Going back changes
+  the conversation only: files the Bot changed, commands it ran and messages it sent stay as they
+  are, and the Bot may do them again. All three wait for a reply to end and need the gateway, and
+  are greyed out with the reason otherwise. Rooms don't have them: there, **Try Again** on a reply
+  that stopped partway is the way to ask again.
 
 ## Approvals and questions
 

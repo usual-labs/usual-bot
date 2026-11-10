@@ -36,8 +36,10 @@ struct ThreadPane: View {
     @State private var attachments: [Attachment] = []
     /// What your next message quotes: messages you're replying to and words you added from them.
     @State private var quotes: [QuotedMessage] = []
-    /// You're rewriting your last message.
-    @State private var editing = false
+    /// The message of yours you're rewriting.
+    @State private var editing: TranscriptItem.ID?
+    /// An edit or Try Again that removes enough to ask first.
+    @State private var rewindRequest: RewindRequest?
     @State private var calling = false
     @State private var isDropTarget = false
     @State private var showsComputer = false
@@ -53,6 +55,16 @@ struct ThreadPane: View {
             .environment(\.sentImages, thread?.sentImages ?? [:])
             .environment(\.mediaProfile, contact.details?.profile ?? contact.id)
             .environment(\.messageActions, actions)
+            .environment(\.editingFrom, editing)
+            .rewindConfirmation($rewindRequest, agentName: contact.name) { request in
+                guard let thread else { return }
+                switch request.kind {
+                case .edit(let item, let text):
+                    editing = nil
+                    Task { await thread.edit(item, to: text) }
+                case .tryAgain: Task { await thread.tryAgain() }
+                }
+            }
             // The call bar floats under the name; the conversation scrolls on behind it, faded by
             // the scroll edge as under the bars.
             .safeAreaBar(edge: .top, spacing: 0) {
@@ -77,7 +89,7 @@ struct ThreadPane: View {
                     Composer(
                         thread: thread, chatID: contact.id, agentName: contact.name, agentDefault: contact.details,
                         attachments: $attachments, quotes: $quotes,
-                        editing: $editing,
+                        editing: $editing, confirm: { rewindRequest = $0 },
                         inCall: calling, startCall: { calling = true }
                     )
                     .frame(maxWidth: Theme.columnWidth)
@@ -124,22 +136,23 @@ struct ThreadPane: View {
                 attachments = []
                 calling = false
                 quotes = []
-                editing = false
+                editing = nil
+                rewindRequest = nil
             }
             // The message box goes while a chat reloads, and the edit in it.
             .onChange(of: thread?.phase == .ready) { _, ready in
-                if !ready { editing = false }
+                if !ready { editing = nil }
             }
             .paneChrome()
     }
 
-    /// React, reply, edit and undo, for the transcript's messages.
+    /// React, reply, edit, try again and undo, for the transcript's messages.
     private var actions: MessageActions? {
         guard let thread else { return nil }
         return MessageActions(
             canReact: thread.canReact(to:), react: { thread.react($0, to: $1) },
             reply: { item in
-                editing = false
+                editing = nil
                 switch item.content {
                 case .user(let text): quotes.add(QuotedMessage(author: String(localized: "You"), text: text))
                 case .assistant(let text): quotes.add(QuotedMessage(author: contact.name, text: text))
@@ -147,20 +160,34 @@ struct ThreadPane: View {
                 }
             },
             quote: { item, selection in
-                editing = false
+                editing = nil
                 switch item.content {
                 case .user: quotes.add(QuotedMessage(author: String(localized: "You"), selection: selection))
                 default: quotes.add(QuotedMessage(author: contact.name, selection: selection))
                 }
             },
-            canRewind: { item in thread.canRewind && item.id == thread.lastSent?.id },
+            canEdit: \.isYours,
+            canRetry: { item in item.id == thread.retryReply?.id },
+            canRewind: { item in item.id == thread.lastSent?.id },
+            rewindUnavailable: { item in
+                item.id == thread.retryReply?.id ? thread.tryAgainUnavailable : thread.rewindUnavailable
+            },
             edit: { item in
                 quotes = []
-                editing = true
+                editing = item.id
                 thread.prefill = ChatThread.editableText(of: item)
             },
+            retry: { _ in
+                editing = nil
+                guard let last = thread.lastSent, let cost = thread.rewindCost(of: last) else { return }
+                if cost.needsConfirmation {
+                    rewindRequest = RewindRequest(kind: .tryAgain, cost: cost)
+                } else {
+                    Task { await thread.tryAgain() }
+                }
+            },
             undo: { _ in
-                editing = false
+                editing = nil
                 Task { await thread.undo() }
             })
     }
