@@ -52,6 +52,12 @@ struct UsualBotApp: App {
             AgentNotifications.shared.watch(model, showApp: { quickPanel.showMainWindow() })
             // The window has no title bar for tabs to sit under; this also removes the tab menu items.
             NSWindow.allowsAutomaticWindowTabbing = false
+            // Drafts are written twice a second as you type; quitting writes the rest.
+            NotificationCenter.default.addObserver(
+                forName: NSApplication.willTerminateNotification, object: nil, queue: .main
+            ) { _ in
+                MainActor.assumeIsolated { model.drafts.save() }
+            }
         #else
             AgentNotifications.shared.watch(model, showApp: {})
             _backgroundLink = State(initialValue: BackgroundLink(model: model, suspend: { tailscale.suspend() }))

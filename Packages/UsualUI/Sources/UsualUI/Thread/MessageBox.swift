@@ -6,6 +6,12 @@ import SwiftUI
 /// iPhone a chat's box opens up while you type: the text gets its own row, and below it a row of
 /// buttons with the chat's context and a gauge for its model and thinking.
 struct MessageBox: View {
+    /// The chat or room this box writes to. The Mac shows the next one in the same pane, and the
+    /// box goes with it.
+    let conversation: Contact.ID
+    /// What's typed and not sent: the conversation's draft (`Drafts`), so it's there when you
+    /// come back.
+    @Binding var text: String
     let placeholder: String
     let isRunning: Bool
     let canSend: Bool
@@ -34,7 +40,6 @@ struct MessageBox: View {
         @AppStorage(AppPreferences.commandReturnKey) private var commandReturn = false
         @Environment(\.messageBoxTakesTyping) private var takesTyping
     #endif
-    @State private var text = ""
     /// The menu row Return picks.
     @State private var highlighted = 0
     /// When Return last picked from the menu: the field may still submit for that same press.
@@ -57,9 +62,10 @@ struct MessageBox: View {
         /// motion: opening on focus alone grew the box, then the keyboard pushed it up after.
         @State private var open = false
     #endif
-    /// Mac: the text has wrapped, so it gets the box's whole width until the box empties. Staying
-    /// open stops the wider field from unwrapping it and the box closing again.
-    @State private var hasWrapped = false
+    /// Mac: the conversation whose text has wrapped, so it gets the box's whole width until the box
+    /// empties. Staying open stops the wider field from unwrapping it and the box closing again.
+    @State private var wrapped: Contact.ID?
+    private var hasWrapped: Bool { wrapped == conversation }
 
     #if os(iOS)
         /// Larger than the Mac's, for thumbs: 34 pt buttons in 6 pt of padding. They grow with the
@@ -113,7 +119,7 @@ struct MessageBox: View {
                 .pastesAttachments(enabled: attaching != nil && takesTyping, focused: focused) {
                     attaching?.attachments.append(contentsOf: $0)
                 }
-                .onChange(of: text) { if text.isEmpty { hasWrapped = false } }
+                .onChange(of: text) { if text.isEmpty { wrapped = nil } }
             #else
                 // Around the field, not on it: the field pastes text first and passes on what it can't.
                 .modifier(
@@ -144,6 +150,13 @@ struct MessageBox: View {
                 }
             #endif
             .onDisappear { dictation.stop() }
+            // The next conversation gets its own text, and none of what was open over the last one.
+            .onChange(of: conversation) {
+                dictation.stop()
+                dismissedText = nil
+                pickingLevel = false
+                selection = TextSelection(insertionPoint: text.endIndex)
+            }
             // The menu reads the gateway's list each time it opens.
             .onChange(of: slashQuery != nil) { _, open in if open { commands?.load() } }
             // Clicking or tapping the conversation closes the menus, like Escape; on iPhone it puts
@@ -170,10 +183,11 @@ struct MessageBox: View {
             .onChange(of: quotes?.wrappedValue.count ?? 0) { old, new in
                 if new > old { focused = true }
             }
-            // Initial too: the Plugins sheet fills a chat's box before the chat opens.
+            // Initial too: the Plugins sheet fills a chat's box before the chat opens. Ahead of a
+            // draft, as an unsent message is; an edit starts from the message alone.
             .onChange(of: commands?.prefill, initial: true) { _, prefill in
                 guard let prefill else { return }
-                replaceText(with: prefill)
+                replaceText(with: isEmpty || editing?.wrappedValue == true ? prefill : prefill + "\n\n" + text)
                 commands?.prefill = nil
                 focused = true
             }
@@ -202,8 +216,9 @@ struct MessageBox: View {
                         text: String(localized: "Editing your last message"),
                         cancelLabel: String(localized: "Stop editing")
                     ) {
+                        // The box goes back to what you had typed before.
                         editing?.wrappedValue = false
-                        text = ""
+                        selection = TextSelection(insertionPoint: text.endIndex)
                     }
                 }
                 if let attaching, !attaching.attachments.isEmpty {
@@ -373,11 +388,16 @@ struct MessageBox: View {
         .padding(.vertical, Self.fieldPadding)
         #if os(macOS)
             // One line of text is 26 pt tall here. Before layout settles the placeholder can measure
-            // taller, so an empty box doesn't count.
-            .onGeometryChange(for: Bool.self) {
-                $0.size.height > 32
-            } action: { wrapped in
-                if wrapped, !text.isEmpty { hasWrapped = true }
+            // taller, so an empty box doesn't count. Measured afresh for each conversation: going
+            // from one wrapped draft to another changes nothing here.
+            .background {
+                Color.clear
+                .onGeometryChange(for: Bool.self) {
+                    $0.size.height > 32
+                } action: { isTall in
+                    if isTall, !text.isEmpty { wrapped = conversation }
+                }
+                .id(conversation)
             }
             .fieldScrollKnob()
         #endif
@@ -461,8 +481,10 @@ struct MessageBox: View {
             }
             return
         }
-        send(quoted.message(text))
+        // Emptied before it goes: sending an edit ends it, and the box is then your draft's again.
+        let message = quoted.message(text)
         text = ""
+        send(message)
         quotes?.wrappedValue = []
         putKeyboardAway()
     }

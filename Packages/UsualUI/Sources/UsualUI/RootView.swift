@@ -128,6 +128,7 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
             .environment(\.botPictures, model.pictures)
             .environment(\.voiceLive, model.voiceLive)
             .environment(\.screens, model)
+            .environment(\.drafts, model.drafts)
             .environment(\.gatewayOnline, model.isOnline)
         }
     }

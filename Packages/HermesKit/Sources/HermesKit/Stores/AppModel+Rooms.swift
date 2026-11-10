@@ -19,6 +19,8 @@ extension AppModel {
                 Task { await room.sync() }
             }
         }
+        // A room deleted elsewhere takes its draft with it.
+        for room in contacts where room.kind != .agent && listed[room.id] == nil { drafts.forget(room.id) }
         rooms = listed
         return summaries.map(Contact.init(room:))
     }
@@ -81,6 +83,7 @@ extension AppModel {
         }
         roomEdits += 1
         rooms[contact.id] = nil
+        drafts.forget(contact.id)
         contacts.removeAll { $0.id == contact.id }
         sections.move(contact, to: nil)
         sections.setPinned(false, contact)

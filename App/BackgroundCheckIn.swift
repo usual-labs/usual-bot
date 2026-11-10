@@ -35,6 +35,8 @@
                 model.setForeground(true)
                 return
             }
+            // Now, not once a running reply lets the app go: a locked iPhone stops the write.
+            model.drafts.save()
             scheduleCheckIn()
             guard model.isWorking else {
                 letGo()

@@ -239,6 +239,7 @@ extension AppModel {
         dropLists(of: old)
         pictures.move(old, to: new)
         sections.renameAgent(from: old, to: new)
+        drafts.move(from: old, to: new)
         if let index = contacts.firstIndex(where: { $0.id == old }) {
             contacts[index] = contacts[index].renamed(to: new)
         }
@@ -246,13 +247,14 @@ extension AppModel {
         if visibleContactID == old { requestedContactID = new }
     }
 
-    /// Forgets a Bot that's gone: its chat, lists, picture, unsaved section move and alerts. The
+    /// Forgets a Bot that's gone: its chat, lists, picture, draft, unsaved section move and alerts. The
     /// offline cache follows at the next save, which writes only what's held here.
     func forgetAgent(_ id: Contact.ID) {
         _ = threads.removeValue(forKey: id)?.release()
         dropLists(of: id)
         pictures.forget(id)
         sections.forget(id)
+        drafts.forget(id)
         alertsCleared?(id)
         if visibleContactID == id { visibleContactID = nil }
     }

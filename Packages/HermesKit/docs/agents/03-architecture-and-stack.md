@@ -2,7 +2,7 @@
 
 ## Implemented today
 
-Swift tools 6.0, iOS 18/macOS 15 minimums, Foundation/Observation/CryptoKit/Security. AppModel is MainActor observable state. Tokens use device-only Keychain accessibility; a hashed per-gateway filename stores protected cache data in the Caches directory. UserDefaults remembers the gateway address. Backoff doubles from 300ms to a 15s cap.
+Swift tools 6.0, iOS 18/macOS 15 minimums, Foundation/Observation/CryptoKit/Security. AppModel is MainActor observable state. Tokens use device-only Keychain accessibility; a hashed per-gateway filename stores protected cache data in the Caches directory, and unsent drafts (`Drafts`) under the same name in Application Support, excluded from backups. UserDefaults remembers the gateway address. Backoff doubles from 300ms to a 15s cap.
 
 Manifests/lockfiles: `Package.swift`. Package manager: see build manifest / parent tooling.
 

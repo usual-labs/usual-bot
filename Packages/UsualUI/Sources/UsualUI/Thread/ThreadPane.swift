@@ -75,7 +75,7 @@ struct ThreadPane: View {
             } bottom: {
                 if let thread, thread.phase == .ready {
                     Composer(
-                        thread: thread, agentName: contact.name, agentDefault: contact.details,
+                        thread: thread, chatID: contact.id, agentName: contact.name, agentDefault: contact.details,
                         attachments: $attachments, quotes: $quotes,
                         editing: $editing,
                         inCall: calling, startCall: { calling = true }
@@ -125,6 +125,10 @@ struct ThreadPane: View {
                 calling = false
                 quotes = []
                 editing = false
+            }
+            // The message box goes while a chat reloads, and the edit in it.
+            .onChange(of: thread?.phase == .ready) { _, ready in
+                if !ready { editing = false }
             }
             .paneChrome()
     }

@@ -48,7 +48,8 @@ releases don't get separate patches.
   unlocked once since it started.
 - The app refuses plain `http` to public addresses; it's allowed only for private and Tailscale
   addresses.
-- The cached chats are written with file protection, in the app's own container.
+- The cached chats and your unsent drafts are written with file protection, in the app's own
+  container. Drafts are left out of device backups, and signing out deletes both.
 - Push notifications are sealed on your gateway with a key only that device and the gateway hold;
   Usual's relay and Apple carry them without being able to read them. The relay stores only each
   device's push token and hashes of its two secrets.
