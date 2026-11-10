@@ -161,6 +161,14 @@ sending also puts the keyboard away; tap the message box to write again.
   message, drag across its text on the Mac, across paragraphs, headings and list items alike; on
   iPhone, long-press it, choose **Select Text**, and select what you want in the sheet that opens.
   With VoiceOver, each message starts with who wrote it, and these are in its actions.
+- **Read aloud.** A Bot's message has **Read Aloud** in the same places: **…** beside it or a
+  right-click on the Mac, a long-press on iPhone, and its VoiceOver actions. The app reads the
+  words and leaves out code blocks, Markdown marks, file lines and the folders in a file path; a
+  message that's only code or a file has nothing to read, so it isn't offered. **Stop Reading**
+  shows under the message while it's read, and in the same menu. It uses this device's voice, with
+  the language, voice and speed from Settings › Voice, so it's free, works offline and sends
+  nothing anywhere. One sound plays at a time: reading pauses a voice memo or video, playing one
+  stops the reading, and so does leaving the chat or starting a voice call.
 - **Quote part of a message.** Select some words and choose **Add to Chat**: on the Mac from the
   button over the selection, by right-clicking it, or with ⌘L; on iPhone from the selection's menu
   in **Select Text**. The words wait above the message box and go in front of what you write. Add
@@ -505,7 +513,8 @@ and Settings opens with your gateway at the top. Preferences stay on this device
   out stops pushes to that device. Without the plugin, the Mac alerts while the app runs (the menu
   bar is enough), and the iPhone only while connected or when iOS lets it check in.
 - **Voice:** choose the call engine and the language, voice and speed for on-device speech. These
-  preferences are shared with the controls inside a call; GPT-Live’s voice stays on the gateway.
+  preferences are shared with the controls inside a call, and Read Aloud uses the language, voice
+  and speed too; GPT-Live’s voice stays on the gateway.
 - **Connection:** see the gateway address, status, version and identity when available, or sign out.
   Signing out removes the saved sign-in and cached chats for that gateway from this device, so the
   app asks first.

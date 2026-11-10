@@ -86,7 +86,12 @@ struct CallBar: View {
         .padding(.horizontal, 16)
         .animation(.smooth(duration: 0.2), value: panel)
         .task { await begin() }
-        .onDisappear { call.end() }
+        // The call has the microphone: nothing is read aloud until it ends.
+        .onAppear { ReadAloud.shared.callStarted() }
+        .onDisappear {
+            call.end()
+            ReadAloud.shared.callEnded()
+        }
         // A call doesn't go on in the background.
         .onChange(of: scenePhase) { _, phase in if phase == .background { hangUp() } }
     }
