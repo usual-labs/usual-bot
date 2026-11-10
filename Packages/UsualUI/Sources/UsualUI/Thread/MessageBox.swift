@@ -368,6 +368,10 @@ struct MessageBox: View {
         }
         .onSubmit(submit)
         .padding(.leading, expanded ? 8 : (attaching == nil ? 12 : 0))
+        #if os(macOS)
+            // Clear of the scroll knob, and as far from the box's edge as the leading side.
+            .padding(.trailing, expanded ? 8 : 0)
+        #endif
         .padding(.vertical, Self.fieldPadding)
         #if os(macOS)
             // One line of text is 26 pt tall here. Before layout settles the placeholder can measure
@@ -377,6 +381,7 @@ struct MessageBox: View {
             } action: { wrapped in
                 if wrapped, !text.isEmpty { hasWrapped = true }
             }
+            .fieldScrollKnob()
         #endif
     }
 
