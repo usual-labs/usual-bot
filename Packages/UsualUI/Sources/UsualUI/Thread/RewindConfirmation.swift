@@ -89,11 +89,12 @@ extension View {
     func rewindConfirmation(
         _ request: Binding<RewindRequest?>, agentName: String, confirm: @escaping (RewindRequest) -> Void
     ) -> some View {
-        confirmationDialog(
+        // An alert, not a confirmation dialog: on iPhone that one is a popover from the chat, too
+        // small for what this has to say.
+        alert(
             request.wrappedValue?.title ?? "",
-            isPresented: Binding(
-                get: { request.wrappedValue != nil }, set: { if !$0 { request.wrappedValue = nil } }),
-            titleVisibility: .visible, presenting: request.wrappedValue
+            isPresented: Binding(get: { request.wrappedValue != nil }, set: { if !$0 { request.wrappedValue = nil } }),
+            presenting: request.wrappedValue
         ) { asked in
             Button(asked.confirmLabel, role: .destructive) { confirm(asked) }
             Button(asked.cancelLabel, role: .cancel) {}
