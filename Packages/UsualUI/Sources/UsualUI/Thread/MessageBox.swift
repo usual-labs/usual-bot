@@ -23,6 +23,8 @@ struct MessageBox: View {
     var quotes: Binding<[QuotedMessage]>?
     /// Chats only: you're editing your last message; Send replaces it.
     var editing: Binding<Bool>?
+    /// What the box says while you edit, when it isn't your last message.
+    var editingLabel: String?
     /// Chats only: starts a voice call with the agent.
     var startCall: (() -> Void)?
     /// While a call runs it has the microphone, so the box offers no mic or call.
@@ -216,7 +218,7 @@ struct MessageBox: View {
                 if let quotes, !quotes.wrappedValue.isEmpty { QuoteChips(quotes: quotes) }
                 if editing?.wrappedValue == true {
                     ReplyChip(
-                        text: String(localized: "Editing your last message"),
+                        text: editingLabel ?? String(localized: "Editing your last message"),
                         cancelLabel: String(localized: "Stop editing")
                     ) {
                         // The box goes back to what you had typed before.
