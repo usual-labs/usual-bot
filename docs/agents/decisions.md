@@ -48,6 +48,21 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   `truncate_before_row_id` (rewinding further back) isn't used.
 - **Reactions are display-only in Hermes.** The agent's model never sees them, and rooms have no
   reaction call.
+- **Send while a reply runs still steers; Queue is the second button.** The official app follows
+  Hermes's `display.busy_input_mode`, whose default is `interrupt` (the terminal's is `queue`).
+  Following either would change what Send has always done here without anyone asking, and
+  interrupting on Send loses work. So Send steers, Queue (⌥Return) queues, and there's no setting.
+- **The queue is the gateway's, not the app's.** Hermes keeps one FIFO per chat and runs it with
+  no app attached, which is the point on an iPhone that gets locked. So there's no queue on the
+  dashboard, whose queue can't be listed or taken back: the button is hidden there, not faked.
+  Attachments aren't queued (uploads are staged for the next message, not a later one).
+- **Stop holds the queue.** Hermes starts the next queued message the moment a reply is
+  interrupted, which reads as Stop not working (the official app parks its queue for the same
+  reason). The app takes the queued messages back first and keeps them on the device, in the
+  offline cache, until Resume.
+- **Rooms and the ⌥Space panel don't queue.** A room message already runs as its own task per
+  member beside the replies under way, so there's nothing to wait behind. The panel is for one
+  message and its answer; what it sends to a busy Bot steers, as before.
 
 ## Commands
 
@@ -126,6 +141,30 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
 - **Whose retry it is is a guess.** A `retry` action carries only `task_id`. The card names the member
   who left `member_activity` as the retry appeared, and only when exactly one did; otherwise it says
   "A reply". The guess isn't cached, so after a relaunch the card is unnamed.
+- **A room's lead, routing, purpose and notes are one record,** Hermes's room "context", read from
+  `groups.state` and saved whole by `groups.context` (`gateway/hosted_room_context.py`, v0.23.1).
+  So Room Settings is one sheet, and a change of lead sends the purpose and notes as they are.
+  `groups.create` takes none of it: New Room creates, then sets the routing, and a refusal there is
+  said in the room, which exists by then. A lead exists only while routing is `lead`.
+- **What the gateway takes is read, not assumed.** No `context` in `groups.state` means no room
+  settings (the panel says they need Hermes 0.23); a context without `routing` means purpose and
+  notes only, and routing keys aren't sent, as the canonical listener refuses keys it doesn't know;
+  `driver_status.routing_modes` lists the choices, and without it they're everyone and a lead.
+  New Room has no room to read, so it takes the modes from a room already read, else from
+  `groups.capabilities.methods`: `groups.context` for a lead, and `groups.continue` for `auto`,
+  which came in the same Hermes change. That last step is an inference.
+- **Routing applies to every message the app sends,** because each goes out as a new thread:
+  Hermes skips the lead and the router for an `@name`, `@all`, a routine's post and a message in a
+  thread already going (`routes_through_lead`).
+- **"X is picking who answers…" is worked out from the log.** The lead's routing turn shows in
+  `member_activity` as an ordinary running turn, so `RoomState.choosingLead` applies Hermes's rule
+  to the newest message until its `room.assignment` lands. `auto` shows nothing while it picks:
+  the room isn't `working` during the router's call.
+- **Continue is for the newest message only.** `groups.continue` reopens a discussion paused at
+  its cap (`room.activity` `bounded`), up to `max_continues` times. Hermes would take one past a
+  later message in another thread; the app shows one conversation, so a later message or a stop
+  ends the offer. The card isn't shown beside a retry or an approval, and isn't a needs-you state.
+  **Leave It** hides it on this device until the app restarts: Hermes has no call to decline one.
 - **"Delete" is `groups.disband`,** which stops the room and then tombstones it. A room list read
   before an edit landed is thrown away (`roomEdits`), or it would bring the room or its old name back.
 
@@ -525,6 +564,10 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   wasn't made), a signed build on an iPhone, a file from Files, a send to a real gateway (the
   upload and `prompt.submit` ran against the test fake only), VoiceOver itself (the labels were
   read from the accessibility tree), and `scripts/testflight.sh` with the two new profiles.
+- The message queue ran against a throwaway Hermes 0.23.1 gateway with a stand-in model, from a
+  script on its socket (`canonical-protocol.md`), and in the app only in the demo, on the Mac and
+  in the iPhone Simulator. Not run: the app itself on a real gateway, an iPhone device, a queued
+  message behind an approval, the official app showing the same queue, and `queue_full`.
 - Read state: its routes were run on the developer's gateway on 2026-11-08 by a script signed in
   the app's way (native PKCE on the dashboard): the snapshot, a PATCH on a hidden Bot Chat, a stale
   revision's 409 and `sessions.changed` on the dashboard socket. The app itself hasn't: a Mac and an

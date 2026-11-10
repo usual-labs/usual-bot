@@ -33,6 +33,9 @@ struct MessageBox: View {
     var chat: ChatControls?
     /// Rooms: a message that didn't send, taken back into the box so its text isn't lost.
     var unsent: Binding<String?>?
+    /// Chats only, while a reply runs: queues the message for when the reply ends, where Send
+    /// steers it. `nil` where there's no queue.
+    var queue: ((String) -> Void)?
     let send: (String) -> Void
     let stop: () -> Void
 
@@ -358,7 +361,7 @@ struct MessageBox: View {
                 if !press.modifiers.contains(.shift),
                     !commandReturn || press.modifiers.contains(.command)
                 {
-                    submit()
+                    submit(queueing: press.modifiers.contains(.option))
                 } else {
                     insertLineBreak()
                 }
@@ -379,7 +382,7 @@ struct MessageBox: View {
             closeMenu()
             return .handled
         }
-        .onSubmit(submit)
+        .onSubmit { submit() }
         .padding(.leading, expanded ? 8 : (attaching == nil ? 12 : 0))
         #if os(macOS)
             // Clear of the scroll knob, and as far from the box's edge as the leading side.
@@ -424,8 +427,19 @@ struct MessageBox: View {
                 }
             }
         } else {
-            RoundButton(systemImage: "arrow.up", label: String(localized: "Send"), action: submit)
-                .disabled(!canSubmit)
+            HStack(spacing: 6) {
+                if queue != nil, !hasAttachments {
+                    RoundButton(
+                        systemImage: "text.line.last.and.arrowtriangle.forward",
+                        label: String(localized: "Queue"), prominent: false
+                    ) { submit(queueing: true) }
+                    .disabled(!canSubmit)
+                    .help(Text("Send when this reply ends (⌥Return)"))
+                    .accessibilityHint(Text("Sends your message when this reply ends"))
+                }
+                RoundButton(systemImage: "arrow.up", label: String(localized: "Send")) { submit() }
+                    .disabled(!canSubmit)
+            }
         }
     }
 
@@ -455,7 +469,8 @@ struct MessageBox: View {
         return canSend && !isEmpty
     }
 
-    private func submit() {
+    /// `queueing`: the message waits for the running reply to end, where there's a queue.
+    private func submit(queueing: Bool = false) {
         // Return with a menu open picks its row. On iPhone the field submits for the same press
         // after the key handler picked, which must not send the command you just picked.
         if let pickedAt, Date.now.timeIntervalSince(pickedAt) < 0.3 {
@@ -484,7 +499,7 @@ struct MessageBox: View {
         // Emptied before it goes: sending an edit ends it, and the box is then your draft's again.
         let message = quoted.message(text)
         text = ""
-        send(message)
+        if queueing, let queue { queue(message) } else { send(message) }
         quotes?.wrappedValue = []
         putKeyboardAway()
     }

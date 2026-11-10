@@ -2,7 +2,7 @@
 
 Why the app speaks the gateway's own listener, and what it has to do there that the dashboard
 didn't need. Hermes facts come from a source checkout (`b200f5bc60`, v0.22.7) and a throwaway gateway
-run from it with a stand-in model.
+run from it with a stand-in model; the queue's from v0.23.1, the same way.
 
 ## Why
 
@@ -50,6 +50,21 @@ run from it with a stand-in model.
   rows Hermes starts itself.
 - **Closing detaches this app's subscription only** (`session.detach`). A `session.replay_gap`
   detaches too; the next roster refresh attaches again with a fresh snapshot.
+- **The queue is read from `pending`, and changed only with `prompt.cancel`.** Every message is an
+  admission in the chat's FIFO: `prompt.submit` answers `queued` even on an idle chat, and the
+  attach snapshot and each `session.info` about the queue list what's waiting and running, by the
+  `submission_id` it was sent under (`input_id`). So the app sends its own `submission_id` with
+  every message, to tell its sends from its queue, and shows another app's row only behind a
+  running turn and only when it has `controls` (a typed message, not a routine's result). Edit,
+  Send Now, Remove and Stop all take the message back with `prompt.cancel` and act on the text
+  here: Send Now then steers with `session.steer`. `prompt.steer_queued` and
+  `prompt.replace_queued` aren't used. The first hands the message to the turn but returns it to
+  the queue if the turn ends without reading it, so "now" isn't certain; the second re-admits at
+  the back of the queue anyway and can lose a race with the turn starting.
+- **A queued message is retried under its own ID.** The gateway answers a second `prompt.submit`
+  with the same `submission_id` and text with the first one's receipt, so a message it couldn't
+  confirm is held and sent again without doubling. One taken back with `prompt.cancel` gets a new
+  ID, because the old one answers `cancelled` for good.
 - **Rooms dismiss with `groups.discard`** when the retry action offers only discard, which needs the
   turn's `member_id` and `execution_generation`. It leaves the room's other replies running.
 
@@ -62,6 +77,13 @@ run from it with a stand-in model.
   profile inside the hook.
 - `message.delta` with `text: null` ends one stretch of streamed text. A queued message taken back
   sends `message.complete` with `outcome: cancelled` and no `status`: no turn ended.
+- A queued message steered into the turn (by the official app) sends the same frame with
+  `outcome: steered`, and is listed `started` with `steering: true` meanwhile.
+- **`session.interrupt` leaves the queue alone**, so the next queued message starts at once.
+- **`prompt.cancel` on a message that has started interrupts its turn** and answers `started`, not
+  `cancelled`. Taking a message back can lose that race; the app then shows it as sent and says
+  its reply was stopped.
+- The queue survives the last app detaching: a queued message ran with no socket open.
 - `tool.complete` sends its result as JSON text and failure as `is_error`.
 - **A routine's turn starts with `message.start {}`**, without the delivered text or its kind. The
   app learns what it was from `session.history` once the turn ends (`finishTurnElsewhere`).
@@ -76,6 +98,18 @@ run from it with a stand-in model.
   (`tailscale serve --tcp`): sign-in, a reply, an approval, a question, a routine's result arriving
   in the open chat, Bot-to-Bot messages both ways, steering, stopping, undo, reopening mid-turn and
   a two-Bot room. Not against the developer's gateway.
+- The queue was run by a script on a throwaway 0.23.1 gateway's local socket (`hermes gateway
+  attach`), not by the app: queueing, the next message starting by itself, cancel, cancel then
+  steer, interrupt with and without a queue, cancel on a started message, a retried ID, a
+  disconnect with one queued, and a mid-turn snapshot. `canonical-queue*.jsonl` are from that run.
 - iPhone, Tailscale Serve over `https`, and Built-in Tailscale with a `.ts.net` name.
 - Room retry and discard (they need a member's turn to fail), and room approvals.
+- Room settings and routing (Hermes v0.23.1). Run in-process against a copy of the source with its
+  own Hermes home and no model, on the dashboard's handlers (`tui_gateway/methods_groups.py`):
+  `groups.capabilities`, `groups.state`'s `context` with `routing_modes` and `max_continues`,
+  `groups.context` and its refusals, the `room.context_set` event, `groups.continue` refusing a
+  discussion that isn't paused, and a lead room running the lead's turn alone first. From source
+  only: the same calls on the canonical listener (`gateway/session_group_controls.py`), and the
+  `room.assignment`, `room.routed` and `room.continued` events and a real pause, which need a model.
+  None of it in the app against a gateway.
 - `clarify.settled` gives no reason, so a question that timed out shows no notice.

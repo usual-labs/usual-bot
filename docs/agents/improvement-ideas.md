@@ -16,9 +16,20 @@
   - **A template's prompt before saving:** `/api/cron/blueprints` leaves out each template's prompt
     and skills, so New Routine shows them only once Hermes has created the routine. Seeing and
     editing them first needs Hermes to send them in the catalog.
+  - **Read Aloud in the Bot's own voice:** Read Aloud speaks with the device's voice only. Hermes
+    can synthesise speech with the profile's configured voice (`POST /api/audio/speak`, WS
+    `/api/audio/speak-stream`, RPC `voice.tts`; read at v0.23.1, never called). Left out because a
+    call can bill the gateway's owner and none of it was run against a live gateway. If added, it's
+    a choice in Settings › Voice that says it may cost money, never the default, and the device's
+    voice stays the fallback offline.
   - **Agent's computer, what's left:** the package install (`display.install`, with its masked sudo
     prompt), the sandbox image switch (`display.switchSandboxImage`), Stop, the clipboard (Hermes
     turns the server's off; sending ours isn't wired) and Tight encoding. The viewer is in.
+
+  - **Rooms, what's left:** the demo can't show a paused discussion (no gateway to pause one), so
+    the Continue card is seen only with a temporary change to the demo's events. A room's routine
+    target (`deliver: room:<id>@<profile>`) isn't shown, and a routine's post reads as yours.
+    `auto` routing shows nothing while the gateway picks.
 
 Child-local ideas stay in their package KBs.
 
@@ -90,3 +101,6 @@ Child-local ideas stay in their package KBs.
   a patched fork without attestation) says not to depend on it. Committing the framework (69 MB
   per version) and building from source in every build (Go 1.27) were rejected. Zero-code
   alternative: Tailscale's VPN On Demand can start the VPN when a `*.ts.net` name is resolved.
+- **Queue: files, and a choice of what Send does.** A queued message can't carry attachments (the
+  gateway takes them on `prompt.submit`, but uploads are staged for the next message). Someone who
+  always queues has to press Queue each time; a setting would follow Hermes's `busy_input_mode`.

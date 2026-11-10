@@ -13,7 +13,8 @@ struct DemoTests {
         #expect(contacts.first { $0.id == "forge" }?.activity == .needsYou)
 
         let room = try #require(contacts.first { $0.kind != .agent })
-        #expect(model.room(for: room)?.state.items.count == 6)
+        // Six messages and the lead's pick.
+        #expect(model.room(for: room)?.state.items.count == 7)
         let atlas = model.thread(for: try #require(contacts.first { $0.id == "atlas" }))
         #expect(atlas.state.items.count == 7)
         #expect(

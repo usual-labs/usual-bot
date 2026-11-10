@@ -157,11 +157,32 @@ sending also puts the keyboard away; tap the message box to write again.
 - **Stop and steer.** While a reply runs, the send button becomes Stop, and ⌘. stops it even once
   you've started typing. Or just send another message: it steers the running turn instead of
   waiting for it.
+- **Queue a message for later.** To have a message wait instead, type it while a reply runs and
+  choose **Queue** beside Send (on the Mac, ⌥Return). It's sent as a message of its own when the
+  reply ends, and several go one after another, in order. Queued messages wait above the message
+  box, each with **Edit** (back into the box, to change and queue or send again), **Send Now**
+  (steers the reply that's running) and **Remove**. Your gateway keeps the queue, so it goes out
+  with the app closed or offline, and the official Hermes app shows the same one. An approval or a
+  question holds the reply, and the queue behind it, until you answer.
+  **Stop** stops the reply and holds what's queued, so the next message doesn't start by itself:
+  held messages stay on this device, through a relaunch too, until you choose **Resume** (they go
+  in order again), send one now or remove it. A message your gateway couldn't take is held the
+  same way. Commands run when you send them, and files can't be queued. The queue needs the
+  gateway's Webapp; on the older dashboard there's no Queue button and a message steers. Rooms and
+  the ⌥Space panel don't queue.
 - **React, reply, copy.** Hover or right-click a message on the Mac, or long-press it on iPhone.
   **More Reactions** has the full set. Reply quotes the message above the box. To copy part of a
   message, drag across its text on the Mac, across paragraphs, headings and list items alike; on
   iPhone, long-press it, choose **Select Text**, and select what you want in the sheet that opens.
   With VoiceOver, each message starts with who wrote it, and these are in its actions.
+- **Read aloud.** A Bot's message has **Read Aloud** in the same places: **…** beside it or a
+  right-click on the Mac, a long-press on iPhone, and its VoiceOver actions. The app reads the
+  words and leaves out code blocks, Markdown marks, file lines and the folders in a file path; a
+  message that's only code or a file has nothing to read, so it isn't offered. **Stop Reading**
+  shows under the message while it's read, and in the same menu. It uses this device's voice, with
+  the language, voice and speed from Settings › Voice, so it's free, works offline and sends
+  nothing anywhere. One sound plays at a time: reading pauses a voice memo or video, playing one
+  stops the reading, and so does leaving the chat or starting a voice call.
 - **Quote part of a message.** Select some words and choose **Add to Chat**: on the Mac from the
   button over the selection, by right-clicking it, or with ⌘L; on iPhone from the selection's menu
   in **Select Text**. The words wait above the message box and go in front of what you write. Add
@@ -354,6 +375,20 @@ Rooms are group chats with several Bots. Create one with **+** › **New Room…
 like "Forge, Atlas & Scribe".
 
 - A message goes to every Bot in the room; `@name` talks to just one.
+- **Who answers** a message without an `@name` is the room's choice, made in New Room and changed
+  later under **Room Settings…** in the room's panel:
+  - **Everyone answers**, the default.
+  - **A lead picks.** You choose one Bot as the lead. It reads the message first and picks who
+    answers, itself included. A small line says what it chose, like "Forge, the lead, gave this to
+    Scribe", and the panel marks it **Lead**.
+  - **The room picks.** Hermes chooses with one short model call on the gateway, and a line says
+    who. If it can't choose, everyone answers.
+
+  An `@name` always goes straight to that Bot. This needs Hermes 0.23 or later on the gateway; on
+  an older one every Bot answers and the choice isn't shown.
+- Room Settings also holds the room's **purpose**, one line on what it's for, and its **notes**,
+  facts every Bot should keep in mind. Each Bot gets both with every message, starting with the
+  next one. The panel shows them.
 - Each reply shows who wrote it. Bots can hand work to each other, shown as small lines in the
   conversation.
 - Type `/` for the members' skills. ⌘I (or the room's name) shows its members.
@@ -366,6 +401,10 @@ like "Forge, Atlas & Scribe".
   card naming the Bot, when it can tell, with **Try Again** and **Dismiss**. The room waits until
   you choose. The Bot may have done part of the work already, so trying again can repeat it.
   Dismiss gives up on that reply, and also stops any other reply still running in the room.
+- Hermes stops Bots that keep replying to each other after a few rounds, so they don't go round in
+  circles. The room then shows **The Bots paused** with **Continue**, which gives them as many
+  rounds again (up to five times for one message), and **Leave It**, which hides the card. Nothing
+  went wrong and nothing waits on you; sending a new message moves on as well.
 
 Rooms are text only on the dashboard: attachments in rooms need the gateway's Webapp.
 
@@ -511,7 +550,8 @@ and Settings opens with your gateway at the top. Preferences stay on this device
   out stops pushes to that device. Without the plugin, the Mac alerts while the app runs (the menu
   bar is enough), and the iPhone only while connected or when iOS lets it check in.
 - **Voice:** choose the call engine and the language, voice and speed for on-device speech. These
-  preferences are shared with the controls inside a call; GPT-Live’s voice stays on the gateway.
+  preferences are shared with the controls inside a call, and Read Aloud uses the language, voice
+  and speed too; GPT-Live’s voice stays on the gateway.
 - **Connection:** see the gateway address, status, version and identity when available, or sign out.
   Signing out removes the saved sign-in and cached chats for that gateway from this device, so the
   app asks first.
