@@ -140,11 +140,17 @@
         let add: ([Attachment]) -> Void
 
         func body(content: Content) -> some View {
-            if #available(iOS 27, *), enabled {
-                content.pasteDestination(for: PastedFile.self) { files in add(files.map(\.attachment)) }
-            } else {
+            // Older SDKs (Xcode 26, which CI uses) mark `pasteDestination` unavailable on iOS, so
+            // `#available` alone doesn't compile there. Swift 6.4 comes with the iOS 27 SDK.
+            #if compiler(>=6.4)
+                if #available(iOS 27, *), enabled {
+                    content.pasteDestination(for: PastedFile.self) { files in add(files.map(\.attachment)) }
+                } else {
+                    content
+                }
+            #else
                 content
-            }
+            #endif
         }
     }
 
