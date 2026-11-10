@@ -76,9 +76,9 @@ struct Composer: View {
             queue: queue, send: send, stop: thread.stop)
     }
 
-    /// An edit replaces your last message; it isn't one to queue.
+    /// An edit replaces the message and what follows it; it isn't one to queue.
     private var queue: ((String) -> Void)? {
-        guard thread.canQueue, !editing else { return nil }
+        guard thread.canQueue, editing == nil else { return nil }
         return { thread.enqueue($0) }
     }
 
