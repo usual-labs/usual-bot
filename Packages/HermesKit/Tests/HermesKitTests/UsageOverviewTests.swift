@@ -190,6 +190,27 @@ struct UsageOverviewTests {
         #expect(usage.phase == .failed("Session store is busy (HTTP 503)"))
     }
 
+    @Test func numbersGoStaleAfterAMinuteForEachPeriod() async {
+        let clock = Mutex(Date(timeIntervalSince1970: 1_800_000_000))
+        let usage = UsageOverview(agents: { [self.agent("atlas")] }, now: { clock.withLock { $0 } }) { _, _ in
+            try self.parse(Self.full)
+        }
+        #expect(usage.isStale)
+        await usage.refresh()
+        #expect(!usage.isStale)
+        usage.period = .month
+        #expect(usage.isStale)
+        usage.period = .week
+        clock.withLock { $0 += 61 }
+        #expect(usage.isStale)
+    }
+
+    @Test func aFirstLoadThatFailedIsStillStale() async {
+        let usage = overview(ScriptedHTTP { _ in (503, #"{"detail":"Session store is busy"}"#) }, agents: [agent("a")])
+        await usage.refresh()
+        #expect(usage.isStale)
+    }
+
     @Test func signingOutForgetsTheNumbers() async {
         let usage = overview(ScriptedHTTP { _ in (200, Self.full) }, agents: [agent("atlas")])
         await usage.refresh()
