@@ -17,6 +17,10 @@ extension ChatThread {
                 : String(localized: "Wait for the reply to end, or stop it.")
         }
         if isUploading || isRewinding { return String(localized: "Wait for the last change to finish.") }
+        // Between two of a goal's replies, the next is about to start.
+        if goalPhase == .working {
+            return String(localized: "The goal's next reply is about to start. Stop the goal first.")
+        }
         return nil
     }
 
@@ -29,6 +33,8 @@ extension ChatThread {
         guard let last = lastSent, let index = state.items.firstIndex(where: { $0.id == last.id }) else { return nil }
         let after = state.items[(index + 1)...]
         if after.contains(where: { if case .result = $0.content { true } else { false } }) { return nil }
+        // Nor has a reply to one of a goal's own turns.
+        if after.contains(where: { $0.content == .notice(GatewayTurn.goalStep) }) { return nil }
         return after.last { if case .assistant = $0.content { true } else { false } }
     }
 

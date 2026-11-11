@@ -61,6 +61,7 @@ struct UsageSettings: View {
                 Section {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("No usage yet").font(.headline).foregroundStyle(Theme.ink)
+                            .refreshMark(usage.isRefreshing)
                         Text("No Bot used any tokens in the last \(usage.period.rawValue) days.")
                             .foregroundStyle(Theme.secondaryInk)
                     }
@@ -69,7 +70,9 @@ struct UsageSettings: View {
                     notes(usage)
                 }
             } else {
-                ReportSections(report: usage.combined, period: usage.period, today: usage.today)
+                ReportSections(
+                    report: usage.combined, period: usage.period, today: usage.today,
+                    isRefreshing: usage.isRefreshing)
                 bots(usage)
             }
         }
@@ -126,8 +129,9 @@ struct UsageSettings: View {
     private var isOnline: Bool { model.link.isOnline }
 }
 
-/// Loads the period on screen whenever it changes or the gateway comes back, on every page that
-/// shows one: on iPhone a pushed Bot page has its own picker while the list underneath waits.
+/// Loads the period on screen when it changes or the gateway comes back, unless its numbers are
+/// fresh, on every page that shows one: on iPhone a pushed Bot page has its own picker while the
+/// list underneath waits.
 private struct UsagePage: ViewModifier {
     let model: AppModel
 
@@ -139,7 +143,7 @@ private struct UsagePage: ViewModifier {
             .thinScroller()
             .environment(\.botPictures, model.pictures)
             .task(id: RefreshKey(period: usage.period, online: online)) {
-                if online { await usage.refresh() }
+                if online, usage.isStale { await usage.refresh() }
             }
             #if os(iOS)
                 .refreshable { await usage.refresh() }
@@ -159,24 +163,33 @@ extension AppModel.Link {
     }
 }
 
-/// The period picker, with a spinner while a refresh runs over numbers already shown.
 private struct PeriodSection: View {
     @Bindable var usage: UsageOverview
 
     var body: some View {
         Section {
-            HStack {
-                Picker("Period", selection: $usage.period) {
-                    ForEach(UsageOverview.Period.allCases) { Text($0.title).tag($0) }
-                }
-                .clickable()
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                if usage.isRefreshing, usage.phase == .ready {
+            Picker("Period", selection: $usage.period) {
+                ForEach(UsageOverview.Period.allCases) { Text($0.title).tag($0) }
+            }
+            .clickable()
+            .pickerStyle(.segmented)
+            .labelsHidden()
+        }
+    }
+}
+
+extension View {
+    /// A spinner in the row's top corner while a refresh runs over numbers already shown. Its room
+    /// is always kept, rather than made beside the period picker, so nothing moves as it comes and
+    /// goes.
+    fileprivate func refreshMark(_ isRefreshing: Bool) -> some View {
+        padding(.trailing, 28)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .topTrailing) {
+                if isRefreshing {
                     ProgressView().controlSize(.small).accessibilityLabel(Text("Refreshing"))
                 }
             }
-        }
     }
 }
 
@@ -185,10 +198,11 @@ private struct ReportSections: View {
     let report: UsageReport
     let period: UsageOverview.Period
     let today: Date
+    let isRefreshing: Bool
 
     var body: some View {
         Section {
-            UsageTotals(report: report)
+            UsageTotals(report: report).refreshMark(isRefreshing)
             UsageChart(report: report, period: period, today: today)
         } footer: {
             Text(
@@ -228,9 +242,13 @@ private struct BotUsageSections: View {
         #endif
         PeriodSection(usage: usage)
         if let bot = usage.bots.first(where: { $0.id == botID }) {
-            ReportSections(report: bot.report, period: usage.period, today: usage.today)
+            ReportSections(
+                report: bot.report, period: usage.period, today: usage.today, isRefreshing: usage.isRefreshing)
         } else if usage.phase == .ready {
-            Section { Text("No usage in the last \(usage.period.rawValue) days.").foregroundStyle(Theme.secondaryInk) }
+            Section {
+                Text("No usage in the last \(usage.period.rawValue) days.").foregroundStyle(Theme.secondaryInk)
+                    .refreshMark(usage.isRefreshing)
+            }
         } else {
             Section { ProgressView().controlSize(.small) }
         }

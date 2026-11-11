@@ -101,6 +101,11 @@ Child-local ideas stay in their package KBs.
   a patched fork without attestation) says not to depend on it. Committing the framework (69 MB
   per version) and building from source in every build (Go 1.27) were rejected. Zero-code
   alternative: Tailscale's VPN On Demand can start the VPN when a `*.ts.net` name is resolved.
+- **Goals: more than the bar.** Not built: a plainer way to set one than `/goal`; adding and
+  removing criteria (`subgoal.add`, `subgoal.remove`); showing a contract and quality gates;
+  pausing without stopping the reply; a push when a goal ends with the app closed (Hermes fires no
+  hook at the judge's verdict, so the plugin has nothing to send it from); and bars for `/loop`
+  and `/heartbeat`, which come in the same `session.control` snapshot.
 - **Queue: files, and a choice of what Send does.** A queued message can't carry attachments (the
   gateway takes them on `prompt.submit`, but uploads are staged for the next message). Someone who
   always queues has to press Queue each time; a setting would follow Hermes's `busy_input_mode`.

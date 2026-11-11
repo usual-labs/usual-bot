@@ -55,7 +55,7 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
 
     /// The gateway pushes messages and requests to this device, so an alert here would say it twice.
     private static func pushCovers(_ alert: AgentAlert, _ model: AppModel?) -> Bool {
-        alert.kind != .taskFinished && model?.push.isActive == true
+        [.message, .needsYou].contains(alert.kind) && model?.push.isActive == true
     }
 
     private static func isOn(_ key: String) -> Bool {
@@ -67,7 +67,7 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
             switch kind {
             case .message: AppPreferences.messageNotificationsKey
             case .needsYou: AppPreferences.needsYouNotificationsKey
-            case .taskFinished: AppPreferences.notificationsKey
+            case .taskFinished, .goalEnded: AppPreferences.notificationsKey
             }
         return UserDefaults.standard.object(forKey: key) as? Bool != false
     }
@@ -84,6 +84,8 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
             content.title = String(localized: "\(contact.name) needs you")
         case .taskFinished:
             content.title = String(localized: "\(contact.name) finished a background task")
+        case .goalEnded:
+            content.title = String(localized: "\(contact.name)’s goal ended")
         }
         if defaults.object(forKey: AppPreferences.notificationPreviewsKey) as? Bool != false {
             content.subtitle = alert.subtitle ?? ""
@@ -94,6 +96,7 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
                 case .message: String(localized: "New message. Open Usual Bot to read it.")
                 case .needsYou: String(localized: "Open Usual Bot to answer.")
                 case .taskFinished: String(localized: "Open Usual Bot to read the result.")
+                case .goalEnded: String(localized: "Open Usual Bot to see how it ended.")
                 }
         }
         if defaults.object(forKey: AppPreferences.notificationSoundKey) as? Bool != false {

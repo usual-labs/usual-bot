@@ -15,7 +15,7 @@ struct UpdateBanner: View {
                     .foregroundStyle(Theme.ink)
                 HStack(spacing: 8) {
                     Button("Update in TestFlight") { openURL(build.testFlight) }
-                        .buttonStyle(.clickable(.borderedProminent))
+                        .buttonStyle(.inkProminent)
                     Button("Later", action: update.putOff)
                         .buttonStyle(.clickable(.bordered))
                 }

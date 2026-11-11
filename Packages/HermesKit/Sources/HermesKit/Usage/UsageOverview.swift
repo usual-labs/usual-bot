@@ -76,6 +76,15 @@ public final class UsageOverview {
     public var combined: UsageReport { .combined(bots.map(\.report)) }
     public var today: Date { now() }
     public var isRefreshing: Bool { refreshing.contains(period) }
+    /// Whether the period on screen should load without being asked: it never loaded, or its
+    /// numbers are over a minute old. Flipping between periods then doesn't ask the gateway, which
+    /// reads every session each time, on every tap.
+    public var isStale: Bool {
+        guard let snapshot = snapshots[period], snapshot.phase == .ready, let loadedAt = snapshot.loadedAt else {
+            return true
+        }
+        return now().timeIntervalSince(loadedAt) > 60
+    }
 
     /// Loads the period on screen for every Bot at once. Keeps the numbers already shown if the
     /// whole refresh fails.

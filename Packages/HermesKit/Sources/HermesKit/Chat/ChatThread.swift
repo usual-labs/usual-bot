@@ -58,12 +58,19 @@ public final class ChatThread {
     /// Messages waiting for the running reply to end, in the order they'll go, then any held on
     /// this device (`ChatThread+Queue.swift`).
     public internal(set) var queue: [QueuedMessage] = []
+    /// The goal the Bot is working toward by itself, as the gateway last reported it
+    /// (`ChatThread+Goal.swift`). `nil` with none, and on a gateway without goals.
+    public internal(set) var goal: Goal?
+    /// Stop, Continue or Clear is on its way to the gateway.
+    public internal(set) var isChangingGoal = false
     /// `compress()` is running.
     public internal(set) var isCompressing = false
     /// Set by the app: whether vault secrets would cross the network unencrypted. Assumes so until told.
     var gatewayIsUnencrypted: @MainActor () -> Bool = { true }
     /// Set by the app: a background task finished, with its task and result (or failure).
     var backgroundTaskFinished: ((_ task: String, _ result: String) -> Void)?
+    /// Set by the app: a goal ended without you: done, out of turns, or unable to go on.
+    var goalEnded: ((_ goal: String, _ outcome: String) -> Void)?
     /// Set by the app: a reply or a request you aren't looking at.
     var alert: ((AgentAlert) -> Void)?
     /// Set by the app: a request alerted about is over, by its alert's ID.
@@ -97,6 +104,13 @@ public final class ChatThread {
     var sentDirectly: Set<String> = []
     /// Queued messages taken back, or on their way back: the gateway's lists may still have them.
     var takenBack: Set<String> = []
+
+    /// Turns Hermes has queued to carry the goal on, by admission ID (the gateway's listener).
+    var goalContinuations: [String] = []
+    /// A reply ended and its verdict hasn't come (the dashboard, which judges after the reply).
+    var isCheckingGoal = false
+    /// Counts the goal snapshots taken in, so a slow read can't replace a newer update.
+    var goalUpdates = 0
 
     /// The live session the gateway routes this chat's events to; `nil` while offline.
     private(set) var sessionID: String?
@@ -137,6 +151,7 @@ public final class ChatThread {
             backgroundTasks = cached.backgroundTasks ?? []
             backgroundResults = cached.backgroundResults ?? []
             queue = cached.heldMessages ?? []
+            goal = cached.goal
             phase = .ready
         }
     }
@@ -149,7 +164,8 @@ public final class ChatThread {
         if !approvals.isEmpty || !questions.isEmpty || !secrets.isEmpty || !vaultPrompts.isEmpty || connection != nil {
             return .needsYou
         }
-        return state.isRunning ? .working : .idle
+        // Between a goal's replies the Bot is still at work on it.
+        return state.isRunning || goalPhase == .working ? .working : .idle
     }
 
     // MARK: - Attaching
@@ -201,7 +217,11 @@ public final class ChatThread {
         questions = opened.openRequests.compactMap(ClarifyPrompt.init)
         secrets = opened.openRequests.compactMap(SecretPrompt.init)
         adoptConnection(opened.pendingConnection)
+        goalContinuations = []
+        isCheckingGoal = false
+        adoptGoalTurns(from: opened.queue)
         adoptQueue(from: opened.queue, attaching: true)
+        Task { await loadGoal() }
         announceRequests()
         if isVisible {
             markViewed()
@@ -264,7 +284,12 @@ public final class ChatThread {
         }
         if event.type == "session.info" {
             model = ChatModel(info: event.payload) ?? model
+            adoptGoalTurns(from: event.payload)
             adoptQueue(from: event.payload)
+            return
+        }
+        if event.type == "session.control.update" {
+            adoptGoal(event.payload["control"], live: true)
             return
         }
         if event.type == "connection.request" || event.type == "connection.update" {
@@ -295,9 +320,16 @@ public final class ChatThread {
             unreadCount += 1
             announce(reply)
         }
-        if event.type == "message.complete" { finishTurnElsewhere(event.payload) }
+        if event.type == "message.start" { isCheckingGoal = false }
+        if event.type == "message.complete" {
+            finishTurnElsewhere(event.payload)
+            goalReplyEnded(event.payload)
+        }
         #if DEBUG
-            if event.type == "message.complete" { startNextDemoQueued() }
+            if event.type == "message.complete" {
+                startNextDemoQueued()
+                continueDemoGoal(after: event.payload)
+            }
         #endif
         if isVisible {
             lastViewed = Date()
@@ -341,6 +373,7 @@ public final class ChatThread {
     public func send(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         #if DEBUG
+            if canSend, runDemoGoalCommand(text) { return }
             if playsDemoReplies, canSend, !text.isEmpty, !state.isRunning {
                 state.sendLocally(text)
                 playDemoReply()
@@ -365,7 +398,9 @@ public final class ChatThread {
             runReasoningCommand(text)
             return
         }
-        if !state.isRunning, let command = command(in: text) {
+        if let command = command(in: text),
+            !state.isRunning || Self.goalCommands.contains(command.name.lowercased())
+        {
             Task { await run(command, text: text, sessionID: sessionID, channel: channel) }
             return
         }
@@ -542,7 +577,8 @@ public final class ChatThread {
     }
 
     /// Asks the agent to stop the running turn. The gateway confirms with an "interrupted" reply.
-    /// Queued messages are held first, so stopping doesn't start the next one.
+    /// Queued messages are held first, so stopping doesn't start the next one. A goal isn't
+    /// stopped by this: Hermes judges what the reply got to and sends the Bot on (`stopGoal()`).
     public func stop() {
         #if DEBUG
             // The demo's running reply has no gateway to interrupt it.
@@ -559,6 +595,9 @@ public final class ChatThread {
             await holdQueue()
             do {
                 _ = try await channel.call("session.interrupt", params: ["session_id": .string(sessionID)])
+                if goal?.status == .active {
+                    state.addNotice(String(localized: "The goal carries on after this reply. Stop Goal ends it."))
+                }
             } catch {
                 state.addNotice(AppModel.describe(error))
             }
@@ -637,7 +676,7 @@ public final class ChatThread {
         CachedThread(
             state: state.trimmed(to: CachedThread.itemLimit), lastViewed: lastViewed, unreadCount: unreadCount,
             sideQuestions: sideQuestions, backgroundTasks: backgroundTasks,
-            backgroundResults: Array(backgroundResults.suffix(20)), heldMessages: queue.filter(\.isHeld))
+            backgroundResults: Array(backgroundResults.suffix(20)), heldMessages: queue.filter(\.isHeld), goal: goal)
     }
 
     #if DEBUG

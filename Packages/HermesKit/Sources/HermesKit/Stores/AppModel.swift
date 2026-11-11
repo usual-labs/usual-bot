@@ -457,6 +457,12 @@ public final class AppModel {
                 id: UUID().uuidString, kind: .taskFinished, subtitle: task, preview: AgentAlert.plain(result))
             self?.heard(alert, from: id)
         }
+        thread.goalEnded = { [weak self] goal, outcome in
+            let alert = AgentAlert(
+                id: UUID().uuidString, kind: .goalEnded, subtitle: goal,
+                preview: outcome)
+            self?.heard(alert, from: id)
+        }
     }
 
     func wireAlerts(of room: RoomThread, id: Contact.ID) {
