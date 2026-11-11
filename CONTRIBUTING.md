@@ -121,6 +121,7 @@ Debug builds read these environment variables:
 | Variable | What it does |
 | --- | --- |
 | `USUALBOT_DEMO=1` or the `--demo` launch argument | Shows made-up agents instead of signing in. Never connects; a message gets a scripted reply. |
+| `USUALBOT_DEMO_SHARE=1` or `--demo-share`, with the demo | Lets the share extension list the demo's Bots and send to them. Without it the demo leaves the shared folder to your real sign-in. Needs a build with the App Group: the Simulator, or one signed for a team. |
 | `--demo-long-chat` | Runs the demo with long, uneven chats and a room to check scrolling, app switching and reflow. Never connects. |
 | `USUALBOT_SHOW_QUICK_PANEL=1` | Opens the ⌥Space panel shortly after launch (Mac). |
 | `USUALBOT_WINDOW_WIDTH=560` | Opens the main window at that width (Mac). |

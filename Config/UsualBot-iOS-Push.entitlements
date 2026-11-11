@@ -11,5 +11,10 @@
 		<string>$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 		<string>$(AppIdentifierPrefix)$(BUNDLE_ID_PREFIX).UsualBot.push</string>
 	</array>
+	<!-- The folder the share extension leaves what you shared in. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>$(USUAL_SHARE_GROUP)</string>
+	</array>
 </dict>
 </plist>

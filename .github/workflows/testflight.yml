@@ -82,13 +82,15 @@ jobs:
           SIGNING_P12_PASSWORD: ${{ secrets.SIGNING_P12_PASSWORD }}
           PROFILE_IOS_APP: ${{ secrets.PROFILE_IOS_APP }}
           PROFILE_IOS_NOTIFICATIONS: ${{ secrets.PROFILE_IOS_NOTIFICATIONS }}
+          PROFILE_IOS_SHARE: ${{ secrets.PROFILE_IOS_SHARE }}
           PROFILE_MAC_APP: ${{ secrets.PROFILE_MAC_APP }}
           PROFILE_MAC_NOTIFICATIONS: ${{ secrets.PROFILE_MAC_NOTIFICATIONS }}
+          PROFILE_MAC_SHARE: ${{ secrets.PROFILE_MAC_SHARE }}
           APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
           APPSTORE_API_KEY_P8: ${{ secrets.APPSTORE_API_KEY_P8 }}
           UPLOAD: ${{ inputs.upload }}
         run: |
-          names="APPLE_TEAM_ID SIGNING_P12 SIGNING_P12_PASSWORD PROFILE_IOS_APP PROFILE_IOS_NOTIFICATIONS PROFILE_MAC_APP PROFILE_MAC_NOTIFICATIONS"
+          names="APPLE_TEAM_ID SIGNING_P12 SIGNING_P12_PASSWORD PROFILE_IOS_APP PROFILE_IOS_NOTIFICATIONS PROFILE_IOS_SHARE PROFILE_MAC_APP PROFILE_MAC_NOTIFICATIONS PROFILE_MAC_SHARE"
           # Signing without uploading needs no API key.
           [ "$UPLOAD" = false ] || names="$names APPSTORE_API_KEY_ID APPSTORE_API_KEY_P8"
           missing=""
@@ -170,8 +172,10 @@ jobs:
         env:
           PROFILE_IOS_APP: ${{ secrets.PROFILE_IOS_APP }}
           PROFILE_IOS_NOTIFICATIONS: ${{ secrets.PROFILE_IOS_NOTIFICATIONS }}
+          PROFILE_IOS_SHARE: ${{ secrets.PROFILE_IOS_SHARE }}
           PROFILE_MAC_APP: ${{ secrets.PROFILE_MAC_APP }}
           PROFILE_MAC_NOTIFICATIONS: ${{ secrets.PROFILE_MAC_NOTIFICATIONS }}
+          PROFILE_MAC_SHARE: ${{ secrets.PROFILE_MAC_SHARE }}
           APPSTORE_API_KEY_P8: ${{ secrets.APPSTORE_API_KEY_P8 }}
         run: |
           umask 077
@@ -179,8 +183,10 @@ jobs:
           mkdir -p "$profiles"
           printf '%s' "$PROFILE_IOS_APP" | base64 --decode > "$profiles/ios-app.mobileprovision"
           printf '%s' "$PROFILE_IOS_NOTIFICATIONS" | base64 --decode > "$profiles/ios-notifications.mobileprovision"
+          printf '%s' "$PROFILE_IOS_SHARE" | base64 --decode > "$profiles/ios-share.mobileprovision"
           printf '%s' "$PROFILE_MAC_APP" | base64 --decode > "$profiles/macos-app.provisionprofile"
           printf '%s' "$PROFILE_MAC_NOTIFICATIONS" | base64 --decode > "$profiles/macos-notifications.provisionprofile"
+          printf '%s' "$PROFILE_MAC_SHARE" | base64 --decode > "$profiles/macos-share.provisionprofile"
           echo "SIGNING_PROFILES=$profiles" >> "$GITHUB_ENV"
           if [ -n "$APPSTORE_API_KEY_P8" ]; then
             printf '%s\n' "$APPSTORE_API_KEY_P8" > "$RUNNER_TEMP/api-key.p8"

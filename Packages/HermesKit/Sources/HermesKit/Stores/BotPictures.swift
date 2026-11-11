@@ -20,6 +20,11 @@ public final class BotPictures {
 
     init() {}
 
+    /// Pictures already on hand, as the share extension reads them from the app's roster.
+    public init(pictures: [Contact.ID: Data]) {
+        stored = pictures.mapValues { Stored(revision: -1, data: $0) }
+    }
+
     /// The image file (PNG, JPEG or WebP) to show for an agent, or `nil` to draw its character.
     public func data(for contactID: Contact.ID) -> Data? { stored[contactID]?.data }
 

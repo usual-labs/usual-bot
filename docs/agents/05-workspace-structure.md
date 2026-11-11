@@ -34,6 +34,8 @@
   platform; TestFlight builds ask it (`AppUpdate`)
 - `NotificationService/` — the notification service extension that opens sealed pushes, embedded in
   the app; its settings are `Config/NotificationService*`
+- `ShareExtension/` — the share extension (share sheet and the Mac's Share menu), embedded in the
+  app; only a host for UsualUI's `ShareView`. Its settings are `Config/ShareExtension*`
 - `.github/workflows/zizmor.yml` — zizmor security lint of the workflows (pushes/PRs touching
   `.github/`), findings in code scanning; `.github/workflows/scorecard.yml` — OpenSSF Scorecard
   weekly and on pushes to main, publishes the README badge; `.github/dependabot.yml` — weekly grouped

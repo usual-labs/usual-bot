@@ -11,14 +11,20 @@ are retired: they couldn't carry push without hand-made Developer ID profiles.
 
 1. A **paid Apple Developer Program membership**, with Push Notifications on for the App ID
    `labs.usual.UsualBot`.
-2. In [App Store Connect](https://appstoreconnect.apple.com), the app `labs.usual.UsualBot` with
+2. For sharing from other apps, in the
+   [developer portal](https://developer.apple.com/account/resources/identifiers/list): the App
+   Group `group.labs.usual.UsualBot`, the App ID `labs.usual.UsualBot.Share` (iOS and macOS), and
+   **App Groups** turned on with that group for both `labs.usual.UsualBot` and
+   `labs.usual.UsualBot.Share`. Xcode makes these itself when you upload from your Mac; the
+   workflow's profiles need them made first.
+3. In [App Store Connect](https://appstoreconnect.apple.com), the app `labs.usual.UsualBot` with
    both platforms. If it has only one, open it and add the other with **Add Platform**.
-3. In Xcode › Settings › Accounts, an Apple Account that's an **Admin** or the **Account Holder**
+4. In Xcode › Settings › Accounts, an Apple Account that's an **Admin** or the **Account Holder**
    on the team, so Xcode may make distribution certificates.
-4. In TestFlight, a test group. For people outside the team, an external group with a public link;
+5. In TestFlight, a test group. For people outside the team, an external group with a public link;
    its **Beta App Description** should say that Usual Bot isn't made by, affiliated with or
    endorsed by Nous Research, the makers of Hermes Agent.
-5. The **update check** at `bot.usual.dev`, which tells TestFlight builds that a newer one is out:
+6. The **update check** at `bot.usual.dev`, which tells TestFlight builds that a newer one is out:
    deploy [`Services/updates`](../../Services/updates/README.md) with an App Store Connect key. When
    the public link opens, set its `BETA_GROUP` to the external group, so the app offers only builds
    that passed beta review.
@@ -87,7 +93,7 @@ An Admin or the Account Holder makes these on a Mac, in the
    Certificates, select the two certificates, not the keys under them, choose File › Export Items,
    and give it a password. `/usr/bin/openssl pkcs12 -in Usual.p12 -nokeys | grep subject` should
    print both names.
-3. **Four App Store profiles**, each using that Apple Distribution certificate:
+3. **Six App Store profiles**, each using that Apple Distribution certificate:
 
    | Type | Bundle ID | Secret |
    | --- | --- | --- |
@@ -95,9 +101,13 @@ An Admin or the Account Holder makes these on a Mac, in the
    | App Store Connect (iOS) | `labs.usual.UsualBot.NotificationService` | `PROFILE_IOS_NOTIFICATIONS` |
    | Mac App Store Connect | `labs.usual.UsualBot` | `PROFILE_MAC_APP` |
    | Mac App Store Connect | `labs.usual.UsualBot.NotificationService` | `PROFILE_MAC_NOTIFICATIONS` |
+   | App Store Connect (iOS) | `labs.usual.UsualBot.Share` | `PROFILE_IOS_SHARE` |
+   | Mac App Store Connect | `labs.usual.UsualBot.Share` | `PROFILE_MAC_SHARE` |
 
-   The App IDs need Push Notifications on. The workflow reads each profile's name from the file, so
-   name them as you like.
+   The app's App ID needs Push Notifications on, and it and the share extension's need App Groups
+   with `group.labs.usual.UsualBot` (setup step 2). A profile made before a capability was turned on
+   doesn't carry it: make the app's two profiles again after adding the group. The workflow reads
+   each profile's name from the file, so name them as you like.
 
 ### The upload key
 
@@ -120,7 +130,7 @@ standard input; the files are base64 first, as in `base64 -i Usual.p12 | gh secr
 | `APPLE_TEAM_ID` | The team ID, from Membership details in the developer account |
 | `SIGNING_P12` | The `.p12`, base64 |
 | `SIGNING_P12_PASSWORD` | Its password |
-| `PROFILE_IOS_APP`, `PROFILE_IOS_NOTIFICATIONS`, `PROFILE_MAC_APP`, `PROFILE_MAC_NOTIFICATIONS` | The four profiles, base64 |
+| `PROFILE_IOS_APP`, `PROFILE_IOS_NOTIFICATIONS`, `PROFILE_IOS_SHARE`, `PROFILE_MAC_APP`, `PROFILE_MAC_NOTIFICATIONS`, `PROFILE_MAC_SHARE` | The six profiles, base64 |
 | `APPSTORE_API_KEY_ID` | The individual key's ID |
 | `APPSTORE_API_KEY_P8` | The contents of its `.p8` file |
 
@@ -128,19 +138,21 @@ standard input; the files are base64 first, as in `base64 -i Usual.p12 | gh secr
 
 The certificates last a year, and a profile stops working when its certificate does. The workflow
 fails 30 days before either expires and says which. Make new certificates and profiles as above,
-replace `SIGNING_P12`, `SIGNING_P12_PASSWORD` and the four profile secrets, run the workflow by hand
+replace `SIGNING_P12`, `SIGNING_P12_PASSWORD` and the six profile secrets, run the workflow by hand
 with **Upload** off, then revoke the old certificates.
 
 ## When it fails
 
 - **Signing errors in the archive or export**: Xcode isn't signed in to the team, or the account
-  can't make distribution certificates. See setup step 3.
+  can't make distribution certificates. See setup step 4.
 - **The Mac or iPhone upload is refused for an unknown app**: App Store Connect doesn't have that
-  platform for the app yet. See setup step 2.
+  platform for the app yet. See setup step 3.
 - **The build number is already used**: run the script again a minute later; it takes a new number
   each minute.
 - **The workflow says a profile is for another app, lists devices, or expires soon**: replace that
   profile's secret with an App Store profile for the bundle ID it names.
+- **The workflow says a profile doesn't have the App Group**: turn App Groups on for that App ID
+  with `group.labs.usual.UsualBot`, then make the profile again and replace its secret.
 - **The workflow says the `.p12` has no Apple Distribution or Installer certificate**: export it
   again with both certificates selected, as in step 2 of the signing material, and replace
   `SIGNING_P12` and `SIGNING_P12_PASSWORD`.

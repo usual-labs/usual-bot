@@ -100,7 +100,7 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                         gatewayDetails: model.gatewayDetails, loadGatewayDetails: { await model.loadGatewayDetails() },
                         thread: model.thread(for: contact), close: close)
                 },
-                update: model.update
+                update: model.update, shared: model.shared, isOffline: model.link.isOffline
             ) { compact in
                 #if os(macOS)
                     // The connection in a capsule, then Plugins and Settings in circles. The rail
@@ -239,6 +239,9 @@ struct ContactsSplitView<Footer: View>: View {
     var profile: (Contact, @escaping () -> Void) -> ProfilePanel? = { _, _ in nil }
     /// Offers a newer TestFlight build below the list; not in the rail.
     var update: AppUpdate?
+    /// What was shared from other apps and hasn't been sent, below the list; not in the rail.
+    var shared: SharedOutbox?
+    var isOffline = false
     /// Below the list; told whether the sidebar is the narrow window's rail.
     @ViewBuilder let footer: (_ compact: Bool) -> Footer
 
@@ -425,7 +428,14 @@ struct ContactsSplitView<Footer: View>: View {
             .background(Theme.window)
         #else
             .safeAreaInset(edge: .bottom) {
-                if let update { UpdateBanner(update: update).padding(.horizontal, 16).padding(.bottom, 8) }
+                VStack(spacing: 0) {
+                    if let shared, !shared.items.isEmpty {
+                        SharedItemsBanner(outbox: shared, offline: isOffline)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 8)
+                    }
+                    if let update { UpdateBanner(update: update).padding(.horizontal, 16).padding(.bottom, 8) }
+                }
             }
         #endif
     }
@@ -443,6 +453,7 @@ struct ContactsSplitView<Footer: View>: View {
                         .frame(width: 32, height: 32)
                         .roundGlass()
                 }
+                if !compact, let shared { SharedItemsBanner(outbox: shared, offline: isOffline) }
                 if !compact, let update { UpdateBanner(update: update) }
                 footer(compact)
             }

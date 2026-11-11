@@ -40,7 +40,12 @@ struct UsualBotApp: App {
                 || ProcessInfo.processInfo.arguments.contains("--demo-long-chat")
             let model =
                 demo
-                ? AppModel.demo(longConversations: ProcessInfo.processInfo.arguments.contains("--demo-long-chat"))
+                ? AppModel.demo(
+                    longConversations: ProcessInfo.processInfo.arguments.contains("--demo-long-chat"),
+                    // USUALBOT_DEMO_SHARE=1 (or --demo-share) lets the share extension send to the
+                    // demo's Bots. Without it the demo leaves the shared folder to the real sign-in.
+                    share: ProcessInfo.processInfo.environment["USUALBOT_DEMO_SHARE"] == "1"
+                        || ProcessInfo.processInfo.arguments.contains("--demo-share") ? .appGroup() : nil)
                 : live()
         #else
             let model = live()
@@ -57,6 +62,12 @@ struct UsualBotApp: App {
                 forName: NSApplication.willTerminateNotification, object: nil, queue: .main
             ) { _ in
                 MainActor.assumeIsolated { model.drafts.save() }
+            }
+            // Back from another app, where you may have shared something to a Bot.
+            NotificationCenter.default.addObserver(
+                forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
+            ) { _ in
+                MainActor.assumeIsolated { model.lookForSharedItems() }
             }
         #else
             AgentNotifications.shared.watch(model, showApp: {})
@@ -81,7 +92,11 @@ struct UsualBotApp: App {
                     .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
                 #else
                     // iOS suspends a backgrounded app's sockets; reconnect on return instead.
-                    .onChange(of: scenePhase) { _, phase in backgroundLink.sceneChanged(to: phase) }
+                    .onChange(of: scenePhase) { _, phase in
+                        backgroundLink.sceneChanged(to: phase)
+                        // Back from another app, where you may have shared something to a Bot.
+                        if phase == .active { model.lookForSharedItems() }
+                    }
                 #endif
         }
         #if os(iOS)

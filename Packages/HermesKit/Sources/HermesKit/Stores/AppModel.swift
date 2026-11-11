@@ -118,6 +118,8 @@ public final class AppModel {
     @ObservationIgnored public let sections: SidebarSections
     /// What's typed and not sent in each chat and room, on this device only.
     @ObservationIgnored public let drafts: Drafts
+    /// What you shared from other apps and the app hasn't sent yet.
+    @ObservationIgnored public let shared: SharedOutbox
     /// How far each Bot Chat was read, shared with your other devices through the gateway.
     @ObservationIgnored lazy var readSync: ReadSync = {
         let sync = ReadSync(auth: { [weak self] in self?.auth }, chats: { [weak self] in self?.readableChats ?? [] })
@@ -132,7 +134,7 @@ public final class AppModel {
     public convenience init() {
         self.init(
             tokenStore: KeychainTokenStore(), http: URLSession.shared, defaults: .standard, cache: OfflineCache(),
-            draftsDirectory: Drafts.deviceDirectory)
+            draftsDirectory: Drafts.deviceDirectory, share: .appGroup())
     }
 
     /// Sends all gateway traffic, requests and the socket alike, through the session `session`
@@ -140,14 +142,14 @@ public final class AppModel {
     public convenience init(session: @escaping @Sendable () async throws -> URLSession) {
         self.init(
             tokenStore: KeychainTokenStore(), http: SessionTransport(session: session), defaults: .standard,
-            cache: OfflineCache(), draftsDirectory: Drafts.deviceDirectory,
+            cache: OfflineCache(), draftsDirectory: Drafts.deviceDirectory, share: .appGroup(),
             makeSocket: { URLSessionWebSocket(url: $0, session: try await session()) },
             makeScreenSocket: { URLSessionScreenSocket(url: $0, session: try await session()) })
     }
 
     init(
         tokenStore: any TokenStore, http: any HTTPTransport, defaults: UserDefaults, cache: OfflineCache,
-        draftsDirectory: URL? = nil,
+        draftsDirectory: URL? = nil, share: ShareContainer? = nil,
         makeSocket: @escaping GatewayConnector.SocketFactory = { URLSessionWebSocket(url: $0) },
         makeScreenSocket: @escaping ScreenSocketFactory = { URLSessionScreenSocket(url: $0) }
     ) {
@@ -159,6 +161,7 @@ public final class AppModel {
         self.makeSocket = makeSocket
         sections = SidebarSections(defaults: defaults)
         drafts = Drafts(directory: draftsDirectory)
+        shared = SharedOutbox(container: share)
         gatewayInput = defaults.string(forKey: Self.gatewayKey) ?? ""
         isRestoring = defaults.string(forKey: Self.gatewayKey) != nil
         sections.save = { [weak self] profile, placement in
@@ -169,6 +172,7 @@ public final class AppModel {
             guard let channel = self?.channel else { throw GatewayError.disconnected }
             try await BotMetaWrite.setPinned(isPinned, profile: profile, on: channel)
         }
+        shared.send = { [weak self] in self?.lookForSharedItems() }
     }
 
     /// Resumes the saved session, if this device has one.
@@ -259,6 +263,7 @@ public final class AppModel {
         pictures.clear()
         sections.clear()
         drafts.clear()
+        shared.clear()
         push.clear()
         usage.clear()
         rooms = [:]
@@ -361,6 +366,8 @@ public final class AppModel {
                     if firstRead { readSync.somethingChanged() } else { readSync.look() }
                     firstRead = false
                     saveCache(for: auth.gateway)
+                    publishShareRoster()
+                    lookForSharedItems()
                     reportFocus()
                     try await Task.sleep(for: Self.rosterInterval)
                 }

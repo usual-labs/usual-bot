@@ -48,6 +48,11 @@ Child-local ideas stay in their package KBs.
   deployment target) it likely shows as a square. Unverified (no macOS 15 machine checked). An
   Icon Composer `.icon` file (Xcode 26) would give both the new rounded/glass look and correct
   older-system images.
+- **Sending shared items without opening the app (iPhone).** The share extension leaves items for
+  the app, which sends them when it's next in front (`decisions.md`, Sharing from other apps). Two
+  ways to close the gap, neither built: send text-only items during a background check-in
+  (`AppModel.checkIn` would have to wait for the send), and a local notification from the
+  extension ("Open Usual Bot to send this to Forge") that opens the app on a tap.
 - **Built-in Tailscale on iPhone (working; draft PR #5, branch `built-in-tailscale`).** Reaches a
   tailnet gateway without the Tailscale VPN on. TailscaleKit (`swift/` in `tailscale/libtailscale`,
   BSD-3) runs a userspace node inside the app with a SOCKS5 loopback proxy. iPhone only on purpose:

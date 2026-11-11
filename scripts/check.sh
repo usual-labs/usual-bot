@@ -9,7 +9,7 @@ set -eu
 cd "$(dirname "$0")/.."
 
 checks() {
-    swift format lint --strict --recursive App NotificationService Packages scripts/fixtures
+    swift format lint --strict --recursive App NotificationService ShareExtension Packages scripts/fixtures
     scripts/check-test-waits.sh
     scripts/check-shortcuts.sh
     swift test --package-path Packages/HermesKit

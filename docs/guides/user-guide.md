@@ -14,6 +14,7 @@ iPhone unless a section says otherwise.
 - [Rooms](#rooms)
 - [A Bot's profile: routines, skills, apps and machine](#a-bots-profile-routines-skills-apps-and-machine)
 - [Quick message (Mac)](#quick-message-mac)
+- [Sharing from other apps](#sharing-from-other-apps)
 - [Offline and reconnecting](#offline-and-reconnecting)
 - [Settings](#settings)
 - [Keyboard shortcuts](#keyboard-shortcuts)
@@ -522,6 +523,29 @@ you’re doing.
 
 Usual Bot keeps running in the menu bar after you close its window. Quick Message stays available
 there even if you disable its shortcut. Quit the app from the menu bar item.
+
+## Sharing from other apps
+
+Send a link, a photo, a file or selected text to a Bot from the app you're in: choose **Usual Bot**
+in the share sheet on iPhone, or in the **Share** menu on the Mac. If it isn't listed on iPhone,
+scroll the row of apps to **More** and turn it on; on the Mac, turn it on in System Settings ›
+General › Login Items & Extensions › Sharing.
+
+- Pick a Bot or room and add a note if you like, then **Send**. The list is the sidebar's: pinned
+  first, hidden Bots left out. It starts on the one you last shared to.
+- Usual Bot itself sends it, not the share sheet, so it goes the next time the app is open and
+  connected: within a few seconds if it's already running, as it usually is on the Mac, and
+  otherwise when you next open it. The share sheet says **Waiting to send**.
+- Until it's sent, the item shows below the chat list, saying where it's going. It waits while
+  you're offline or while that Bot is still answering, then goes by itself and appears in the chat
+  as your message. **Don't Send** deletes it.
+- If it can't be sent, it stays below the chat list with the reason, **Try Again** and **Delete**.
+- Text, web links, images up to 25 MB and other files up to 50 MB, ten at a time. Anything larger,
+  or a kind Usual Bot can't take, is left out, and the share sheet says so before you send.
+- Rooms take text and links only, so a room is greyed out when you're sharing a file.
+- What you share waits on this device only. It's deleted once sent, and signing out deletes
+  anything still waiting.
+- You need to be signed in: until then the share sheet asks you to open Usual Bot and sign in.
 
 ## Offline and reconnecting
 
