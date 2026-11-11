@@ -8,6 +8,8 @@ public struct AgentAlert: Equatable, Sendable {
         /// An agent is waiting on you: an approval, a question, a secret or a stopped room reply.
         case needsYou
         case taskFinished
+        /// A goal ended by itself: done, out of turns, or unable to go on.
+        case goalEnded
     }
 
     /// Stable for a request, so its notification can be taken back.

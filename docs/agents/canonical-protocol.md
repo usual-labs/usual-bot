@@ -70,6 +70,12 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   with the same `submission_id` and text with the first one's receipt, so a message it couldn't
   confirm is held and sent again without doubling. One taken back with `prompt.cancel` gets a new
   ID, because the old one answers `cancelled` for good.
+- **A goal is read with `session.control.read` on every attach**, because the attach snapshot
+  doesn't carry it, and followed with `session.control.update`. The judge runs before
+  `message.complete`, and the next turn is already in `pending` (its `input_id` starts
+  `["goal-continuation"`, with no `controls`) when the judged one ends, so a goal between two
+  replies is told from an idle one by that row. `goal.resume` answers with the prompt to send
+  (`dispatch.message`); the gateway doesn't send it.
 - **Rooms dismiss with `groups.discard`** when the retry action offers only discard, which needs the
   turn's `member_id` and `execution_generation`. It leaves the room's other replies running.
 
@@ -89,6 +95,14 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   `cancelled`. Taking a message back can lose that race; the app then shows it as sent and says
   its reply was stopped.
 - The queue survives the last app detaching: a queued message ran with no socket open.
+- **`session.interrupt` doesn't stop a goal.** The interrupted reply's text is judged and counted,
+  and the continuation starts at once; with no text, nothing follows and the goal stays active
+  with nothing running. A gateway restart leaves it the same way.
+- **Continuations pile up behind a message of yours.** A message queued during a goal's turn runs
+  next, and each of the two turns queues a continuation, so one can still run after the goal
+  pauses. Stop Goal cancels the queued ones (`prompt.cancel` takes them).
+- **`goal.pause` and `goal.resume` bring a cleared goal back**: Hermes keeps the cleared row. The
+  app offers neither without a goal on screen.
 - `tool.complete` sends its result as JSON text and failure as `is_error`.
 - **A routine's turn starts with `message.start {}`**, without the delivered text or its kind. The
   app learns what it was from `session.history` once the turn ends (`finishTurnElsewhere`).
@@ -107,6 +121,11 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   attach`), not by the app: queueing, the next message starting by itself, cancel, cancel then
   steer, interrupt with and without a queue, cancel on a started message, a retried ID, a
   disconnect with one queued, and a mid-turn snapshot. `canonical-queue*.jsonl` are from that run.
+- Goals were run the same way on a throwaway 0.23.1 gateway, with a stand-in judge: a goal set
+  with `command.dispatch`, continuing by itself to done; a pause, a resume and a clear; the turn
+  budget and a blocked verdict; `session.interrupt` mid-turn; a message queued and one steered
+  mid-turn; pause then interrupt; `prompt.cancel` on a queued continuation; the socket closed and
+  reattached mid-goal; and a gateway restart mid-goal. `canonical-goal.jsonl` is from that run.
 - iPhone, Tailscale Serve over `https`, and Built-in Tailscale with a `.ts.net` name.
 - Room retry and discard (they need a member's turn to fail), and room approvals.
 - Rewinding past the last exchange, on either dialect: read from Hermes v0.23.1's source and run

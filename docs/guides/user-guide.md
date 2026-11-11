@@ -169,6 +169,30 @@ sending also puts the keyboard away; tap the message box to write again.
   same way. Commands run when you send them, and files can't be queued. The queue needs the
   gateway's Webapp; on the older dashboard there's no Queue button and a message steers. Rooms and
   the ⌥Space panel don't queue.
+- **Give a Bot a goal.** Send `/goal` and what you want, such as `/goal Free 20 GB on db-1 without
+  touching the backups`, and the Bot keeps working on it by itself: after each reply Hermes checks
+  whether the goal is done, and if not sends the Bot on to the next step. The goal shows in one
+  line above the message box with how many turns it has used of those it's allowed (20 unless
+  your gateway says otherwise). Tap the line for the whole goal, what Hermes made of the last
+  reply, and anything added with `/subgoal`. Your gateway keeps the goal, so it carries on with the
+  app closed, and shows the same on your other devices and in the official app.
+  **Stop Goal** on that line stops the goal and the reply that's running. It's a different button
+  from the message box's Stop (⌘.), which ends one reply: Hermes then judges what the reply got to
+  and sends the Bot on, and a line in the chat says so. A goal also stops by itself when it runs
+  out of turns or when Hermes finds it can't go on, and the line says which and why; you get a
+  notification when a goal ends without you, if the app is connected. **Continue** carries on with
+  a stopped goal with a full set of turns, and **Clear** removes one that's stopped or done.
+  "Not running" means the goal is still set but nothing will start by itself, after a reply that
+  was stopped before it said anything or a gateway restart: Continue picks it up.
+  While a goal runs, everything else works as usual. A message you send steers the reply, or
+  queues behind it; either way it counts as one of the goal's turns, and the goal goes on after
+  it. Approvals and questions still wait for you, and the goal waits with them. Undo, Edit and
+  Try Again are off while a goal works, between its replies too; once it's stopped or done they
+  change the conversation as usual, never the goal. Try Again isn't offered on a reply to one of
+  the goal's own turns: there's no message of yours to ask again.
+  A new goal can't be set while a reply runs: stop this one first. The goal line
+  was checked with Hermes 0.23.1; on a gateway too old to report goals, nothing shows. Rooms have
+  no goals.
 - **React, reply, copy.** Hover or right-click a message on the Mac, or long-press it on iPhone.
   **More Reactions** has the full set. Reply quotes the message above the box. To copy part of a
   message, drag across its text on the Mac, across paragraphs, headings and list items alike; on

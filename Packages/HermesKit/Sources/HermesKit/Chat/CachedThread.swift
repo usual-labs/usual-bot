@@ -13,6 +13,8 @@ struct CachedThread: Codable, Equatable, Sendable {
     var backgroundResults: [BackgroundResult]? = nil
     /// Queued messages held on this device. The ones waiting on the gateway come with its snapshot.
     var heldMessages: [QueuedMessage]? = nil
+    /// The chat's goal as last seen, so it shows before the gateway answers and while offline.
+    var goal: Goal? = nil
 }
 
 extension TranscriptItem {

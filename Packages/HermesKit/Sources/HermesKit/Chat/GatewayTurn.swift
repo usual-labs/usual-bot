@@ -13,6 +13,15 @@ enum GatewayTurn {
     /// Another Bot's message: `Message from 🤖 <name> (@<handle>): <body>` (`tools/bot_mode_dm.py`).
     private static let botPrefix = "Message from 🤖 "
 
+    /// What Hermes sends the Bot to carry a goal on, after a reply that didn't finish it
+    /// (`CONTINUATION_PROMPT_*` in `hermes_cli/goals.py`; a failed quality gate's ends differently).
+    private static let goalPrefix = "[Continuing toward your standing goal"
+    /// The line a goal's own turn gets in the chat, where a message of yours would be.
+    static var goalStep: String { String(localized: "Carried on with the goal") }
+
+    /// Whether a queued or running turn (`pending`'s `input_id`) is one Hermes started for a goal.
+    static func isGoalAdmission(_ inputID: String?) -> Bool { inputID?.hasPrefix("[\"goal-continuation\"") == true }
+
     /// How a user row reads in a chat. Rows saved before Hermes typed them have only their wording
     /// to go on. An unknown kind stays a message, so nothing you wrote can disappear.
     static func content(text: String, kind: String?, title: String?) -> TranscriptItem.Content {
@@ -25,6 +34,8 @@ enum GatewayTurn {
             let (_, detail) = firstLine(of: body)
             return .result(title: title ?? agentWorkFinished, detail: detail)
         }
+        // Also when this app sent it: Continue hands Hermes's own words back as a message.
+        if body.hasPrefix(goalPrefix) { return .notice(goalStep) }
         switch kind {
         case "internal_notification":
             if let (routine, output) = routineResult(body) {
@@ -47,6 +58,7 @@ enum GatewayTurn {
         if text.hasPrefix(processPrefix) { return String(localized: "Background process finished") }
         if text.hasPrefix(delegationPrefix) { return agentWorkFinished }
         if let (routine, _) = routineResult(text) { return fromRoutine(routine) }
+        if text.hasPrefix(goalPrefix) { return goalStep }
         return nil
     }
 
