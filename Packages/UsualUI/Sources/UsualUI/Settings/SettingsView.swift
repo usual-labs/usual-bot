@@ -73,7 +73,16 @@ public struct SettingsView: View {
                         NavigationLink(value: Page.connection) { gatewayCard }
                         // Grok keeps usage with the account; here the gateway is the account.
                         NavigationLink(value: Page.usage) {
-                            Label("Usage", systemImage: Page.usage.icon).foregroundStyle(Theme.ink)
+                            // The gateway card's columns, so the symbol sits under its circle and
+                            // the title under its name.
+                            HStack(spacing: Self.symbolSpacing) {
+                                Image(systemName: Page.usage.icon)
+                                    .font(.system(size: 18))
+                                    .frame(width: Self.symbolWidth)
+                                    .accessibilityHidden(true)
+                                Text("Usage")
+                            }
+                            .foregroundStyle(Theme.ink)
                         }
                     }
                     Section {
@@ -102,12 +111,15 @@ public struct SettingsView: View {
 
     #if os(iOS)
         /// Which gateway, and whether it's reachable; opens Connection.
+        private static let symbolWidth: CGFloat = 44
+        private static let symbolSpacing: CGFloat = 14
+
         private var gatewayCard: some View {
-            HStack(spacing: 14) {
+            HStack(spacing: Self.symbolSpacing) {
                 Image(systemName: "server.rack")
                     .font(.system(size: 18))
                     .foregroundStyle(Theme.ink)
-                    .frame(width: 44, height: 44)
+                    .frame(width: Self.symbolWidth, height: Self.symbolWidth)
                     .background(Theme.selection, in: Circle())
                     .overlay(alignment: .bottomTrailing) {
                         Circle()
