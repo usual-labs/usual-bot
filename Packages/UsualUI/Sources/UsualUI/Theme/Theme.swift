@@ -55,7 +55,8 @@ public enum Theme {
     /// Primary buttons and unread badges.
     public static let primary = Color(light: 0x111111, dark: 0xFFFFFF)
     public static let primaryInk = Color(light: 0xFFFFFF, dark: 0x111111)
-    /// Your bubbles where there's no one agent's colour to use, as in rooms.
+    /// Your bubbles, in chats and rooms alike. Not the Bot's colour: white on it only reaches 4.5:1,
+    /// and a long message became a bright block that made the dark text around it harder to read.
     public static let userBubble = Color(light: 0x1C1C1C, dark: 0x3A3A3A)
     public static let userBubbleInk = Color(light: 0xFFFFFF, dark: 0xFFFFFF)
     public static let needsYouFill = Color(light: 0xFFF1D6, dark: 0x3A2A0A)

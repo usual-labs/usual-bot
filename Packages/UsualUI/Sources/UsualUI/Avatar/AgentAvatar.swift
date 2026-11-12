@@ -91,7 +91,7 @@ extension Contact {
         return Theme.agentPalette[style.paletteIndex]
     }
 
-    /// The agent's colour on your bubbles and the message box's main button, under white text.
+    /// The agent's colour on the message box's main button, under white text.
     var accent: Color {
         let style = AvatarStyle(seed: id, paletteCount: Theme.agentColors.count)
         let rgb = tint.flatMap(RGB.init(css:)) ?? Theme.agentColors[style.paletteIndex]

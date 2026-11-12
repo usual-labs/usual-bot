@@ -378,7 +378,6 @@ struct UserBubbleContent: View {
     let text: String
     @Environment(\.sentImages) private var sentImages
     @Environment(\.messageTextSize) private var messageSize
-    @Environment(\.chatContact) private var contact
 
     var body: some View {
         // Attachments travel as `@image:`/`@file:` lines after the text; they show above it.
@@ -422,7 +421,7 @@ struct UserBubbleContent: View {
                             MessageText(content: .mine(body, size: messageSize))
                         #else
                             // Links underlined in the bubble's own ink: the link colour wouldn't
-                            // read on the Bot's colour.
+                            // read on the bubble.
                             Text(Links.detect(in: body).underliningLinks())
                                 .messageFont()
                                 .tint(Theme.userBubbleInk)
@@ -433,7 +432,7 @@ struct UserBubbleContent: View {
                 .textSelection(.enabled)
                 .padding(.horizontal, Theme.bubblePadding)
                 .padding(.vertical, 9)
-                .background(contact?.accent ?? Theme.userBubble, in: RoundedRectangle(cornerRadius: 18))
+                .background(Theme.userBubble, in: RoundedRectangle(cornerRadius: 18))
             }
         }
     }
