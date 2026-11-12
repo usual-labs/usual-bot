@@ -461,9 +461,8 @@ struct MessageBox: View {
             text += "\n"
             return
         }
-        let offset = text.distance(from: text.startIndex, to: range.lowerBound)
-        text.replaceSubrange(range, with: "\n")
-        selection = TextSelection(insertionPoint: text.index(text.startIndex, offsetBy: offset + 1))
+        let cursor = text.insertLineBreak(replacing: range)
+        selection = TextSelection(insertionPoint: cursor)
     }
 
     private var canSubmit: Bool {
