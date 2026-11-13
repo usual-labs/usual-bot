@@ -349,8 +349,9 @@ text:
   writes, and stops when you talk over it. The conversation is saved in the chat as usual. The call
   bar above the message box has the transcript, mute, end and settings, where you pick the voice,
   speed and engine:
-  - **On-device** speech uses Apple's speech recognition and voices. Free, and nothing extra leaves
-    your device.
+  - **On-device** speech uses Apple's speech recognition and voices. Free. Your words are
+    recognised on the device when it has the language's speech model, otherwise by Apple's
+    servers, as with dictation.
   - **GPT-Live** uses OpenAI's realtime voice through your gateway, for a more natural
     conversation. It's offered when the gateway has an OpenAI key, and OpenAI bills the minutes.
 

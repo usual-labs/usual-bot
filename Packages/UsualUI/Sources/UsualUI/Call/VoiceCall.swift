@@ -50,6 +50,8 @@ final class VoiceCall {
     private var recognition: SFSpeechRecognitionTask?
     /// Which recognition is current; callbacks from earlier ones are ignored.
     private var listenToken = 0
+    /// Recognition stays on the device until it fails to start there, as dictation's does.
+    private var onDevice = true
     private var pause: Task<Void, Never>?
     private var loop: Task<Void, Never>?
     private let synthesizer = AVSpeechSynthesizer()
@@ -107,6 +109,16 @@ final class VoiceCall {
     func end() {
         guard phase != .ended else { return }
         phase = .ended
+        stop()
+    }
+
+    /// Ends the call with `message` in the bar.
+    private func fail(_ message: String) {
+        phase = .failed(message)
+        stop()
+    }
+
+    private func stop() {
         loop?.cancel()
         pause?.cancel()
         recognition?.cancel()
@@ -118,6 +130,7 @@ final class VoiceCall {
     /// The language changed in the settings: listen in the new one.
     func languageChanged() {
         recognizer = SFSpeechRecognizer(locale: CallSettings.language)
+        onDevice = true
         if phase == .listening { listen() }
     }
 
@@ -131,18 +144,62 @@ final class VoiceCall {
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
         request.addsPunctuation = true
-        request.requiresOnDeviceRecognition = recognizer.supportsOnDeviceRecognition
+        request.requiresOnDeviceRecognition = onDevice && recognizer.supportsOnDeviceRecognition
         audio.listen(into: request)
         // `@Sendable`: the recognizer calls back on its own queue.
         recognition = recognizer.recognitionTask(with: request) { @Sendable [weak self] result, error in
             let words = result?.bestTranscription.formattedString
             let ended = error != nil || result?.isFinal == true
-            Task { @MainActor in self?.recognized(words, ended: ended, token: token) }
+            let error = error as NSError?
+            Task { @MainActor in self?.recognized(words, ended: ended, error: error, token: token) }
         }
     }
 
-    private func recognized(_ words: String?, ended: Bool, token: Int) {
+    /// What follows a recognition that ended: listen again, move off the device, or give up.
+    enum AfterRecognition: Equatable {
+        case listenAgain
+        case useServer
+        case fail(String)
+    }
+
+    /// Silence and cancelling end a recognition quietly, and so does any error once words came.
+    /// Anything else is a recognizer that can't run (on a device without the language's speech
+    /// model, `kLSRErrorDomain` 300): listening again would only fail again, at once.
+    nonisolated static func afterRecognition(error: NSError?, heardWords: Bool, onDevice: Bool) -> AfterRecognition {
+        guard let error, !heardWords else { return .listenAgain }
+        // 216: cancelled; 1110: no speech heard; 301: request ended.
+        if error.domain == "kAFAssistantErrorDomain", [216, 301, 1110].contains(error.code) { return .listenAgain }
+        if onDevice { return .useServer }
+        #if os(macOS)
+            let settings = String(localized: "System Settings › Keyboard")
+        #else
+            let settings = String(localized: "Settings › General › Keyboard")
+        #endif
+        return .fail(
+            String(
+                localized:
+                    "Speech recognition couldn't start (\(error.localizedDescription)). Turn on Dictation in \(settings), or choose another language in the call settings."
+            ))
+    }
+
+    private func recognized(_ words: String?, ended: Bool, error: NSError?, token: Int) {
         guard token == listenToken, phase != .ended else { return }
+        if case .failed = phase { return }
+        if ended, let error {
+            Self.log.notice(
+                "Recognition ended: \(error.domain, privacy: .public) \(error.code) \(error.localizedDescription, privacy: .public)"
+            )
+            let heardWords = !(words ?? "").isEmpty || !heard.isEmpty
+            switch Self.afterRecognition(error: error, heardWords: heardWords, onDevice: onDevice) {
+            case .listenAgain: break
+            case .useServer:
+                Self.log.notice("On-device recognition can't start; using Apple's servers")
+                onDevice = false
+            case .fail(let message):
+                fail(message)
+                return
+            }
+        }
         if let words, !words.isEmpty, words != heard {
             // A couple of words while the agent talks is you cutting in, not its own echo.
             if cancelsEcho, phase == .speaking || phase == .thinking, words.split(separator: " ").count >= 2 {
