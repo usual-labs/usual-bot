@@ -3,7 +3,7 @@
   "label": "Usual Bot push",
   "description": "Lets Usual Bot add your devices for notifications.",
   "icon": "Bell",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "tab": { "path": "/usual-push", "hidden": true },
   "entry": "dist/index.js",
   "api": "plugin_api.py"

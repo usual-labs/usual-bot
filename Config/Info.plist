@@ -59,11 +59,13 @@
 		<key>UIImageRespectsSafeAreaInsets</key>
 		<false/>
 	</dict>
-	<!-- iPhone: iOS wakes the app now and then to check for messages (BackgroundCheckIn.swift).
+	<!-- iPhone: iOS wakes the app now and then to check for messages (BackgroundCheckIn.swift), and
+	     for the gateway's silent push when you read a chat elsewhere (PushRegistration.swift).
 	     Ignored on the Mac. -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
+		<string>remote-notification</string>
 	</array>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>

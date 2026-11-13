@@ -33,7 +33,9 @@ and a switch for each Bot on that device.
 
 Helpers, routines and other platforms stay quiet, and so does a Bot you've hidden, in Usual Bot or
 the Hermes app, except in rooms. A chat you're reading on any device is quiet on
-all of them; everything else reaches every device that hasn't turned that Bot off. With previews
+all of them; everything else reaches every device that hasn't turned that Bot off. Opening a chat
+on one device takes down what your other devices show about it, with a silent push that names
+nothing outside its seal. With previews
 off on a device, its notifications say only who needs you.
 
 To hear from a routine, set its **Results** to **Post in this chat**. Its output then lands in the Bot's chat,

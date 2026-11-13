@@ -585,7 +585,9 @@ and Settings opens with your gateway at the top. Preferences stay on this device
 - **Push:** with the plugin in [`Integrations/hermes-push`](../../Integrations/hermes-push/README.md)
   on your gateway, every device you sign in on is reached instantly, even with Usual Bot closed. Your
   gateway seals each notification for that device, and Usual's relay and Apple pass it on without
-  reading it. Reading a chat on one device keeps it quiet on the others. Under **Bots on this
+  reading it. Reading a chat on one device keeps it quiet on the others, and takes down the
+  notifications they already show about it (push plugin 0.4.0 or later). If you swiped Usual Bot
+  away in the iPhone's app switcher, they go when you next open it. Under **Bots on this
   device**, turn a Bot off to keep it quiet here only; **Send Test** checks the whole way. Signing
   out stops pushes to that device. Without the plugin, the Mac alerts while the app runs (the menu
   bar is enough), and the iPhone only while connected or when iOS lets it check in.
