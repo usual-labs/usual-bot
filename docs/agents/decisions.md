@@ -255,6 +255,14 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   on the Mac keeps the iPhone still. Another chat's message still notifies, even inside the app; this
   replaces the earlier rule that nothing notified while you were at the app. On the device itself,
   `willPresent` also hides a push for the chat on screen, as the gateway may not know yet.
+- **Reading a chat takes its notifications down on your other devices.** The app can't clear what it
+  doesn't hear about while iOS has it suspended, and `ReadSync` covers only Bot Chats, so the plugin
+  does it: it remembers which chats each device was notified about (`told.json`), and when another
+  device reports that chat open it sends each of those devices one silent push through the relay's
+  `/v1/clear`. Presence, not Hermes's read time, is the trigger, so rooms clear too, and only the
+  first report after a notification sends anything. iOS rations silent pushes and drops them for an
+  app swiped away in the app switcher; those notifications stay until the app next runs there.
+  Apple has no reliable way to remove a delivered notification from the server.
 - **The app reports the open chat every roster tick, and "none" once,** and the plugin forgets an
   entry after 15 s, so a crash can't silence pushes. Repeating "none" would let a Mac in the
   background overrule the iPhone in your hand.

@@ -40,8 +40,17 @@ def push(device_id: str, device: dict, kind: str, payload: dict, chat: str | Non
     return entry
 
 
-def send(pushes: list[tuple[str, dict]]) -> dict[str, str]:
-    """Sends `(relay, push)` pairs and answers each device's fate: `gone` means forget that device."""
+def clear(device_id: str, device: dict, chat: str) -> dict:
+    """A silent push that takes down what the device shows about a chat. `kind` is sealed too, so
+    no one can pass a message's sealed text off as one of these."""
+    payload = {"kind": "read", "chat": chat}
+    return {"device": device_id, "key": device["send_key"], "sealed": seal(device["seal_key"], payload)}
+
+
+def send(pushes: list[tuple[str, dict]], route: str = "send") -> dict[str, str]:
+    """Sends `(relay, push)` pairs and answers each device's fate: `gone` means forget that device.
+
+    `route` is the relay's `send`, for notifications, or `clear`, for silent pushes."""
     by_relay: dict[str, list[dict]] = {}
     for relay, entry in pushes:
         by_relay.setdefault(relay.rstrip("/"), []).append(entry)
@@ -50,7 +59,7 @@ def send(pushes: list[tuple[str, dict]]) -> dict[str, str]:
         for start in range(0, len(entries), _BATCH):
             batch = entries[start : start + _BATCH]
             try:
-                results = _post(f"{relay}/v1/send", {"pushes": batch})["results"]
+                results = _post(f"{relay}/v1/{route}", {"pushes": batch})["results"]
             except Exception as error:  # Named only: an error can quote the request.
                 logger.warning("usual-push: couldn't reach the relay: %s", type(error).__name__)
                 fates |= {entry["device"]: "failed" for entry in batch}

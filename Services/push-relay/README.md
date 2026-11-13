@@ -28,10 +28,12 @@ Sign-ups are limited by address, and changes and pushes by device. The limits ar
 | `PUT /v1/devices/:id` `{token, environment}` | the app, `Authorization: Bearer <secret>` | New token |
 | `DELETE /v1/devices/:id` | the app, `Authorization: Bearer <secret>` | Removes the row |
 | `POST /v1/send` `{pushes: [{device, key, kind, sealed, thread?, collapse?}]}` | a gateway | Up to 20 pushes; answers each one's `status`: `sent`, `gone` (forget the device), `refused`, `limited` or `failed` |
+| `POST /v1/clear` `{pushes: [{device, key, sealed}]}` | a gateway | The same, as silent background pushes that take down a chat's notifications |
 
 `kind` is `message`, `needs_you` or `test`. `sealed` is base64 AES-GCM (nonce, ciphertext, tag) of
 JSON with `title`, `body`, `chat`, `kind` and `sound`. `thread` groups a chat's notifications
-without naming it.
+without naming it. A clear's `sealed` holds only `kind: "read"` and `chat`. It has a route of its
+own so that clears sent to an older relay fail there rather than show "New message".
 
 ## Run your own
 

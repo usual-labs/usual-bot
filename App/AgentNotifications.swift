@@ -112,8 +112,9 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    /// Takes down what was said about a chat you've now seen, or everything after signing out.
-    private static func clear(_ contact: Contact.ID?) async {
+    /// Takes down what was said about a chat you've now seen, here or on another device (the
+    /// gateway's silent push, `PushRegistration`), or everything after signing out.
+    static func clear(_ contact: Contact.ID?) async {
         let center = UNUserNotificationCenter.current()
         guard let contact else {
             center.removeAllDeliveredNotifications()

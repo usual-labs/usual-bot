@@ -86,6 +86,8 @@ def delete_device(device_id: str) -> dict:
 @router.put("/presence")
 def presence(new: Presence) -> dict:
     store.set_open(new.device, new.chat)
+    if new.chat:
+        plugin.read_on(new.device, new.chat)
     if new.names is not None:
         store.set_names(new.names)
     return {"ok": True}

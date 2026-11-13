@@ -60,7 +60,10 @@ async function route(request, env) {
     }
   }
   if (parts[1] === "send" && parts.length === 2 && request.method === "POST") {
-    return send(await body(request), env);
+    return send(await body(request), env, false);
+  }
+  if (parts[1] === "clear" && parts.length === 2 && request.method === "POST") {
+    return send(await body(request), env, true);
   }
   throw new Refusal(404, "Not found.");
 }
@@ -110,21 +113,26 @@ async function authorizeDevice(request, id, env) {
  * From a gateway: `{ pushes: [{ device, key, kind, sealed, thread?, collapse? }] }`.
  * Each push carries its device's send key, so no gateway account is needed. Answers each push's
  * fate, and `gone` tells the gateway to forget that device.
+ *
+ * `silent` pushes (`/v1/clear`, `{ pushes: [{ device, key, sealed }] }`) show nothing: they wake the
+ * app to take down notifications about a chat read on another device. A separate route, so a
+ * gateway's clears sent to an older relay fail rather than show "New message".
  */
-async function send(input, env) {
+async function send(input, env, silent) {
   const pushes = Array.isArray(input.pushes) ? input.pushes : [];
   if (pushes.length === 0 || pushes.length > MAX_PUSHES) {
     throw new Refusal(400, `Send between 1 and ${MAX_PUSHES} pushes.`);
   }
-  const results = await Promise.all(pushes.map((push) => sendOne(push, env)));
+  const results = await Promise.all(pushes.map((push) => sendOne(push, env, silent)));
   return json({ results });
 }
 
-async function sendOne(push, env) {
+async function sendOne(push, env, silent) {
   const device = String(push.device ?? "");
-  const kind = push.kind in FALLBACK ? push.kind : "message";
+  const kind = silent ? "read" : push.kind in FALLBACK ? push.kind : "message";
   const sealed = String(push.sealed ?? "");
   if (sealed.length > MAX_SEALED) return { device, status: "refused", reason: "TooLarge" };
+  if (silent && !sealed) return { device, status: "refused", reason: "NothingSealed" };
 
   // Before the lookup, so a flood for one device costs no reads either.
   if (!(await env.PUSHES.limit({ key: device })).success) return { device, status: "limited" };
@@ -137,21 +145,21 @@ async function sendOne(push, env) {
     return { device, status: "refused", reason: "WrongKey" };
   }
 
-  const payload = {
-    aps: { alert: FALLBACK[kind], sound: "default", "mutable-content": 1 },
-    kind,
-  };
+  // Apple wants a background push to carry no alert, sound or badge, and to go at priority 5.
+  const payload = silent
+    ? { aps: { "content-available": 1 }, kind }
+    : { aps: { alert: FALLBACK[kind], sound: "default", "mutable-content": 1 }, kind };
   if (sealed) payload.s = sealed;
-  if (push.thread) payload.aps["thread-id"] = String(push.thread).slice(0, 64);
+  if (push.thread && !silent) payload.aps["thread-id"] = String(push.thread).slice(0, 64);
 
   const headers = {
     authorization: `bearer ${await providerToken(env)}`,
     "apns-topic": env.APNS_TOPIC,
-    "apns-push-type": "alert",
-    "apns-priority": "10",
+    "apns-push-type": silent ? "background" : "alert",
+    "apns-priority": silent ? "5" : "10",
     "apns-expiration": String(Math.floor(Date.now() / 1000) + 24 * 3600),
   };
-  if (push.collapse) headers["apns-collapse-id"] = String(push.collapse).slice(0, 64);
+  if (push.collapse && !silent) headers["apns-collapse-id"] = String(push.collapse).slice(0, 64);
 
   const response = await fetch(`${APNS_HOSTS[row.environment]}/3/device/${row.token}`, {
     method: "POST",

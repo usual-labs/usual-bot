@@ -12,6 +12,7 @@ install_into() { # profile home, then the arguments that select it for `hermes`
     rm -rf "$home/plugins/usual-push"
     mkdir -p "$home/plugins"
     cp -R "$here" "$home/plugins/usual-push"
+    rm -rf "$home/plugins/usual-push/tests"
     hermes "$@" plugins enable usual-push
 }
 

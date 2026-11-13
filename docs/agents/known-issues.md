@@ -147,6 +147,9 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   completion handler from Swift's thread pool; tapping a notification then aborts the iPhone app in
   `-[UIApplication _performBlockAfterCATransactionCommitSynchronizes:]`. `AgentNotifications` uses
   the completion-handler forms and calls them on the main actor.
+- **`told.json` is written by two processes:** the gateway as it notifies and the dashboard or Webapp
+  as you read. `store._shared` takes a file lock as well as the thread lock; on Windows, without
+  `fcntl`, it holds only within one process.
 - **`log` in zsh is a builtin.** Read the unified log with `/usr/bin/log show`.
 - **APNs from `wrangler dev` fails:** workerd has no HTTP/2 client. Deployed Workers reach APNs
   through Cloudflare's proxy.

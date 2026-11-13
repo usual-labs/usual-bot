@@ -78,7 +78,27 @@ def deliver(kind: str, title: str, preview: str, chat: str, speaker: str | None 
         body = _shorten(preview) if device.get("previews", True) else _HIDDEN[kind]
         payload = {"title": title, "body": body, "chat": chat, "kind": kind, "sound": device.get("sound", True)}
         pushes.append((device["relay"], relay.push(device_id, device, kind, payload, chat)))
-    _forget_gone(relay.send(pushes))
+    if not pushes:
+        return
+    fates = relay.send(pushes)
+    _forget_gone(fates)
+    store.note_told([device_id for device_id, fate in fates.items() if fate == "sent"], chat)
+
+
+def read_on(reader: str, chat: str) -> None:
+    """You're reading `chat` on `reader`: your other devices take down what they show about it.
+
+    Runs on every presence report, so it sends only to devices notified about it since."""
+    others = store.take_told(chat, reader)
+    if others:
+        threading.Thread(target=_safely, args=(_clear, others, chat), daemon=True).start()
+
+
+def _clear(device_ids: list[str], chat: str) -> None:
+    devices = store.devices()
+    pushes = [(devices[key]["relay"], relay.clear(key, devices[key], chat)) for key in device_ids if key in devices]
+    if pushes:
+        _forget_gone(relay.send(pushes, route="clear"))
 
 
 def send_test(device_id: str) -> str:
