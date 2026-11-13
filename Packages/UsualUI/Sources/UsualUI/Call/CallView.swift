@@ -222,14 +222,23 @@ private struct CallBarButton: View {
         private static let side: CGFloat = 26
     #endif
 
+    private var prominent: Bool { active || role == .destructive }
+
     var body: some View {
         Button(role: role, action: action) {
             Image(systemName: systemImage)
                 .font(.system(size: 17, weight: .medium))
                 .foregroundStyle(role == .destructive ? .white : active ? Theme.primaryInk : Theme.ink)
                 .frame(width: Self.side, height: Self.side)
+                #if os(macOS)
+                    // The system's glass button drew a pale disc in the window you're at, where white
+                    // ink vanished in dark mode: glass of its own, as the chat bar's round buttons have.
+                    .padding(prominent ? 0 : 4)
+                    .contentShape(Circle())
+                    .glassEffect(prominent ? .identity : .regular.interactive(), in: Circle())
+                #endif
         }
-        .modifier(Style(prominent: active || role == .destructive, tint: role == .destructive ? .red : Theme.primary))
+        .modifier(Style(prominent: prominent, tint: role == .destructive ? .red : Theme.primary))
         .buttonBorderShape(.circle)
         .help(shortcut.map { "\(label) (\($0))" } ?? label)
         .accessibilityLabel(Text(label))
@@ -244,7 +253,11 @@ private struct CallBarButton: View {
             if prominent {
                 content.buttonStyle(.clickable(.glassProminent)).tint(tint)
             } else {
-                content.buttonStyle(.clickable(.glass))
+                #if os(macOS)
+                    content.buttonStyle(.clickable)
+                #else
+                    content.buttonStyle(.clickable(.glass))
+                #endif
             }
         }
     }
