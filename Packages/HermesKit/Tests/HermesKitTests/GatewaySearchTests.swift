@@ -188,7 +188,9 @@ struct GatewaySearchTests {
             return [self.result(">>>\(query)<<< found")]
         }
         model.lookUpMessages("alpha")
-        try await waitUntil { asked.withLock { $0 } == ["alpha"] }
+        // Polled on the main actor, where the search starts: a stall there while the rest of the
+        // suite runs (up to about a second) then holds the polls too instead of using them up.
+        try await waitUntilOnMain { asked.withLock { $0 } == ["alpha"] }
         model.lookUpMessages("beta")
         open.yield()
         try await waitUntilOnMain { model.messageSearchStatus("beta") == .idle }

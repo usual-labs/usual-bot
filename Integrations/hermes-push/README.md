@@ -44,3 +44,8 @@ send its own notifications: they're private and change between versions.
 
 Settings are in `~/.hermes/usual-push/`, readable only by your user: each device's choices and the
 two keys it gave your gateway. Signing out of Usual Bot removes that device.
+
+A device signed in to two gateways gives each one its own ID, and from 0.5.0 the plugin seals it
+into every notification, so the app can tell your gateways' `default` Bots apart and switch to the
+right gateway when you tap. Update the plugin on both gateways; an older one's notifications still
+arrive, but tapping them only opens the app.

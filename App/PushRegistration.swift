@@ -35,8 +35,8 @@ final class PushRegistration: NSObject {
     /// A silent push from the gateway: you read a chat on another device, so its notifications go.
     /// Answers whether it was one.
     static func received(_ userInfo: [AnyHashable: Any]) async -> Bool {
-        guard let chat = PushRelay.chatReadElsewhere(in: userInfo) else { return false }
-        await AgentNotifications.clear(chat)
+        guard let read = PushRelay.chatReadElsewhere(in: userInfo) else { return false }
+        await AgentNotifications.shared.clear(read.chat, on: read.gateway)
         return true
     }
 }

@@ -109,12 +109,10 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                     GlassEffectContainer(spacing: 8) {
                         HStack(spacing: 8) {
                             if !compact {
-                                GatewayStatusButton(
-                                    gateway: gateway, link: model.link, signOut: model.signOut, more: gatewayMenu
-                                )
-                                .padding(.horizontal, 14)
-                                .frame(height: ThreadPane.barItemHeight)
-                                .glassEffect(.regular.interactive(), in: Capsule())
+                                GatewayStatusButton(model: model, gateway: gateway, more: gatewayMenu)
+                                    .padding(.horizontal, 14)
+                                    .frame(height: ThreadPane.barItemHeight)
+                                    .glassEffect(.regular.interactive(), in: Capsule())
                                 pluginsButton.roundGlass()
                             }
                             settingsButton.roundGlass()
@@ -133,6 +131,8 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
             .environment(\.screens, model)
             .environment(\.drafts, model.drafts)
             .environment(\.gatewayOnline, model.isOnline)
+            // Another gateway's chats start afresh: its own selection, search and panels.
+            .id(model.activeGateway?.id)
         }
     }
 
@@ -262,7 +262,7 @@ struct ContactsSplitView<Footer: View>: View {
         /// ⌘ is held, so the sidebar shows which number opens each chat.
         @State private var commandHeld = false
         /// The open chat, reopened at the next launch.
-        @AppStorage("selectedContact") private var selection: Contact.ID?
+        @AppStorage(AppModel.selectedContactKey) private var selection: Contact.ID?
         @AppStorage("showsProfile") private var showsProfile = false
     #else
         @State private var selection: Contact.ID?

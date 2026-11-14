@@ -78,6 +78,13 @@ public final class Drafts {
         gateway = nil
     }
 
+    /// Lets go of this gateway's, saved for coming back to it.
+    func unload() {
+        save()
+        texts = [:]
+        gateway = nil
+    }
+
     /// A Bot renamed on the gateway keeps its draft.
     func move(from old: Contact.ID, to new: Contact.ID) {
         guard let text = texts.removeValue(forKey: old) else { return }

@@ -6,6 +6,10 @@ struct PushSection: View {
     let push: PushSettings
     let bots: [Contact]
     let choices: PushSettings.Choices
+    /// You turned this gateway's notifications off, in its Connection settings.
+    var isOffHere = false
+    /// Two gateways, and this one's plugin can't say which sent a notification.
+    var needsUpdate = false
 
     @State private var isBusy = false
     @State private var result: String?
@@ -53,7 +57,10 @@ struct PushSection: View {
     }
 
     @ViewBuilder private var ready: some View {
-        if !push.isAvailable {
+        if isOffHere {
+            Text("Notifications from this gateway are off. Turn them on in its Connection settings.")
+                .foregroundStyle(Theme.secondaryInk)
+        } else if !push.isAvailable {
             Text("This copy of Usual Bot can’t receive push notifications. The TestFlight version can.")
                 .foregroundStyle(Theme.secondaryInk)
         } else if !push.isConnected {
@@ -67,6 +74,11 @@ struct PushSection: View {
                 }
             }
             .disabled(isBusy)
+        }
+        if needsUpdate, !isOffHere {
+            Text("Update Usual Push on this gateway so its notifications open the right chat.")
+                .foregroundStyle(Theme.secondaryInk)
+            Link("How to update it", destination: Self.guide)
         }
         if let result { Text(result).foregroundStyle(Theme.secondaryInk) }
         if let problem { Text(problem).foregroundStyle(Theme.danger) }

@@ -17,25 +17,25 @@
                 tokenStore: KeychainTokenStore(), http: URLSession.shared,
                 defaults: UserDefaults(suiteName: "UsualBotDemo") ?? .standard,
                 cache: OfflineCache(directory: .temporaryDirectory.appending(path: "UsualBotDemo")), share: share)
-            let demo = Demo(now: now, longConversations: longConversations)
-            let routines = Dictionary(
-                uniqueKeysWithValues: demo.agents.map {
-                    ($0.id, DemoRoutines.list(for: $0.id, now: now, skills: Demo.skills))
-                })
-            model.showDemo(
-                gateway: Demo.gateway, contacts: demo.agents + [demo.roomContact], threads: demo.threads,
-                rooms: [demo.roomContact.id: demo.room], routines: routines,
-                skills: Dictionary(uniqueKeysWithValues: demo.agents.map { ($0.id, SkillList.sample(Demo.skills)) }),
-                vaults: Dictionary(
-                    uniqueKeysWithValues: demo.agents.map {
-                        ($0.id, VaultList.sample(items: demo.vaultItems, sources: Demo.vaultSources))
-                    }),
-                apps: Dictionary(
-                    uniqueKeysWithValues: demo.agents.map { ($0.id, MCPServerList.demo(gateway: Demo.gateway)) }))
-            // One Bot hidden, so Settings › General has one to show again.
-            model.hiddenBots = [demo.courier]
-            model.addDemoBot(demo.courier)
-            model.media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }
+            // Two made-up gateways, so the switcher shows. Neither is saved anywhere the real app reads.
+            model.gatewayList = GatewayList(defaults: model.defaults, keepsNames: false)
+            let work = SavedGateway(id: "demo-work", address: Demo.gateway, name: "Work")
+            let home = SavedGateway(id: "demo-home", address: DemoHome.gateway, name: "Home")
+            model.gateways = [work, home]
+            model.gatewayList.activeAddress = work.address
+            // Home has notifications waiting, so the switcher's dot shows.
+            model.gatewaysWithNews = [home.id]
+            model.demoSwitch = { [weak model] saved in
+                guard let model else { return }
+                model.gatewaysWithNews.remove(saved.id)
+                if saved.id == home.id {
+                    model.showHomeDemo(now: now)
+                } else {
+                    model.showWorkDemo(now: now, longConversations: longConversations)
+                }
+                model.publishShareRoster()
+            }
+            model.showWorkDemo(now: now, longConversations: longConversations)
             model.usage = .demo(
                 agents: { [weak model] in model?.contacts.filter { $0.kind == .agent } ?? [] }, now: now)
             model.gatewaySearch.fetch = { profile, query in
@@ -47,6 +47,29 @@
             model.publishShareRoster()
             model.lookForSharedItems()
             return model
+        }
+
+        /// The demo's main gateway: the made-up team, its room, routines and a hidden Bot.
+        func showWorkDemo(now: Date, longConversations: Bool) {
+            let demo = Demo(now: now, longConversations: longConversations)
+            let routines = Dictionary(
+                uniqueKeysWithValues: demo.agents.map {
+                    ($0.id, DemoRoutines.list(for: $0.id, now: now, skills: Demo.skills))
+                })
+            showDemo(
+                gateway: Demo.gateway, contacts: demo.agents + [demo.roomContact], threads: demo.threads,
+                rooms: [demo.roomContact.id: demo.room], routines: routines,
+                skills: Dictionary(uniqueKeysWithValues: demo.agents.map { ($0.id, SkillList.sample(Demo.skills)) }),
+                vaults: Dictionary(
+                    uniqueKeysWithValues: demo.agents.map {
+                        ($0.id, VaultList.sample(items: demo.vaultItems, sources: Demo.vaultSources))
+                    }),
+                apps: Dictionary(
+                    uniqueKeysWithValues: demo.agents.map { ($0.id, MCPServerList.demo(gateway: Demo.gateway)) }))
+            // One Bot hidden, so Settings › General has one to show again.
+            hiddenBots = [demo.courier]
+            addDemoBot(demo.courier)
+            media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }
         }
     }
 

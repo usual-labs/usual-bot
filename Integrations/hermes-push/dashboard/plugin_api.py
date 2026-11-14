@@ -41,6 +41,8 @@ class Device(BaseModel):
     previews: bool | None = None
     sound: bool | None = None
     muted: list[str] | None = None
+    # Which of the device's gateways this is: its own ID for it, sealed into each notification.
+    gateway: str | None = None
 
 
 class Presence(BaseModel):
@@ -56,7 +58,10 @@ class Test(BaseModel):
 
 @router.get("/settings")
 def read_settings() -> dict:
-    return {"devices": [store.public(key, value) for key, value in store.devices().items()]}
+    return {
+        "version": plugin.VERSION,
+        "devices": [store.public(key, value) for key, value in store.devices().items()],
+    }
 
 
 @router.put("/devices/{device_id}")

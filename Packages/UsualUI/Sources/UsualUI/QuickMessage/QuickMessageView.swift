@@ -18,7 +18,7 @@ public struct QuickMessageView: View {
     }
 
     /// Who the last quick message went to; the panel starts there.
-    @AppStorage("quickRecipient") private var recipientID: Contact.ID?
+    @AppStorage(AppModel.quickRecipientKey) private var recipientID: Contact.ID?
     /// The conversation you started from the panel; `nil` while writing a new message.
     @State private var sent: Sent?
     @State private var text = ""

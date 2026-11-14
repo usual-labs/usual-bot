@@ -15,6 +15,9 @@ from .plain import plain
 
 logger = logging.getLogger(__name__)
 
+# As in plugin.yaml. The app reads it to know this plugin says which gateway sent each notification.
+VERSION = "0.5.0"
+
 # Where a person talks to the agent. Leaves out helpers ("subagent"), routines and other platforms.
 _CHAT_PLATFORMS = {"tui", "desktop", "dashboard"}
 # A gateway's own chats (`hermes gateway`) ask for input as "local", whichever app made them, a

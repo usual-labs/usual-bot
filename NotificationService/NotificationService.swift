@@ -19,8 +19,18 @@ final class NotificationService: UNNotificationServiceExtension {
             content.body = opened.body
             if let chat = opened.chat {
                 // What the app reads to open the chat on a tap, and to clear it once you've seen it.
-                content.threadIdentifier = chat
+                // Each gateway has a `default`, so the thread names the gateway too (as
+                // `NotificationThread` spells it).
+                content.threadIdentifier = opened.gateway.map { "\($0)/\(chat)" } ?? chat
                 content.userInfo["contact"] = chat
+            }
+            if let gateway = opened.gateway {
+                content.userInfo["gateway"] = gateway
+                // With two gateways, the banner says which one; the app keeps their names here.
+                let names = GatewayNames.load()
+                if names.count > 1, let name = names[gateway] {
+                    content.subtitle = [name, content.subtitle].filter { !$0.isEmpty }.joined(separator: " · ")
+                }
             }
             if opened.sound == false { content.sound = nil }
         }
@@ -35,6 +45,8 @@ private struct Sealed: Decodable {
     let body: String
     let chat: String?
     let sound: Bool?
+    /// Which of this device's gateways sent it (plugin 0.5.0 and later).
+    let gateway: String?
 
     static func open(_ text: String) -> Sealed? {
         guard let key = sealKey(), let data = Data(base64Encoded: text),
@@ -64,5 +76,28 @@ private struct Sealed: Decodable {
             return nil
         }
         return (try? JSONDecoder().decode(Registration.self, from: data))?.sealKey
+    }
+}
+
+/// Each gateway's name by its ID, as the app saves them (`GatewayNames` in HermesKit).
+private enum GatewayNames {
+    static func load() -> [String: String] {
+        guard let group = Bundle.main.object(forInfoDictionaryKey: "UsualPushKeychainGroup") as? String else {
+            return [:]
+        }
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "Usual Bot push relay",
+            kSecAttrAccount as String: "gateways",
+            kSecAttrAccessGroup as String: group,
+            kSecUseDataProtectionKeychain as String: true,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+        ]
+        var result: CFTypeRef?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else {
+            return [:]
+        }
+        return (try? JSONDecoder().decode([String: String].self, from: data)) ?? [:]
     }
 }

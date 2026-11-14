@@ -41,7 +41,15 @@ struct ConnectView<Options: View>: View {
                 }
                 Section {
                 } footer: {
-                    signInButton
+                    VStack(spacing: 12) {
+                        signInButton
+                        if model.returnGatewayID != nil {
+                            // Add Gateway brought you here from a gateway you can go back to.
+                            Button("Cancel", action: model.cancelAddingGateway)
+                                .buttonStyle(.clickable(.borderless))
+                                .foregroundStyle(Theme.secondaryInk)
+                        }
+                    }
                 }
             }
             Section {
@@ -62,19 +70,25 @@ struct ConnectView<Options: View>: View {
     private var heading: some View {
         VStack(spacing: 6) {
             HermesMark().frame(width: 96, height: 96).padding(.bottom, 18)
-            Text("Connect to Hermes")
+            Text(isAdding ? "Add a Gateway" : "Connect to Hermes")
                 .scaledFont(size: 22, weight: .semibold)
                 .foregroundStyle(Theme.ink)
-            Text("Sign in to your Hermes gateway to see your Bots.")
-                .scaledFont(size: 14)
-                .foregroundStyle(Theme.secondaryInk)
-                .multilineTextAlignment(.center)
+            Text(
+                isAdding
+                    ? "Sign in to another Hermes gateway. You can switch between them at any time."
+                    : "Sign in to your Hermes gateway to see your Bots."
+            )
+            .scaledFont(size: 14)
+            .foregroundStyle(Theme.secondaryInk)
+            .multilineTextAlignment(.center)
         }
         .textCase(nil)
         .frame(maxWidth: .infinity)
         .padding(.top, 32)
         .padding(.bottom, 8)
     }
+
+    private var isAdding: Bool { model.returnGatewayID != nil }
 
     private var signInButton: some View {
         Button(action: signIn) {

@@ -174,9 +174,13 @@ public struct ShareContainer: Sendable {
         folder(of: item.id).appending(path: name)
     }
 
-    /// Signing out: the roster and everything waiting go.
-    func clear() {
-        try? FileManager.default.removeItem(at: directory)
+    /// Signing out of `gateway`: its roster and what waits for it go. Another gateway's items stay.
+    func clear(gateway: String) {
+        if roster()?.gateway == gateway {
+            try? FileManager.default.removeItem(at: rosterURL)
+            try? FileManager.default.removeItem(at: directory.appending(path: "last"))
+        }
+        for item in items() where item.gateway == gateway { remove(item.id) }
     }
 
     // MARK: - Files

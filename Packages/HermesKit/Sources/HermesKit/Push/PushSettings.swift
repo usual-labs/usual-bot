@@ -36,6 +36,9 @@ public final class PushSettings {
     public private(set) var isConnected = false
     /// Chats and rooms this device doesn't hear about. Everything else notifies.
     public private(set) var muted: Set<Contact.ID> = []
+    /// The plugin seals which gateway sent each notification (0.5.0 and later, which say their
+    /// version). An older one's notifications can't be told apart from another gateway's.
+    public private(set) var tagsGateway = false
     /// Read when the gateway first meets this device. The app sets it.
     @ObservationIgnored public var currentChoices: @MainActor () -> Choices = { Choices() }
     /// A window has you, or the quick panel is open.
@@ -50,6 +53,9 @@ public final class PushSettings {
 
     private let auth: @MainActor () -> AuthSession?
     private let relay: @MainActor () -> PushRelay?
+    /// The gateway in use: its ID goes into what the plugin seals, and it says whether you want
+    /// notifications from it.
+    private let gateway: @MainActor () -> SavedGateway?
     private var lastNames: [String: String]?
     /// The chat last said to be in front; `.some(nil)` once "none" was said.
     private var reportedChat: Contact.ID??
@@ -61,9 +67,13 @@ public final class PushSettings {
     private static let path = "/api/plugins/usual-push"
     private static let log = Logger(subsystem: "UsualBot", category: "push")
 
-    init(auth: @escaping @MainActor () -> AuthSession?, relay: @escaping @MainActor () -> PushRelay?) {
+    init(
+        auth: @escaping @MainActor () -> AuthSession?, relay: @escaping @MainActor () -> PushRelay?,
+        gateway: @escaping @MainActor () -> SavedGateway? = { nil }
+    ) {
         self.auth = auth
         self.relay = relay
+        self.gateway = gateway
     }
 
     private struct Device: Codable, Sendable {
@@ -78,10 +88,13 @@ public final class PushSettings {
         var previews: Bool?
         var sound: Bool?
         var muted: [String]?
+        /// Which of this device's gateways this is (`SavedGateway.id`).
+        var gateway: String?
     }
 
     private struct Known: Decodable, Sendable {
         let devices: [Device]
+        let version: String?
     }
 
     private struct Done: Decodable, Sendable {}
@@ -94,10 +107,20 @@ public final class PushSettings {
             let mine = relay()?.registration.flatMap { registration in
                 known.devices.first { $0.id == registration.id }
             }
-            // A relay at a new address is told to the gateway again, choices and all.
-            isConnected = mine != nil && mine?.relay == relay()?.address?.absoluteString
-            muted = Set(mine?.muted ?? [])
+            tagsGateway = known.version != nil
             phase = .ready
+            if gateway()?.notifies == false {
+                // Turned off here: a device the gateway still has (a failed removal) goes now.
+                isConnected = false
+                if mine != nil { await forget(on: auth) }
+                return
+            }
+            // A relay at a new address is told to the gateway again, choices and all, and so is
+            // a device a newer plugin hasn't been told the gateway's ID.
+            isConnected =
+                mine != nil && mine?.relay == relay()?.address?.absoluteString
+                && (!tagsGateway || mine?.gateway == gateway()?.id)
+            muted = Set(mine?.muted ?? [])
         } catch GatewayError.http(status: 404, _) {
             phase = .notInstalled
         } catch {
@@ -108,7 +131,7 @@ public final class PushSettings {
 
     /// Gives the gateway this device: where to reach it, the keys to do so, and its choices.
     func connectIfNeeded() async {
-        guard phase == .ready, !isConnected, !isConnecting, !isDemo,
+        guard phase == .ready, !isConnected, !isConnecting, !isDemo, gateway()?.notifies != false,
             let relay = relay(), let address = relay.address, let registration = relay.registration,
             let auth = auth()
         else { return }
@@ -121,6 +144,7 @@ public final class PushSettings {
         device.platform = Self.platform
         device.sendKey = registration.sendKey
         device.sealKey = registration.sealKey.base64EncodedString()
+        device.gateway = gateway()?.id
         do {
             let saved = try await auth.json(
                 Device.self, path: "\(Self.path)/devices/\(registration.id)", method: "PUT", body: device)
@@ -209,6 +233,19 @@ public final class PushSettings {
         isReporting = false
     }
 
+    /// You left this gateway for another, so you're reading none of its chats: said straight away,
+    /// as the app stops reporting to it.
+    func reportNoneOpen(on auth: AuthSession) async {
+        guard !isDemo, let registration = relay()?.registration else { return }
+        do {
+            _ = try await auth.json(
+                Done.self, path: "\(Self.path)/presence", method: "PUT",
+                body: Presence(device: registration.id, chat: nil, names: nil))
+        } catch {
+            Self.log.error("Couldn't say no chat is open: \(AppModel.describe(error), privacy: .public)")
+        }
+    }
+
     /// Takes this device off the gateway, or it would keep hearing about a gateway it signed out of.
     func forget(on auth: AuthSession) async {
         guard !isDemo, let registration = relay()?.registration else { return }
@@ -223,6 +260,7 @@ public final class PushSettings {
         phase = .loading
         isConnected = false
         muted = []
+        tagsGateway = false
         lastNames = nil
         reportedChat = nil
     }
@@ -248,6 +286,7 @@ public final class PushSettings {
         func showDemo() {
             phase = .ready
             isConnected = true
+            tagsGateway = true
             isDemo = true
         }
     #endif

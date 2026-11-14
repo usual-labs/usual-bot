@@ -175,8 +175,13 @@ sign-in for apps that Usual Bot uses. If it's missing, update Hermes on the gate
    switch back to Usual Bot; the browser tab says you can close it.
 
 The app keeps your sign-in in the Keychain and refreshes it as it goes, so you won't sign in again
-unless the gateway ends your session. To switch gateways, sign out from the connection status at
-the bottom of the sidebar (on iPhone, Settings › your gateway).
+unless the gateway ends your session.
+
+**A second gateway.** Usual Bot signs in to two gateways at most and uses one at a time. Add the
+other from the connection status at the bottom of the sidebar (**Add Gateway…**), or on iPhone from
+**Settings › Add Gateway**; Cancel goes back to the one you were using. Switch from the same places.
+The gateway you leave disconnects, but keeps its sign-in, its chats on this device and, with the
+push plugin, its notifications. Signing out signs out of the gateway in use only.
 
 **Moving from the dashboard to the Webapp.** The Webapp has its own address, so sign out of the
 dashboard in Usual Bot and sign in again with the Webapp's address. Your Bots and chats are the same
