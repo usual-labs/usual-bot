@@ -218,6 +218,7 @@ struct SectionNameField: View {
     extension UTType {
         /// Declared in `Config/Info.plist`.
         fileprivate static let sidebarChat = UTType(exportedAs: "dev.usualbot.sidebar-chat")
+        fileprivate static let pinnedChat = UTType(exportedAs: "dev.usualbot.pinned-chat")
     }
 
     /// A chat on its way to another section.
@@ -226,6 +227,16 @@ struct SectionNameField: View {
 
         static var transferRepresentation: some TransferRepresentation {
             CodableRepresentation(contentType: .sidebarChat)
+        }
+    }
+
+    /// A pinned chat on its way to another place among the pinned chats. Its own type, so a section
+    /// doesn't light up for it.
+    struct PinnedDrag: Codable, Transferable {
+        let id: Contact.ID
+
+        static var transferRepresentation: some TransferRepresentation {
+            CodableRepresentation(contentType: .pinnedChat)
         }
     }
 #endif

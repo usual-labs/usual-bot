@@ -19,6 +19,17 @@
 				<string>public.data</string>
 			</array>
 		</dict>
+		<!-- A pinned chat dragged to another place among the pinned chats. -->
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>dev.usualbot.pinned-chat</string>
+			<key>UTTypeDescription</key>
+			<string>Usual Bot pinned chat</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+		</dict>
 	</array>
 	<!-- usualbot://chat/<id>: what ntfy and Pushover notifications open (Integrations/hermes-push). -->
 	<key>CFBundleURLTypes</key>

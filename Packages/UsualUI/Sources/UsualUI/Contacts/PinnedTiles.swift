@@ -2,29 +2,78 @@ import HermesKit
 import SwiftUI
 
 /// The pinned chats at the top of the sidebar, as in Grok: a large avatar over the name for each,
-/// in centred rows. A tile shows no preview, so its badge says what's waiting.
+/// in centred rows, in the order you put them. A tile shows no preview, so its badge says what's
+/// waiting. On the Mac a tile dragged onto another takes its place.
 struct PinnedTiles<Actions: View>: View {
     let contacts: [Contact]
     /// Every contact by ID, to draw a room's members.
     let byID: [Contact.ID: Contact]
     @Binding var selection: Contact.ID?
+    /// Moves the first chat to where the second is.
+    var move: (Contact.ID, Contact.ID) -> Void = { _, _ in }
     /// A tile's context menu.
     @ViewBuilder let actions: (Contact) -> Actions
+    #if os(macOS)
+        /// The tile a pinned chat is being dragged over.
+        @State private var dropTarget: Contact.ID?
+    #endif
 
     var body: some View {
         TileRows(minWidth: PinnedTile.minWidth, maxWidth: PinnedTile.maxWidth, spacing: PinnedTile.spacing) {
             ForEach(contacts) { contact in
-                PinnedTile(
-                    contact: contact, members: ContactList.members(of: contact, in: byID),
-                    isSelected: contact.id == selection
-                ) {
-                    selection = contact.id
-                }
-                .contextMenu { actions(contact) }
+                tile(contact)
             }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Pinned"))
+    }
+
+    @ViewBuilder private func tile(_ contact: Contact) -> some View {
+        let members = ContactList.members(of: contact, in: byID)
+        #if os(macOS)
+            let isTarget = dropTarget == contact.id
+        #else
+            let isTarget = false
+        #endif
+        let tile = PinnedTile(
+            contact: contact, members: members, isSelected: contact.id == selection || isTarget
+        ) {
+            selection = contact.id
+        }
+        .contextMenu { actions(contact) }
+        #if os(macOS)
+            tile
+                .draggable(PinnedDrag(id: contact.id)) {
+                    AgentOrRoomAvatar(contact: contact, members: members, size: 32)
+                }
+                .dropDestination(for: PinnedDrag.self) { drags, _ in
+                    guard let drag = drags.first, drag.id != contact.id else { return false }
+                    move(drag.id, contact.id)
+                    return true
+                } isTargeted: { targeted in
+                    if targeted {
+                        dropTarget = contact.id
+                    } else if dropTarget == contact.id {
+                        dropTarget = nil
+                    }
+                }
+        #else
+            tile
+        #endif
+    }
+}
+
+/// A Bot's or a room's picture.
+private struct AgentOrRoomAvatar: View {
+    let contact: Contact
+    let members: [Contact]
+    let size: CGFloat
+
+    var body: some View {
+        switch contact.kind {
+        case .agent: AgentAvatar(contact: contact, size: size)
+        case .room: RoomAvatar(members: members, size: size)
+        }
     }
 }
 
@@ -75,11 +124,8 @@ private struct PinnedTile: View {
         .help(contact.name)
     }
 
-    @ViewBuilder private var avatar: some View {
-        switch contact.kind {
-        case .agent: AgentAvatar(contact: contact, size: Self.avatarSize)
-        case .room: RoomAvatar(members: members, size: Self.avatarSize)
-        }
+    private var avatar: some View {
+        AgentOrRoomAvatar(contact: contact, members: members, size: Self.avatarSize)
     }
 
     // Grok's sizes: the phone's tiles are much the larger.

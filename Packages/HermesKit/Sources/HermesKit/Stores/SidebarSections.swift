@@ -53,8 +53,10 @@ public struct SidebarBlock: Identifiable, Hashable, Sendable {
     /// The sidebar's groups for `contacts`: the pinned ones if any, each of `sections`, then what's
     /// left, including anything filed under a section this device doesn't have. With no sections
     /// what isn't pinned is one block, and the sidebar shows no headings.
-    public static func blocks(for contacts: [Contact], in sections: [ContactSection]) -> [SidebarBlock] {
-        let ordered = contacts.sorted(by: Contact.rosterOrder)
+    public static func blocks(
+        for contacts: [Contact], in sections: [ContactSection], pinOrder: [Contact.ID] = []
+    ) -> [SidebarBlock] {
+        let ordered = ordered(contacts, pinOrder: pinOrder)
         let pinned = ordered.filter(\.isPinned)
         let unpinned = ordered.filter { !$0.isPinned }
         let known = Set(sections.map(\.id))
@@ -66,12 +68,29 @@ public struct SidebarBlock: Identifiable, Hashable, Sendable {
         if !rest.isEmpty || sections.isEmpty { blocks.append(SidebarBlock(section: nil, contacts: rest)) }
         return blocks
     }
+
+    /// Sidebar order: the pinned chats where they were put, then the rest by their newest message
+    /// (`Contact.rosterOrder`). A pinned chat not in `pinOrder` yet follows those that are.
+    public static func ordered(_ contacts: [Contact], pinOrder: [Contact.ID]) -> [Contact] {
+        let place = Dictionary(pinOrder.enumerated().map { ($1, $0) }, uniquingKeysWith: min)
+        return contacts.sorted { lhs, rhs in
+            if lhs.isPinned, rhs.isPinned {
+                switch (place[lhs.id], place[rhs.id]) {
+                case let (left?, right?) where left != right: return left < right
+                case (.some, nil): return true
+                case (nil, .some): return false
+                default: break
+                }
+            }
+            return Contact.rosterOrder(lhs, rhs)
+        }
+    }
 }
 
 /// How the sidebar is arranged. As in the official app, a Bot's section and whether it's pinned are
 /// saved on the Bot, so they follow you between devices and clients, while the list of sections,
-/// their order and what's folded belong to this device, and so do a room's section and pin. A
-/// section made elsewhere is rebuilt here from the Bots filed under it.
+/// their order, what's folded and the order of the pinned chats belong to this device, and so do a
+/// room's section and pin. A section made elsewhere is rebuilt here from the Bots filed under it.
 @MainActor
 @Observable
 public final class SidebarSections {
@@ -83,6 +102,10 @@ public final class SidebarSections {
     public private(set) var folded: Set<String> = []
     /// What went wrong saving a change, which has been undone. Clear it once shown.
     public var problem: String?
+    /// The pinned chats in the order they were put in. A new pin goes last, and so does a Bot first
+    /// seen pinned, from another device or before this order was kept. It can hold chats that
+    /// aren't listed right now, such as a hidden Bot, which come back to their place.
+    public private(set) var pinOrder: [Contact.ID] = []
 
     private var roomSections: [Contact.ID: String] = [:]
     private var pinnedRooms: Set<Contact.ID> = []
@@ -120,6 +143,8 @@ public final class SidebarSections {
         var roomSections: [Contact.ID: String]
         /// Absent in what a version before pinning stored.
         var pinnedRooms: Set<Contact.ID>?
+        /// Absent in what a version before ordering pins stored.
+        var pinOrder: [Contact.ID]?
     }
 
     init(
@@ -152,7 +177,12 @@ public final class SidebarSections {
 
     /// The sidebar's groups for contacts already `placed(_:)` (`SidebarBlock.blocks`).
     public func blocks(for contacts: [Contact]) -> [SidebarBlock] {
-        SidebarBlock.blocks(for: contacts, in: sections)
+        SidebarBlock.blocks(for: contacts, in: sections, pinOrder: pinOrder)
+    }
+
+    /// `contacts` in sidebar order, without sections (`SidebarBlock.ordered`).
+    public func ordered(_ contacts: [Contact]) -> [Contact] {
+        SidebarBlock.ordered(contacts, pinOrder: pinOrder)
     }
 
     public func isFolded(_ blockID: String) -> Bool {
@@ -188,22 +218,48 @@ public final class SidebarSections {
         }
     }
 
-    /// Pins `contact` above the sections, or with `false` puts it back where it was filed.
+    /// Pins `contact` after the other pinned chats, or with `false` puts it back where it was filed.
     public func setPinned(_ isPinned: Bool, _ contact: Contact) {
+        let id = contact.id
+        let place = pinOrder.firstIndex(of: id)
         if contact.kind == .agent {
             guard contact.isPinned != isPinned else { return }
-            pendingPins[contact.id] = Pending(value: isPinned)
-            let profile = contact.details?.profile ?? contact.id
+            pendingPins[id] = Pending(value: isPinned)
+            arrange(id, pinned: isPinned)
+            let profile = contact.details?.profile ?? id
             enqueue { [savePin] in
                 try await savePin(profile, isPinned)
             } finished: { [weak self] error in
-                guard let self, pendingPins[contact.id]?.value == isPinned else { return }
-                if error == nil { pendingPins[contact.id]?.readsLeft = 2 } else { pendingPins[contact.id] = nil }
+                guard let self, pendingPins[id]?.value == isPinned else { return }
+                if error == nil {
+                    pendingPins[id]?.readsLeft = 2
+                } else {
+                    pendingPins[id] = nil
+                    arrange(id, pinned: !isPinned, at: place)
+                }
             }
-        } else if isPinned != pinnedRooms.contains(contact.id) {
-            if isPinned { pinnedRooms.insert(contact.id) } else { pinnedRooms.remove(contact.id) }
-            persist()
+        } else if isPinned != pinnedRooms.contains(id) {
+            if isPinned { pinnedRooms.insert(id) } else { pinnedRooms.remove(id) }
+            arrange(id, pinned: isPinned)
         }
+    }
+
+    /// Moves the pinned chat `id` to where `target` is, among the pinned chats `shown` in order.
+    public func movePinned(_ id: Contact.ID, to target: Contact.ID, among shown: [Contact.ID]) {
+        var shown = shown
+        guard let from = shown.firstIndex(of: id), let to = shown.firstIndex(of: target), from != to else { return }
+        shown.remove(at: from)
+        shown.insert(id, at: to)
+        let moved = Set(shown)
+        pinOrder = shown + pinOrder.filter { !moved.contains($0) }
+        persist()
+    }
+
+    /// Adds `id` to the pinned order, at `place` or last, or takes it out.
+    private func arrange(_ id: Contact.ID, pinned: Bool, at place: Int? = nil) {
+        pinOrder.removeAll { $0 == id }
+        if pinned { pinOrder.insert(id, at: min(place ?? pinOrder.count, pinOrder.count)) }
+        persist()
     }
 
     /// Renames `section`, and re-saves the name on the Bots in it. Blank keeps the old name.
@@ -249,10 +305,23 @@ public final class SidebarSections {
             if pending[contact.id]?.settles(with: reported) == true { pending[contact.id] = nil }
             if pendingPins[contact.id]?.settles(with: contact.isPinned) == true { pendingPins[contact.id] = nil }
         }
-        let adopted = Self.adopting(contacts.map(placed), into: sections)
-        guard adopted != sections else { return }
+        let shown = contacts.map(placed)
+        let adopted = Self.adopting(shown, into: sections)
+        let order = Self.pinOrder(pinOrder, for: shown)
+        guard adopted != sections || order != pinOrder else { return }
         sections = adopted
+        pinOrder = order
         persist()
+    }
+
+    /// `order` without the chats `contacts` shows unpinned, and with those it shows pinned that
+    /// aren't in it yet added last, most recent first, as they were listed before they had a place.
+    static func pinOrder(_ order: [Contact.ID], for contacts: [Contact]) -> [Contact.ID] {
+        let unpinned = Set(contacts.filter { !$0.isPinned }.map(\.id))
+        var order = order.filter { !unpinned.contains($0) }
+        let placed = Set(order)
+        order += contacts.filter { $0.isPinned && !placed.contains($0.id) }.sorted(by: Contact.rosterOrder).map(\.id)
+        return order
     }
 
     /// `sections`, plus any its Bots name that aren't there yet, and with the name its Bots give
@@ -281,12 +350,17 @@ public final class SidebarSections {
     func renameAgent(from old: Contact.ID, to new: Contact.ID) {
         if let entry = pending.removeValue(forKey: old) { pending[new] = entry }
         if let entry = pendingPins.removeValue(forKey: old) { pendingPins[new] = entry }
+        if pinOrder.contains(old) {
+            pinOrder = pinOrder.filter { $0 != new }.map { $0 == old ? new : $0 }
+            persist()
+        }
     }
 
-    /// Drops the unsaved move and pin of a Bot that's gone.
+    /// Drops the unsaved move and pin of a Bot that's gone, and its place among the pinned chats.
     func forget(_ id: Contact.ID) {
         pending[id] = nil
         pendingPins[id] = nil
+        if pinOrder.contains(id) { arrange(id, pinned: false) }
     }
 
     // MARK: - Saving
@@ -337,6 +411,7 @@ public final class SidebarSections {
         folded = stored?.folded ?? []
         roomSections = stored?.roomSections ?? [:]
         pinnedRooms = stored?.pinnedRooms ?? []
+        pinOrder = stored?.pinOrder ?? []
     }
 
     /// Forgets everything on signing out.
@@ -347,6 +422,7 @@ public final class SidebarSections {
         folded = []
         roomSections = [:]
         pinnedRooms = []
+        pinOrder = []
         pending = [:]
         pendingPins = [:]
         problem = nil
@@ -355,7 +431,8 @@ public final class SidebarSections {
     private func persist() {
         guard let storageKey else { return }
         let stored = Stored(
-            sections: sections, folded: folded, roomSections: roomSections, pinnedRooms: pinnedRooms)
+            sections: sections, folded: folded, roomSections: roomSections, pinnedRooms: pinnedRooms,
+            pinOrder: pinOrder)
         defaults.set(try? JSONEncoder().encode(stored), forKey: storageKey)
     }
 }

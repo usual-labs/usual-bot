@@ -115,7 +115,7 @@
                     section: Self.product, isPinned: true),
                 agent(
                     "scribe", "Scribe", preview: "Two headline options for the launch post", minutesAgo: 95,
-                    about: "Drafts posts, release notes and emails in the house style."),
+                    about: "Drafts posts, release notes and emails in the house style.", isPinned: true),
                 agent(
                     "ops", "Ops", preview: Self.opsTask, minutesAgo: 1,
                     about: "Watches servers, backups and costs, and reports each morning.",

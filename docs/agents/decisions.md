@@ -407,6 +407,14 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   chats are filed under it.
 - **Search and the rail have no tiles.** They list pinned chats first as rows; a search marks them
   with a pin, and the rail draws a line under them.
+- **Pinned chats stay where you put them; everything else follows its newest message.** The order
+  is `SidebarSections.pinOrder`, kept on the device like the order of sections: the official app
+  saves no order, and writing one to each Bot would mean a write per Bot for every move. A new
+  pin goes last, and a Bot first seen pinned (from another device, or from before the order was
+  kept) joins the end by recency. Every list that puts pinned chats first (⌘1 to ⌘9, Quick
+  Message, the share sheet, search) reads the same order. Reordering is a drag on the Mac and
+  Move Left and Move Right in the tile's menu everywhere; the rail and search, which show pinned
+  chats as rows, don't reorder.
 
 ## Search
 
