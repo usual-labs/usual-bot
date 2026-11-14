@@ -29,6 +29,9 @@ struct MessageBox: View {
     var startCall: (() -> Void)?
     /// While a call runs it has the microphone, so the box offers no mic or call.
     var inCall = false
+    /// Chats: the Bot whose speech-to-text hears gateway dictation. Rooms leave it `nil`: the
+    /// gateway's own profile, whatever the routing.
+    var transcriptionProfile: String?
     /// Chats only: skills and commands to offer after `/`.
     var commands: SlashCommands?
     /// Chats only: the model, thinking and context controls the iPhone shows while you type.
@@ -57,6 +60,8 @@ struct MessageBox: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.conversationTaps) private var conversationTaps
     @State private var dictation = Dictation()
+    @Environment(\.transcriber) private var transcriber
+    @AppStorage(DictationSettings.engineKey) private var dictationEngine = ""
     /// iPhone: the gauge's level picker is open above the box.
     @State private var pickingLevel = false
     /// iPhone: the model sheet is open.
@@ -154,10 +159,10 @@ struct MessageBox: View {
                     if let chat { ModelSheet(chat: chat) }
                 }
             #endif
-            .onDisappear { dictation.stop() }
+            .onDisappear { dictation.leave() }
             // The next conversation gets its own text, and none of what was open over the last one.
             .onChange(of: conversation) {
-                dictation.stop()
+                dictation.leave()
                 dismissedText = nil
                 pickingLevel = false
                 selection = TextSelection(insertionPoint: text.endIndex)
@@ -263,7 +268,11 @@ struct MessageBox: View {
                 case .denied(let message):
                     DictationProblem(message: message, showsSettings: true, dismiss: dictation.dismissProblem)
                 case .failed(let message):
-                    DictationProblem(message: message, showsSettings: false, dismiss: dictation.dismissProblem)
+                    DictationProblem(
+                        message: message, showsSettings: false, useOnDevice: useOnDevice,
+                        dismiss: dictation.dismissProblem)
+                case .transcribing:
+                    DictationTranscribing()
                 default:
                     EmptyView()
                 }
@@ -414,17 +423,19 @@ struct MessageBox: View {
                 .controlSize(.small)
                 .frame(width: buttonSize, height: buttonSize)
                 .accessibilityLabel(Text("Uploading"))
-        } else if isRunning, isEmpty, !hasAttachments, !dictation.isListening {
+        } else if isRunning, isEmpty, !hasAttachments, !dictation.isActive {
             RoundButton(systemImage: "stop.fill", label: stopLabel, prominent: false, action: stop)
-        } else if !inCall, dictation.isListening || (isEmpty && !hasAttachments) {
+        } else if !inCall, dictation.isActive || (isEmpty && !hasAttachments) {
             // An empty box offers the mic; in a chat, the call button beside it holds the spot
             // Send takes over once there's something to send.
             HStack(spacing: 6) {
-                MicButton(dictation: dictation) {
-                    dictation.start(after: text) { text = $0 }
+                MicButton(dictation: dictation, throughGateway: dictatesThroughGateway) {
+                    dictation.start(
+                        after: text, transcriber: dictatesThroughGateway ? transcriber : nil,
+                        profile: transcriptionProfile, current: { text }, update: { text = $0 })
                     focused = true
                 }
-                if let startCall, !dictation.isListening, !isRunning {
+                if let startCall, !dictation.isActive, !isRunning {
                     CallStartButton(action: startCall)
                 }
             }
@@ -447,6 +458,15 @@ struct MessageBox: View {
 
     private var hasAttachments: Bool { attaching?.attachments.isEmpty == false }
 
+    /// "Use On-device", for a recording the gateway couldn't transcribe.
+    private var useOnDevice: (() -> Void)? {
+        guard dictation.canUseOnDevice else { return nil }
+        let dictation = dictation
+        return { dictation.useOnDevice() }
+    }
+
+    private var dictatesThroughGateway: Bool { dictationEngine == DictationSettings.gateway && transcriber != nil }
+
     private var isEmpty: Bool { text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     /// New text for the box with the cursor after it, so you type on where the pick or prefill
@@ -466,6 +486,8 @@ struct MessageBox: View {
     }
 
     private var canSubmit: Bool {
+        // Gateway words are still to come; sending now would leave them for the next message.
+        if dictation.holdsSending { return false }
         if let attaching, !attaching.attachments.isEmpty { return attaching.canSend }
         return canSend && !isEmpty
     }
@@ -479,6 +501,11 @@ struct MessageBox: View {
             return
         }
         if pickHighlighted() == .handled { return }
+        // Return while the gateway listens stops the recording; the words then arrive to send.
+        if dictation.holdsSending {
+            if dictation.isListening { dictation.stop() }
+            return
+        }
         guard canSubmit else { return }
         // Sending ends dictation; words still arriving would land in the next message.
         dictation.stop()

@@ -15,7 +15,7 @@ RootView owns top-level routing; ContactsSplitView handles selection; ContactLis
 - **Message actions.** The Mac's 104 pt hover slot is always reserved so nothing moves, and the bar stays up 250 ms after the pointer leaves so it can reach the bar. Undo asks no confirmation; Edit and Try Again ask only when `RewindCost.needsConfirmation`. VoiceOver can't grey an action out, so those three are left out of its actions while they can't run, where the menus grey them with the reason.
 - **`HermesKit.BackgroundTask` is spelled out** because SwiftUI has its own `BackgroundTask`.
 - **Calls.** `LiveCall`'s web view stays on screen at 1 pt because WebKit only records and plays from a visible web view. The call ends when the app goes to the background.
-- **Dictation.** Real speech on iPhone hasn't been tried.
+- **Dictation.** Real speech on iPhone hasn't been tried. Gateway dictation (`DictationGateway.swift`) records with its own `AVAudioEngine` tap in `GatewayRecording`, not through `SpeechSession`.
 - **Resources.** `Image(_:bundle:)` reads asset catalogs only, so loose files load through `AvatarArt.resource(_:)`.
 
 Source anchors: `Package.swift`, `Sources/UsualUI/RootView.swift`, `Sources/UsualUI/Theme/Theme.swift`, `Sources/UsualUI/Thread/Composer.swift`, `Sources/UsualUI/Thread/ApprovalCard.swift`, `Sources/UsualUI/Room/RoomPane.swift`.

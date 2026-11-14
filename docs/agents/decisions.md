@@ -173,6 +173,26 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   dependency. The app, not the page, exchanges the SDP offer, so neither the sign-in nor the OpenAI
   key reaches the page.
 - Choosing GPT-Live where the gateway can't run it shows the gateway's reason rather than falling back.
+- **Gateway dictation is opt-in, one choice per device** (Settings › Voice › Dictation). On-device
+  stays the default, because Gateway sends your voice off the device and may cost money. Each chat
+  uses its Bot's profile; a room uses the gateway's own (no `profile`), since a room has no owner
+  and its lead changes with routing.
+- **The app never calls `/api/audio/voice-config`.** Off the Webapp it returns the STT provider's
+  API key, and on the Webapp it names neither the provider nor whether STT is on. So the app
+  always tries `/api/audio/transcribe-stream` first (a gateway that can't stream answers an `error`
+  frame at once) and uploads the recording to `/api/audio/transcribe` when the stream gives no
+  final words, as Hermes's own app does. The recording is always made on the device, as 16 kHz
+  AAC (`.m4a`, about 8 times smaller than WAV; faster-whisper and the cloud providers take it,
+  and a `local_command` provider needs ffmpeg on the gateway).
+- **A gateway failure never falls back on its own.** The box says why, with **Use On-device**,
+  which runs Apple's recognizer on the kept recording. "STT is disabled" and "No STT provider"
+  are reworded; FastAPI's bare `Not Found` means a Hermes without the route.
+- **Sending waits for gateway words,** so a message can't go out without what you said; Return
+  while it listens stops the recording. A recording stops by itself after 10 minutes. Leaving the
+  conversation lets its words finish into that conversation's draft; a failure then is dropped.
+- The stream opens with the ordinary `/api/auth/ws-ticket` ticket, not the Webapp's named
+  `/api/webapp/socket-ticket` one: Hermes accepts an unnamed ticket for every socket but the host
+  terminal (source finding). If it's refused, the recording is uploaded.
 
 ## Rooms
 
@@ -691,6 +711,10 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
 - Agent defaults against a live gateway; they're left out of shakedowns because they change an
   agent's default model everywhere.
 - iPhone on a real device beyond sign-in: calls, dictation and GPT-Live audio routing.
+- Gateway dictation has run only against fakes (`GatewayTranscriptionTests`) and in the demo, which
+  fakes the upload. Not run: any real gateway (upload, live stream, `stt-lease`, the error texts),
+  the unnamed ticket opening `transcribe-stream`, the legacy dashboard, a 10-minute recording, and
+  **Use On-device** on a real recording.
 - Notifications through the relay were run on the developer's gateway on 2026-11-05: sealed replies
   reached a Mac and an iPhone and opened in the extension, an open chat on either kept both quiet,
   and muting a Bot on one device left the other hearing it. Not yet run: a room approval, a `/bg`
