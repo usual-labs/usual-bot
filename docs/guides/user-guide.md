@@ -555,9 +555,15 @@ General › Login Items & Extensions › Sharing.
 
 - Pick a Bot or room and add a note if you like, then **Send**. The list is the sidebar's: pinned
   first, hidden Bots left out. It starts on the one you last shared to.
-- Usual Bot itself sends it, not the share sheet, so it goes the next time the app is open and
-  connected: within a few seconds if it's already running, as it usually is on the Mac, and
-  otherwise when you next open it. The share sheet says **Waiting to send**.
+- On iPhone it goes straight away: the sheet says **Sent** and closes, and the reply comes like any
+  other. If it can't go from the share sheet, the sheet says **Waiting to send** and why, and Usual
+  Bot sends it the next time it's open. That happens when your gateway is reached through Usual
+  Bot's built-in Tailscale, which runs only inside the app; when it's for a room, or files over 10
+  MB; when the gateway can't be reached; and when the Bot is in the middle of answering.
+- On the Mac, Usual Bot sends it: within a few seconds if it's running, as it usually is, and
+  otherwise when you next open it.
+- If the share sheet couldn't tell whether files reached the chat, it says so. Check the chat
+  before you use **Try Again** below the chat list, so they don't arrive twice.
 - Until it's sent, the item shows below the chat list, saying where it's going. It waits while
   you're offline or while that Bot is still answering, then goes by itself and appears in the chat
   as your message. **Don't Send** deletes it.

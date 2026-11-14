@@ -103,6 +103,8 @@ struct UsualBotApp: App {
                             Task { await AgentNotifications.shared.lookForNews() }
                         }
                     }
+                    // The share extension sends for you only without it.
+                    .onChange(of: tailscale.isOn, initial: true) { _, isOn in model.usesBuiltInTailscale = isOn }
                 #endif
         }
         #if os(iOS)

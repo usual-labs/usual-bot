@@ -155,7 +155,7 @@ struct SharedSendingTests {
     private let hermes = Contact(id: "hermes", name: "Hermes", chatID: "stored-1")
 
     /// A signed-in model at the front and online, with a shared folder, and the gateway its chats talk to.
-    private func model(_ folder: ShareFolder) async throws -> (AppModel, ScriptedGateway) {
+    private func model(_ folder: ShareFolder, canonical: Bool = false) async throws -> (AppModel, ScriptedGateway) {
         let store = MemoryTokenStore()
         try store.save(
             TokenSet(
@@ -175,8 +175,14 @@ struct SharedSendingTests {
         let gateway = ScriptedGateway()
         let channel = JSONRPCChannel(socket: gateway.socket)
         await channel.start()
+        if canonical {
+            gateway.socket.deliver(
+                #"{"jsonrpc":"2.0","method":"event","params":{"type":"gateway.ready","payload":{"session_authority":true}}}"#
+            )
+            _ = try await channel.waitUntilReady()
+        }
         model.channel = channel
-        model.link = .online(.legacy)
+        model.link = .online(canonical ? .canonical : .legacy)
         model.rosterReads = 1
         model.contacts = [hermes]
         return (model, gateway)
@@ -229,6 +235,31 @@ struct SharedSendingTests {
         #expect(!FileManager.default.fileExists(atPath: folder.container.fileURL("report.pdf", of: item).path))
     }
 
+    /// The share extension may have sent it already and not heard back; under the item's own ID
+    /// the gateway takes it once.
+    @Test func onTheGatewaysOwnListenerAnItemGoesUnderItsOwnID() async throws {
+        let folder = ShareFolder()
+        defer { folder.remove() }
+        let (model, gateway) = try await model(folder, canonical: true)
+        let thread = model.thread(for: hermes)
+        model.openThread(for: hermes)
+        _ = try await gateway.answer(
+            0, method: "session.resume",
+            result: ["session_id": "live-1", "running": false, "display_messages": [], "pending": []])
+        try await waitUntilOnMain { thread.isAttached }
+        let item = try share(folder, text: "Hello", to: hermes)
+
+        let sending = Task { await model.sendShared() }
+        try await waitUntil { gateway.socket.sent.contains { $0["method"] == "prompt.submit" } }
+        let index = try #require(gateway.socket.sent.firstIndex { $0["method"] == "prompt.submit" })
+        let submit = try await gateway.answer(index, method: "prompt.submit", result: ["status": "queued"])
+        await sending.value
+
+        #expect(submit["submission_id"] == .string(item.id.uuidString))
+        #expect(submit["text"] == "Hello")
+        #expect(model.shared.items.isEmpty)
+    }
+
     @Test func aFailedUploadKeepsTheItemWithTheReasonAndTryAgainSendsIt() async throws {
         let folder = ShareFolder()
         defer { folder.remove() }
@@ -276,8 +307,9 @@ struct SharedSendingTests {
         #expect(gateway.socket.sent.count == 1)
 
         thread.state.endTurnLocally()
-        await model.sendShared()
+        let sending = Task { await model.sendShared() }
         _ = try await gateway.answer(1, method: "prompt.submit", result: ["status": "streaming"])
+        await sending.value
         #expect(model.shared.items.isEmpty)
     }
 
@@ -355,6 +387,11 @@ struct SharedSendingTests {
 
         let roster = try #require(folder.container.roster())
         #expect(roster.gateway == testGateway.fileName)
+        // So the extension can send itself, unless the app reaches it through built-in Tailscale.
+        #expect(roster.address == testGateway)
+        #expect(roster.usesBuiltInTailscale == false)
+        model.usesBuiltInTailscale = true
+        #expect(folder.container.roster()?.usesBuiltInTailscale == true)
         #expect(
             roster.contacts == [
                 Contact(id: "forge", name: "Forge", isPinned: true), Contact(id: "atlas", name: "Atlas"),

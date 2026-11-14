@@ -65,7 +65,7 @@ struct Composer: View {
             stopLabel: stopLabel,
             attaching: AttachmentSending(
                 attachments: $attachments, canSend: thread.canSendAttachments, isUploading: thread.isUploading,
-                send: thread.send(_:attachments:)),
+                send: { await thread.send($0, attachments: $1) }),
             quotes: $quotes, editing: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } }),
             // The reason an earlier message can't be replaced yet, in place of what would go.
             editingLabel: edited.map {

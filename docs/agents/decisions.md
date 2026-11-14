@@ -585,20 +585,35 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
 
 ## Sharing from other apps
 
-- **The share extension hands the item to the app; it doesn't send.** It writes what was shared
-  into the App Group folder (`ShareContainer`) and the app sends it through the chat's ordinary
-  send (`AppModel.sendShared`). Sending from the extension was ruled out for three reasons. The
-  iPhone's built-in Tailscale device lives in the app (state in its Application Support, one node
-  per state folder, a Go runtime in a process iOS holds to about 120 MB), so an extension couldn't
-  reach a tailnet gateway unless the Tailscale app's VPN happened to be on. The sign-in sits in the
-  app's own keychain group and its refresh token rotates: a second process refreshing it could sign
-  the app out. And a send is a socket handshake, a session resume, an upload at up to 50 MB as
-  base64 and a turn, inside an extension's time limit, with nowhere to show a failure afterwards.
-- **Nothing opens the app.** iOS gives a share extension no supported way to open its app, so the
-  extension says "Waiting to send" and the item goes the next time the app is open and online:
-  after each roster read (every 5 s) and when the app comes to the front. Only in the foreground:
-  a background check-in is cut off after two roster reads, which would turn a slow upload into a
-  failure.
+- **On iPhone the extension sends itself when it can; otherwise the app does.** Every item is
+  first written to the App Group folder (`ShareContainer`). `ShareSender` then sends it from the
+  extension and deletes it, and the sheet says Sent and closes itself; the reply arrives like any
+  other. It leaves the item for the app (`AppModel.sendShared`), saying why, when:
+  - the app reaches a tailnet address through its built-in Tailscale. That device lives in the app
+    (state in its Application Support, one node per state folder, a Go runtime in a process iOS
+    holds to about 120 MB), so only the Tailscale app's VPN or a non-tailnet address works here;
+  - it's a room (`groups.send` goes through the room service the app drives), or files over 10 MB
+    in all: a file goes as base64 in a JSON frame, and an extension gets about 120 MB;
+  - the gateway is the dashboard socket, which can't tell a retry from a second message;
+  - the gateway doesn't answer within 15 s, or the Bot is answering or asking something, where a
+    message would steer the reply or answer the question.
+- **Sent twice is ruled out by the item's ID.** Both the extension and the app send an item with
+  its UUID as `submission_id`, and the gateway answers a repeat with the first receipt. Text the
+  extension didn't hear back about simply waits for the app. Files can't be retried that way (an
+  image is staged before the message, and a staged image would ride along with the next one), so
+  before uploading the extension marks the item failed with "may be in the chat already"; it
+  clears only when the send is confirmed. The app then shows it with Try Again and Delete.
+- **The sign-in is shared through the App Group's keychain access group, on iPhone only.**
+  `KeychainTokenStore.forApp()` moves the app's existing item there the first time it reads it.
+  Refresh tokens rotate and a replayed one revokes the sign-in, so every renewal, in either
+  process, holds `RefreshLock` (`flock` on a file in the group) and first adopts a newer pair the
+  other process stored (`AuthSession.performRefresh`). The Mac's sign-in is in the file-based
+  keychain, whose items trust only the app that made them, so the extension would ask for the login
+  password: on the Mac the app always sends, which it does within seconds when it's running.
+- **Nothing opens the app.** iOS gives a share extension no supported way to open its app, so an
+  item left for the app goes the next time the app is open and online: after each roster read
+  (every 5 s) and when the app comes to the front. Only in the foreground: a background check-in is
+  cut off after two roster reads, which would turn a slow upload into a failure.
 - **An item is deleted only once it's in the chat.** It's shown below the chat list until then
   (`SharedItemsBanner`). It waits, without failing, while offline, while the chat loads, while a
   reply runs (a message then would steer the turn) and while a question is open that the message
@@ -607,8 +622,9 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   puts the text back in the room's message box.
 - **Rooms take shared text and links only,** like the room's message box: `groups.send` has no
   attachments here. The picker greys a room out when files are shared.
-- **The folder holds as little as the picker needs:** names, pins, colours and pictures, no
-  previews or profile details, in a roster keyed by a hash of the gateway address. Items carry that
+- **The folder holds as little as the picker and the send need:** names, pins, colours, pictures
+  and each Bot's chat ID, the gateway's address and whether built-in Tailscale is on; no previews or
+  profile details. The roster is keyed by a hash of the gateway address. Items carry that
   key, so another sign-in (or the demo) leaves them alone. Sign-out deletes the whole folder. Files
   are written with complete protection and left out of backups.
 - **The demo leaves the folder alone** unless started with `USUALBOT_DEMO_SHARE=1` or
@@ -662,6 +678,10 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   wasn't made), a signed build on an iPhone, a file from Files, a send to a real gateway (the
   upload and `prompt.submit` ran against the test fake only), VoiceOver itself (the labels were
   read from the accessibility tree), and `scripts/testflight.sh` with the two new profiles.
+- The extension sending itself ran only against the scripted gateway in `ShareSenderTests`. Not
+  run: a signed build on an iPhone, moving an existing sign-in into the shared keychain group, the
+  two processes renewing at once, whether iOS asks the extension for Local Network access to a
+  gateway on the home network, and the extension's memory with a 10 MB file.
 - Goals ran against a throwaway Hermes 0.23.1 gateway with a stand-in model and a stand-in judge,
   from a script on its socket (`canonical-protocol.md`), and in the app only in the demo. Not run:
   the app itself on a real gateway; anything on the dashboard, whose goal calls and events are

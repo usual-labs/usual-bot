@@ -36,12 +36,22 @@ public struct ShareRoster: Codable, Equatable, Sendable {
     public var hidden: [Contact]
     /// Bots' own pictures, by contact ID.
     public var pictures: [Contact.ID: Data]
+    /// Where the gateway is, so the extension can send to it itself (`ShareSender`). `nil` in a
+    /// roster an older version of the app wrote.
+    public var address: GatewayAddress?
+    /// The app reaches the gateway through its built-in Tailscale, which the extension can't use.
+    public var usesBuiltInTailscale: Bool?
 
-    public init(gateway: String, contacts: [Contact], hidden: [Contact] = [], pictures: [Contact.ID: Data] = [:]) {
+    public init(
+        gateway: String, contacts: [Contact], hidden: [Contact] = [], pictures: [Contact.ID: Data] = [:],
+        address: GatewayAddress? = nil, usesBuiltInTailscale: Bool = false
+    ) {
         self.gateway = gateway
         self.contacts = contacts
         self.hidden = hidden
         self.pictures = pictures
+        self.address = address
+        self.usesBuiltInTailscale = usesBuiltInTailscale
     }
 
     /// The Bots in a room, for its picture.
@@ -52,10 +62,10 @@ public struct ShareRoster: Codable, Equatable, Sendable {
 }
 
 extension Contact {
-    /// What the share extension needs to list a contact: no preview, activity or profile details,
-    /// so conversations stay out of the shared folder.
+    /// What the share extension needs to list a contact and open its chat: no preview, activity or
+    /// profile details, so conversations stay out of the shared folder.
     var forSharing: Contact {
-        Contact(id: id, name: name, kind: kind, tint: tint, isPinned: isPinned, picture: picture)
+        Contact(id: id, name: name, kind: kind, tint: tint, isPinned: isPinned, chatID: chatID, picture: picture)
     }
 }
 
@@ -73,11 +83,18 @@ public struct ShareContainer: Sendable {
     /// on the Mac one signed to run locally, where asking for the folder would only raise the
     /// system's question about another app's data.
     public static func appGroup(bundle: Bundle = .main) -> ShareContainer? {
-        guard let group = (bundle.object(forInfoDictionaryKey: "UsualShareGroup") as? String)?.nonBlank,
-            hasGroup(group),
+        guard let group = groupIdentifier(bundle: bundle),
             let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)
         else { return nil }
         return ShareContainer(directory: url.appending(path: "Share", directoryHint: .isDirectory))
+    }
+
+    /// The App Group the app and the extension share, when this build has it.
+    static func groupIdentifier(bundle: Bundle = .main) -> String? {
+        guard let group = (bundle.object(forInfoDictionaryKey: "UsualShareGroup") as? String)?.nonBlank,
+            hasGroup(group)
+        else { return nil }
+        return group
     }
 
     private static func hasGroup(_ group: String) -> Bool {
