@@ -95,9 +95,12 @@ struct MessageRow<Content: View>: View {
                 .frame(maxWidth: .infinity, alignment: isMine ? .trailing : .leading)
         #else
             message
+                .modifier(SwipeToReplyIfAble(item: item, actions: actions))
                 // Your bubbles leave the agent's side clear, as in any messenger.
                 .padding(.leading, isMine ? 48 : 0)
                 .frame(maxWidth: .infinity, alignment: isMine ? .trailing : .leading)
+                // Pulling the conversation left shows it.
+                .overlay(alignment: .trailing) { if let date = item.date { RevealedTime(date: date) } }
                 .contextMenu { if let actions { menu(actions) } }
                 .sheet(isPresented: $picking) {
                     if let actions {
