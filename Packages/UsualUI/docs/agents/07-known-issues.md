@@ -151,6 +151,16 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **macOS 26 swaps the face symbols with the appearance.** `face.smiling` is an outline in light mode and filled in dark mode; `face.smiling.inverse` is the opposite. `MessageRow.reactSymbol` picks by `colorScheme` so React stays an outline. Seen in the app and in `ImageRenderer`; not checked on iPhone, where only the long-press menu shows it.
 - **A Mac menu's palette drops buttons without an image.** A `.palette` `ControlGroup` in a Mac context menu showed only the `+`, not the emoji, so the Mac menu puts reactions in a React submenu; iPhone keeps the palette.
 - **Accessibility modifiers inside a `.contain` group reach each element in it** (checked on the Mac through AX). `MessageRow` puts its actions on the message's content, so every paragraph carries Reply, Copy and React. On the group itself they'd belong to the container, which VoiceOver on iPhone doesn't focus.
+- **iPhone's sideways swipes are UIKit pans, not SwiftUI drags** (`MessageSwipes.swift`). A
+  `DragGesture` inside the conversation either stops it scrolling or runs alongside it. `SidewaysPan`
+  begins only when the finger moves sideways in its direction, and makes other pans (the scroll
+  view's, iOS's swipe back from anywhere) wait for it; the screen-edge swipe back doesn't wait, so
+  it still beats Reply. It stays out of a sideways scroller that can scroll (wide tables and code).
+  Seen in the iOS 27 Simulator in a chat and a room; not tried on a device (haptics), on a wide
+  table, on an audio message's scrubber, or with the keyboard up.
+- **An `alignmentGuide` on an overlay's content was ignored** when placing the swipe's times past a
+  row's edge: they sat inside the row, over your bubbles. `RevealedTime` uses a zero-width frame
+  the text overflows instead.
 - **Unverified on iPhone:** the 44 pt hit areas from `touchTarget` (negative padding, so they spill past the control; a scroll view's edge may still clip them), the reaction sheet opened from the long-press menu, and whether VoiceOver reads a message group's author label on the way in.
 
 ## Message box

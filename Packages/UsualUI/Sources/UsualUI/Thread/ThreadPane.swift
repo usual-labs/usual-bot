@@ -56,6 +56,7 @@ struct ThreadPane: View {
             .environment(\.mediaProfile, contact.details?.profile ?? contact.id)
             .environment(\.messageActions, actions)
             .environment(\.editingFrom, editing)
+            .environment(\.showConversationDetails, toggleProfile)
             .rewindConfirmation($rewindRequest, agentName: contact.name) { request in
                 guard let thread else { return }
                 switch request.kind {

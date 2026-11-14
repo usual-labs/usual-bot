@@ -29,6 +29,7 @@ struct RoomPane: View {
     var body: some View {
         content
             .environment(\.messageActions, actions)
+            .environment(\.showConversationDetails) { showsInfo = true }
             .chatBars {
                 NamePill(contact: contact, members: members) { showsInfo.toggle() }
                     .accessibilityHint(Text("Shows the room's members"))

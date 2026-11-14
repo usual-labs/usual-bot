@@ -129,7 +129,8 @@ tools, one line such as "Forge edited 1 file and ran 1 command" sums them up; cl
 step.
 
 A date such as "Yesterday 12:27 PM" sits above the first message and again after a new day starts
-or an hour passes. Hover a message on the Mac to see its time, or long-press it on iPhone.
+or an hour passes. Hover a message on the Mac to see its time. On iPhone, drag the conversation
+to the left to see every message's time beside it, or long-press a message.
 
 A chat opens at its newest message and follows new replies while you’re at the end. Scroll up to
 read older messages without being pulled back down. The round arrow button above the message box
@@ -199,7 +200,8 @@ sending also puts the keyboard away; tap the message box to write again.
   was checked with Hermes 0.23.1; on a gateway too old to report goals, nothing shows. Rooms have
   no goals.
 - **React, reply, copy.** Hover or right-click a message on the Mac, or long-press it on iPhone.
-  **More Reactions** has the full set. Reply quotes the message above the box. To copy part of a
+  **More Reactions** has the full set. Reply quotes the message above the box; on iPhone you can
+  also swipe a message to the right to reply to it. To copy part of a
   message, drag across its text on the Mac, across paragraphs, headings and list items alike; on
   iPhone, long-press it, choose **Select Text**, and select what you want in the sheet that opens.
   With VoiceOver, each message starts with who wrote it, and these are in its actions.
@@ -435,7 +437,8 @@ like "Forge, Atlas & Scribe".
   next one. The panel shows them.
 - Each reply shows who wrote it. Bots can hand work to each other, shown as small lines in the
   conversation.
-- Type `/` for the members' skills. ⌘I (or the room's name) shows its members.
+- Type `/` for the members' skills. ⌘I (or the room's name) shows its members; on iPhone, so does
+  flicking the room to the left.
 - To rename or delete a room, use **Rename Room…** or **Delete Room…** at the bottom of its panel,
   or right-click it in the sidebar (touch and hold on iPhone). Deleting stops any Bot still
   answering and removes the room and its messages for good; the Bots and their own chats stay.
@@ -455,7 +458,7 @@ Rooms are text only on the dashboard: attachments in rooms need the gateway's We
 ## A Bot's profile: routines, skills, apps and machine
 
 Click the Bot's name at the top of the chat (⌘I) to open its profile beside the chat. On iPhone,
-tap the name or **…** › **View Profile**: the profile opens as a page with a row for each part below,
+tap the name, **…** › **View Profile**, or flick the chat to the left: the profile opens as a page with a row for each part below,
 showing at a glance how many are on.
 
 - **Routines** are the Bot's scheduled jobs. Each shows when it runs, whether it's on, and why the

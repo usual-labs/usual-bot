@@ -27,6 +27,9 @@ struct ConversationScroll<Content: View>: View {
     #if os(iOS)
         /// A message's words, shown to select part of.
         @State private var selecting: SelectingText?
+        @State private var reveal = TimeReveal()
+        @ScaledMetric(relativeTo: .caption) private var revealWidth: CGFloat = 64
+        @Environment(\.showConversationDetails) private var showDetails
     #endif
 
     var body: some View {
@@ -55,8 +58,15 @@ struct ConversationScroll<Content: View>: View {
                     .frame(maxWidth: Theme.columnWidth)
                     .padding(.horizontal, ThreadPane.contentMargin)
                     .frame(maxWidth: .infinity)
+                    #if os(iOS)
+                        .environment(reveal)
+                        .modifier(RevealShift(reveal: reveal))
+                    #endif
                 }
             }
+            #if os(iOS)
+                .gesture(timesSwipe)
+            #endif
             .scrollPosition($position)
             #if os(macOS)
                 .scrollKnob($position) { byHand in move(to: scroll.scrollingByHand(byHand)) }
@@ -126,6 +136,22 @@ struct ConversationScroll<Content: View>: View {
             #endif
         }
     }
+
+    #if os(iOS)
+        /// Pulled left, the conversation shows when each message was sent; flicked left, it opens
+        /// the Bot's page or the room's details, as in Grok's app.
+        private var timesSwipe: SidewaysPan {
+            SidewaysPan(direction: .left) { x in
+                reveal.width = revealWidth
+                reveal.offset = resisted(-x, limit: revealWidth)
+            } ended: { x, velocity in
+                if velocity < -700, x < -24 { showDetails?() }
+                withAnimation(reduceMotion ? .easeOut(duration: 0.15) : .spring(duration: 0.3, bounce: 0.15)) {
+                    reveal.offset = 0
+                }
+            }
+        }
+    #endif
 
     private func show(_ itemID: Int, with proxy: ScrollViewProxy) {
         pendingJump = nil
