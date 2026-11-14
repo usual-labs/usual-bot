@@ -518,7 +518,8 @@ struct ContactsSplitView<Footer: View>: View {
 
         /// The sidebar's chats in order, without those in folded sections. The rail folds nothing.
         private var shownChats: [Contact] {
-            let blocks = SidebarBlock.blocks(for: contacts, in: sections?.sections ?? [])
+            let blocks = SidebarBlock.blocks(
+                for: contacts, in: sections?.sections ?? [], pinOrder: sections?.pinOrder ?? [])
             let folds = !showsRail && sections?.sections.isEmpty == false
             return ChatOrder.shown(blocks) { folds && sections?.isFolded($0) == true }
         }

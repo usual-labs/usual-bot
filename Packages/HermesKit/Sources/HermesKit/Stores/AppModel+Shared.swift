@@ -28,7 +28,7 @@ extension AppModel {
     /// Tells the share extension who it can send to: the sidebar's contacts in its order.
     func publishShareRoster() {
         guard shared.container != nil, let key = shareKey else { return }
-        let listed = sidebarContacts.sorted(by: Contact.rosterOrder)
+        let listed = sections.ordered(sidebarContacts)
         let stored = (listed + hiddenBots).reduce(into: [Contact.ID: Data]()) { $0[$1.id] = pictures.data(for: $1.id) }
         shared.publish(
             ShareRoster(

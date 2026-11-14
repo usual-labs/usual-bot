@@ -89,7 +89,7 @@ public struct QuickMessageView: View {
 
     /// Agents and rooms, in sidebar order.
     private var contacts: [Contact] {
-        model.sidebarContacts.sorted(by: Contact.rosterOrder)
+        model.sections.ordered(model.sidebarContacts)
     }
 
     private var recipient: Contact? {
