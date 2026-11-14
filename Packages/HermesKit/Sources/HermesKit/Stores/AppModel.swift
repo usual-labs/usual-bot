@@ -109,6 +109,11 @@ public final class AppModel {
     @ObservationIgnored var roomEdits = 0
     /// The demo has no gateway, so room edits happen here alone.
     @ObservationIgnored var isDemo = false
+    /// Gateway traffic goes through the iPhone app's built-in Tailscale, which the share extension
+    /// can't use, so it leaves what you share for the app. Set by the app.
+    @ObservationIgnored public var usesBuiltInTailscale = false {
+        didSet { if usesBuiltInTailscale != oldValue { publishShareRoster() } }
+    }
     #if DEBUG
         /// Shows the demo's other made-up gateway (`AppModel.demo()`), which nothing connects to.
         @ObservationIgnored var demoSwitch: ((SavedGateway) -> Void)?
@@ -148,15 +153,16 @@ public final class AppModel {
 
     public convenience init() {
         self.init(
-            tokenStore: KeychainTokenStore(), http: URLSession.shared, defaults: .standard, cache: OfflineCache(),
-            draftsDirectory: Drafts.deviceDirectory, share: .appGroup(), selectionDefaults: .standard)
+            tokenStore: KeychainTokenStore.forApp(), http: URLSession.shared, defaults: .standard,
+            cache: OfflineCache(), draftsDirectory: Drafts.deviceDirectory, share: .appGroup(),
+            selectionDefaults: .standard)
     }
 
     /// Sends all gateway traffic, requests and the socket alike, through the session `session`
     /// returns at the time, e.g. one routed through the app's own Tailscale device.
     public convenience init(session: @escaping @Sendable () async throws -> URLSession) {
         self.init(
-            tokenStore: KeychainTokenStore(), http: SessionTransport(session: session), defaults: .standard,
+            tokenStore: KeychainTokenStore.forApp(), http: SessionTransport(session: session), defaults: .standard,
             cache: OfflineCache(), draftsDirectory: Drafts.deviceDirectory, share: .appGroup(),
             selectionDefaults: .standard, makeSocket: { URLSessionWebSocket(url: $0, session: try await session()) },
             makeScreenSocket: { URLSessionScreenSocket(url: $0, session: try await session()) })

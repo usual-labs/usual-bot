@@ -2,24 +2,35 @@ import HermesKit
 import SwiftUI
 
 /// The share extension's whole screen: what you're sharing, a note, and the Bots and rooms it can
-/// go to, in the sidebar's order. It doesn't send. It leaves the item in the folder the app
-/// shares (`ShareContainer`), and the app sends it; an extension can't reach the gateway the way
-/// the app does (`docs/agents/decisions.md`).
+/// go to, in the sidebar's order. Sending leaves the item in the folder the app shares
+/// (`ShareContainer`). On iPhone `ShareSender` then sends it from here when it can, and closes;
+/// otherwise the app sends it the next time it's open (`docs/agents/decisions.md`).
 public struct ShareView: View {
     let providers: [NSItemProvider]
     let container: ShareContainer?
+    let sender: ShareSender?
     /// Closes the extension: the item is saved, or there was nothing to do.
     let done: () -> Void
     let cancel: () -> Void
 
     public init(
-        providers: [NSItemProvider], container: ShareContainer?, done: @escaping () -> Void,
-        cancel: @escaping () -> Void
+        providers: [NSItemProvider], container: ShareContainer?, sender: ShareSender? = nil,
+        done: @escaping () -> Void, cancel: @escaping () -> Void
     ) {
         self.providers = providers
         self.container = container
+        self.sender = sender
         self.done = done
         self.cancel = cancel
+    }
+
+    /// What happened to the item once you tapped Send.
+    private enum Phase: Equatable {
+        case sending(Contact)
+        case sent(Contact)
+        /// Left for the app, with why when there's more to say.
+        case waiting(Contact, String?)
+        case unconfirmed(Contact)
     }
 
     @State private var roster: ShareRoster?
@@ -27,8 +38,8 @@ public struct ShareView: View {
     @State private var content: SharedContent?
     @State private var note = ""
     @State private var selection: Contact.ID?
-    /// Where it was saved for, once it was.
-    @State private var saved: Contact?
+    @State private var phase: Phase?
+    @State private var isClosing = false
     @State private var problem: String?
     /// Items from earlier that the app hasn't sent yet.
     @State private var waiting = 0
@@ -40,8 +51,8 @@ public struct ShareView: View {
             bar
             Divider().overlay(Theme.border)
             Group {
-                if let saved {
-                    savedNote(saved)
+                if let phase {
+                    outcome(phase)
                 } else if container == nil {
                     notice(
                         "square.and.arrow.up.trianglebadge.exclamationmark",
@@ -76,13 +87,15 @@ public struct ShareView: View {
 
     private var bar: some View {
         HStack {
-            if saved == nil {
+            if phase == nil {
                 Button("Cancel", action: cancel)
                     .keyboardShortcut(.cancelAction)
             }
             Spacer()
-            if saved != nil {
-                Button("Done", action: done)
+            if case .sending = phase {
+                // Nothing to press until it's gone or left for the app.
+            } else if phase != nil {
+                Button("Done", action: close)
                     .fontWeight(.semibold)
                     .keyboardShortcut(.defaultAction)
             } else {
@@ -156,13 +169,36 @@ public struct ShareView: View {
         }
     }
 
-    private func savedNote(_ contact: Contact) -> some View {
-        notice(
-            "tray.and.arrow.up", String(localized: "Waiting to send to \(contact.name)"),
-            String(
-                localized:
-                    "Usual Bot sends it the next time it's open, and it shows in the chat. Until then it waits on this device."
-            ))
+    @ViewBuilder
+    private func outcome(_ phase: Phase) -> some View {
+        switch phase {
+        case .sending(let contact):
+            VStack(spacing: 14) {
+                ProgressView()
+                Text("Sending to \(contact.name)…").font(.headline)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .accessibilityElement(children: .combine)
+        case .sent(let contact):
+            notice(
+                "checkmark.circle", String(localized: "Sent to \(contact.name)"),
+                String(localized: "The reply shows in Usual Bot."))
+        case .waiting(let contact, let reason):
+            notice(
+                "tray.and.arrow.up", String(localized: "Waiting to send to \(contact.name)"),
+                reason
+                    ?? String(
+                        localized:
+                            "Usual Bot sends it the next time it's open, and it shows in the chat. Until then it waits on this device."
+                    ))
+        case .unconfirmed(let contact):
+            notice(
+                "questionmark.circle", String(localized: "Couldn't tell if it reached \(contact.name)"),
+                String(
+                    localized:
+                        "Open Usual Bot and check the chat. If it isn't there, send it again from the list of shared items."
+                ))
+        }
     }
 
     private func notice(_ symbol: String, _ title: String, _ detail: String) -> some View {
@@ -218,12 +254,46 @@ public struct ShareView: View {
 
     private func save() {
         guard let container, let roster, let content, let recipient else { return }
+        let item: SharedItem
         do {
-            try container.add(content, note: note, to: recipient, gateway: roster.gateway)
-            saved = recipient
+            item = try container.add(content, note: note, to: recipient, gateway: roster.gateway)
         } catch {
             problem = String(localized: "Couldn't save it to send: \(error.localizedDescription)")
+            return
         }
+        guard let sender else { return show(.waiting(recipient, nil)) }
+        show(.sending(recipient))
+        Task {
+            switch await sender.send(item, to: recipient, roster: roster) {
+            case .sent:
+                show(.sent(recipient))
+                // Long enough to read; nothing's left to do here.
+                try? await Task.sleep(for: .seconds(1.2))
+                close()
+            case .waiting(let reason): show(.waiting(recipient, reason))
+            case .unconfirmed: show(.unconfirmed(recipient))
+            }
+        }
+    }
+
+    /// Done, by hand or after Sent, closes once.
+    private func close() {
+        guard !isClosing else { return }
+        isClosing = true
+        done()
+    }
+
+    private func show(_ phase: Phase) {
+        self.phase = phase
+        // VoiceOver hears what happened without finding it on the screen.
+        let words: String? =
+            switch phase {
+            case .sending: nil
+            case .sent(let contact): String(localized: "Sent to \(contact.name)")
+            case .waiting(let contact, _): String(localized: "Waiting to send to \(contact.name)")
+            case .unconfirmed(let contact): String(localized: "Couldn't tell if it reached \(contact.name)")
+            }
+        if let words { AccessibilityNotification.Announcement(words).post() }
     }
 }
 

@@ -27,13 +27,13 @@ extension AppModel {
 
     /// Tells the share extension who it can send to: the sidebar's contacts in its order.
     func publishShareRoster() {
-        guard shared.container != nil, let key = shareKey else { return }
+        guard shared.container != nil, case .signedIn(let gateway) = session else { return }
         let listed = sections.ordered(sidebarContacts)
         let stored = (listed + hiddenBots).reduce(into: [Contact.ID: Data]()) { $0[$1.id] = pictures.data(for: $1.id) }
         shared.publish(
             ShareRoster(
-                gateway: key, contacts: listed.map(\.forSharing), hidden: hiddenBots.map(\.forSharing),
-                pictures: stored))
+                gateway: gateway.fileName, contacts: listed.map(\.forSharing), hidden: hiddenBots.map(\.forSharing),
+                pictures: stored, address: isDemo ? nil : gateway, usesBuiltInTailscale: usesBuiltInTailscale))
     }
 
     /// The signed-in gateway's name in the shared folder.
@@ -74,7 +74,9 @@ extension AppModel {
             }
         #endif
         let before = thread.state.items.count
-        if await thread.send(item.text, attachments: attachments) {
+        // Under the item's own ID: if the share extension sent it already, the gateway takes it once.
+        // The demo has no gateway, and plays its replies to text sent the ordinary way.
+        if await thread.send(item.text, attachments: attachments, submissionID: isDemo ? nil : item.id.uuidString) {
             shared.sent(item)
         } else {
             // The chat says why in a notice; the same words go with the item.

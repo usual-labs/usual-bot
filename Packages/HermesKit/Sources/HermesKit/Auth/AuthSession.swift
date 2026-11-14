@@ -3,7 +3,8 @@ import Foundation
 /// Holds one gateway's tokens and keeps the access token fresh.
 ///
 /// Refresh tokens rotate and the gateway revokes the whole session when an old one is reused,
-/// so at most one refresh runs at a time and every rotation is written to the store at once.
+/// so at most one refresh runs at a time, across processes too (`TokenStore.refreshLock`), and
+/// every rotation is written to the store at once.
 public actor AuthSession {
     public nonisolated let gateway: GatewayAddress
     private var tokens: TokenSet
@@ -88,6 +89,14 @@ public actor AuthSession {
         struct Body: Encodable {
             let refreshToken: String
             let provider: String
+        }
+        let held = try await store.refreshLock?.acquire()
+        defer { held?.release() }
+        // The share extension renews this sign-in too. When it has since the pair here was read,
+        // ours is spent: take its pair, and renew only if that's about to expire as well.
+        if let stored = try? store.load(for: gateway), stored.refreshToken != tokens.refreshToken {
+            tokens = stored
+            if !stored.expires(within: Self.refreshMargin, now: now()) { return stored }
         }
         let request = URLRequest.json(
             gateway.url("/auth/native/refresh"), method: "POST",

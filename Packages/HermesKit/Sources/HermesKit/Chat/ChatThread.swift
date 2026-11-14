@@ -419,10 +419,11 @@ public final class ChatThread {
     /// Uploads `attachments` to the chat, then sends them with `text`. Returns whether the message
     /// went out. On a failed upload nothing is sent, a notice says which file and why, and the
     /// caller keeps the draft. Attachments wait for the agent to finish: a running turn can't
-    /// take them.
-    public func send(_ text: String, attachments: [Attachment]) async -> Bool {
+    /// take them. `submissionID`, for something shared from another app, goes as the message's
+    /// own ID, so the gateway takes it once though the share extension may have sent it already.
+    public func send(_ text: String, attachments: [Attachment], submissionID: String? = nil) async -> Bool {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !attachments.isEmpty else {
+        guard !attachments.isEmpty || submissionID != nil else {
             guard canSend, !text.isEmpty else { return false }
             send(text)
             return true
@@ -433,7 +434,7 @@ public final class ChatThread {
         var sent: [AttachmentRef] = []
         for attachment in attachments {
             do {
-                sent.append(try await upload(attachment, sessionID: sessionID, channel: channel))
+                sent.append(try await Self.upload(attachment, sessionID: sessionID, channel: channel))
             } catch {
                 // Images already queued would ride along with the next message: take them back.
                 for ref in sent where ref.kind == .image {
@@ -447,14 +448,20 @@ public final class ChatThread {
         for (ref, attachment) in zip(sent, attachments) where ref.kind == .image {
             sentImages[ref.path] = attachment.data
         }
-        // Queued images reach the agent with the turn; files only through their references.
-        let files = sent.filter { $0.kind == .file }.map(\.line)
-        let submitted = ([text] + files).filter { !$0.isEmpty }.joined(separator: "\n\n")
         state.sendLocally(
             ([text] + [sent.map(\.line).joined(separator: "\n")]).filter { !$0.isEmpty }
                 .joined(separator: "\n\n"))
-        await submit(submitted, sessionID: sessionID, channel: channel)
+        await submit(
+            Self.message(text, with: sent), sessionID: sessionID, channel: channel,
+            extra: submissionID.map { ["submission_id": .string($0)] } ?? [:])
         return true
+    }
+
+    /// What goes to the agent: queued images reach it with the turn, files only through their
+    /// references.
+    static func message(_ text: String, with sent: [AttachmentRef]) -> String {
+        let files = sent.filter { $0.kind == .file }.map(\.line)
+        return ([text] + files).filter { !$0.isEmpty }.joined(separator: "\n\n")
     }
 
     /// Whether `item` can take a reaction: a message in the store, or the newest of its kind, which
@@ -502,7 +509,7 @@ public final class ChatThread {
 
     /// Sends one file to the gateway: an image into the next turn's queue, anything else into the
     /// chat's workspace. Larger files get longer, at roughly 100 KB/s at worst.
-    private func upload(_ attachment: Attachment, sessionID: String, channel: JSONRPCChannel) async throws
+    static func upload(_ attachment: Attachment, sessionID: String, channel: JSONRPCChannel) async throws
         -> AttachmentRef
     {
         if attachment.isTooLarge { throw Attachment.TooLarge(limit: attachment.sizeLimit) }
@@ -537,10 +544,13 @@ public final class ChatThread {
     func submit(_ text: String, sessionID: String, channel: JSONRPCChannel, extra: [String: JSONValue] = [:]) async {
         do {
             var params = ["session_id": JSONValue.string(sessionID), "text": .string(text)].merging(extra) { $1 }
-            if queuesOnGateway, params["submission_id"] == nil {
-                let id = UUID().uuidString
+            if queuesOnGateway {
+                let id = params["submission_id"]?.stringValue ?? UUID().uuidString
                 sentDirectly.insert(id)
                 params["submission_id"] = .string(id)
+            } else {
+                // The dashboard has no such ID; the share extension doesn't send there.
+                params["submission_id"] = nil
             }
             _ = try await channel.call("prompt.submit", params: .object(params))
         } catch {

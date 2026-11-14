@@ -26,6 +26,11 @@ final class ScriptedHTTP: HTTPTransport {
 
 final class MemoryTokenStore: TokenStore {
     private let items = Mutex<[URL: TokenSet]>([:])
+    let refreshLock: RefreshLock?
+
+    init(refreshLock: RefreshLock? = nil) {
+        self.refreshLock = refreshLock
+    }
 
     func load(for gateway: GatewayAddress) throws -> TokenSet? { items.withLock { $0[gateway.baseURL] } }
     func save(_ tokens: TokenSet, for gateway: GatewayAddress) throws {
