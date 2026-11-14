@@ -273,6 +273,79 @@ struct SidebarSectionsTests {
         #expect(second.placed(room).isPinned == false)
     }
 
+    private func pinned(_ sections: SidebarSections, _ contacts: [Contact]) -> [Contact.ID] {
+        sections.blocks(for: contacts.map(sections.placed)).first { $0.isPinned }?.contacts.map(\.id) ?? []
+    }
+
+    @Test func pinnedChatsKeepTheirPlaceWhenAnotherHasNewerMessages() {
+        let sections = store()
+        sections.reconcile([bot("a", pinned: true), bot("b", active: 5, pinned: true)])
+        #expect(pinned(sections, [bot("a", active: 9, pinned: true), bot("b", pinned: true)]) == ["a", "b"])
+        #expect(
+            sections.ordered([bot("free", active: -1), bot("b", pinned: true), bot("a", pinned: true)])
+                .map(\.id) == ["a", "b", "free"])
+    }
+
+    @Test func aNewPinGoesLastAndAnUnpinLeavesTheOthersInPlace() async {
+        let sections = store()
+        sections.reconcile([bot("a", pinned: true), bot("b", active: 5, pinned: true), bot("c", active: 9)])
+        sections.setPinned(true, bot("c", active: 9))
+        sections.setPinned(false, bot("a", pinned: true))
+        await sections.writesFinished()
+        let roster = [bot("a"), bot("b", active: 5, pinned: true), bot("c", active: 9, pinned: true)]
+        #expect(pinned(sections, roster) == ["b", "c"])
+        sections.setPinned(true, bot("a"))
+        await sections.writesFinished()
+        #expect(pinned(sections, roster) == ["b", "c", "a"])
+    }
+
+    @Test func aPinnedChatMovesToWhereItIsDroppedAndStaysOnThisDevice() {
+        let first = store()
+        first.load(for: gateway)
+        let roster = [bot("a", pinned: true), bot("b", active: 1, pinned: true), bot("c", active: 2, pinned: true)]
+        first.reconcile(roster)
+        first.movePinned("a", to: "c", among: ["a", "b", "c"])
+        #expect(pinned(first, roster) == ["b", "c", "a"])
+        first.movePinned("a", to: "b", among: ["b", "c", "a"])
+        #expect(pinned(first, roster) == ["a", "b", "c"])
+
+        let second = store()
+        second.load(for: gateway)
+        first.movePinned("c", to: "a", among: ["a", "b", "c"])
+        #expect(pinned(first, roster) == ["c", "a", "b"])
+        #expect(pinned(second, roster) == ["a", "b", "c"])
+        second.load(for: gateway)
+        #expect(pinned(second, roster) == ["c", "a", "b"])
+    }
+
+    @Test func aBotPinnedElsewhereJoinsTheEndAndLeavesWhenUnpinnedThere() {
+        let sections = store()
+        sections.reconcile([bot("a", pinned: true), bot("b")])
+        sections.reconcile([bot("a", pinned: true), bot("b", active: -5, pinned: true)])
+        #expect(pinned(sections, [bot("a", pinned: true), bot("b", active: -5, pinned: true)]) == ["a", "b"])
+        sections.reconcile([bot("a"), bot("b", pinned: true)])
+        #expect(sections.pinOrder == ["b"])
+    }
+
+    @Test func aFailedUnpinPutsTheChatBackInItsPlace() async {
+        let sections = store()
+        let roster = [bot("a", pinned: true), bot("b", active: 1, pinned: true), bot("c", active: 2, pinned: true)]
+        sections.reconcile(roster)
+        saver.failing = true
+        sections.setPinned(false, bot("b", active: 1, pinned: true))
+        await sections.writesFinished()
+        #expect(pinned(sections, roster) == ["a", "b", "c"])
+    }
+
+    @Test func aRenamedBotKeepsItsPinnedPlace() {
+        let sections = store()
+        sections.reconcile([bot("a", pinned: true), bot("b", active: 1, pinned: true)])
+        sections.renameAgent(from: "a", to: "z")
+        #expect(sections.pinOrder == ["z", "b"])
+        sections.forget("b")
+        #expect(sections.pinOrder == ["z"])
+    }
+
     @Test func aMoveShowsAtOnceAndSurvivesAStaleRead() async {
         let sections = store()
         sections.reconcile([bot("a", section: work), bot("b")])

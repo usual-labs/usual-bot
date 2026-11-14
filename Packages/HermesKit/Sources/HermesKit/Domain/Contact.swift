@@ -109,8 +109,9 @@ public struct AgentDetails: Hashable, Sendable, Codable {
 }
 
 extension Contact {
-    /// Sidebar order: pinned first, then most recently active, then by name.
-    /// Contacts that have never been active sort after those that have.
+    /// Pinned first, then most recently active, then by name. Contacts that have never been active
+    /// sort after those that have. The sidebar puts its pinned chats in the order you gave them
+    /// (`SidebarBlock.ordered`).
     public static func rosterOrder(_ lhs: Contact, _ rhs: Contact) -> Bool {
         if lhs.isPinned != rhs.isPinned { return lhs.isPinned }
         switch (lhs.lastActive, rhs.lastActive) {

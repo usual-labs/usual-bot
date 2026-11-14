@@ -24,7 +24,7 @@ iPhone unless a section says otherwise.
 Usual Bot follows Hermes [Bot Mode](https://hermes-agent.nousresearch.com/docs/user-guide/bot-mode).
 Each Bot (a Hermes profile) on your gateway is a contact, with one ongoing chat: the same "Bot
 Chat" the Hermes desktop app keeps for it. Bot Mode's group chats are the rooms, in the same
-list. Pinned chats come first, then the most recent conversation.
+list. Pinned chats come first, in the order you put them, then the rest by their newest message.
 
 - A Bot shows the picture you gave it, here or in the Hermes app. Without one, it gets one of Usual Bot's
   characters.
@@ -61,12 +61,16 @@ section.
 - **Pin one:** right-click a chat on the Mac, or touch and hold it on iPhone, and choose **Pin**.
 - **Unpin it:** choose **Unpin** from the same menu on its avatar. It goes back to the section it
   was in.
+- **Reorder them:** a new pin goes after the others, and pinned chats stay where you put them
+  however recent their messages. On the Mac, drag an avatar onto another to take its place. On
+  either, choose **Move Left** or **Move Right** from its menu.
 - A pinned chat shows its name without a preview. A number on its avatar counts unread replies, and
   a dot means it needs you.
 - A search lists pinned chats first, marked with a pin. Quick Message lists them first too.
 
 A Bot's pin is saved on the Bot, so it's pinned on your other devices and in the Hermes desktop
-app. A room's pin stays on the device where you pinned it. Pinning a Bot needs the gateway: offline,
+app. A room's pin stays on the device where you pinned it, and so does the order of your pinned
+chats. Pinning a Bot needs the gateway: offline,
 the pin is undone and the app says why.
 
 ### Sections

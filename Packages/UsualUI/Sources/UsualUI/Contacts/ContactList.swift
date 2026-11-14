@@ -1,8 +1,8 @@
 import HermesKit
 import SwiftUI
 
-/// The sidebar: the pinned chats as tiles, then every other agent and room in roster order, grouped
-/// into sections once there are any. A search lists its matches together, then on iPhone the
+/// The sidebar: the pinned chats as tiles in the order you put them, then every other agent and
+/// room by its newest message, grouped into sections once there are any. A search lists its matches together, then on iPhone the
 /// messages that match, and the rail groups without tiles or headings.
 struct ContactList: View {
     let contacts: [Contact]
@@ -104,8 +104,11 @@ struct ContactList: View {
     }
 
     private func blocks(of matching: [Contact]) -> [SidebarBlock] {
-        if isSearching { return [SidebarBlock(section: nil, contacts: matching.sorted(by: Contact.rosterOrder))] }
-        return SidebarBlock.blocks(for: matching, in: sections?.sections ?? [])
+        let pinOrder = sections?.pinOrder ?? []
+        if isSearching {
+            return [SidebarBlock(section: nil, contacts: SidebarBlock.ordered(matching, pinOrder: pinOrder))]
+        }
+        return SidebarBlock.blocks(for: matching, in: sections?.sections ?? [], pinOrder: pinOrder)
     }
 
     /// Animated, so the chat is seen going to the top or back to its place.
@@ -114,7 +117,15 @@ struct ContactList: View {
     }
 
     private func pinnedTiles(_ block: SidebarBlock, byID: [Contact.ID: Contact]) -> some View {
-        PinnedTiles(contacts: block.contacts, byID: byID, selection: $selection) { rowMenu($0) }
+        let pinned = block.contacts.map(\.id)
+        return PinnedTiles(
+            contacts: block.contacts, byID: byID, selection: $selection,
+            move: { movePinned($0, to: $1, among: pinned) }
+        ) { rowMenu($0, pinned: pinned) }
+    }
+
+    private func movePinned(_ id: Contact.ID, to target: Contact.ID, among pinned: [Contact.ID]) {
+        withAnimation(.smooth(duration: 0.25)) { sections?.movePinned(id, to: target, among: pinned) }
     }
 
     /// The rail has no heading to open a folded section with, so it folds nothing.
@@ -284,11 +295,22 @@ struct ContactList: View {
     }
 
     /// Pin a chat, and where to file it. A pinned chat shows in no section, so it's filed again
-    /// once it's unpinned.
-    @ViewBuilder private func rowMenu(_ contact: Contact) -> some View {
+    /// once it's unpinned. A tile moves among the other `pinned` chats; the rail and a search,
+    /// which list them as rows, leave that out.
+    @ViewBuilder private func rowMenu(_ contact: Contact, pinned: [Contact.ID] = []) -> some View {
         if let sections {
             if contact.isPinned {
                 Button("Unpin", systemImage: "pin.slash") { setPinned(false, contact) }
+                if pinned.count > 1, let index = pinned.firstIndex(of: contact.id) {
+                    Button("Move Left", systemImage: "arrow.left") {
+                        movePinned(contact.id, to: pinned[index - 1], among: pinned)
+                    }
+                    .disabled(index == 0)
+                    Button("Move Right", systemImage: "arrow.right") {
+                        movePinned(contact.id, to: pinned[index + 1], among: pinned)
+                    }
+                    .disabled(index == pinned.count - 1)
+                }
             } else {
                 Button("Pin", systemImage: "pin") { setPinned(true, contact) }
                 if sections.sections.isEmpty {
