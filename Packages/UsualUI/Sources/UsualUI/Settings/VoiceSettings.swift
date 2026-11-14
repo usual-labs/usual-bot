@@ -5,8 +5,24 @@ struct VoiceSettings: View {
     @AppStorage(CallSettings.voiceKey) private var voice = ""
     @AppStorage(CallSettings.speedKey) private var speed = 1.0
     @AppStorage(CallSettings.languageKey) private var language = ""
+    @AppStorage(DictationSettings.engineKey) private var dictation = ""
 
     var body: some View {
+        Section {
+            Picker("Speech to text", selection: $dictation) {
+                Text("On-device").tag("")
+                Text("Gateway").tag(DictationSettings.gateway)
+            }
+            .clickable()
+        } header: {
+            Text("Dictation")
+        } footer: {
+            Text(
+                dictation == DictationSettings.gateway
+                    ? "Your voice goes to the Bot’s gateway, which sends it to whatever speech-to-text it’s set up with. That may be a paid service. Words appear as you speak if the gateway can stream them, otherwise when you stop."
+                    : "Your voice stays on this device, and dictation works offline."
+            )
+        }
         Section {
             Picker("Call engine", selection: $engine) {
                 Text("Automatic").tag("")

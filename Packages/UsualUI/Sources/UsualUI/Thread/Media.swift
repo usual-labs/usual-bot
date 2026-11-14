@@ -8,6 +8,8 @@ extension EnvironmentValues {
     @Entry var media: MediaStore?
     /// GPT-Live sessions for voice calls; set by the app.
     @Entry var voiceLive: VoiceLiveService?
+    /// Speech to text on the gateway, for dictation; set by the app.
+    @Entry var transcriber: GatewayTranscriber?
     /// The profile whose files a message names: the chat's agent, or a room reply's author.
     @Entry var mediaProfile: String?
     /// Transcripts of the voice memos in a reply, by path (`SpokenAudio.transcripts`).

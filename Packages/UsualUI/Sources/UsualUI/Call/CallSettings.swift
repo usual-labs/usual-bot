@@ -59,3 +59,10 @@ enum CallSettings {
         return utterance
     }
 }
+
+/// Who turns your speech into text in the message box, kept on this device for every Bot.
+enum DictationSettings {
+    /// `""` is Apple's on-device recognizer; `gateway` is the Bot's own speech-to-text on Hermes.
+    static let engineKey = "dictationEngine"
+    static let gateway = "gateway"
+}

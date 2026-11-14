@@ -368,6 +368,14 @@ text:
 
 - **Dictation.** In an empty message box, tap the mic and speak. Words appear as you talk,
   recognised on the device when it can. Tap the mic again to stop, then edit and send.
+- **Dictation through your gateway.** In **Settings › Voice › Dictation**, choose **Gateway** to
+  have the Bot's own speech-to-text on Hermes hear you instead. Your voice goes to your gateway,
+  which may send it on to a paid service, depending on how its speech-to-text is set up. Words
+  appear as you talk if the gateway streams them; otherwise they come all at once after you stop,
+  while the box says **Transcribing…**. Tap the mic again then to cancel. Sending waits until the
+  words arrive. Dictation stops by itself after 10 minutes; its ring counts down the last 15
+  seconds. In a room, the gateway's own profile hears you. If the gateway can't transcribe, the box
+  says why; **Use On-device** turns the same recording into words on your device instead.
 - **Voice calls.** Tap the waveform button to call the Bot. It hears you, answers aloud as it
   writes, and stops when you talk over it. The conversation is saved in the chat as usual. The call
   bar above the message box has the transcript, mute, end and settings, where you pick the voice,

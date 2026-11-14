@@ -73,6 +73,7 @@ struct Composer: View {
                     ?? RewindRequest.editingLabel(for: thread.rewindCost(of: $0))
             },
             startCall: thread.isAttached ? startCall : nil, inCall: inCall,
+            transcriptionProfile: thread.contactID,
             commands: SlashCommands(
                 list: thread.commands, load: { Task { await thread.loadCommands() } },
                 prefill: Binding(get: { thread.prefill }, set: { thread.prefill = $0 })),

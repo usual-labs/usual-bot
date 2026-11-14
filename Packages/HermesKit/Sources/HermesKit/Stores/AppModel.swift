@@ -121,6 +121,8 @@ public final class AppModel {
     /// Images and files agents name in chats, read from the gateway.
     @ObservationIgnored public private(set) lazy var media = MediaStore(auth: { [weak self] in self?.auth })
     @ObservationIgnored public private(set) lazy var voiceLive = VoiceLiveService(auth: { [weak self] in self?.auth })
+    @ObservationIgnored public private(set) lazy var transcriber = GatewayTranscriber(
+        auth: { [weak self] in self?.auth }, isDemo: { [weak self] in self?.isDemo ?? false })
     /// How the gateway reaches you when this app can't.
     @ObservationIgnored public private(set) lazy var push = PushSettings(
         auth: { [weak self] in self?.auth }, relay: { [weak self] in self?.relay },
