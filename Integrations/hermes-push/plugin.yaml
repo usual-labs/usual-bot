@@ -1,5 +1,5 @@
 name: usual-push
-version: "0.4.0"
+version: "0.5.0"
 description: "Sends what your Bots do to Usual Bot on your devices, through Usual's push relay"
 author: "Usual Labs"
 provides_hooks:

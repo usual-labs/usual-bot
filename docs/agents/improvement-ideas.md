@@ -5,6 +5,9 @@
 - **Split `RootView.swift` (723 lines).** `ContactsSplitView` and its Mac layout, search jumps and
   sidebar footer share the file with `RootView`; moving `ContactsSplitView` to its own file is the
   obvious first cut.
+- **Gateways on two tailnets.** The iPhone's built-in Tailscale is one device in one tailnet, so two
+  gateways must share it or one must be reachable without it. A second tailnet needs its own
+  Tailscale login and state on disk, and a way to pick the device per gateway.
 - **Hermes features the app doesn't surface yet.** From a Hermes source read (`bf0203a794`,
   22 October 2026); none confirmed against a live gateway. Check each call on the app's
   dashboard socket first.

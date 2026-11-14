@@ -16,7 +16,12 @@ struct ReadElsewhereTests {
 
     @Test func opensTheChatThatWasRead() throws {
         let sealed = try seal(["kind": "read", "chat": "ada"], with: key)
-        #expect(PushRelay.chatReadElsewhere(sealed: sealed, key: key) == "ada")
+        #expect(PushRelay.chatReadElsewhere(sealed: sealed, key: key) == .init(chat: "ada", gateway: nil))
+    }
+
+    @Test func saysWhichGatewayTheChatIsOn() throws {
+        let sealed = try seal(["kind": "read", "chat": "default", "gateway": "home"], with: key)
+        #expect(PushRelay.chatReadElsewhere(sealed: sealed, key: key) == .init(chat: "default", gateway: "home"))
     }
 
     @Test func aMessagePassedOffAsAClearOpensNothing() throws {

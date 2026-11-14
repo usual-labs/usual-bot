@@ -115,6 +115,59 @@ struct PushSettingsTests {
         try await waitUntil { requests.lines.contains("DELETE /api/plugins/usual-push/devices/dev1") }
     }
 
+    @Test func theGatewayIsToldWhichOfThisDevicesGatewaysItIs() async throws {
+        let (push, model, requests) = try await makeModel()
+        await push.refresh()
+        let body = try #require(requests.body("PUT /api/plugins/usual-push/devices/dev1"))
+        #expect(body.contains(#""gateway":"\#(model.gateways[0].id)""#))
+    }
+
+    @Test func aNewerPluginThatDoesntKnowTheGatewayIsToldAgain() async throws {
+        let (push, _, requests) = try await makeModel(
+            settings: #"{"version":"0.5.0","devices":[{"id":"dev1","relay":"https://relay.example.com"}]}"#)
+        await push.refresh()
+        #expect(push.tagsGateway)
+        #expect(requests.body("PUT /api/plugins/usual-push/devices/dev1") != nil)
+    }
+
+    @Test func anOlderPluginIsntToldAgainEachTime() async throws {
+        let (push, model, requests) = try await makeModel(
+            settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com"}]}"#)
+        await push.refresh()
+        #expect(!push.tagsGateway)
+        #expect(requests.body("PUT /api/plugins/usual-push/devices/dev1") == nil)
+        // One gateway can't be confused with another; with two, Settings asks for the update.
+        #expect(!model.pushPluginNeedsUpdate)
+        model.gateways.append(SavedGateway(address: try GatewayAddress(parsing: "https://hermes.example.com")))
+        #expect(model.pushPluginNeedsUpdate)
+    }
+
+    @Test func turningAGatewaysNotificationsOffTakesThisDeviceOffIt() async throws {
+        let (push, model, requests) = try await makeModel(
+            settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com"}]}"#)
+        model.gatewayList.keepsNames = false
+        await push.refresh()
+        #expect(push.isActive)
+        await model.setNotifications(false)
+        #expect(!push.isActive)
+        #expect(model.activeGateway?.notifies == false)
+        #expect(requests.lines.contains("DELETE /api/plugins/usual-push/devices/dev1"))
+        #expect(requests.body("PUT /api/plugins/usual-push/devices/dev1") == nil)
+    }
+
+    @Test func leavingAGatewaySaysNoChatIsOpenThere() async throws {
+        let (push, model, requests) = try await makeModel(
+            settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com"}]}"#)
+        model.gatewayList.keepsNames = false
+        await push.refresh()
+        push.isWindowFocused = true
+        await push.report(visible: "forge", names: [:])
+        model.gateways.append(SavedGateway(address: try GatewayAddress(parsing: "https://hermes.example.com")))
+        model.switchTo(model.gateways[1].id)
+        try await waitUntil { requests.lines.filter { $0.hasSuffix("/presence") }.count == 2 }
+        #expect(presence(requests).last?.contains(#""chat""#) == false)
+    }
+
     private func presence(_ requests: Requests) -> [String] {
         requests.log.withLock { $0.filter { $0.0.hasSuffix("/presence") }.map(\.1) }
     }

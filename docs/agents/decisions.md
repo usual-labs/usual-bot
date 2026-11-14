@@ -612,7 +612,40 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
 - **The extension links UsualUI,** for the same avatars and colours as the sidebar. Its files are
   copied, never read into memory, and photos are converted to JPEG by the app when it sends.
 
+## Gateways
+
+- **Two at most, one in use.** The developer wanted their own gateways side by side, but chose
+  switching over a merged list: a messenger with one live connection stays small, and the cap
+  keeps battery and connections in check on iPhone. The one you leave disconnects fully; its sign-in,
+  cache, drafts, sidebar and waiting shares stay on the device (`AppModel.leave(forgetting:)`), so
+  switching back shows it at once. Chat IDs stay bare (every gateway has `default`), so anything
+  that outlives a switch is per gateway: the cache, drafts and sections by address, and the open
+  chat and Quick Message recipient, which `@AppStorage` keeps under one key each, are swapped in
+  and out of each `SavedGateway.remembered`.
+- **`gatewayAddress` still names the gateway in use,** beside the new `gateways` list, so an install
+  from before migrates without signing in again and an older build still finds its sign-in.
+- **Notifications say which gateway sent them by an ID the device made.** Each `SavedGateway` has a
+  random ID that the device gives the push plugin (0.5.0) with its registration; the plugin seals it
+  into each notification and clear, and mixes it into the thread HMAC. A gateway often doesn't know
+  the address you reach it by, and the ID reveals nothing. The relay registration, its seal key
+  included, stays one per device. The plugin reports its `version` in `GET /settings`; with two
+  gateways, an older plugin's notifications can't be routed, so tapping one only opens the app and
+  that gateway's settings ask for the update. With one gateway nothing changes.
+- **The notification extension reads gateway names from the push keychain group** (`GatewayNames`),
+  not an App Group: it has none, and adding one means new provisioning profiles. It names the
+  gateway in the subtitle only while two are saved.
+- **Leaving a gateway tells its plugin no chat is open,** or it would keep treating the last chat as
+  being read and never notify about it.
+- **A notification's switch is per gateway, on the device's own list:** off removes the device from
+  that gateway's plugin and also silences the app's own alerts from it.
+
 ## Not verified
+
+- Two gateways ran only in the demo (two made-up gateways, Mac and iPhone Simulator) and against
+  fakes: switching, Sign Out going on to the other gateway, Add Gateway and Cancel, renaming, and
+  the push registration's gateway ID. Not run: two real gateways, plugin 0.5.0 on a gateway, a
+  tagged notification reaching a device and opening on the other gateway, the subtitle naming the
+  gateway, clears scoped to one gateway, and the new-notification dot from real notifications.
 
 - Sharing from other apps ran on 2026-11-10 in the iPhone Simulator with the demo
   (`--demo --demo-share`): a page from Safari and a photo from Photos, to a Bot and to the room,

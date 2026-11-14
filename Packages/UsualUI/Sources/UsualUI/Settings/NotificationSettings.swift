@@ -13,6 +13,8 @@ struct NotificationSettings: View {
     /// The Bots this device can choose to hear from.
     let bots: [Contact]
     let isSignedIn: Bool
+    var isOffHere = false
+    var needsUpdate = false
 
     @AppStorage(AppPreferences.messageNotificationsKey) private var messages = true
     @AppStorage(AppPreferences.needsYouNotificationsKey) private var needsYou = true
@@ -58,7 +60,8 @@ struct NotificationSettings: View {
         if isSignedIn {
             PushSection(
                 push: push, bots: bots,
-                choices: PushSettings.Choices(messages: messages, needsYou: needsYou, previews: previews, sound: sound))
+                choices: PushSettings.Choices(messages: messages, needsYou: needsYou, previews: previews, sound: sound),
+                isOffHere: isOffHere, needsUpdate: needsUpdate)
         }
         Section("System permission") {
             LabeledContent("Notifications", value: permissionLabel)

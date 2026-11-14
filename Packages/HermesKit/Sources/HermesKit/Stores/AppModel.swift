@@ -20,7 +20,7 @@ public final class AppModel {
         case offline(String)
     }
 
-    public private(set) var session: Session = .signedOut
+    public internal(set) var session: Session = .signedOut
     public internal(set) var link: Link = .connecting
     /// The agents and rooms the gateway reports, in its own terms. Show `sidebarContacts` instead.
     public internal(set) var contacts: [Contact] = []
@@ -39,9 +39,9 @@ public final class AppModel {
     /// A chat to open, say because you tapped its notification. The window clears it.
     public var requestedContactID: Contact.ID?
     /// Version, health and account, once the Machine tab asked for them.
-    public private(set) var gatewayDetails: GatewayDetails?
+    public internal(set) var gatewayDetails: GatewayDetails?
     /// The last sign-in or connection problem, for the connect screen.
-    public private(set) var problem: String?
+    public internal(set) var problem: String?
     /// What the user last typed into the gateway field.
     public var gatewayInput: String
     /// Reading the saved sign-in at launch (the Keychain may ask first): a splash, not the connect
@@ -54,14 +54,25 @@ public final class AppModel {
     /// You've seen a chat, or signed out (`nil`), so what was said about it can go.
     @ObservationIgnored public var alertsCleared: ((Contact.ID?) -> Void)?
 
-    private let tokenStore: any TokenStore
-    private let http: any HTTPTransport
+    /// The gateways this device is signed in to, the one in use among them.
+    public internal(set) var gateways: [SavedGateway] = []
+    /// Where Cancel goes back to while you add a gateway (`addGateway()`).
+    public internal(set) var returnGatewayID: SavedGateway.ID?
+    /// Gateways not in use that have notifications waiting (`showNews(on:)`).
+    public internal(set) var gatewaysWithNews: Set<SavedGateway.ID> = []
+
+    let tokenStore: any TokenStore
+    let http: any HTTPTransport
     private let makeSocket: GatewayConnector.SocketFactory
-    private let defaults: UserDefaults
-    private let cache: OfflineCache
-    @ObservationIgnored private var lastSaved: OfflineCache.Snapshot?
+    let defaults: UserDefaults
+    /// Where the window keeps the open chat (`rememberedKeys`): the app's own defaults, which
+    /// `@AppStorage` reads, even when the model's are the demo's.
+    let selectionDefaults: UserDefaults
+    @ObservationIgnored var gatewayList: GatewayList
+    let cache: OfflineCache
+    @ObservationIgnored var lastSaved: OfflineCache.Snapshot?
     var auth: AuthSession?
-    private var signInTask: Task<Void, Never>?
+    var signInTask: Task<Void, Never>?
     var linkTask: Task<Void, Never>?
     /// Whether the app is on screen; the socket stays closed while it isn't.
     var isForeground = true
@@ -98,12 +109,17 @@ public final class AppModel {
     @ObservationIgnored var roomEdits = 0
     /// The demo has no gateway, so room edits happen here alone.
     @ObservationIgnored var isDemo = false
+    #if DEBUG
+        /// Shows the demo's other made-up gateway (`AppModel.demo()`), which nothing connects to.
+        @ObservationIgnored var demoSwitch: ((SavedGateway) -> Void)?
+    #endif
     /// Images and files agents name in chats, read from the gateway.
     @ObservationIgnored public private(set) lazy var media = MediaStore(auth: { [weak self] in self?.auth })
     @ObservationIgnored public private(set) lazy var voiceLive = VoiceLiveService(auth: { [weak self] in self?.auth })
     /// How the gateway reaches you when this app can't.
     @ObservationIgnored public private(set) lazy var push = PushSettings(
-        auth: { [weak self] in self?.auth }, relay: { [weak self] in self?.relay })
+        auth: { [weak self] in self?.auth }, relay: { [weak self] in self?.relay },
+        gateway: { [weak self] in self?.activeGateway })
     /// This device's entry in Usual's push relay.
     @ObservationIgnored public internal(set) lazy var relay = PushRelay.fromMainBundle()
     /// A newer TestFlight build, in TestFlight builds; other builds never ask.
@@ -127,14 +143,13 @@ public final class AppModel {
         return sync
     }()
 
-    private static let gatewayKey = "gatewayAddress"
     private static let rosterInterval: Duration = .seconds(5)
     private static let log = Logger(subsystem: "UsualBot", category: "app")
 
     public convenience init() {
         self.init(
             tokenStore: KeychainTokenStore(), http: URLSession.shared, defaults: .standard, cache: OfflineCache(),
-            draftsDirectory: Drafts.deviceDirectory, share: .appGroup())
+            draftsDirectory: Drafts.deviceDirectory, share: .appGroup(), selectionDefaults: .standard)
     }
 
     /// Sends all gateway traffic, requests and the socket alike, through the session `session`
@@ -143,13 +158,13 @@ public final class AppModel {
         self.init(
             tokenStore: KeychainTokenStore(), http: SessionTransport(session: session), defaults: .standard,
             cache: OfflineCache(), draftsDirectory: Drafts.deviceDirectory, share: .appGroup(),
-            makeSocket: { URLSessionWebSocket(url: $0, session: try await session()) },
+            selectionDefaults: .standard, makeSocket: { URLSessionWebSocket(url: $0, session: try await session()) },
             makeScreenSocket: { URLSessionScreenSocket(url: $0, session: try await session()) })
     }
 
     init(
         tokenStore: any TokenStore, http: any HTTPTransport, defaults: UserDefaults, cache: OfflineCache,
-        draftsDirectory: URL? = nil, share: ShareContainer? = nil,
+        draftsDirectory: URL? = nil, share: ShareContainer? = nil, selectionDefaults: UserDefaults? = nil,
         makeSocket: @escaping GatewayConnector.SocketFactory = { URLSessionWebSocket(url: $0) },
         makeScreenSocket: @escaping ScreenSocketFactory = { URLSessionScreenSocket(url: $0) }
     ) {
@@ -157,13 +172,18 @@ public final class AppModel {
         self.tokenStore = tokenStore
         self.http = http
         self.defaults = defaults
+        self.selectionDefaults = selectionDefaults ?? defaults
+        let list = GatewayList(defaults: defaults)
+        gatewayList = list
         self.cache = cache
         self.makeSocket = makeSocket
         sections = SidebarSections(defaults: defaults)
         drafts = Drafts(directory: draftsDirectory)
         shared = SharedOutbox(container: share)
-        gatewayInput = defaults.string(forKey: Self.gatewayKey) ?? ""
-        isRestoring = defaults.string(forKey: Self.gatewayKey) != nil
+        let active = list.activeAddress
+        gatewayInput = active?.baseURL.absoluteString ?? ""
+        isRestoring = active != nil
+        gateways = list.load()
         sections.save = { [weak self] profile, placement in
             guard let channel = self?.channel else { throw GatewayError.disconnected }
             try await BotMetaWrite.setSection(placement, profile: profile, on: channel)
@@ -178,23 +198,13 @@ public final class AppModel {
     /// Resumes the saved session, if this device has one.
     public func restore() async {
         defer { isRestoring = false }
-        guard case .signedOut = session,
-            let saved = defaults.string(forKey: Self.gatewayKey),
-            let gateway = try? GatewayAddress(parsing: saved)
-        else { return }
+        guard case .signedOut = session, returnGatewayID == nil, let gateway = activeGateway?.address else { return }
         // Off the main thread: macOS can hold a Keychain read behind an access prompt, and the
         // window must stay responsive while it waits.
         let store = tokenStore
         let tokens = await Task.detached { try? store.load(for: gateway) }.value
-        guard case .signedOut = session, let tokens else { return }
-        if let snapshot = cache.load(for: gateway) {
-            contacts = snapshot.contacts
-            threads = snapshot.threads.reduce(into: [:]) { threads, entry in
-                threads[entry.key] = makeThread(entry.key, cached: entry.value)
-            }
-            pictures.restore(snapshot.pictures ?? [:])
-            lastSaved = snapshot
-        }
+        guard case .signedOut = session, returnGatewayID == nil, let tokens else { return }
+        loadCache(for: gateway)
         begin(AuthSession(gateway: gateway, tokens: tokens, store: tokenStore, http: http))
     }
 
@@ -211,12 +221,25 @@ public final class AppModel {
         session = .signingIn(gateway)
         signInTask = Task {
             do {
+                // Signing in again to a saved gateway that lost its sign-in is fine; a second
+                // copy of one that has it, or a third gateway, isn't.
+                let store = tokenStore
+                let saved = gateways.first { $0.address == gateway }
+                if saved != nil, await Task.detached(operation: { try? store.load(for: gateway) }).value != nil {
+                    throw GatewayListError.alreadyConnected
+                }
+                if saved == nil, gateways.count >= Self.gatewayLimit { throw GatewayListError.full }
                 let status = try await GatewayStatus.fetch(gateway, http: http)
                 guard status.supportsNativeSignIn else { throw GatewayError.signInUnsupported }
                 let tokens = try await NativeSignIn.run(gateway: gateway, http: http, presenter: presenter)
                 try? tokenStore.save(tokens, for: gateway)
-                defaults.set(gateway.baseURL.absoluteString, forKey: Self.gatewayKey)
+                if saved == nil { gateways.append(SavedGateway(address: gateway)) }
+                gatewayList.save(gateways)
+                gatewayList.activeAddress = gateway
+                returnGatewayID = nil
                 gatewayInput = gateway.baseURL.absoluteString
+                if let saved { putBackRemembered(of: saved.id) } else { forgetRemembered() }
+                loadCache(for: gateway)
                 begin(AuthSession(gateway: gateway, tokens: tokens, store: tokenStore, http: http))
             } catch {
                 if case .signingIn = session { session = .signedOut }
@@ -235,47 +258,24 @@ public final class AppModel {
         connect(auth)
     }
 
+    /// Signs out of the gateway in use, then goes on to the other one, if there is one.
     public func signOut() {
-        linkTask?.cancel()
-        signInTask?.cancel()
-        alertsCleared?(nil)
-        if let auth {
-            cache.delete(for: auth.gateway)
-            // Off the gateway's push list first, while the sign-in still works.
-            Task { [push] in
-                await push.forget(on: auth)
-                await auth.signOut()
-            }
+        guard let gone = activeGateway else {
+            leave(forgetting: true)
+            session = .signedOut
+            return
         }
-        auth = nil
-        readSync.reset()
-        contacts = []
-        hiddenBots = []
-        threads = [:]
-        routineLists = [:]
-        skillLists = [:]
-        vaultLists = [:]
-        appLists = [:]
-        connectorLists = [:]
-        rosterHolds = RosterHolds()
-        renamedAgents = [:]
-        media.clear()
-        pictures.clear()
-        sections.clear()
-        drafts.clear()
-        shared.clear()
-        push.clear()
-        usage.clear()
-        rooms = [:]
-        gatewaySearch.reset()
-        for screen in screens.values { screen.disconnect() }
-        screens = [:]
-        for browser in browsers.values { browser.disconnect() }
-        browsers = [:]
-        gatewayDetails = nil
-        lastSaved = nil
-        link = .connecting
-        session = .signedOut
+        alertsCleared?(nil)
+        leave(forgetting: true)
+        gateways.removeAll { $0.id == gone.id }
+        gatewayList.save(gateways)
+        if let next = gateways.first {
+            activate(next)
+        } else {
+            gatewayList.activeAddress = nil
+            forgetRemembered()
+            session = .signedOut
+        }
     }
 
     #if DEBUG
@@ -307,7 +307,7 @@ public final class AppModel {
 
     // MARK: - Connection
 
-    private func begin(_ auth: AuthSession) {
+    func begin(_ auth: AuthSession) {
         self.auth = auth
         session = .signedIn(auth.gateway)
         sections.load(for: auth.gateway)
@@ -372,8 +372,7 @@ public final class AppModel {
                     try await Task.sleep(for: Self.rosterInterval)
                 }
             } catch GatewayError.signInRequired {
-                problem = GatewayError.signInRequired.errorDescription
-                signOut()
+                signInEnded(on: auth.gateway)
                 return
             } catch {
                 guard !Task.isCancelled else { return }

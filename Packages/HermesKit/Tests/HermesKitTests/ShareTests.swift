@@ -122,7 +122,7 @@ struct ShareContainerTests {
         #expect(folder.container.items().isEmpty)
     }
 
-    @Test func theRosterIsReadBackAndGoesWithEverythingElseOnClear() throws {
+    @Test func theRosterIsReadBackAndGoesWithItsGatewaysItemsOnClear() throws {
         let folder = ShareFolder()
         defer { folder.remove() }
         let container = folder.container
@@ -139,9 +139,13 @@ struct ShareContainerTests {
         #expect(container.roster() == roster)
         #expect(roster.members(of: room).map(\.id) == ["forge", "courier"])
 
-        container.clear()
+        var other = SharedContent()
+        other.addText("For the other gateway")
+        try container.add(other, note: "", to: forge, gateway: "g2")
+
+        container.clear(gateway: "g1")
         #expect(container.roster() == nil)
-        #expect(container.items().isEmpty)
+        #expect(container.items().map(\.gateway) == ["g2"])
         #expect(container.lastContactID == nil)
     }
 }

@@ -14,6 +14,8 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
     static let shared = AgentNotifications()
 
     private nonisolated static let contactKey = "contact"
+    /// Which of this device's gateways it's about (`SavedGateway.id`), as the push plugin seals it.
+    private nonisolated static let gatewayKey = "gateway"
     private static let log = Logger(subsystem: "UsualBot", category: "notifications")
     private var model: AppModel?
     private var showApp: () -> Void = {}
@@ -27,13 +29,18 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
         model.alertWithdrawn = { id in
             UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [id])
         }
-        model.alertsCleared = { contact in Task { await Self.clear(contact) } }
+        model.alertsCleared = { [weak self] contact in
+            guard let self else { return }
+            let gateway = self.model?.activeGateway?.id
+            Task { await self.clear(contact, on: gateway) }
+        }
         model.push.currentChoices = {
             PushSettings.Choices(
                 messages: Self.isWanted(.message), needsYou: Self.isWanted(.needsYou),
                 previews: Self.isOn(AppPreferences.notificationPreviewsKey),
                 sound: Self.isOn(AppPreferences.notificationSoundKey))
         }
+        Task { await lookForNews() }
     }
 
     func askForPermission() async {
@@ -49,8 +56,10 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
 
     private func heard(_ alert: AgentAlert, from contact: Contact) {
         // Another chat speaks up even while you're in the app; the one on screen never raises an alert.
-        guard Self.isWanted(alert.kind), !Self.pushCovers(alert, model) else { return }
-        Task { await Self.post(alert, from: contact) }
+        guard Self.isWanted(alert.kind), !Self.pushCovers(alert, model), model?.activeGateway?.notifies != false
+        else { return }
+        let gateway = model?.activeGateway?.id
+        Task { await Self.post(alert, from: contact, on: gateway) }
     }
 
     /// The gateway pushes messages and requests to this device, so an alert here would say it twice.
@@ -72,7 +81,7 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
         return UserDefaults.standard.object(forKey: key) as? Bool != false
     }
 
-    private static func post(_ alert: AgentAlert, from contact: Contact) async {
+    private static func post(_ alert: AgentAlert, from contact: Contact, on gateway: String?) async {
         let center = UNUserNotificationCenter.current()
         guard await center.notificationSettings().authorizationStatus != .denied else { return }
         let defaults = UserDefaults.standard
@@ -102,8 +111,8 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
         if defaults.object(forKey: AppPreferences.notificationSoundKey) as? Bool != false {
             content.sound = .default
         }
-        content.threadIdentifier = contact.id
-        content.userInfo = [contactKey: contact.id]
+        content.threadIdentifier = NotificationThread.id(gateway: gateway, chat: contact.id)
+        content.userInfo = [contactKey: contact.id, gatewayKey: gateway].compactMapValues(\.self)
         do {
             try await center.add(UNNotificationRequest(identifier: alert.id, content: content, trigger: nil))
             log.notice("Notified about a \(String(describing: alert.kind), privacy: .public) alert")
@@ -112,17 +121,31 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    /// Takes down what was said about a chat you've now seen, here or on another device (the
-    /// gateway's silent push, `PushRegistration`), or everything after signing out.
-    static func clear(_ contact: Contact.ID?) async {
+    /// Takes down what was said about a chat on `gateway` you've now seen, here or on another
+    /// device (the gateway's silent push, `PushRegistration`), or all of that gateway's after
+    /// signing out of it (`contact` is `nil`). The other gateway's stay.
+    func clear(_ contact: Contact.ID?, on gateway: String?) async {
         let center = UNUserNotificationCenter.current()
-        guard let contact else {
-            center.removeAllDeliveredNotifications()
-            return
-        }
+        // An older plugin's notifications don't say which gateway sent them: with one gateway
+        // they're its own, with two they can't be told apart, so they stay.
+        let untagged = (model?.gateways.count ?? 0) <= 1
         let delivered = await center.deliveredNotifications()
-        let ids = delivered.filter { $0.request.content.threadIdentifier == contact }.map(\.request.identifier)
+        let ids = delivered.filter { notification in
+            let content = notification.request.content
+            let from = content.userInfo[Self.gatewayKey] as? String
+            guard from == gateway || (from == nil && untagged) else { return false }
+            guard let contact else { return true }
+            return content.threadIdentifier == NotificationThread.id(gateway: from, chat: contact)
+        }
+        .map(\.request.identifier)
         if !ids.isEmpty { center.removeDeliveredNotifications(withIdentifiers: ids) }
+        await lookForNews()
+    }
+
+    /// Tells the model which gateways have notifications waiting, for the switcher's dot.
+    func lookForNews() async {
+        let delivered = await UNUserNotificationCenter.current().deliveredNotifications()
+        model?.showNews(on: Set(delivered.compactMap { $0.request.content.userInfo[Self.gatewayKey] as? String }))
     }
 
     // MARK: - UNUserNotificationCenterDelegate
@@ -138,13 +161,19 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
         withCompletionHandler completionHandler: @escaping @Sendable (UNNotificationPresentationOptions) -> Void
     ) {
         let content = notification.request.content
+        let gateway = content.userInfo[Self.gatewayKey] as? String
         guard content.userInfo["kind"] != nil, let chat = content.userInfo[Self.contactKey] as? String else {
             completionHandler([.banner, .list, .sound])
+            Task { @MainActor in await lookForNews() }
             return
         }
         Task { @MainActor in
-            let reading = model?.isFocused == true && model?.visibleContactID == chat
+            let here = gateway == nil || gateway == model?.activeGateway?.id
+            let reading = here && model?.isFocused == true && model?.visibleContactID == chat
             completionHandler(reading ? [] : [.banner, .list, .sound])
+            // Delivered by now, or about to be: look again in a moment.
+            try? await Task.sleep(for: .milliseconds(300))
+            await lookForNews()
         }
     }
 
@@ -152,15 +181,27 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
         _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping @Sendable () -> Void
     ) {
-        let contact = response.notification.request.content.userInfo[Self.contactKey] as? String
+        let info = response.notification.request.content.userInfo
+        let contact = info[Self.contactKey] as? String
+        let gateway = info[Self.gatewayKey] as? String
         Task { @MainActor in
-            if let contact { open(contact) }
+            if let contact { open(contact, on: gateway) }
             completionHandler()
         }
     }
 
-    private func open(_ contact: Contact.ID) {
-        model?.requestedContactID = contact
-        showApp()
+    /// Opens the chat, on its own gateway: switching to it if another is in use.
+    private func open(_ contact: Contact.ID, on gateway: String?) {
+        defer { showApp() }
+        guard let model else { return }
+        if let gateway {
+            // Signed out of it since: there's no chat to open.
+            guard model.gateways.contains(where: { $0.id == gateway }) else { return }
+            if gateway != model.activeGateway?.id || !model.isSignedIn { model.switchTo(gateway) }
+        } else if model.gateways.count > 1 {
+            // An older plugin's: it could be either gateway's `default`, so the app just opens.
+            return
+        }
+        model.requestedContactID = contact
     }
 }
