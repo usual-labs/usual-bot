@@ -1,20 +1,20 @@
 import HermesKit
 import SwiftUI
 
-/// Which gateway, whether it's reachable, and sign-out: the Mac sidebar's footer, and on iPhone
-/// the chat list's top-left button. `more` adds items to its menu, such as the app's Tailscale.
+/// Which gateway, whether it's reachable, switching to the other one, and sign-out: the Mac
+/// sidebar's footer. `more` adds items to its menu, such as the app's Tailscale.
 struct GatewayStatusButton<More: View>: View {
+    let model: AppModel
     let gateway: GatewayAddress
-    let link: AppModel.Link
-    let signOut: () -> Void
     @ViewBuilder let more: () -> More
     @State private var confirmsSignOut = false
 
     var body: some View {
         Menu {
-            Section(gateway.displayName) {
+            Section(name) {
                 Text(statusText)
             }
+            GatewayChoices(model: model)
             more()
             Button("Sign Out…", role: .destructive) { confirmsSignOut = true }
         } label: {
@@ -23,6 +23,7 @@ struct GatewayStatusButton<More: View>: View {
                 Text(label)
                     .foregroundStyle(Theme.secondaryInk)
                     .lineLimit(1)
+                if hasNews { NewsDot() }
                 #if os(macOS)
                     Spacer(minLength: 0)
                 #endif
@@ -43,13 +44,18 @@ struct GatewayStatusButton<More: View>: View {
         .buttonStyle(.plain)
         .clickable()
         .menuIndicator(.hidden)
-        .accessibilityLabel(Text("Gateway \(gateway.displayName), \(statusText)"))
-        .signOutConfirmation(isPresented: $confirmsSignOut, gateway: gateway, signOut: signOut)
+        .accessibilityLabel(Text("Gateway \(name), \(statusText)"))
+        .accessibilityValue(hasNews ? Text("New notifications on your other gateway") : Text(""))
+        .signOutConfirmation(isPresented: $confirmsSignOut, name: name, signOut: model.signOut)
     }
+
+    private var link: AppModel.Link { model.link }
+    private var name: String { model.activeGateway?.displayName ?? gateway.displayName }
+    private var hasNews: Bool { !model.gatewaysWithNews.isEmpty }
 
     private var label: String {
         switch link {
-        case .online: return gateway.displayName
+        case .online: return name
         case .connecting: return String(localized: "Connecting…")
         case .offline: return String(localized: "Offline, retrying…")
         }
@@ -63,15 +69,55 @@ struct GatewayStatusButton<More: View>: View {
 extension View {
     /// Asks before signing out: it can't be undone, and the chats come back only from the gateway.
     func signOutConfirmation(
-        isPresented: Binding<Bool>, gateway: GatewayAddress, signOut: @escaping () -> Void
+        isPresented: Binding<Bool>, name: String, signOut: @escaping () -> Void
     ) -> some View {
         confirmationDialog(
-            "Sign out of \(gateway.displayName)?", isPresented: isPresented, titleVisibility: .visible
+            "Sign out of \(name)?", isPresented: isPresented, titleVisibility: .visible
         ) {
             Button("Sign Out", role: .destructive, action: signOut)
         } message: {
             SignOutNote()
         }
+    }
+}
+
+/// Each gateway, a check on the one in use: choosing another switches to it. Then Add Gateway,
+/// until there are as many as the app takes.
+struct GatewayChoices: View {
+    let model: AppModel
+
+    var body: some View {
+        Section("Gateways") {
+            ForEach(model.gateways) { gateway in
+                Button {
+                    model.switchTo(gateway.id)
+                } label: {
+                    if gateway.id == model.activeGateway?.id {
+                        Label(gateway.displayName, systemImage: "checkmark")
+                    } else if model.gatewaysWithNews.contains(gateway.id) {
+                        Text(gateway.displayName)
+                        Text("New notifications")
+                    } else {
+                        Text(gateway.displayName)
+                    }
+                }
+            }
+            Button("Add Gateway…", systemImage: "plus") { model.addGateway() }
+                .disabled(!model.canAddGateway)
+            if !model.canAddGateway {
+                Text("Usual Bot connects to two gateways at most.")
+            }
+        }
+    }
+}
+
+/// Another gateway has notifications waiting.
+struct NewsDot: View {
+    var body: some View {
+        Circle()
+            .fill(Theme.primary)
+            .frame(width: 7, height: 7)
+            .accessibilityHidden(true)
     }
 }
 

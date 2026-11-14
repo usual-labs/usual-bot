@@ -46,9 +46,26 @@ list. Pinned chats come first, then the most recent conversation.
 - On the Mac, ⌘1 to ⌘9 open the first nine chats in the sidebar, counting from the pinned chats
   and skipping folded sections. Hold ⌘ for a moment and each of them shows its number. The Go menu
   lists them too.
-- The dot at the bottom of the sidebar shows the connection. Click it to see the gateway and to
-  sign out. On iPhone the dot sits on the settings gear at the top left; tap it, then your gateway,
-  for its details, Built-in Tailscale and Sign Out.
+- The dot at the bottom of the sidebar shows the connection. Click it to see the gateway, switch to
+  your other gateway, add one, or sign out. On iPhone the dot sits on the settings gear at the top
+  left; tap it for your gateways, and tap the one in use for its details, Built-in Tailscale and
+  Sign Out.
+
+### Two gateways
+
+Usual Bot signs in to two gateways and uses one at a time: the sidebar, search, Quick Message and
+sharing show only the one in use. Switch from the gateway's menu at the bottom of the Mac sidebar,
+or from the top of Settings (on the Mac, its Connection tab). The gateway you leave disconnects; a
+reply still running there carries on, and anything you shared to one of its Bots waits until you
+come back. Each gateway reopens the chat you left open in it.
+
+The other gateway still notifies you, with its name under the Bot's, and tapping a notification
+switches to it. A dot by the gateway's name says it has notifications waiting. In its Connection
+settings, give a gateway a name of your own (it's for this device only) or turn its notifications
+off. Notifications from a gateway whose push plugin is older than 0.5.0 can't say which gateway they
+came from: tapping one opens the app, and that gateway's settings ask you to update the plugin.
+On iPhone, Built-in Tailscale is one device in one tailnet, so a second gateway must be on the same
+tailnet or reachable without Tailscale. A room's Bots are always from one gateway.
 
 On the Mac, press the sidebar button or drag the sidebar narrower and it becomes a rail of avatars, with a line under
 the pinned chats and between sections.
@@ -594,9 +611,10 @@ and Settings opens with your gateway at the top. Preferences stay on this device
 - **Voice:** choose the call engine and the language, voice and speed for on-device speech. These
   preferences are shared with the controls inside a call, and Read Aloud uses the language, voice
   and speed too; GPT-Live’s voice stays on the gateway.
-- **Connection:** see the gateway address, status, version and identity when available, or sign out.
-  Signing out removes the saved sign-in and cached chats for that gateway from this device, so the
-  app asks first.
+- **Connection:** see the gateway address, status, version and identity when available, name it,
+  turn its notifications off, or sign out. Signing out removes the saved sign-in and cached chats
+  for that gateway from this device, so the app asks first; with two gateways, the app goes on to
+  the other one. On the Mac, the gateways to switch between and Add Gateway are here too.
 - **Usage:** see where your Bots' tokens went over the last 7, 30 or 90 days: a chart per day,
   the total, the cost when Hermes knows it, and the share each Bot used. On iPhone it's the row
   under your gateway. **Where the tokens went** splits them into what the model wrote, what was

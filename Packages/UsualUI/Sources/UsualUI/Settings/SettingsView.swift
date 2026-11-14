@@ -70,7 +70,7 @@ public struct SettingsView: View {
             NavigationStack {
                 List {
                     Section {
-                        NavigationLink(value: Page.connection) { gatewayCard }
+                        gatewayRows
                         // Grok keeps usage with the account; here the gateway is the account.
                         NavigationLink(value: Page.usage) {
                             // The gateway card's columns, so the symbol sits under its circle and
@@ -110,11 +110,65 @@ public struct SettingsView: View {
     }
 
     #if os(iOS)
-        /// Which gateway, and whether it's reachable; opens Connection.
         private static let symbolWidth: CGFloat = 44
         private static let symbolSpacing: CGFloat = 14
 
-        private var gatewayCard: some View {
+        /// Each gateway: the one in use opens Connection, another switches to it. Then Add Gateway.
+        @ViewBuilder private var gatewayRows: some View {
+            if model.gateways.isEmpty || !model.isSignedIn {
+                NavigationLink(value: Page.connection) {
+                    gatewayCard(
+                        name: String(localized: "Not connected"), status: connectionStatus, dot: model.link.dotColor)
+                }
+            } else {
+                ForEach(model.gateways) { gateway in
+                    if gateway.id == model.activeGateway?.id {
+                        NavigationLink(value: Page.connection) {
+                            gatewayCard(
+                                name: gateway.displayName, status: connectionStatus, dot: model.link.dotColor,
+                                isChecked: model.gateways.count > 1)
+                        }
+                    } else {
+                        Button {
+                            model.switchTo(gateway.id)
+                        } label: {
+                            gatewayCard(
+                                name: gateway.displayName,
+                                status: model.gatewaysWithNews.contains(gateway.id)
+                                    ? String(localized: "New notifications") : String(localized: "Tap to switch"),
+                                dot: Theme.secondaryInk, hasNews: model.gatewaysWithNews.contains(gateway.id))
+                        }
+                        .accessibilityHint(Text("Switches to this gateway"))
+                    }
+                }
+                Button {
+                    dismiss()
+                    model.addGateway()
+                } label: {
+                    HStack(spacing: Self.symbolSpacing) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 18))
+                            .frame(width: Self.symbolWidth)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Add Gateway")
+                            if !model.canAddGateway {
+                                Text("Usual Bot connects to two gateways at most.")
+                                    .scaledFont(size: 14)
+                                    .foregroundStyle(Theme.secondaryInk)
+                            }
+                        }
+                    }
+                    .foregroundStyle(model.canAddGateway ? Theme.ink : Theme.secondaryInk)
+                }
+                .disabled(!model.canAddGateway)
+            }
+        }
+
+        /// A gateway, and whether it's reachable.
+        private func gatewayCard(
+            name: String, status: String, dot: Color, isChecked: Bool = false, hasNews: Bool = false
+        ) -> some View {
             HStack(spacing: Self.symbolSpacing) {
                 Image(systemName: "server.rack")
                     .font(.system(size: 18))
@@ -123,28 +177,30 @@ public struct SettingsView: View {
                     .background(Theme.selection, in: Circle())
                     .overlay(alignment: .bottomTrailing) {
                         Circle()
-                            .fill(model.link.dotColor)
+                            .fill(dot)
                             .frame(width: 11, height: 11)
                             .overlay(Circle().strokeBorder(Theme.window, lineWidth: 2))
                     }
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(gatewayName)
+                    Text(name)
                         .scaledFont(size: 17, weight: .medium)
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1, accessibility: 3)
-                    Text(connectionStatus)
+                    Text(status)
                         .scaledFont(size: 14)
                         .foregroundStyle(Theme.secondaryInk)
                         .lineLimit(2)
                 }
+                Spacer(minLength: 0)
+                if hasNews { NewsDot() }
+                if isChecked {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Theme.ink)
+                        .accessibilityLabel(Text("In use"))
+                }
             }
             .padding(.vertical, 4)
-        }
-
-        private var gatewayName: String {
-            if case .signedIn(let gateway) = model.session { return gateway.displayName }
-            return String(localized: "Not connected")
         }
     #endif
 
@@ -174,7 +230,8 @@ public struct SettingsView: View {
                     bots: model.contacts.filter { $0.kind == .agent }.sorted {
                         $0.name.localizedStandardCompare($1.name) == .orderedAscending
                     },
-                    isSignedIn: model.isSignedIn)
+                    isSignedIn: model.isSignedIn, isOffHere: model.activeGateway?.notifies == false,
+                    needsUpdate: model.pushPluginNeedsUpdate)
             case .voice:
                 VoiceSettings()
             case .connection:
@@ -189,7 +246,48 @@ public struct SettingsView: View {
 
     @ViewBuilder private var connection: some View {
         if case .signedIn(let gateway) = model.session {
-            Section("Gateway") {
+            #if os(macOS)
+                // On iPhone these are at the top of Settings.
+                Section {
+                    ForEach(model.gateways) { saved in
+                        LabeledContent {
+                            if saved.id == model.activeGateway?.id {
+                                Text("In use")
+                            } else {
+                                Button("Switch") { model.switchTo(saved.id) }
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Text(saved.displayName)
+                                if model.gatewaysWithNews.contains(saved.id) {
+                                    NewsDot()
+                                    Text("New notifications").foregroundStyle(Theme.secondaryInk)
+                                }
+                            }
+                        }
+                    }
+                    Button("Add Gateway…") { model.addGateway() }
+                        .disabled(!model.canAddGateway)
+                } header: {
+                    Text("Gateways")
+                } footer: {
+                    if !model.canAddGateway { Text("Usual Bot connects to two gateways at most.") }
+                }
+            #endif
+            Section {
+                if let saved = model.activeGateway {
+                    LabeledContent("Name") {
+                        TextField("Name", text: name(of: saved), prompt: Text(saved.address.displayName))
+                            .labelsHidden()
+                            .multilineTextAlignment(.trailing)
+                            .textInputTint()
+                    }
+                    Toggle("Notifications", isOn: notifies(saved))
+                    if model.pushPluginNeedsUpdate {
+                        Text("Update Usual Push on this gateway so its notifications open the right chat.")
+                            .foregroundStyle(Theme.secondaryInk)
+                    }
+                }
                 LabeledContent("Address") {
                     Text(gateway.baseURL.absoluteString).textSelection(.enabled)
                 }
@@ -207,18 +305,34 @@ public struct SettingsView: View {
                         Link("Open Hermes for advanced settings", destination: url)
                     }
                 #endif
+            } header: {
+                Text("Gateway")
+            } footer: {
+                if model.gateways.count > 1 { Text("Its name and notifications are for this device only.") }
             }
-            .task { await model.loadGatewayDetails() }
+            .task(id: model.activeGateway?.id) { await model.loadGatewayDetails() }
             if let connectionControls { connectionControls }
             Section {
                 Button("Sign Out…", role: .destructive) { confirmsSignOut = true }
-                    .signOutConfirmation(isPresented: $confirmsSignOut, gateway: gateway, signOut: model.signOut)
+                    .signOutConfirmation(
+                        isPresented: $confirmsSignOut, name: model.activeGateway?.displayName ?? gateway.displayName,
+                        signOut: model.signOut)
             } footer: {
                 SignOutNote()
             }
         } else {
             Section { Text("You’re not connected to a gateway. Sign in from the main window.") }
         }
+    }
+
+    private func name(of gateway: SavedGateway) -> Binding<String> {
+        Binding(get: { model.activeGateway?.name ?? "" }, set: { model.rename(gateway.id, to: $0) })
+    }
+
+    private func notifies(_ gateway: SavedGateway) -> Binding<Bool> {
+        Binding(
+            get: { model.activeGateway?.notifies ?? true },
+            set: { on in Task { await model.setNotifications(on) } })
     }
 
     private var connectionStatus: String {

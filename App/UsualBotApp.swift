@@ -67,7 +67,10 @@ struct UsualBotApp: App {
             NotificationCenter.default.addObserver(
                 forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
             ) { _ in
-                MainActor.assumeIsolated { model.lookForSharedItems() }
+                MainActor.assumeIsolated {
+                    model.lookForSharedItems()
+                    Task { await AgentNotifications.shared.lookForNews() }
+                }
             }
         #else
             AgentNotifications.shared.watch(model, showApp: {})
@@ -95,7 +98,10 @@ struct UsualBotApp: App {
                     .onChange(of: scenePhase) { _, phase in
                         backgroundLink.sceneChanged(to: phase)
                         // Back from another app, where you may have shared something to a Bot.
-                        if phase == .active { model.lookForSharedItems() }
+                        if phase == .active {
+                            model.lookForSharedItems()
+                            Task { await AgentNotifications.shared.lookForNews() }
+                        }
                     }
                 #endif
         }

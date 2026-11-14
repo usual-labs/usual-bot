@@ -342,6 +342,11 @@ public final class SidebarSections {
     /// Forgets everything on signing out.
     func clear() {
         if let storageKey { defaults.removeObject(forKey: storageKey) }
+        unload()
+    }
+
+    /// Lets go of this gateway's, which stay on this device for coming back to it.
+    func unload() {
         storageKey = nil
         sections = []
         folded = []

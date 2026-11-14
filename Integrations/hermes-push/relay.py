@@ -14,8 +14,6 @@ import logging
 import os
 import urllib.request
 
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-
 logger = logging.getLogger(__name__)
 _TIMEOUT = 15
 _BATCH = 20  # The relay takes this many pushes at once.
@@ -23,27 +21,39 @@ _BATCH = 20  # The relay takes this many pushes at once.
 
 def seal(seal_key: str, payload: dict) -> str:
     """AES-GCM, as nonce, then ciphertext and tag: what CryptoKit's `SealedBox(combined:)` reads."""
+    # Here, not at the top, so the tests run where `cryptography` isn't installed.
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
     nonce = os.urandom(12)
     sealed = AESGCM(base64.b64decode(seal_key)).encrypt(nonce, json.dumps(payload).encode(), None)
     return base64.b64encode(nonce + sealed).decode()
 
 
-def thread(seal_key: str, chat: str) -> str:
-    """Groups a chat's notifications without telling Apple which chat it is."""
-    return hmac.new(base64.b64decode(seal_key), chat.encode(), hashlib.sha256).hexdigest()[:32]
+def thread(seal_key: str, chat: str, gateway: str | None = None) -> str:
+    """Groups a chat's notifications without telling Apple which chat it is. Every gateway has a
+    `default` chat, so a device that told us which of its gateways this is groups by both."""
+    named = f"{gateway}\n{chat}" if gateway else chat
+    return hmac.new(base64.b64decode(seal_key), named.encode(), hashlib.sha256).hexdigest()[:32]
+
+
+def _tagged(device: dict, payload: dict) -> dict:
+    """With the ID the device gave this gateway, so it can tell this gateway's notifications from
+    another's. Sealed with the rest: no one else learns it."""
+    return payload | {"gateway": device["gateway"]} if device.get("gateway") else payload
 
 
 def push(device_id: str, device: dict, kind: str, payload: dict, chat: str | None) -> dict:
-    entry = {"device": device_id, "key": device["send_key"], "kind": kind, "sealed": seal(device["seal_key"], payload)}
+    sealed = seal(device["seal_key"], _tagged(device, payload))
+    entry = {"device": device_id, "key": device["send_key"], "kind": kind, "sealed": sealed}
     if chat:
-        entry["thread"] = thread(device["seal_key"], chat)
+        entry["thread"] = thread(device["seal_key"], chat, device.get("gateway"))
     return entry
 
 
 def clear(device_id: str, device: dict, chat: str) -> dict:
     """A silent push that takes down what the device shows about a chat. `kind` is sealed too, so
     no one can pass a message's sealed text off as one of these."""
-    payload = {"kind": "read", "chat": chat}
+    payload = _tagged(device, {"kind": "read", "chat": chat})
     return {"device": device_id, "key": device["send_key"], "sealed": seal(device["seal_key"], payload)}
 
 

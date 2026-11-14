@@ -61,9 +61,14 @@ public final class SharedOutbox {
         sent(item)
     }
 
-    /// Forgets everything on signing out.
-    func clear() {
-        container?.clear()
+    /// Forgets what was shared for `gateway` (`GatewayAddress.fileName`), on signing out of it.
+    func clear(gateway: String) {
+        container?.clear(gateway: gateway)
+        unload()
+    }
+
+    /// Lets go of this gateway's items, which wait in the folder until it's in use again.
+    func unload() {
         items = []
         lastRoster = nil
     }
