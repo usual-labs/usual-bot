@@ -60,6 +60,17 @@ are retired: they couldn't carry push without hand-made Developer ID profiles.
    into **What to Test**, and add the builds to the test groups. An external group's first build of
    each version waits for Apple's beta review, usually about a day.
 
+   The **Beta Review** workflow does the external part: it sets What to Test, adds the newest
+   processed build (or the one you name) to the external group and submits it for review. With
+   **Submit** off it only says what it would do. From a terminal:
+
+   ```sh
+   gh workflow run beta-review.yml -f submit=true -f what_to_test="…"
+   ```
+
+   `node scripts/beta-review.mjs` does the same from a Mac, with the key in
+   `APP_STORE_CONNECT_KEY_ID` and `APP_STORE_CONNECT_KEY_PATH`.
+
 Within an hour of a build being processed, the app offers it to testers (`Services/updates`); there
 is nothing to publish. TestFlight builds expire after 90 days, so testers need a newer one before then. They use Apple's
 production push service; the app works that out from how it was signed (`PushRelay`).
