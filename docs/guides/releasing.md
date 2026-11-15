@@ -25,9 +25,8 @@ are retired: they couldn't carry push without hand-made Developer ID profiles.
    its **Beta App Description** should say that Usual Bot isn't made by, affiliated with or
    endorsed by Nous Research, the makers of Hermes Agent.
 6. The **update check** at `bot.usual.dev`, which tells TestFlight builds that a newer one is out:
-   deploy [`Services/updates`](../../Services/updates/README.md) with an App Store Connect key. When
-   the public link opens, set its `BETA_GROUP` to the external group, so the app offers only builds
-   that passed beta review.
+   deploy [`Services/updates`](../../Services/updates/README.md) with an App Store Connect key. Its
+   `BETA_GROUP` names the external group, so the app offers only builds that passed beta review.
 
 ## Making a release
 

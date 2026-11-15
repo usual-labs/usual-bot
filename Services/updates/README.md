@@ -28,9 +28,9 @@ minutes, and the app keeps what it knew.
 ## Which builds
 
 With `BETA_GROUP` empty, it's the newest processed, unexpired build: what internal testers can
-install. Once external testers join through a public link, set `BETA_GROUP` in `wrangler.toml` to
-that group's ID (the last part of the group's URL in App Store Connect), so only builds given to it
-are offered, after beta review. Internal testers then hear about those builds only.
+install. With `BETA_GROUP` set to an external group's name in `wrangler.toml`, as it is, only builds
+given to that group that passed beta review are offered. Internal testers then hear about those
+builds only.
 
 ## Set it up
 

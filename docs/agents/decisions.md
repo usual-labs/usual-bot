@@ -312,8 +312,9 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   name builds still processing. The Worker (`Services/updates`) asks App Store Connect with an API
   key held as Worker secrets (a team key with `ASC_ISSUER_ID`, or an individual key without it),
   caches the answer for an hour, and the app checks every
-  6 hours. It reports the newest processed build (internal testers) until `BETA_GROUP` names the
-  external group. Only builds with `USUAL_UPDATES = YES` (`scripts/testflight.sh`) ask, so forks, CI
+  6 hours. With `BETA_GROUP` naming the external group, it reports the newest build in that group
+  whose external state is approved: group membership alone isn't enough, because a build joins the
+  group when it's submitted, before review. Only builds with `USUAL_UPDATES = YES` (`scripts/testflight.sh`) ask, so forks, CI
   and local builds never contact it. Build numbers are the upload time, so they compare as numbers.
   Deployed 2026-11-09 with an individual key; `GET /v1/latest` answered the processed 0.5.0 build
   for both platforms. A Debug build with `USUAL_UPDATES=YES` showed the banner from the live service
