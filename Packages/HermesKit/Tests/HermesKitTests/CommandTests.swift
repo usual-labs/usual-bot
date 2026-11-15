@@ -114,6 +114,22 @@ struct CommandRunTests {
         #expect(global["value"] == "low")
     }
 
+    /// Typed as a message, `/new` reached the gateway's messaging pipeline, which asked to confirm
+    /// it with an `/approve` the Webapp can't deliver back to that prompt.
+    @Test func aCommandLeftOutOfTheMenuIsNotSent() async throws {
+        let (thread, gateway) = try await openThread()
+        thread.send("/new")
+        thread.send("/RESET please")
+        thread.send("/news about Qdrant")
+        _ = try await gateway.answer(1, method: "prompt.submit", result: ["status": "streaming"])
+        #expect(gateway.socket.sent.count == 2)
+        #expect(
+            thread.state.items.prefix(2).map(\.content) == [
+                .notice("Usual Bot keeps one chat with each Bot, so /new doesn't work here. Nothing was sent."),
+                .notice("Usual Bot keeps one chat with each Bot, so /reset doesn't work here. Nothing was sent."),
+            ])
+    }
+
     @Test func refusedCommandSaysWhy() async throws {
         let (thread, gateway) = try await openThread()
         thread.send("/deploy")

@@ -157,7 +157,9 @@ extension ChatThread {
         guard let sessionID, let channel = channel() else { return }
         // `send` would run these instead of sending them, after the chat was already cut.
         let firstWord = text.split(separator: " ").first.map { $0.lowercased() } ?? ""
-        if command(in: text) != nil || ["/btw", "/bg", "/background", "/reasoning"].contains(firstWord) {
+        if command(in: text) != nil || Self.leftOutNotice(for: text) != nil
+            || ["/btw", "/bg", "/background", "/reasoning"].contains(firstWord)
+        {
             state.addNotice(String(localized: "A command can't replace a message. Nothing was removed."))
             prefill = text
             return

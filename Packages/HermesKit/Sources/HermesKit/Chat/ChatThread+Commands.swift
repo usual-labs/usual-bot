@@ -32,6 +32,22 @@ extension ChatThread {
         "/skin", "/pet", "/hatch", "/palette", "/timestamps", "/suggestions",
     ]
 
+    /// `notInMessenger` and their Hermes aliases, which the catalog doesn't list.
+    nonisolated static let typedNotInMessenger: Set<String> = notInMessenger.union([
+        "/reset", "/fork", "/set-home", "/generate-pet", "/ts", "/suggest",
+    ])
+
+    /// What to say instead of sending one of `typedNotInMessenger`. Sent as a message, the
+    /// gateway's messaging pipeline would run it on the Bot Chat; `/new` and `/reset` even ask to
+    /// confirm with an `/approve` that never reaches the prompt from the Webapp.
+    nonisolated static func leftOutNotice(for text: String) -> String? {
+        guard text.hasPrefix("/") else { return nil }
+        let name = String(text.prefix { !$0.isWhitespace }).lowercased()
+        guard typedNotInMessenger.contains(name) else { return nil }
+        return String(
+            localized: "Usual Bot keeps one chat with each Bot, so \(name) doesn't work here. Nothing was sent.")
+    }
+
     /// Loads the `/` menu: the agent's skills, its quick and plugin commands, and Hermes's
     /// built-ins that make sense here. Keeps the old list if the gateway can't answer.
     public func loadCommands() async {

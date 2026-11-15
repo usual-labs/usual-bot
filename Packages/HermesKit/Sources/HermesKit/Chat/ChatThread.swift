@@ -372,6 +372,10 @@ public final class ChatThread {
     /// Sends a message. While the agent works, the message steers the running turn instead.
     public func send(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if canSend, let notice = Self.leftOutNotice(for: text) {
+            state.addNotice(notice)
+            return
+        }
         #if DEBUG
             if canSend, runDemoGoalCommand(text) { return }
             if playsDemoReplies, canSend, !text.isEmpty, !state.isRunning {
