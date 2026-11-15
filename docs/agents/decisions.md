@@ -117,7 +117,9 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
 
 - The `/` menu offers skills, quick and plugin commands, and the built-ins the official app offers
   (`commands[name].desktop` null). It leaves out what would switch, rename or split the one Bot
-  Chat, and what only styles a terminal (`notInMessenger`).
+  Chat, and what only styles a terminal (`notInMessenger`). Typed anyway, they (and their aliases)
+  aren't sent: as a message the gateway's messaging pipeline would run them on the Bot Chat, and
+  `/new` asks to confirm with an `/approve` that, from the Webapp, never reaches its prompt.
 - Built-ins `command.dispatch` refuses go through `slash.exec`. `/reasoning` is handled by the app,
   because the command worker wouldn't reach the live chat.
 
