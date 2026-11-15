@@ -80,12 +80,14 @@ struct ScaledFontTests {
         }
     }
 
-    @Test func followsDynamicTypeOnlyOnIPhone() {
+    /// The Mac has no Dynamic Type; its zoom rides on the same value (`Zoom`).
+    @Test func followsDynamicTypeOnIPhoneAndTheZoomOnTheMac() {
         #if os(iOS)
             #expect(Theme.scaled(17, for: .accessibility5) > 40)
             #expect(Theme.scaled(17, for: .xSmall) < 17)
         #else
-            #expect(Theme.scaled(17, for: .accessibility5) == 17)
+            #expect(Theme.scaled(20, for: .xxLarge) == 25)
+            #expect(Theme.scaled(20, for: .xSmall) == 16)
         #endif
     }
 }

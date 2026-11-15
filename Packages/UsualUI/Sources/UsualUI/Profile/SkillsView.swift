@@ -57,7 +57,7 @@ private struct SkillRow: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(skill.name)
-                    Text(skill.description).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                    Text(skill.description).zoomedFont(.subheadline).foregroundStyle(.secondary).lineLimit(2)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityElement(children: .combine)

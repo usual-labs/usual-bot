@@ -338,7 +338,7 @@ private struct ShareTargetRow: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 7)
-            .frame(minHeight: 44)
+            .zoomedFrame(minHeight: 44)
             .background(isSelected ? Theme.selection : .clear, in: RoundedRectangle(cornerRadius: 10))
             .contentShape(Rectangle())
             .opacity(refusal == nil ? 1 : 0.45)

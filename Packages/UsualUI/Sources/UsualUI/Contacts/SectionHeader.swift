@@ -82,11 +82,11 @@ struct SectionHeader<Actions: View>: View {
         }
         #if os(macOS)
             .padding(.horizontal, 10)
-            .frame(minHeight: 30)
+            .zoomedFrame(minHeight: 30)
             .hoverHighlight(in: RoundedRectangle(cornerRadius: 10))
         #else
             // The list's header insets place it.
-            .frame(minHeight: 30)
+            .zoomedFrame(minHeight: 30)
         #endif
         .contentShape(RoundedRectangle(cornerRadius: 10))
     }
@@ -152,7 +152,7 @@ struct SectionNameField: View {
             #endif
         }
         .padding(.horizontal, 10)
-        .frame(minHeight: 30)
+        .zoomedFrame(minHeight: 30)
         .background(Theme.selection, in: RoundedRectangle(cornerRadius: 10))
     }
 

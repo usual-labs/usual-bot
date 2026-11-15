@@ -62,14 +62,14 @@ struct ConnectView<Options: View>: View {
         .formStyle(.grouped)
         .thinScroller()
         .scrollDismissesKeyboard(.interactively)
-        .frame(maxWidth: 480)
+        .zoomedFrame(maxWidth: 480)
         .frame(maxWidth: .infinity)
         .onAppear { addressFocused = true }
     }
 
     private var heading: some View {
         VStack(spacing: 6) {
-            HermesMark().frame(width: 96, height: 96).padding(.bottom, 18)
+            HermesMark().zoomedFrame(width: 96, height: 96).padding(.bottom, 18)
             Text(isAdding ? "Add a Gateway" : "Connect to Hermes")
                 .scaledFont(size: 22, weight: .semibold)
                 .foregroundStyle(Theme.ink)
@@ -138,7 +138,7 @@ struct HermesMark: View {
 struct SplashView: View {
     var body: some View {
         HermesMark()
-            .frame(width: 120, height: 120)
+            .zoomedFrame(width: 120, height: 120)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.window)
             .ignoresSafeArea()

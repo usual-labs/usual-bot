@@ -65,7 +65,7 @@ struct RoutineEditor: View {
             }
         }
         #if os(macOS)
-            .frame(width: 460, height: 560)
+            .zoomedFrame(width: 460, height: 560)
         #endif
     }
 
@@ -84,7 +84,7 @@ struct RoutineEditor: View {
                     .focused($writingPrompt)
                     .scaledFont(size: 14)
                     .scrollContentBackground(.hidden)
-                    .frame(minHeight: 110)
+                    .zoomedFrame(minHeight: 110)
                     .overlay(alignment: .topLeading) {
                         if draft.prompt.isEmpty {
                             // TextEditor has no prompt of its own.

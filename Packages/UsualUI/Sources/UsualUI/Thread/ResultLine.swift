@@ -22,7 +22,7 @@ struct ResultLine: View {
             }
             if expanded {
                 report
-                    .frame(maxWidth: Theme.bubbleWidth, alignment: .leading)
+                    .zoomedFrame(maxWidth: Theme.bubbleWidth, alignment: .leading)
                     .background(Theme.codeFill, in: RoundedRectangle(cornerRadius: 12))
                     .transition(.opacity)
             }
@@ -46,7 +46,7 @@ struct ResultLine: View {
         .scaledFont(size: 13)
         .foregroundStyle(Theme.secondaryInk)
         .padding(.leading, 12)
-        .frame(minHeight: 28)
+        .zoomedFrame(minHeight: 28)
         .contentShape(Rectangle())
     }
 

@@ -67,9 +67,9 @@ struct SaveShareMenu: View {
             #endif
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: 13, weight: .semibold))
+                .zoomedFont(size: 13, weight: .semibold)
                 .foregroundStyle(Theme.secondaryInk)
-                .frame(width: 26, height: 22)
+                .zoomedFrame(width: 26, height: 22)
                 .contentShape(Rectangle())
                 .touchTarget(width: 26, height: 22)
         }

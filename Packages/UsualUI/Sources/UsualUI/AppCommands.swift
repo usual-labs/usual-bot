@@ -23,6 +23,47 @@ enum ChatOrder {
     }
 }
 
+/// Back and Forward (⌘[ and ⌘]): the chats and rooms you opened, as a browser keeps pages.
+struct ChatHistory: Equatable {
+    private(set) var back: [Contact.ID] = []
+    private(set) var forward: [Contact.ID] = []
+    private(set) var current: Contact.ID?
+    /// Far enough back for anyone; older ones drop off.
+    static let limit = 50
+
+    /// You opened `id` yourself: it goes on top, and what was ahead is gone.
+    mutating func visit(_ id: Contact.ID?) {
+        guard id != current else { return }
+        if let current {
+            back.removeAll { $0 == current }
+            back.append(current)
+            if back.count > Self.limit { back.removeFirst(back.count - Self.limit) }
+        }
+        forward.removeAll()
+        current = id
+    }
+
+    /// The chat before this one that's still there, skipping the deleted and hidden.
+    mutating func goBack(among ids: Set<Contact.ID>) -> Contact.ID? {
+        back.removeAll { !ids.contains($0) }
+        guard let target = back.popLast() else { return nil }
+        if let current { forward.append(current) }
+        current = target
+        return target
+    }
+
+    mutating func goForward(among ids: Set<Contact.ID>) -> Contact.ID? {
+        forward.removeAll { !ids.contains($0) }
+        guard let target = forward.popLast() else { return nil }
+        if let current { back.append(current) }
+        current = target
+        return target
+    }
+
+    func canGoBack(among ids: Set<Contact.ID>) -> Bool { back.contains(where: ids.contains) }
+    func canGoForward(among ids: Set<Contact.ID>) -> Bool { forward.contains(where: ids.contains) }
+}
+
 #if os(macOS)
     /// What the main window in front offers the menu bar. `nil` actions are disabled there.
     struct WindowCommands {
@@ -33,6 +74,9 @@ enum ChatOrder {
         var sidebar: (title: LocalizedStringKey, toggle: () -> Void)?
         var previousChat: (() -> Void)?
         var nextChat: (() -> Void)?
+        var back: (() -> Void)?
+        var forward: (() -> Void)?
+        var showShortcuts: (() -> Void)?
         /// The chats ⌘1 to ⌘9 open, in order.
         var numberedChats: [(name: String, open: () -> Void)] = []
     }
@@ -52,6 +96,8 @@ enum ChatOrder {
     public struct UsualBotCommands: Commands {
         @FocusedValue(\.windowCommands) private var window
         @FocusedValue(\.chatPanel) private var panel
+        @AppStorage(Zoom.key) private var zoom = Zoom.initialLevel(
+            chatTextSize: UserDefaults.standard.integer(forKey: AppPreferences.textSizeKey))
 
         public init() {}
 
@@ -95,10 +141,30 @@ enum ChatOrder {
                     .disabled(panel == nil)
                 Divider()
             }
+            CommandGroup(after: .toolbar) {
+                Divider()
+                Button("Actual Size") { zoom = Zoom.actualSize }
+                    .keyboardShortcut("0")
+                    .disabled(Zoom.level(zoom) == Zoom.actualSize)
+                // ⌘= zooms in too, the key + shares on most keyboards (`ZoomKeys`).
+                Button("Zoom In") { zoom = Zoom.zoomedIn(zoom) }
+                    .keyboardShortcut("+")
+                    .disabled(!Zoom.canZoomIn(zoom))
+                Button("Zoom Out") { zoom = Zoom.zoomedOut(zoom) }
+                    .keyboardShortcut("-")
+                    .disabled(!Zoom.canZoomOut(zoom))
+            }
             CommandMenu("Go") {
                 Button("Search…") { window?.search() }
                     .keyboardShortcut("k")
                     .disabled(window == nil)
+                Divider()
+                Button("Back") { window?.back?() }
+                    .keyboardShortcut("[")
+                    .disabled(window?.back == nil)
+                Button("Forward") { window?.forward?() }
+                    .keyboardShortcut("]")
+                    .disabled(window?.forward == nil)
                 Divider()
                 Button("Previous Chat") { window?.previousChat?() }
                     .keyboardShortcut(.tab, modifiers: [.control, .shift])
@@ -116,6 +182,9 @@ enum ChatOrder {
             }
             CommandGroup(replacing: .help) {
                 Link("Usual Bot Help", destination: Self.guide)
+                Button("Keyboard Shortcuts") { window?.showShortcuts?() }
+                    .keyboardShortcut("/")
+                    .disabled(window?.showShortcuts == nil)
             }
         }
 

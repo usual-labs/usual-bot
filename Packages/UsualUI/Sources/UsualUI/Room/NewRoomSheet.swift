@@ -93,7 +93,7 @@ struct NewRoomSheet: View {
                     .scaledFont(size: 17)
                     .foregroundStyle(isPicked ? Theme.ink : Theme.secondaryInk)
             }
-            .frame(minHeight: 36)
+            .zoomedFrame(minHeight: 36)
             .contentShape(Rectangle())
         }
         .buttonStyle(.clickable)

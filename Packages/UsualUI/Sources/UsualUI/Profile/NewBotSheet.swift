@@ -33,7 +33,7 @@ struct NewBotSheet: View {
             form
         }
         #if os(macOS)
-            .frame(width: 420, height: 560)
+            .zoomedFrame(width: 420, height: 560)
         #endif
     }
 
@@ -99,7 +99,7 @@ struct NewBotSheet: View {
         return ZStack {
             if let square = picture?.square, let image = AvatarArt.picture(square, for: Self.previewID) {
                 image.resizable().interpolation(.high).scaledToFill()
-                    .frame(width: 88, height: 88)
+                    .zoomedFrame(width: 88, height: 88)
                     .clipShape(Circle())
             } else {
                 AgentAvatar(contact: Contact(id: seed, name: botName.title), size: 88)

@@ -87,14 +87,16 @@ struct MessageBox: View {
         private static let fieldPadding: CGFloat = 6
     #else
         private static let macButtonSize: CGFloat = 28
-        private var buttonSize: CGFloat { Self.macButtonSize }
+        /// Grows with the window's zoom, as the header's buttons do.
+        private var buttonSize: CGFloat { Theme.zoomed(Self.macButtonSize, for: dynamicTypeSize) }
         /// On one line the box is as tall as the header's buttons (`ThreadPane.barItemHeight`).
         private static let inset: CGFloat = (ThreadPane.barItemHeight - macButtonSize) / 2
         private static let fontSize: CGFloat = 15
         private static let fieldPadding: CGFloat = 4
     #endif
     /// Round ends on one line.
-    private var cornerRadius: CGFloat { buttonSize / 2 + Self.inset }
+    private var cornerRadius: CGFloat { buttonSize / 2 + inset }
+    private var inset: CGFloat { Theme.zoomed(Self.inset, for: dynamicTypeSize) }
 
     /// The text gets the box's whole width and the buttons move to a row below it: on iPhone while
     /// you type in a chat, with the chat's settings, and on the Mac once your text wraps.
@@ -130,6 +132,9 @@ struct MessageBox: View {
                     attaching?.attachments.append(contentsOf: $0)
                 }
                 .onChange(of: text) { if text.isEmpty { wrapped = nil } }
+                .dictateKey(
+                    enabled: takesTyping && !inCall, isListening: dictation.isListening, start: startDictation,
+                    stop: { dictation.stop() })
             #else
                 // Around the field, not on it: the field pastes text first and passes on what it can't.
                 .modifier(
@@ -277,7 +282,7 @@ struct MessageBox: View {
                     EmptyView()
                 }
             }
-            .padding(Self.inset)
+            .padding(inset)
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius))
         }
     }
@@ -401,13 +406,14 @@ struct MessageBox: View {
         #endif
         .padding(.vertical, Self.fieldPadding)
         #if os(macOS)
-            // One line of text is 26 pt tall here. Before layout settles the placeholder can measure
-            // taller, so an empty box doesn't count. Measured afresh for each conversation: going
-            // from one wrapped draft to another changes nothing here.
+            // One line of text is 26 pt tall here at actual size. Before layout settles the
+            // placeholder can measure taller, so an empty box doesn't count. Measured afresh for
+            // each conversation: going from one wrapped draft to another changes nothing here.
             .background {
+                let oneLine = Theme.zoomed(32, for: dynamicTypeSize)
                 Color.clear
                 .onGeometryChange(for: Bool.self) {
-                    $0.size.height > 32
+                    $0.size.height > oneLine
                 } action: { isTall in
                     if isTall, !text.isEmpty { wrapped = conversation }
                 }
@@ -429,12 +435,7 @@ struct MessageBox: View {
             // An empty box offers the mic; in a chat, the call button beside it holds the spot
             // Send takes over once there's something to send.
             HStack(spacing: 6) {
-                MicButton(dictation: dictation, throughGateway: dictatesThroughGateway) {
-                    dictation.start(
-                        after: text, transcriber: dictatesThroughGateway ? transcriber : nil,
-                        profile: transcriptionProfile, current: { text }, update: { text = $0 })
-                    focused = true
-                }
+                MicButton(dictation: dictation, throughGateway: dictatesThroughGateway, start: startDictation)
                 if let startCall, !dictation.isActive, !isRunning {
                     CallStartButton(action: startCall)
                 }
@@ -457,6 +458,13 @@ struct MessageBox: View {
     }
 
     private var hasAttachments: Bool { attaching?.attachments.isEmpty == false }
+
+    private func startDictation() {
+        dictation.start(
+            after: text, transcriber: dictatesThroughGateway ? transcriber : nil,
+            profile: transcriptionProfile, current: { text }, update: { text = $0 })
+        focused = true
+    }
 
     /// "Use On-device", for a recording the gateway couldn't transcribe.
     private var useOnDevice: (() -> Void)? {

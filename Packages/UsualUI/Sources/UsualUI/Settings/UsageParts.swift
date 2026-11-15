@@ -160,7 +160,7 @@ struct UsageChart: View {
                     }
                 }
             }
-            .frame(height: 180)
+            .zoomedFrame(height: 180)
             .accessibilityLabel(Text("Tokens per day"))
             if let busiest = days.max(by: { $0.tokens.total < $1.tokens.total }), busiest.tokens.total > 0 {
                 Text(

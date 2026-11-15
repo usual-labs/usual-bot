@@ -20,8 +20,12 @@
         /// The shortcut macOS accepted, as the menu bar shows it.
         var shortcut: String? { keyboardShortcut.label }
 
-        /// The card is 640 pt wide; the rest leaves room for its shadow and an answer.
-        private static let size = NSSize(width: 720, height: 680)
+        /// The card is 640 pt wide at actual size, and grows with View ▸ Zoom; the rest leaves
+        /// room for its shadow and an answer.
+        private static var size: NSSize {
+            let zoom = Zoom.factor(for: UserDefaults.standard)
+            return NSSize(width: (640 * zoom).rounded() + 80, height: (680 * zoom).rounded())
+        }
 
         init(model: AppModel) {
             self.model = model
@@ -50,6 +54,9 @@
         func show() {
             let panel = self.panel ?? makePanel()
             hosting?.rootView = view(shownAt: .now)
+            // The zoom may have changed since the panel was last open.
+            hosting?.view.frame = NSRect(origin: .zero, size: Self.size)
+            panel.setContentSize(Self.size)
             place(panel)
             // The shortcut fires while another app is active: order the panel in regardless,
             // then take the keyboard without activating Usual Bot.

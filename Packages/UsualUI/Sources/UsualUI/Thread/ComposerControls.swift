@@ -213,7 +213,7 @@ struct ComposerLayout: Layout {
                                 selected.map { index < $0 } == true
                                     ? Theme.primaryInk.opacity(0.3) : Theme.ink.opacity(0.3)
                             )
-                            .frame(width: 8, height: 8)
+                            .zoomedFrame(width: 8, height: 8)
                             .position(x: x(index), y: height / 2)
                     }
                     if let selected {

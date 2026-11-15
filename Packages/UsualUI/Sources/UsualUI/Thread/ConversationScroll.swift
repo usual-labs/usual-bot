@@ -28,7 +28,7 @@ struct ConversationScroll<Content: View>: View {
         /// A message's words, shown to select part of.
         @State private var selecting: SelectingText?
         @State private var reveal = TimeReveal()
-        @ScaledMetric(relativeTo: .caption) private var revealWidth: CGFloat = 64
+        @ScaledSize(relativeTo: .caption) private var revealWidth: CGFloat = 64
         @Environment(\.showConversationDetails) private var showDetails
     #endif
 
@@ -55,7 +55,7 @@ struct ConversationScroll<Content: View>: View {
                         value: arrival
                     )
                     .padding(.vertical, 16)
-                    .frame(maxWidth: Theme.columnWidth)
+                    .zoomedFrame(maxWidth: Theme.columnWidth)
                     .padding(.horizontal, ThreadPane.contentMargin)
                     .frame(maxWidth: .infinity)
                     #if os(iOS)
@@ -239,7 +239,7 @@ private struct JumpToLatestButton: View {
                 if hasNew {
                     Circle()
                         .fill(contact?.accent ?? Theme.primary)
-                        .frame(width: 11, height: 11)
+                        .zoomedFrame(width: 11, height: 11)
                         .offset(x: 1, y: -1)
                         .allowsHitTesting(false)
                 }
@@ -253,7 +253,7 @@ private struct JumpToLatestButton: View {
         #if os(iOS)
             Button("Jump to latest message", systemImage: "arrow.down", action: action)
                 .labelStyle(.iconOnly)
-                .font(.system(size: 15, weight: .semibold))
+                .zoomedFont(size: 15, weight: .semibold)
                 .foregroundStyle(Theme.ink)
                 .buttonStyle(.clickable(.glass))
                 .buttonBorderShape(.circle)
@@ -261,9 +261,9 @@ private struct JumpToLatestButton: View {
         #else
             Button(action: action) {
                 Image(systemName: "arrow.down")
-                    .font(.system(size: 14, weight: .regular))
+                    .zoomedFont(size: 14, weight: .regular)
                     .foregroundStyle(Theme.ink)
-                    .frame(width: 32, height: 32)
+                    .zoomedFrame(width: 32, height: 32)
                     .background(Theme.bubble, in: Circle())
                     .overlay(Circle().strokeBorder(Theme.border, lineWidth: 1))
                     .contentShape(Circle())

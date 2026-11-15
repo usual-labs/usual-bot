@@ -155,7 +155,7 @@ struct AvatarBadge: View {
                 .scaledFont(size: 10.5, weight: .semibold)
                 .foregroundStyle(Theme.primaryInk)
                 .padding(.horizontal, 4)
-                .frame(minWidth: 18, minHeight: 18)
+                .zoomedFrame(minWidth: 18, minHeight: 18)
                 .background(Capsule().fill(Theme.primary))
                 .overlay(Capsule().strokeBorder(Theme.window, lineWidth: 2))
         }
@@ -167,7 +167,7 @@ struct NeedsYouDot: View {
     var body: some View {
         Circle()
             .fill(Theme.needsYouInk)
-            .frame(width: 12, height: 12)
+            .zoomedFrame(width: 12, height: 12)
             .overlay(Circle().strokeBorder(Theme.window, lineWidth: 2))
             .accessibilityElement()
             .accessibilityLabel(Text("Needs you"))
@@ -188,7 +188,7 @@ struct ContactIndicator: View {
                 .scaledFont(size: 11.5, weight: .semibold)
                 .foregroundStyle(Theme.primaryInk)
                 .padding(.horizontal, 6)
-                .frame(minWidth: 20, minHeight: 20)
+                .zoomedFrame(minWidth: 20, minHeight: 20)
                 .background(Capsule().fill(Theme.primary))
                 .accessibilityLabel(Text("\(unreadCount) unread"))
         }

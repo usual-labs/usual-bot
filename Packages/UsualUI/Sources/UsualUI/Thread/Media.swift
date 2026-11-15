@@ -155,7 +155,7 @@ struct ReplyImage: View {
             case .loading:
                 RoundedRectangle(cornerRadius: 14)
                     .fill(Theme.selection)
-                    .frame(width: 280, height: 180)
+                    .zoomedFrame(width: 280, height: 180)
                     .overlay { ProgressView().controlSize(.small) }
             case .loaded(_, let image, let pixels):
                 // Sized to the image's own shape, so the rounded border hugs it, and narrower on a

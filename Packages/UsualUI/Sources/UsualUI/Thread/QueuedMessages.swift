@@ -8,7 +8,7 @@ struct QueuedMessages: View {
     let thread: ChatThread
     /// About four one-line rows before the list scrolls. It grows with the text, short of taking
     /// the chat's place.
-    @ScaledMetric(relativeTo: .body) private var listHeight: CGFloat = 136
+    @ScaledSize(relativeTo: .body) private var listHeight: CGFloat = 136
 
     var body: some View {
         let held = thread.queue.filter(\.isHeld)
@@ -105,8 +105,8 @@ private struct QueuedMessageRow: View {
     ) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 11, weight: .semibold))
-                .frame(width: 26, height: 26)
+                .zoomedFont(size: 11, weight: .semibold)
+                .zoomedFrame(width: 26, height: 26)
                 .contentShape(Rectangle())
                 .touchTarget(width: 26, height: 26)
         }

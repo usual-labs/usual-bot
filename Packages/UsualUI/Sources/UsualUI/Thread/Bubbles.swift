@@ -24,9 +24,10 @@ struct AgentBubble<Content: View>: View {
     var joinsAbove = false
     var joinsBelow = false
     @ViewBuilder let content: Content
+    @Zoomed private var maximum = Theme.bubbleWidth
 
     var body: some View {
-        UpToWidth {
+        UpToWidth(maximum: maximum) {
             content
                 .padding(.horizontal, Theme.bubblePadding)
                 .padding(.vertical, 9)
@@ -47,7 +48,7 @@ extension View {
     func cardSurface() -> some View {
         padding(16)
             // Leading, or a card with short lines floats towards its middle.
-            .frame(maxWidth: Theme.bubbleWidth, alignment: .leading)
+            .zoomedFrame(maxWidth: Theme.bubbleWidth, alignment: .leading)
             .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             .padding(.trailing, Theme.agentSideRoom)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -122,7 +123,7 @@ struct WorkingRow: View {
             ShimmerText(text: text)
         }
         .padding(.leading, 8)
-        .frame(minHeight: 28)
+        .zoomedFrame(minHeight: 28)
     }
 
     /// Shown while a reply is written out of sight, with streaming turned off in Settings.

@@ -47,7 +47,7 @@ struct RoutineTemplateForm: View {
                 } header: {
                     Text(verbatim: template.summary)
                         .textCase(nil)
-                        .font(.subheadline)
+                        .zoomedFont(.subheadline)
                 }
                 schedule
                 if template.hasDelivery { results }
@@ -65,7 +65,7 @@ struct RoutineTemplateForm: View {
             }
         }
         #if os(macOS)
-            .frame(width: 460, height: 520)
+            .zoomedFrame(width: 460, height: 520)
         #endif
     }
 

@@ -51,7 +51,7 @@ struct QuickSendStatus: View {
     private struct StatusLine: ViewModifier {
         func body(content: Content) -> some View {
             content
-                .font(.system(size: 12.5))
+                .zoomedFont(size: 12.5)
                 .foregroundStyle(Theme.secondaryInk)
                 .padding(.horizontal, 26)
                 .padding(.bottom, 12)

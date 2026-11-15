@@ -235,7 +235,7 @@ struct ProfileSectionHeader<Action: View>: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(.subheadline)
+                .zoomedFont(.subheadline)
                 .foregroundStyle(Theme.secondaryInk)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
@@ -246,7 +246,7 @@ struct ProfileSectionHeader<Action: View>: View {
                 .buttonStyle(.borderless)
                 .menuStyle(.button)
                 .menuIndicator(.hidden)
-                .font(.system(size: 13, weight: .medium))
+                .zoomedFont(size: 13, weight: .medium)
                 .foregroundStyle(Theme.secondaryInk)
                 .textCase(nil)
                 .clickable()

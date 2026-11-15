@@ -29,7 +29,7 @@ struct GoalBar: View {
                     .accessibilityHint(Text("Shows or hides the whole goal and how it's going"))
                 if !isOpen { action(GoalWording.mainAction(for: phase)) }
             }
-            .frame(minHeight: 34)
+            .zoomedFrame(minHeight: 34)
             if isOpen { details }
         }
         .padding(.leading, 14)
@@ -47,7 +47,7 @@ struct GoalBar: View {
 
     private var line: some View {
         HStack(spacing: 8) {
-            mark.frame(width: 16)
+            mark.zoomedFrame(width: 16)
             Text(GoalWording.title(for: phase))
                 .scaledFont(size: 12.5, weight: .semibold)
                 .foregroundStyle(Theme.ink)
@@ -70,7 +70,7 @@ struct GoalBar: View {
                     .fixedSize()
             }
             Image(systemName: "chevron.up")
-                .font(.system(size: 9, weight: .bold))
+                .zoomedFont(size: 9, weight: .bold)
                 .foregroundStyle(.tertiary)
                 .rotationEffect(.degrees(isOpen ? 180 : 0))
         }

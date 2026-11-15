@@ -19,7 +19,7 @@ struct GatewayStatusButton<More: View>: View {
             Button("Sign Out…", role: .destructive) { confirmsSignOut = true }
         } label: {
             HStack(spacing: 8) {
-                Circle().fill(dotColor).frame(width: 8, height: 8)
+                Circle().fill(dotColor).zoomedFrame(width: 8, height: 8)
                 Text(label)
                     .foregroundStyle(Theme.secondaryInk)
                     .lineLimit(1)
@@ -30,7 +30,7 @@ struct GatewayStatusButton<More: View>: View {
             }
             #if os(macOS)
                 .scaledFont(size: 12.5)
-                .frame(minHeight: 28)
+                .zoomedFrame(minHeight: 28)
             #else
                 .scaledFont(size: 15)
                 .padding(.horizontal, 4)
@@ -116,7 +116,7 @@ struct NewsDot: View {
     var body: some View {
         Circle()
             .fill(Theme.primary)
-            .frame(width: 7, height: 7)
+            .zoomedFrame(width: 7, height: 7)
             .accessibilityHidden(true)
     }
 }
@@ -173,5 +173,5 @@ extension AppModel.Link {
 
 #Preview("Contacts") {
     ContactsSplitView(contacts: SampleData.contacts()) { _ in EmptyView() }
-        .frame(width: 1000, height: 640)
+        .zoomedFrame(width: 1000, height: 640)
 }

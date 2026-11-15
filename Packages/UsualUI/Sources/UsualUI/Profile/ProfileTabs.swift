@@ -20,11 +20,11 @@
                         selection = tab
                     } label: {
                         Text(tab.title)
-                            .font(.system(size: 12, weight: selected ? .semibold : .regular))
+                            .zoomedFont(size: 12, weight: selected ? .semibold : .regular)
                             .foregroundStyle(selected ? Theme.ink : Theme.secondaryInk)
                             .lineLimit(1)
                             .frame(maxWidth: .infinity)
-                            .frame(height: Self.height - Self.inset * 2)
+                            .zoomedFrame(height: Self.height - Self.inset * 2)
                             .background {
                                 if selected {
                                     Capsule().fill(Theme.ink.opacity(0.1))

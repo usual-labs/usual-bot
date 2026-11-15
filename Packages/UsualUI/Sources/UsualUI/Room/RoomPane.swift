@@ -44,7 +44,7 @@ struct RoomPane: View {
                         unsent: Binding(get: { room.unsent }, set: { room.unsent = $0 }), send: room.send,
                         stop: room.stop
                     )
-                    .frame(maxWidth: Theme.columnWidth)
+                    .zoomedFrame(maxWidth: Theme.columnWidth)
                     .padding(.horizontal, ThreadPane.composerMargin)
                 }
             }

@@ -198,9 +198,9 @@ struct AttachmentChips: View {
                                 attachments.removeAll { $0.id == attachment.id }
                             } label: {
                                 Image(systemName: "xmark")
-                                    .font(.system(size: 9, weight: .bold))
+                                    .zoomedFont(size: 9, weight: .bold)
                                     .foregroundStyle(Theme.primaryInk)
-                                    .frame(width: 18, height: 18)
+                                    .zoomedFrame(width: 18, height: 18)
                                     .background(Theme.primary, in: Circle())
                                     .padding(4)
                                     .contentShape(Circle())
@@ -239,7 +239,7 @@ struct AttachmentTile: View {
     @State private var thumbnail: Image?
     @State private var failed = false
     @State private var viewing = false
-    @ScaledMetric(relativeTo: .footnote) private var nameWidth: CGFloat = 180
+    @ScaledSize(relativeTo: .footnote) private var nameWidth: CGFloat = 180
 
     private var data: Data? { imageData ?? loaded }
 
@@ -253,7 +253,7 @@ struct AttachmentTile: View {
                         RoundedRectangle(cornerRadius: 12).fill(Theme.selection)
                         thumbnail?.resizable().scaledToFill()
                     }
-                    .frame(width: 64, height: 64)
+                    .zoomedFrame(width: 64, height: 64)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.clickable)
@@ -280,7 +280,7 @@ struct AttachmentTile: View {
                         .fixedSize(horizontal: true, vertical: false)
                 }
                 .padding(.horizontal, 12)
-                .frame(minHeight: 40)
+                .zoomedFrame(minHeight: 40)
                 .background(Theme.selection, in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(kind == .image ? "Image \(name)" : "File \(name)"))

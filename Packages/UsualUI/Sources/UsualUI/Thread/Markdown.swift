@@ -395,7 +395,7 @@ struct CodeBlock: View {
                     .buttonStyle(.clickable)
                     .scaledFont(size: 12, weight: .medium)
                     .foregroundStyle(Theme.secondaryInk)
-                    .frame(minHeight: 28)
+                    .zoomedFrame(minHeight: 28)
             }
             .padding(.horizontal, 12)
             .padding(.top, 4)

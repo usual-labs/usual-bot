@@ -46,6 +46,8 @@ list. Pinned chats come first, in the order you put them, then the rest by their
 - On the Mac, ⌘1 to ⌘9 open the first nine chats in the sidebar, counting from the pinned chats
   and skipping folded sections. Hold ⌘ for a moment and each of them shows its number. The Go menu
   lists them too.
+- On the Mac, **Go › Back** (⌘[) and **Forward** (⌘]) step through the chats and rooms you opened,
+  as a browser steps through pages, skipping any you've deleted or hidden since.
 - The dot at the bottom of the sidebar shows the connection. Click it to see the gateway, switch to
   your other gateway, add one, or sign out. On iPhone the dot sits on the settings gear at the top
   left; tap it for your gateways, and tap the one in use for its details, Built-in Tailscale and
@@ -367,7 +369,9 @@ text:
 ## Dictation and voice calls
 
 - **Dictation.** In an empty message box, tap the mic and speak. Words appear as you talk,
-  recognised on the device when it can. Tap the mic again to stop, then edit and send.
+  recognised on the device when it can. Tap the mic again to stop, then edit and send. On the Mac,
+  ⌘D starts it too, even with text in the box: press it again to stop, or hold ⌘D while you talk and
+  let go to stop.
 - **Dictation through your gateway.** In **Settings › Voice › Dictation**, choose **Gateway** to
   have the Bot's own speech-to-text on Hermes hear you instead. Your voice goes to your gateway,
   which may send it on to a paid service, depending on how its speech-to-text is set up. Words
@@ -605,9 +609,13 @@ Open **Settings…** from the Usual Bot menu (⌘, on Mac), the menu bar item, o
 connection indicator. On iPhone the gear sits at the top of the list, with a dot for the connection,
 and Settings opens with your gateway at the top. Preferences stay on this device.
 
-- **General:** follow the system appearance or choose light or dark, and change chat text size.
-  On iPhone the whole app also follows the text size in the system's Display & Brightness or
-  Accessibility settings, with chat text size on top of it. Choose whether replies show as
+- **General:** follow the system appearance or choose light or dark. On iPhone, change chat text
+  size; the whole app also follows the text size in the system's Display & Brightness or
+  Accessibility settings, with chat text size on top of it. On the Mac, **Zoom** makes everything in
+  the window bigger or smaller, from 80% to 150%: text, pictures, the sidebar, the message column
+  and the side panels. **View › Zoom In** (⌘+), **Zoom Out** (⌘−) and **Actual Size** (⌘0) do the
+  same, and the quick message panel and sheets follow it. Switches, pop-up menus and the toolbar's
+  buttons, which the Mac draws itself, keep their size. Choose whether replies show as
   they're written or each message appears once it's finished. **Hidden Bots** lists the Bots
   you've hidden, with **Show** to put each back in the sidebar. On Mac, choose Return or ⌘Return to send messages, and whether to launch at login.
 - **Quick Message (Mac):** in General, click the keyboard shortcut and press a new combination
@@ -660,7 +668,8 @@ can also update the app on its own: turn on Automatic Updates for Usual Bot in T
 
 ## Keyboard shortcuts
 
-On the Mac these are also in the menu bar: File, View and Go.
+On the Mac these are also in the menu bar (File, View and Go), and **Help › Keyboard Shortcuts**
+(⌘/) lists them in the app.
 
 | Shortcut | Where | What it does |
 | --- | --- | --- |
@@ -673,6 +682,10 @@ On the Mac these are also in the menu bar: File, View and Go.
 | ⌃⌘S | Mac | Collapse or expand the sidebar |
 | ⌘, | Mac | Open Settings |
 | ⌘I | Chat or room | Show the profile or room details |
+| ⌘[ / ⌘] | Mac | Back / forward through the chats you opened |
+| ⌘+ / ⌘− / ⌘0 | Mac | Zoom the window in, out, or back to actual size |
+| ⌘/ | Mac | Show the keyboard shortcuts |
+| ⌘D | Mac message box | Dictate: press to start and again to stop, or hold while you talk and let go |
 | Return | Message box | Send by default, or pick from the open `/` or `@` menu |
 | ⌘Return | Mac message box | Send when chosen in Settings |
 | Shift-Return | Message box | New line |

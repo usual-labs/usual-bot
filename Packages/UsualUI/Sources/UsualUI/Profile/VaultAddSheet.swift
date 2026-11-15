@@ -74,7 +74,7 @@ struct VaultAddSheet: View {
             }
         }
         #if os(macOS)
-            .frame(width: 440, height: 500)
+            .zoomedFrame(width: 440, height: 500)
         #endif
     }
 

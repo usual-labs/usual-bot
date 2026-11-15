@@ -24,7 +24,7 @@ struct DeleteBotSheet: View {
             form
         }
         #if os(macOS)
-            .frame(width: 440, height: 400)
+            .zoomedFrame(width: 440, height: 400)
         #else
             .presentationDetents([.medium, .large])
         #endif

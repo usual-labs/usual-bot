@@ -126,9 +126,9 @@ private struct ConnectRow: View {
     var body: some View {
         HStack(spacing: 10) {
             Text(String(target.title.prefix(1)))
-                .font(.system(size: 13, weight: .semibold))
+                .zoomedFont(size: 13, weight: .semibold)
                 .foregroundStyle(Theme.ink)
-                .frame(width: 28, height: 28)
+                .zoomedFrame(width: 28, height: 28)
                 .background(.fill.secondary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {

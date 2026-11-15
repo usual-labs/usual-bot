@@ -81,7 +81,7 @@ struct CallBar: View {
         .background {
             if let live = call as? LiveCall { LiveCallHost(webView: live.webView) }
         }
-        .frame(maxWidth: 680)
+        .zoomedFrame(maxWidth: 680)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 30))
         .padding(.horizontal, 16)
         .animation(.smooth(duration: 0.2), value: panel)
@@ -189,7 +189,7 @@ private struct VoiceDots: View {
                         .frame(width: 4, height: height(index, at: context.date))
                 }
             }
-            .frame(height: 26)
+            .zoomedFrame(height: 26)
             .animation(reduceMotion ? nil : .easeOut(duration: 0.1), value: levels)
         }
     }
@@ -227,9 +227,9 @@ private struct CallBarButton: View {
     var body: some View {
         Button(role: role, action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 17, weight: .medium))
+                .zoomedFont(size: 17, weight: .medium)
                 .foregroundStyle(role == .destructive ? .white : active ? Theme.primaryInk : Theme.ink)
-                .frame(width: Self.side, height: Self.side)
+                .zoomedFrame(width: Self.side, height: Self.side)
                 #if os(macOS)
                     // The system's glass button drew a pale disc in the window you're at, where white
                     // ink vanished in dark mode: glass of its own, as the chat bar's round buttons have.
@@ -295,7 +295,7 @@ private struct CallSettingsPanel: View {
                         .scaledFont(size: 13.5)
                         .foregroundStyle(Theme.secondaryInk)
                 }
-                .frame(minHeight: 40)
+                .zoomedFrame(minHeight: 40)
                 Text("GPT-Live's voice is set on the gateway. OpenAI bills the call's minutes.")
                     .scaledFont(size: 12)
                     .foregroundStyle(Theme.secondaryInk)
@@ -354,7 +354,7 @@ private struct CallSettingsPanel: View {
                 .pickerStyle(.menu)
                 .fixedSize()
         }
-        .frame(minHeight: 40)
+        .zoomedFrame(minHeight: 40)
     }
 }
 
