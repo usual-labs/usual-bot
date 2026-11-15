@@ -145,7 +145,7 @@ struct RoomSettingsSheet: View {
                             .textInputTint()
                             .scaledFont(size: 14)
                             .scrollContentBackground(.hidden)
-                            .frame(minHeight: 96)
+                            .zoomedFrame(minHeight: 96)
                             .accessibilityLabel(Text("Notes"))
                     } header: {
                         Text("Notes")
@@ -163,7 +163,7 @@ struct RoomSettingsSheet: View {
             .disabled(isSaving)
         }
         #if os(macOS)
-            .frame(width: 440, height: 520)
+            .zoomedFrame(width: 440, height: 520)
         #endif
     }
 

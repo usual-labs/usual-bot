@@ -393,7 +393,7 @@ struct UserBubbleContent: View {
             ForEach(playable, id: \.path) { ref in
                 MediaView(path: ref.path)
                     .padding(10)
-                    .frame(maxWidth: 440)
+                    .zoomedFrame(maxWidth: 440)
                     .background(Theme.selection, in: RoundedRectangle(cornerRadius: 18))
             }
             if !tiles.isEmpty {
@@ -480,7 +480,7 @@ private struct StepRow: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(ActivitySummary.verb(for: step.name))
                 .foregroundStyle(Theme.secondaryInk)
-                .frame(width: 52, alignment: .leading)
+                .zoomedFrame(width: 52, alignment: .leading)
             Text(step.context.isEmpty ? step.name : step.context)
                 .foregroundStyle(Theme.ink)
                 .lineLimit(2)

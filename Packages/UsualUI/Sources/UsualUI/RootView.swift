@@ -43,7 +43,7 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                             }
                         }
                     }
-                    .frame(width: 520, height: 600)
+                    .zoomedFrame(width: 520, height: 600)
                 }
             #endif
             #if os(iOS)
@@ -111,7 +111,7 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                             if !compact {
                                 GatewayStatusButton(model: model, gateway: gateway, more: gatewayMenu)
                                     .padding(.horizontal, 14)
-                                    .frame(height: ThreadPane.barItemHeight)
+                                    .zoomedFrame(height: ThreadPane.barItemHeight)
                                     .glassEffect(.regular.interactive(), in: Capsule())
                                 pluginsButton.roundGlass()
                             }
@@ -151,7 +151,7 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                 .labelStyle(.iconOnly)
                 .buttonStyle(.clickable(.borderless))
                 .foregroundStyle(Theme.secondaryInk)
-                .frame(width: 32, height: 32)
+                .zoomedFrame(width: 32, height: 32)
                 .help("Plugins: set up a Bot’s browser and computer")
         }
     #endif
@@ -162,7 +162,7 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
             #if os(macOS)
                 .buttonStyle(.clickable(.borderless))
                 .foregroundStyle(Theme.secondaryInk)
-                .frame(width: 32, height: 32)
+                .zoomedFrame(width: 32, height: 32)
             #else
                 // It floats over the connect screen.
                 .buttonStyle(.clickable(.glass))
@@ -180,7 +180,7 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                     .overlay(alignment: .bottomTrailing) {
                         Circle()
                             .fill(model.link.dotColor)
-                            .frame(width: 8, height: 8)
+                            .zoomedFrame(width: 8, height: 8)
                             .offset(x: 3, y: 3)
                     }
             }
@@ -260,6 +260,12 @@ struct ContactsSplitView<Footer: View>: View {
         /// The open profile or room panel's usual width; 0 with none.
         @State private var panelWidth: CGFloat = 0
         @State private var showsPalette = false
+        @State private var showsShortcuts = false
+        /// Back and Forward through the chats you opened.
+        @State private var history = ChatHistory()
+        @AppStorage(Zoom.key) private var zoomLevel = Zoom.initialLevel(
+            chatTextSize: UserDefaults.standard.integer(forKey: AppPreferences.textSizeKey))
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
         /// ⌘ is held, so the sidebar shows which number opens each chat.
         @State private var commandHeld = false
         /// The open chat, reopened at the next launch.
@@ -362,7 +368,7 @@ struct ContactsSplitView<Footer: View>: View {
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             // Room for the open panel too: without it, a narrow window's panel pushes the sidebar
             // and the chat off its sides.
-            .frame(minWidth: Self.railWidth + Self.chatMinWidth + panelWidth)
+            .frame(minWidth: railWidth + zoomed(Self.chatMinWidth) + panelWidth)
             .onPreferenceChange(OpenPanelWidth.self) { panelWidth = $0 }
             .onGeometryChange(for: CGFloat.self) {
                 $0.size.width
@@ -370,6 +376,9 @@ struct ContactsSplitView<Footer: View>: View {
                 windowWidth = $0
             }
             .focusedSceneValue(\.windowCommands, windowCommands)
+            .zoomKeys($zoomLevel)
+            .onChange(of: selection, initial: true) { _, selected in history.visit(selected) }
+            .sheet(isPresented: $showsShortcuts) { KeyboardShortcutsSheet() }
             .tracksCommandHeld($commandHeld)
             .environment(\.messageBoxTakesTyping, !showsPalette)
             .overlay {
@@ -451,7 +460,7 @@ struct ContactsSplitView<Footer: View>: View {
                         .labelStyle(.iconOnly)
                         .buttonStyle(.clickable(.borderless))
                         .foregroundStyle(Theme.secondaryInk)
-                        .frame(width: 32, height: 32)
+                        .zoomedFrame(width: 32, height: 32)
                         .roundGlass()
                 }
                 if !compact, let shared { SharedItemsBanner(outbox: shared, offline: isOffline) }
@@ -469,14 +478,21 @@ struct ContactsSplitView<Footer: View>: View {
         /// The list narrows to the rail when you drag its edge in, or when the window leaves the
         /// chat too little room.
         private var sidebarWidth: CGFloat {
-            let wanted = CGFloat(dragWidth ?? listWidth)
-            if dragWidth == nil, windowWidth > 0, windowWidth - wanted - panelWidth < Self.chatMinWidth {
-                return Self.railWidth
+            let wanted = dragWidth ?? (listWidth < Self.minListWidth ? railWidth : zoomed(listWidth))
+            if dragWidth == nil, windowWidth > 0, windowWidth - wanted - panelWidth < zoomed(Self.chatMinWidth) {
+                return railWidth
             }
             return wanted
         }
 
-        private var showsRail: Bool { sidebarWidth < Self.minListWidth }
+        private var showsRail: Bool { sidebarWidth < zoomed(Self.minListWidth) }
+
+        /// The window's zoom (View ▸ Zoom). The list's widths are stored at actual size and grow
+        /// with it.
+        private var zoom: Double { Double(Zoom.factor(dynamicTypeSize)) }
+        private func zoomed(_ width: Double) -> Double { width * zoom }
+        /// Never narrower than the window's buttons, which don't zoom.
+        private var railWidth: Double { max(Self.railWidth, zoomed(Self.railWidth)) }
 
         private var searchButton: some View {
             Button("Search", systemImage: "magnifyingglass") { showsPalette = true }
@@ -491,6 +507,14 @@ struct ContactsSplitView<Footer: View>: View {
             let shown = shownChats
             let ids = shown.map(\.id)
             var commands = WindowCommands(search: { showsPalette.toggle() })
+            commands.showShortcuts = { showsShortcuts = true }
+            let all = Set(contacts.map(\.id))
+            if history.canGoBack(among: all) {
+                commands.back = { selection = history.goBack(among: all) ?? selection }
+            }
+            if history.canGoForward(among: all) {
+                commands.forward = { selection = history.goForward(among: all) ?? selection }
+            }
             if botEditing != nil, free {
                 commands.newBot = {
                     showsPalette = false
@@ -538,7 +562,9 @@ struct ContactsSplitView<Footer: View>: View {
         }
 
         /// A window too narrow for the list keeps the rail, so a button there would do nothing.
-        private var canLeaveRail: Bool { windowWidth - Self.fullWidth - panelWidth >= Self.chatMinWidth }
+        private var canLeaveRail: Bool {
+            windowWidth - zoomed(Self.fullWidth) - panelWidth >= zoomed(Self.chatMinWidth)
+        }
 
         /// The toolbar's row doesn't fit it in the narrowest list.
         private var showsToggleInToolbar: Bool { sidebarWidth >= Self.toolbarGroupWidth }
@@ -553,7 +579,7 @@ struct ContactsSplitView<Footer: View>: View {
         private var resizeEdge: some View {
             Rectangle()
                 .fill(Color.primary.opacity(0.001))
-                .frame(width: 8)
+                .zoomedFrame(width: 8)
                 .offset(x: 4)
                 .pointerStyle(.frameResize(position: .trailing))
                 .gesture(
@@ -561,17 +587,17 @@ struct ContactsSplitView<Footer: View>: View {
                         .onChanged { drag in
                             let start = dragStart ?? Double(sidebarWidth)
                             dragStart = start
-                            dragWidth = min(max(start + drag.translation.width, Self.railWidth), Self.maxWidth)
+                            dragWidth = min(max(start + drag.translation.width, railWidth), zoomed(Self.maxWidth))
                         }
                         .onEnded { _ in
-                            let released = dragWidth ?? listWidth
+                            let released = dragWidth ?? sidebarWidth
                             let target: Double
-                            if released < Self.minListWidth {
+                            if released < zoomed(Self.minListWidth) {
                                 // Out of the rail opens the list; in from the list closes to the rail.
-                                let fromRail = (dragStart ?? released) < Self.minListWidth
-                                target = fromRail && released > Self.railWidth + 30 ? Self.fullWidth : Self.railWidth
+                                let fromRail = (dragStart ?? released) < zoomed(Self.minListWidth)
+                                target = fromRail && released > railWidth + 30 ? Self.fullWidth : Self.railWidth
                             } else {
-                                target = released
+                                target = released / zoom
                             }
                             withAnimation(.smooth(duration: 0.25)) {
                                 listWidth = target
@@ -750,7 +776,7 @@ struct ContactsSplitView<Footer: View>: View {
         /// A round glass button as tall as the header's: the sidebar footer's Settings and the
         /// rail's Expand Sidebar.
         fileprivate func roundGlass() -> some View {
-            frame(width: ThreadPane.barItemHeight, height: ThreadPane.barItemHeight)
+            zoomedFrame(width: ThreadPane.barItemHeight, height: ThreadPane.barItemHeight)
                 .glassEffect(.regular.interactive(), in: Circle())
         }
     }

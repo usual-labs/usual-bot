@@ -49,7 +49,7 @@ struct BrowserView: View {
                     Button("Close", systemImage: "xmark", action: close)
                         .labelStyle(.iconOnly)
                         .buttonStyle(.clickable(.borderless))
-                        .frame(width: 32, height: 32)
+                        .zoomedFrame(width: 32, height: 32)
                 }
                 pill
                 if let page = browser.page, browser.connection == .live { tab(page) }
@@ -76,11 +76,11 @@ struct BrowserView: View {
             default: ("Not connected", Theme.secondaryInk)
             }
         return HStack(spacing: 6) {
-            Circle().fill(tint).frame(width: 8, height: 8)
+            Circle().fill(tint).zoomedFrame(width: 8, height: 8)
             Text(text).scaledFont(size: 13, weight: .medium).foregroundStyle(Theme.ink)
         }
         .padding(.horizontal, 10)
-        .frame(height: 28)
+        .zoomedFrame(height: 28)
         .background(Theme.selection, in: Capsule())
         .fixedSize()
         .accessibilityElement(children: .combine)
@@ -224,11 +224,11 @@ public struct BotBrowserWindow: View {
             BrowserView(contact: contact, browser: model.browser(for: contact), thread: model.thread(for: contact))
                 .environment(\.gatewayOnline, model.isOnline)
                 .navigationTitle(Text("\(contact.name)'s Browser"))
-                .frame(minWidth: 480, minHeight: 360)
+                .zoomedFrame(minWidth: 480, minHeight: 360)
         } else {
             Text("This Bot isn't on the gateway anymore.")
                 .foregroundStyle(Theme.secondaryInk)
-                .frame(minWidth: 480, minHeight: 360)
+                .zoomedFrame(minWidth: 480, minHeight: 360)
         }
     }
 }

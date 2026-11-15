@@ -79,7 +79,7 @@ struct VideoMessage: View {
     private func placeholder(@ViewBuilder _ content: () -> some View) -> some View {
         RoundedRectangle(cornerRadius: 14)
             .fill(Theme.selection)
-            .frame(width: 280, height: 158)
+            .zoomedFrame(width: 280, height: 158)
             .overlay(content: content)
     }
 
@@ -91,9 +91,9 @@ struct VideoMessage: View {
                 Color.black
                 video.poster?.resizable().scaledToFit()
                 Image(systemName: "play.fill")
-                    .font(.system(size: 20, weight: .bold))
+                    .zoomedFont(size: 20, weight: .bold)
                     .foregroundStyle(.white)
-                    .frame(width: 52, height: 52)
+                    .zoomedFrame(width: 52, height: 52)
                     .background(.black.opacity(0.55), in: Circle())
             }
             .overlay(alignment: .bottomTrailing) {

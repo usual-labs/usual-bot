@@ -63,7 +63,7 @@ public struct SettingsView: View {
             // system's own colour (`SystemSwitchStyle`).
             .tint(Theme.ink)
             .toggleStyle(.systemSwitch)
-            .appPreferences()
+            .appPreferences(zooms: false)
         #else
             // Grok's phone settings: a close button at the top left, the account (here, the
             // gateway) on top, then plain rows.
@@ -385,29 +385,47 @@ private struct GeneralSettings: View {
     @AppStorage(AppPreferences.streamRepliesKey) private var streamsReplies = true
     #if os(macOS)
         @AppStorage(AppPreferences.commandReturnKey) private var commandReturn = false
+        @AppStorage(Zoom.key) private var zoom = Zoom.initialLevel(
+            chatTextSize: UserDefaults.standard.integer(forKey: AppPreferences.textSizeKey))
     #endif
 
     var body: some View {
-        Section("Appearance") {
+        Section {
             Picker("Theme", selection: $appearance) {
                 Text("Follow System").tag("system")
                 Text("Light").tag("light")
                 Text("Dark").tag("dark")
             }
             .clickable()
-            Picker("Chat text size", selection: $textSize) {
-                Text("Small").tag(-2)
-                Text("Default").tag(0)
-                Text("Large").tag(3)
-                Text("Extra Large").tag(6)
-            }
-            .clickable()
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Preview").font(.caption).foregroundStyle(.secondary)
-                MarkdownView(
-                    "Here’s a reply with **bold text**, a [link](https://github.com/usual-labs/usual-bot), and `code`.")
-            }
-            .padding(.vertical, 8)
+            #if os(macOS)
+                Picker("Zoom", selection: $zoom) {
+                    ForEach(Zoom.levels.indices, id: \.self) { level in
+                        Text(verbatim: Zoom.percent(level)).tag(level)
+                    }
+                }
+                .clickable()
+            #else
+                Picker("Chat text size", selection: $textSize) {
+                    Text("Small").tag(-2)
+                    Text("Default").tag(0)
+                    Text("Large").tag(3)
+                    Text("Extra Large").tag(6)
+                }
+                .clickable()
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Preview").font(.caption).foregroundStyle(.secondary)
+                    MarkdownView(
+                        "Here’s a reply with **bold text**, a [link](https://github.com/usual-labs/usual-bot), and `code`."
+                    )
+                }
+                .padding(.vertical, 8)
+            #endif
+        } header: {
+            Text("Appearance")
+        } footer: {
+            #if os(macOS)
+                Text("Makes everything in the window bigger or smaller. ⌘+ and ⌘− do it too, and ⌘0 goes back to 100%.")
+            #endif
         }
         Section {
             Toggle("Show replies as they’re written", isOn: $streamsReplies)

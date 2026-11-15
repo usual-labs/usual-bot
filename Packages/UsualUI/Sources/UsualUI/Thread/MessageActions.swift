@@ -226,7 +226,7 @@ struct MessageRow<Content: View>: View {
                 // Room for all three buttons and the time, so every reply wraps at the same width.
                 // A fixed size, so the bar coming and going as the pointer passes doesn't lay the
                 // conversation out again.
-                .frame(width: Self.barWidth, height: 28, alignment: isMine ? .trailing : .leading)
+                .zoomedFrame(width: Self.barWidth, height: 28, alignment: isMine ? .trailing : .leading)
             }
         }
 
@@ -259,7 +259,7 @@ struct MessageRow<Content: View>: View {
                     readButton
                     rewindButtons(actions)
                 } label: {
-                    Image(systemName: "ellipsis").frame(width: 28, height: 28)
+                    Image(systemName: "ellipsis").zoomedFrame(width: 28, height: 28)
                 }
                 .menuStyle(.button)
                 .buttonStyle(.bare)
@@ -284,7 +284,7 @@ struct MessageRow<Content: View>: View {
 
         private func barButton(_ systemImage: String, _ label: String, action: @escaping () -> Void) -> some View {
             Button(action: action) {
-                Image(systemName: systemImage).frame(width: 28, height: 28)
+                Image(systemName: systemImage).zoomedFrame(width: 28, height: 28)
             }
             .buttonStyle(.bare)
             .help(label)
@@ -407,8 +407,8 @@ private struct ReactionPicker: View {
                     showsMore.toggle()
                 } label: {
                     Image(systemName: showsMore ? "chevron.up" : "plus")
-                        .font(.system(size: 13, weight: .semibold))
-                        .frame(width: Self.size, height: Self.size)
+                        .zoomedFont(size: 13, weight: .semibold)
+                        .zoomedFrame(width: Self.size, height: Self.size)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.clickable(.borderless))
@@ -429,7 +429,7 @@ private struct ReactionPicker: View {
         Button {
             pick(emoji)
         } label: {
-            Text(emoji).font(.system(size: 22)).frame(width: Self.size, height: Self.size)
+            Text(emoji).scaledFont(size: 22).zoomedFrame(width: Self.size, height: Self.size)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.clickable(.borderless))

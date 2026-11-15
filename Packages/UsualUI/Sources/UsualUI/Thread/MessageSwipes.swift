@@ -160,9 +160,9 @@ extension EnvironmentValues {
                     if pull > 0 {
                         let progress = min(1, pull / Self.reach)
                         Image(systemName: "arrowshape.turn.up.left")
-                            .font(.system(size: 15, weight: .semibold))
+                            .zoomedFont(size: 15, weight: .semibold)
                             .foregroundStyle(armed ? Theme.ink : Theme.secondaryInk)
-                            .frame(width: 32, height: 32)
+                            .zoomedFrame(width: 32, height: 32)
                             .scaleEffect(0.6 + 0.4 * progress)
                             .opacity(progress)
                             .offset(x: pull / 2 - 16)

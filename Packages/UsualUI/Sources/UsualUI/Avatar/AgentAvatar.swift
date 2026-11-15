@@ -2,15 +2,17 @@ import HermesKit
 import SwiftUI
 
 /// An agent's avatar: the picture it was given in the official app, or else its character on a soft
-/// circle in the agent's colour.
+/// circle in the agent's colour. `size` is at actual size; the Mac's zoom grows it.
 struct AgentAvatar: View {
     let contact: Contact
     var size: CGFloat = 44
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.botPictures) private var pictures
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
+        let size = Theme.zoomed(size, for: dynamicTypeSize)
         let style = AvatarStyle(seed: contact.id, paletteCount: Theme.agentPalette.count)
         let tint = contact.tintColor(style: style)
         ZStack {
@@ -60,9 +62,13 @@ private struct Breathing: ViewModifier {
 struct RoomAvatar: View {
     let members: [Contact]
     var size: CGFloat = 44
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
+        // The members' avatars zoom themselves, from their size at actual size.
         let memberSize = size * 0.68
+        let shown = Theme.zoomed(size, for: dynamicTypeSize)
+        let offset = shown - Theme.zoomed(memberSize, for: dynamicTypeSize)
         ZStack(alignment: .topLeading) {
             if let first = members.first {
                 AgentAvatar(contact: first.settled, size: memberSize)
@@ -70,10 +76,10 @@ struct RoomAvatar: View {
             if members.count > 1 {
                 AgentAvatar(contact: members[1].settled, size: memberSize)
                     .background(Circle().fill(Theme.window).padding(-2))
-                    .offset(x: size - memberSize, y: size - memberSize)
+                    .offset(x: offset, y: offset)
             }
         }
-        .frame(width: size, height: size, alignment: .topLeading)
+        .frame(width: shown, height: shown, alignment: .topLeading)
         .accessibilityHidden(true)
     }
 }

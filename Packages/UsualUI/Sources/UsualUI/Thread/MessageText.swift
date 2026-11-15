@@ -71,7 +71,7 @@
                 .foregroundStyle(Theme.ink)
                 .padding(.leading, 12)
                 .padding(.trailing, 6)
-                .frame(height: Self.height)
+                .zoomedFrame(height: Self.height)
                 .background(Theme.floating, in: Capsule())
                 .overlay(Capsule().strokeBorder(Theme.ink.opacity(0.12), lineWidth: 1))
                 .contentShape(Capsule())

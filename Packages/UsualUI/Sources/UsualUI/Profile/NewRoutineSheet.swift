@@ -89,7 +89,7 @@ struct NewRoutineSheet: View {
             }
         }
         #if os(macOS)
-            .frame(width: 460, height: 560)
+            .zoomedFrame(width: 460, height: 560)
         #endif
         .task { await list.loadTemplates() }
     }
@@ -123,9 +123,9 @@ private struct ChoiceRow: View {
         Button(action: open) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 15))
+                    .zoomedFont(size: 15)
                     .foregroundStyle(Theme.ink)
-                    .frame(width: 32, height: 32)
+                    .zoomedFrame(width: 32, height: 32)
                     .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {

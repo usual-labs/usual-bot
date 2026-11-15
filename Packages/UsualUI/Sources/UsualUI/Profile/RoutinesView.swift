@@ -114,7 +114,7 @@ private struct RoutineRow: View {
                         .foregroundStyle(Theme.ink)
                         .lineLimit(2)
                     RoutineStatus.text(for: routine, isRunning: list.running.contains(routine.id))
-                        .font(.subheadline)
+                        .zoomedFont(.subheadline)
                         .lineLimit(3)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

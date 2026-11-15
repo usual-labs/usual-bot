@@ -37,6 +37,10 @@ struct SheetForm<Content: View, Extra: View>: View {
     var body: some View {
         NavigationStack {
             content()
+                #if os(macOS)
+                    // And outside its zoom; set inside the stack, which sets its own.
+                    .keepsWindowZoom()
+                #endif
                 .formStyle(.grouped)
                 .thinScroller()
                 .navigationTitle(title)

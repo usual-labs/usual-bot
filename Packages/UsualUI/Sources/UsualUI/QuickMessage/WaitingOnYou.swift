@@ -13,7 +13,7 @@ struct WaitingOnYou: View {
         if !rows.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Waiting on you")
-                    .font(.system(size: 12.5, weight: .semibold))
+                    .zoomedFont(size: 12.5, weight: .semibold)
                     .foregroundStyle(Theme.secondaryInk)
                     .padding(.leading, 6)
                 ForEach(rows) { row in
@@ -114,11 +114,11 @@ struct WaitingRow: View {
             AgentAvatar(contact: row.contact, size: 28)
             VStack(alignment: .leading, spacing: 0) {
                 Text(row.title)
-                    .font(.system(size: 13.5))
+                    .zoomedFont(size: 13.5)
                     .foregroundStyle(Theme.ink)
                 if let detail = row.detail {
                     Text(detail)
-                        .font(.system(size: 12.5, design: isApproval ? .monospaced : .default))
+                        .zoomedFont(size: 12.5, design: isApproval ? .monospaced : .default)
                         .foregroundStyle(Theme.secondaryInk)
                         .lineLimit(1)
                         .truncationMode(.middle)

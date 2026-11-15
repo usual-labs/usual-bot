@@ -21,7 +21,7 @@ struct FoldedRow<Label: View, Rows: View>: View {
                 }
                 .scaledFont(size: 13)
                 .foregroundStyle(Theme.secondaryInk)
-                .frame(minHeight: 28)
+                .zoomedFrame(minHeight: 28)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.clickable)
@@ -31,7 +31,7 @@ struct FoldedRow<Label: View, Rows: View>: View {
                 VStack(alignment: .leading, spacing: 6) { rows }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .frame(maxWidth: Theme.bubbleWidth, alignment: .leading)
+                    .zoomedFrame(maxWidth: Theme.bubbleWidth, alignment: .leading)
                     .background(Theme.codeFill, in: RoundedRectangle(cornerRadius: 12))
                     .transition(.opacity)
             }

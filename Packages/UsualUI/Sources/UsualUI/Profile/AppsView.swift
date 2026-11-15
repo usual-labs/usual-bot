@@ -88,7 +88,7 @@ private struct ApplyNote: View {
                 Text(
                     "To use it in the open chat now, apply it. \(agentName)'s next reply costs more, since the whole conversation is sent again."
                 )
-                .font(.subheadline)
+                .zoomedFont(.subheadline)
                 .foregroundStyle(.secondary)
                 Button {
                     isApplying = true
@@ -122,7 +122,7 @@ private struct AppRow: View {
                 HStack(spacing: 12) {
                     Image(systemName: AppSymbol.name(for: server))
                         .foregroundStyle(.secondary)
-                        .frame(width: 20)
+                        .zoomedFrame(width: 20)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(server.name)
@@ -130,7 +130,7 @@ private struct AppRow: View {
                             .lineLimit(1, accessibility: 3)
                         // A problem shows whole: it says what to do next.
                         statusLine
-                            .font(.subheadline)
+                            .zoomedFont(.subheadline)
                             .lineLimit(isProblem ? nil : 2)
                             .fixedSize(horizontal: false, vertical: isProblem)
                     }
@@ -143,7 +143,7 @@ private struct AppRow: View {
             .accessibilityHint(Text("Shows its tools and settings"))
             if server.isFromPlugin {
                 Text("Plugin")
-                    .font(.subheadline)
+                    .zoomedFont(.subheadline)
                     .foregroundStyle(.secondary)
                     .help(Text("Comes with the \(server.plugin ?? "") plugin, so it can't be changed here"))
             } else {

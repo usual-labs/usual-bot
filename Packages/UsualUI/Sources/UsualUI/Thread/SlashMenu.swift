@@ -53,7 +53,7 @@ struct SuggestionMenu: View {
                         } label: {
                             row(item)
                                 .padding(.horizontal, 10)
-                                .frame(minHeight: Self.rowHeight)
+                                .zoomedFrame(minHeight: Self.rowHeight)
                                 .background(
                                     index == highlighted ? Theme.selection : .clear,
                                     in: RoundedRectangle(cornerRadius: 9)
@@ -89,7 +89,7 @@ struct SuggestionMenu: View {
                 Image(systemName: command.kind == .skill ? "sparkles" : "command")
                     .scaledFont(size: 12, weight: .medium)
                     .foregroundStyle(Theme.secondaryInk)
-                    .frame(width: 16)
+                    .zoomedFrame(width: 16)
                     .accessibilityLabel(Text(command.kind == .skill ? "Skill" : "Command"))
                 Text(command.name)
                     .scaledFont(size: 13.5, weight: .semibold)

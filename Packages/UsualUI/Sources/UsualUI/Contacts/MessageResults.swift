@@ -79,7 +79,7 @@ struct FindingNotice: View {
                 Button("Dismiss", systemImage: "xmark", action: dismiss)
                     .labelStyle(.iconOnly)
                     .buttonStyle(.clickable(.borderless))
-                    .frame(minWidth: 28, minHeight: 28)
+                    .zoomedFrame(minWidth: 28, minHeight: 28)
             }
         }
         .scaledFont(size: 13)

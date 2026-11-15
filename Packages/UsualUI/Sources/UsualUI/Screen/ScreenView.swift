@@ -44,7 +44,7 @@ struct ScreenView: View {
                     Button("Close", systemImage: "xmark", action: close)
                         .labelStyle(.iconOnly)
                         .buttonStyle(.clickable(.borderless))
-                        .frame(width: 32, height: 32)
+                        .zoomedFrame(width: 32, height: 32)
                 }
                 controlPill
                 Spacer(minLength: 8)
@@ -76,11 +76,11 @@ struct ScreenView: View {
                     : ("\(contact.name) is in control", Theme.secondaryInk)
             }
         return HStack(spacing: 6) {
-            Circle().fill(tint).frame(width: 8, height: 8)
+            Circle().fill(tint).zoomedFrame(width: 8, height: 8)
             Text(text).scaledFont(size: 13, weight: .medium).foregroundStyle(Theme.ink)
         }
         .padding(.horizontal, 10)
-        .frame(height: 28)
+        .zoomedFrame(height: 28)
         .background(Theme.selection, in: Capsule())
         .accessibilityElement(children: .combine)
     }
@@ -93,7 +93,7 @@ struct ScreenView: View {
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.clickable(.borderless))
-                .frame(width: 32, height: 32)
+                .zoomedFrame(width: 32, height: 32)
             }
         #endif
         if screen.control == .you {
@@ -249,11 +249,11 @@ public struct BotScreenWindow: View {
             ScreenView(contact: contact, screen: model.screen(for: contact), thread: model.thread(for: contact))
                 .environment(\.gatewayOnline, model.isOnline)
                 .navigationTitle(Text("\(contact.name)'s Computer"))
-                .frame(minWidth: 480, minHeight: 360)
+                .zoomedFrame(minWidth: 480, minHeight: 360)
         } else {
             Text("This Bot isn't on the gateway anymore.")
                 .foregroundStyle(Theme.secondaryInk)
-                .frame(minWidth: 480, minHeight: 360)
+                .zoomedFrame(minWidth: 480, minHeight: 360)
         }
     }
 }

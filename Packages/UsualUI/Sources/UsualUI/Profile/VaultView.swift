@@ -141,14 +141,14 @@ private struct VaultItemRow: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .foregroundStyle(.secondary)
-                .frame(width: 20)
+                .zoomedFrame(width: 20)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.label)
                     .lineLimit(1, accessibility: 3)
                 if !details.isEmpty {
                     Text(details)
-                        .font(.subheadline)
+                        .zoomedFont(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
@@ -161,7 +161,7 @@ private struct VaultItemRow: View {
                     .foregroundStyle(.secondary)
             } else {
                 Text(manager)
-                    .font(.subheadline)
+                    .zoomedFont(.subheadline)
                     .foregroundStyle(.secondary)
             }
         }
@@ -203,7 +203,7 @@ private struct VaultSourceRow: View {
                     .foregroundStyle(source.installed ? Theme.ink : Theme.secondaryInk)
                     .lineLimit(1, accessibility: 3)
                 Text(status)
-                    .font(.subheadline)
+                    .zoomedFont(.subheadline)
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)
@@ -270,7 +270,7 @@ private struct VaultUnlockSheet: View {
             }
         }
         #if os(macOS)
-            .frame(width: 420, height: 300)
+            .zoomedFrame(width: 420, height: 300)
         #endif
         .presentationDetents([.medium])
     }

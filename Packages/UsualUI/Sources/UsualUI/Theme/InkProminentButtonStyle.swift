@@ -10,11 +10,19 @@ struct InkProminentButtonStyle: PrimitiveButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         let button = Group {
-            if glass {
-                Button(configuration).buttonStyle(.glassProminent)
-            } else {
-                Button(configuration).buttonStyle(.borderedProminent)
-            }
+            #if os(macOS)
+                if glass {
+                    ZoomedButton(configuration: configuration, zooms: true).buttonStyle(.glassProminent)
+                } else {
+                    ZoomedButton(configuration: configuration, zooms: true).buttonStyle(.borderedProminent)
+                }
+            #else
+                if glass {
+                    Button(configuration).buttonStyle(.glassProminent)
+                } else {
+                    Button(configuration).buttonStyle(.borderedProminent)
+                }
+            #endif
         }
         #if os(iOS)
             return button.tint(Theme.primary).foregroundStyle(Theme.primaryInk)

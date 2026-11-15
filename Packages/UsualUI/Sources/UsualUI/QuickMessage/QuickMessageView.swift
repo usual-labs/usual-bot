@@ -55,7 +55,7 @@ public struct QuickMessageView: View {
                     keyHints
                 }
             }
-            .frame(width: 640)
+            .zoomedFrame(width: 640)
             // Liquid Glass over whatever's behind the panel, as Spotlight floats.
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 24))
             Spacer(minLength: 0)
@@ -162,9 +162,9 @@ public struct QuickMessageView: View {
                 #endif
             Button(action: submit) {
                 Image(systemName: "arrow.up")
-                    .font(.system(size: 14, weight: .bold))
+                    .zoomedFont(size: 14, weight: .bold)
                     .foregroundStyle(Theme.primaryInk)
-                    .frame(width: 36, height: 36)
+                    .zoomedFrame(width: 36, height: 36)
                     .background(Theme.primary, in: Circle())
                     .contentShape(Circle())
             }
@@ -445,9 +445,9 @@ private struct RecipientButton: View {
                     .scaledFont(size: 12)
                     .foregroundStyle(isSelected ? Theme.ink : Theme.secondaryInk)
                     .lineLimit(1)
-                    .frame(maxWidth: 64)
+                    .zoomedFrame(maxWidth: 64)
             }
-            .frame(width: 64)
+            .zoomedFrame(width: 64)
             .contentShape(Rectangle())
         }
         .buttonStyle(.clickable)
@@ -469,7 +469,7 @@ private struct KeyHint: View {
     }
 }
 
-private struct KeyCap: View {
+struct KeyCap: View {
     let key: String
 
     var body: some View {

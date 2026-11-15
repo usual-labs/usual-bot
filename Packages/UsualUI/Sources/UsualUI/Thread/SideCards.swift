@@ -21,8 +21,8 @@ struct SideQuestionCard: View {
                 Spacer(minLength: 0)
                 Button(action: dismiss) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .semibold))
-                        .frame(width: 22, height: 22)
+                        .zoomedFont(size: 10, weight: .semibold)
+                        .zoomedFrame(width: 22, height: 22)
                         .contentShape(Rectangle())
                         .touchTarget(width: 22, height: 22)
                 }
@@ -78,7 +78,7 @@ struct BackgroundTasksBar: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 14)
-        .frame(minHeight: 34)
+        .zoomedFrame(minHeight: 34)
         .glassEffect(.regular, in: Capsule())
         .help(tasks.map(\.task).joined(separator: "\n"))
         .accessibilityElement(children: .ignore)

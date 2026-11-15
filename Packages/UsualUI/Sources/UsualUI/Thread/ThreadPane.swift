@@ -93,7 +93,7 @@ struct ThreadPane: View {
                         editing: $editing, confirm: { rewindRequest = $0 },
                         inCall: calling, startCall: { calling = true }
                     )
-                    .frame(maxWidth: Theme.columnWidth)
+                    .zoomedFrame(maxWidth: Theme.columnWidth)
                     // On the Mac, the context meter's row and gaps below the box add up to this margin too.
                     .padding(.horizontal, Self.composerMargin)
                 }
@@ -272,15 +272,15 @@ struct ThreadPane: View {
                 #if os(macOS)
                     // The name capsule's glass, level with it and as tall: the system's glass
                     // button drew a pale disc in the window you're at, unlike the capsule beside it.
-                    .font(.system(size: 15, weight: .medium))
+                    .zoomedFont(size: 15, weight: .medium)
                     .foregroundStyle(Theme.ink)
-                    .frame(width: ThreadPane.barItemHeight, height: ThreadPane.barItemHeight)
+                    .zoomedFrame(width: ThreadPane.barItemHeight, height: ThreadPane.barItemHeight)
                     .contentShape(Circle())
                     .glassEffect(.regular.interactive(), in: Circle())
                 #endif
                 .overlay(alignment: .topTrailing) {
                     if working {
-                        Circle().fill(Theme.online).frame(width: 9, height: 9)
+                        Circle().fill(Theme.online).zoomedFrame(width: 9, height: 9)
                             #if os(macOS)
                                 .offset(x: -1, y: 1)
                             #else
@@ -401,8 +401,11 @@ struct NamePill: View {
             }
         }
         // Sits in the navigation bar between two fixed buttons, so it grows only a little, as the
-        // system's own titles do; touch and hold shows the name larger.
-        .dynamicTypeSize(...DynamicTypeSize.xLarge)
+        // system's own titles do; touch and hold shows the name larger. The Mac's zoom (carried as
+        // the Dynamic Type size) grows it with the rest of the window.
+        #if os(iOS)
+            .dynamicTypeSize(...DynamicTypeSize.xLarge)
+        #endif
         .accessibilityAddTraits(.isHeader)
         .accessibilityShowsLargeContentViewer()
     }
@@ -432,7 +435,7 @@ struct NamePill: View {
         }
         .padding(.leading, Self.leading)
         .padding(.trailing, Self.trailing)
-        .frame(height: Self.height)
+        .zoomedFrame(height: Self.height)
         .contentShape(Capsule())
         // Liquid Glass of its own: iOS draws a bar's title item without any, and a plain name
         // was hard to read over a dark bubble scrolling under it. It answers a press as a button.

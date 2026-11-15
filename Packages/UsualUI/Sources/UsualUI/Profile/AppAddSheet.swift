@@ -55,7 +55,7 @@ struct AppAddSheet: View {
             }
         }
         #if os(macOS)
-            .frame(width: 440, height: 540)
+            .zoomedFrame(width: 440, height: 540)
         #endif
         .task {
             list.clearMessages()

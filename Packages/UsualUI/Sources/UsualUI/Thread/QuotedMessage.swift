@@ -111,8 +111,8 @@ struct ReplyChip: View {
             Spacer(minLength: 0)
             Button(action: cancel) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .semibold))
-                    .frame(width: 24, height: 24)
+                    .zoomedFont(size: 11, weight: .semibold)
+                    .zoomedFrame(width: 24, height: 24)
                     .contentShape(Rectangle())
                     .touchTarget(width: 24, height: 24)
             }
@@ -123,7 +123,7 @@ struct ReplyChip: View {
         }
         .padding(.leading, 12)
         .padding(.trailing, 4)
-        .frame(minHeight: 34)
+        .zoomedFrame(minHeight: 34)
         .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }

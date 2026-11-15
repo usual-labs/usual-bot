@@ -55,7 +55,7 @@ struct AppDetailSheet: View {
             }
         }
         #if os(macOS)
-            .frame(width: 440, height: 520)
+            .zoomedFrame(width: 440, height: 520)
         #endif
         .task {
             // Show its tools straight away, unless it's off or already tested.
@@ -79,9 +79,9 @@ struct AppDetailSheet: View {
     private var header: some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: AppSymbol.name(for: server))
-                .font(.system(size: 18))
+                .zoomedFont(size: 18)
                 .foregroundStyle(Theme.secondaryInk)
-                .frame(width: 36, height: 36)
+                .zoomedFrame(width: 36, height: 36)
                 .background(Theme.selection, in: RoundedRectangle(cornerRadius: 9))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {

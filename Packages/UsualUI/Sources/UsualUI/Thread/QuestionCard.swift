@@ -14,7 +14,7 @@ struct QuestionCard: View {
     var answersFromBox = false
 
     @Environment(\.messageTextSize) private var messageSize
-    @ScaledMetric(relativeTo: .body) private var scaledChip: CGFloat = 24
+    @ScaledSize(relativeTo: .body) private var scaledChip: CGFloat = 24
     @State private var picked: [String: [String]] = [:]
     @State private var typed: [String: String] = [:]
 
@@ -34,7 +34,7 @@ struct QuestionCard: View {
                     Spacer(minLength: 0)
                     Button(action: skip) {
                         Image(systemName: "xmark")
-                            .frame(width: 28, height: 28)
+                            .zoomedFrame(width: 28, height: 28)
                             .contentShape(Rectangle())
                             .touchTarget(width: 28, height: 28)
                     }

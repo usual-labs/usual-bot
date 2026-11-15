@@ -60,7 +60,7 @@
                     .scaledFont(size: 15)
                     .focused($fieldIsFocused)
                     .padding(.horizontal, 18)
-                    .frame(height: 52)
+                    .zoomedFrame(height: 52)
                     .onSubmit { run(entries) }
                     .onExitCommand(perform: close)
                     .onKeyPress(.downArrow) { move(1, in: entries) }
@@ -82,7 +82,7 @@
                     results(entries)
                 }
             }
-            .frame(width: 574)
+            .zoomedFrame(width: 574)
             // Floats over the window, as Spotlight does.
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
             .accessibilityAddTraits(.isModal)
@@ -150,7 +150,7 @@
             if case .message(let hit, let contact) = entry.look {
                 MessageHitRow(hit: hit, contact: contact, members: members(contact))
                     .padding(.horizontal, 10)
-                    .frame(height: 50)
+                    .zoomedFrame(height: 50)
                     .background(isHighlighted ? Theme.selection : .clear, in: RoundedRectangle(cornerRadius: 12))
                     .contentShape(Rectangle())
                     .accessibilityAddTraits(isHighlighted ? .isSelected : [])
@@ -170,9 +170,9 @@
                     }
                 case .icon(let name):
                     Image(systemName: name)
-                        .font(.system(size: 15))
+                        .zoomedFont(size: 15)
                         .foregroundStyle(Theme.secondaryInk)
-                        .frame(width: 32, height: 32)
+                        .zoomedFrame(width: 32, height: 32)
                 case .message:
                     EmptyView()
                 }
@@ -190,7 +190,7 @@
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 10)
-            .frame(height: 50)
+            .zoomedFrame(height: 50)
             .background(isHighlighted ? Theme.selection : .clear, in: RoundedRectangle(cornerRadius: 12))
             .contentShape(Rectangle())
             .accessibilityElement(children: .combine)

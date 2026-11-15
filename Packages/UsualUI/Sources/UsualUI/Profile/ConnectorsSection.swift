@@ -58,9 +58,9 @@ private struct ConnectorRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(String(connector.name.prefix(1)))
-                .font(.system(size: 13, weight: .semibold))
+                .zoomedFont(size: 13, weight: .semibold)
                 .foregroundStyle(Theme.ink)
-                .frame(width: 28, height: 28)
+                .zoomedFrame(width: 28, height: 28)
                 .background(Theme.selection, in: RoundedRectangle(cornerRadius: 8))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
@@ -69,7 +69,7 @@ private struct ConnectorRow: View {
                 if let status {
                     // A problem shows whole: it says what to do next.
                     Text(status)
-                        .font(.subheadline)
+                        .zoomedFont(.subheadline)
                         .foregroundStyle(isProblem ? Theme.danger : Theme.secondaryInk)
                         .lineLimit(isProblem ? nil : 2)
                         .fixedSize(horizontal: false, vertical: isProblem)

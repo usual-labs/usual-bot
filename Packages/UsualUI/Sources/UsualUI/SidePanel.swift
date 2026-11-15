@@ -29,6 +29,7 @@
         let panel: Panel
 
         @State private var dragStart: Double?
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
         /// An ease-out quartic: most of the way in the first few frames, then a long settle.
         /// Measured against Grok's Mac app, whose panel follows nearly the same path.
@@ -54,9 +55,12 @@
             .preference(key: OpenPanelWidth.self, value: isPresented ? shownWidth : 0)
         }
 
+        /// The kept width is at actual size; the window's zoom grows it.
         private var shownWidth: CGFloat {
-            min(max(CGFloat(width), widthRange.lowerBound), widthRange.upperBound)
+            Theme.zoomed(min(max(CGFloat(width), widthRange.lowerBound), widthRange.upperBound), for: dynamicTypeSize)
         }
+
+        private var zoom: Double { Double(Zoom.factor(dynamicTypeSize)) }
 
         private var closeButton: some View {
             Button(action: close) { SidePanelIcon(systemName: "xmark") }
@@ -75,7 +79,7 @@
                 .overlay {
                     Rectangle()
                         .fill(Color.primary.opacity(0.001))
-                        .frame(width: 8)
+                        .zoomedFrame(width: 8)
                         .pointerStyle(.frameResize(position: .leading))
                         .gesture(
                             DragGesture(minimumDistance: 1, coordinateSpace: .global)
@@ -83,7 +87,7 @@
                                     let start = dragStart ?? Double(shownWidth)
                                     dragStart = start
                                     width = min(
-                                        max(start - drag.translation.width, Double(widthRange.lowerBound)),
+                                        max((start - drag.translation.width) / zoom, Double(widthRange.lowerBound)),
                                         Double(widthRange.upperBound))
                                 }
                                 .onEnded { _ in dragStart = nil }
@@ -97,8 +101,18 @@
         /// In a side panel's top row, level with the window buttons and the chat's round buttons:
         /// at the trailing edge, or just before the close button.
         func sidePanelTopRow(beforeClose: Bool = false) -> some View {
-            padding(.top, 9)
-                .padding(.trailing, beforeClose ? 8 + SidePanelIcon.size + 8 : 8)
+            modifier(SidePanelTopRow(beforeClose: beforeClose))
+        }
+    }
+
+    private struct SidePanelTopRow: ViewModifier {
+        let beforeClose: Bool
+        @Zoomed private var iconSize = SidePanelIcon.size
+
+        func body(content: Content) -> some View {
+            content
+                .padding(.top, 9)
+                .padding(.trailing, beforeClose ? 8 + iconSize + 8 : 8)
                 .ignoresSafeArea(.container, edges: .top)
         }
     }
@@ -110,9 +124,9 @@
 
         var body: some View {
             Image(systemName: systemName)
-                .font(.system(size: 15, weight: .medium))
+                .scaledFont(size: 15, weight: .medium)
                 .foregroundStyle(Theme.ink)
-                .frame(width: Self.size, height: Self.size)
+                .zoomedFrame(width: Self.size, height: Self.size)
                 .contentShape(Circle())
                 .glassEffect(.regular.interactive(), in: Circle())
         }

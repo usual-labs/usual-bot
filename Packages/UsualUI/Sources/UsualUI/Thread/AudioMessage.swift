@@ -34,7 +34,7 @@ struct AudioMessage: View {
                 playButton
                 VStack(alignment: .leading, spacing: 2) {
                     Waveform(levels: summary?.levels ?? [], progress: progress, seek: seek)
-                        .frame(height: 26)
+                        .zoomedFrame(height: 26)
                         .accessibilityElement()
                         .accessibilityLabel(Text(isVoice ? "Voice memo position" : "Position in \(name)"))
                         .accessibilityValue(Text(positionDescription))
@@ -62,7 +62,7 @@ struct AudioMessage: View {
             }
             if let transcript { transcriptView(transcript) }
         }
-        .frame(width: 280, alignment: .leading)
+        .zoomedFrame(width: 280, alignment: .leading)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(isVoice ? "Voice memo" : "Audio \(name)"))
         .task(id: key) { await load() }
@@ -86,8 +86,8 @@ struct AudioMessage: View {
                     Image(systemName: isCurrent && playback.isPlaying ? "pause.fill" : "play.fill")
                 }
             }
-            .font(.system(size: 13, weight: .bold))
-            .frame(width: 20, height: 20)
+            .zoomedFont(size: 13, weight: .bold)
+            .zoomedFrame(width: 20, height: 20)
         }
         .buttonStyle(.inkProminent)
         .buttonBorderShape(.circle)

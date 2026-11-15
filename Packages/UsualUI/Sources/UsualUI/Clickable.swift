@@ -43,9 +43,51 @@ public struct ClickableButtonStyle<Base: PrimitiveButtonStyle>: PrimitiveButtonS
     let base: Base
 
     public func makeBody(configuration: Configuration) -> some View {
-        Button(configuration).buttonStyle(base).clickable()
+        #if os(macOS)
+            ZoomedButton(configuration: configuration, zooms: Self.drawsOwnLabel).buttonStyle(base).clickable()
+        #else
+            Button(configuration).buttonStyle(base).clickable()
+        #endif
+    }
+
+    /// The Mac's bordered buttons set their label's font themselves, whatever the window's font.
+    private static var drawsOwnLabel: Bool {
+        Base.self == BorderedButtonStyle.self || Base.self == BorderedProminentButtonStyle.self
+            || Base.self == DefaultButtonStyle.self
     }
 }
+
+#if os(macOS)
+    /// A bordered button's label at the window's zoom. The Mac's bordered buttons ignore the font
+    /// around them and set their label's for their control size, so a zoomed window gives the label
+    /// a font of its own. At actual size the button is left as it was made.
+    struct ZoomedButton: View {
+        let configuration: PrimitiveButtonStyleConfiguration
+        let zooms: Bool
+        @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+        @Environment(\.controlSize) private var controlSize
+
+        var body: some View {
+            if zooms, dynamicTypeSize != .large {
+                Button(role: configuration.role, action: configuration.trigger) {
+                    configuration.label.font(.system(size: labelSize * Zoom.factor(dynamicTypeSize)))
+                }
+            } else {
+                Button(configuration)
+            }
+        }
+
+        /// The size each control size gives its label at actual size.
+        private var labelSize: CGFloat {
+            switch controlSize {
+            case .mini: 9
+            case .small: 11
+            case .extraLarge: 15
+            default: 13
+            }
+        }
+    }
+#endif
 
 extension PrimitiveButtonStyle where Self == ClickableButtonStyle<PlainButtonStyle> {
     public static var clickable: Self { ClickableButtonStyle(base: .plain) }

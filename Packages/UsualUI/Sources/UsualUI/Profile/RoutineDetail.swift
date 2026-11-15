@@ -48,7 +48,7 @@ struct RoutineDetail: View {
             }
         }
         #if os(macOS)
-            .frame(width: 460, height: 560)
+            .zoomedFrame(width: 460, height: 560)
         #endif
     }
 
