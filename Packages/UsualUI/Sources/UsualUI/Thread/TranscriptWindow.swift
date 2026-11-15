@@ -32,6 +32,12 @@ struct TranscriptWindow: Equatable {
         firstID = items.isEmpty ? nil : items[max(items.count - Self.first, 0)].id
     }
 
+    /// Held at the newest page as the chat opens, unless a page was added already: a short newest
+    /// page asks for one in its first layout, which comes before the view's own setup.
+    mutating func hold(_ items: [TranscriptItem]) {
+        if firstID == nil { reset(items) }
+    }
+
     /// Adds a page of earlier items; `false` when there are none left to add.
     mutating func showEarlier(in items: [TranscriptItem], including target: Int? = nil) -> Bool {
         let start = start(in: items, including: target)

@@ -35,6 +35,20 @@ struct TranscriptWindowTests {
         #expect(window.showEarlier(in: items) == false)
     }
 
+    @Test func aPageAddedBeforeTheChatFinishedOpeningStays() {
+        let items = items(0..<100)
+        var window = TranscriptWindow()
+        // A short newest page asks for more in its first layout, before the view's own setup runs.
+        #expect(window.showEarlier(in: items) == true)
+        let start = window.start(in: items)
+        window.hold(items)
+        #expect(window.start(in: items) == start)
+        // Without a page added, opening holds the newest one.
+        var fresh = TranscriptWindow()
+        fresh.hold(items)
+        #expect(fresh.start(in: self.items(0..<130)) == 100 - TranscriptWindow.first)
+    }
+
     @Test func aMessageASearchJumpedToStaysShown() {
         let items = items(0..<100)
         var window = TranscriptWindow()

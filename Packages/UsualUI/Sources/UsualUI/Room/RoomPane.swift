@@ -181,7 +181,7 @@ struct RoomPane: View {
             }
         }
         // Each room's transcript is its own view, so this runs as each one opens.
-        .onAppear { window.reset(room.state.items) }
+        .onAppear { window.hold(room.state.items) }
         .onChange(of: room.state.items.isEmpty) { window.reset(room.state.items) }
         .onChange(of: jump, initial: true) { if let jump { jumpedTo = jump } }
         .onChange(of: room.approvals.count) { old, new in
