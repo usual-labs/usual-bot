@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       build:
-        description: Build number (empty for the newest processed build)
+        description: Build number, waited for while it processes (empty for the newest processed build)
         type: string
         default: ''
       platforms:
@@ -44,7 +44,7 @@ jobs:
     name: Submit for beta review
     if: github.repository == 'usual-labs/usual-bot'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 75 # a named build may still be processing for up to an hour
     environment: testflight
     permissions:
       contents: read # check out the script; nothing else
