@@ -5,7 +5,8 @@
 // Usage: node scripts/beta-review.mjs [--submit] [--build 202611142230] [--platforms mac|iphone]
 //                                     [--group "Name"] [--what-to-test "Text"]
 //   --submit        without it, only looks everything up and says what it would do
-//   --build         a build number; the newest processed build of each platform by default
+//   --build         a build number, waited for while Apple processes it (up to an hour); the
+//                   newest processed build of each platform by default
 //   --platforms     only that one; both by default
 //   --group         the external group's name; needed only when there's more than one
 //   --what-to-test  the build's What to Test; without it, the build keeps the text it has
@@ -54,12 +55,13 @@ function token() {
   return `${body}.${signature.toString("base64url")}`;
 }
 
-const jwt = token();
+token(); // fails early when the key is missing
 
 async function api(method, path, body) {
   const response = await fetch(API + path, {
     method,
-    headers: { authorization: `Bearer ${jwt}`, ...(body && { "content-type": "application/json" }) },
+    // A fresh token each time: one lasts 15 minutes, and waiting for a build can take longer.
+    headers: { authorization: `Bearer ${token()}`, ...(body && { "content-type": "application/json" }) },
     body: body && JSON.stringify(body),
   });
   const text = await response.text();
@@ -77,13 +79,16 @@ const query = (params) => new URLSearchParams(params).toString();
 const apps = await api("GET", `/v1/apps?${query({ "filter[bundleId]": BUNDLE_ID })}`);
 const app = apps.data.find((entry) => entry.attributes.bundleId === BUNDLE_ID) || fail(`No app has ${BUNDLE_ID}.`);
 
-const groups = await api(
-  "GET",
-  `/v1/betaGroups?${query({ "filter[app]": app.id, "filter[isInternalGroup]": "false", limit: "200" })}`,
-);
-const candidates = groups.data.filter((entry) => !options.group || entry.attributes.name === options.group);
+const groups = await api("GET", `/v1/betaGroups?${query({ "filter[app]": app.id, limit: "200" })}`);
+// Internal groups aren't touched here: one with every build gets each upload by itself.
+for (const entry of groups.data.filter((entry) => entry.attributes.isInternalGroup)) {
+  const builds = entry.attributes.hasAccessToAllBuilds ? "gets every build" : "gets only builds added to it";
+  console.log(`Internal group: ${entry.attributes.name}, ${builds}`);
+}
+const external = groups.data.filter((entry) => !entry.attributes.isInternalGroup);
+const candidates = external.filter((entry) => !options.group || entry.attributes.name === options.group);
 if (candidates.length !== 1) {
-  const names = groups.data.map((entry) => `"${entry.attributes.name}"`).join(", ") || "none";
+  const names = external.map((entry) => `"${entry.attributes.name}"`).join(", ") || "none";
   fail(`Name one external group with --group. The app has: ${names}.`);
 }
 const group = candidates[0];
@@ -106,7 +111,15 @@ async function review(platform, apiPlatform) {
   };
   if (options.build) params["filter[version]"] = options.build;
   else params["filter[processingState]"] = "VALID";
-  const builds = await api("GET", `/v1/builds?${query(params)}`);
+  let builds = await api("GET", `/v1/builds?${query(params)}`);
+  // A build just uploaded shows up a few minutes later, then processes for a few more.
+  for (let minute = 0; options.build && minute < 60; minute++) {
+    const processing = builds.data[0]?.attributes.processingState;
+    if (["VALID", "FAILED", "INVALID"].includes(processing)) break;
+    if (minute === 0) console.log(`${platform} ${options.build}: waiting for Apple to process it`);
+    await new Promise((resolve) => setTimeout(resolve, 60_000));
+    builds = await api("GET", `/v1/builds?${query(params)}`);
+  }
   const build = builds.data[0] || fail(`${platform}: no build ${options.build || "is processed yet"}.`);
   const included = (type) => (builds.included || []).find((entry) => entry.type === type)?.attributes || {};
   const name = `${platform} ${included("preReleaseVersions").version} (${build.attributes.version})`;

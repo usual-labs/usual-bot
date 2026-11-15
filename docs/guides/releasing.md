@@ -62,7 +62,8 @@ are retired: they couldn't carry push without hand-made Developer ID profiles.
 
    The **Beta Review** workflow does the external part: it sets What to Test, adds the newest
    processed build (or the one you name) to the external group and submits it for review. With
-   **Submit** off it only says what it would do. From a terminal:
+   **Submit** off it only says what it would do. A named build that's still processing is waited
+   for, up to an hour, so it can run straight after an upload. From a terminal:
 
    ```sh
    gh workflow run beta-review.yml -f submit=true -f what_to_test="…"
