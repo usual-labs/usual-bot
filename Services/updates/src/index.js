@@ -47,17 +47,30 @@ export async function latest(env, get = (path) => ask(path, env)) {
   // The filter also matches bundle IDs that start with this one, such as the notification extension's.
   const app = apps.data?.find((entry) => entry.attributes?.bundleId === env.BUNDLE_ID);
   if (!app) throw new Error(`App Store Connect has no app ${env.BUNDLE_ID}.`);
+  const group = env.BETA_GROUP ? await groupID(get, app.id, env.BETA_GROUP) : null;
   const result = { app: app.id };
   for (const [name, platform] of Object.entries(PLATFORMS)) {
-    result[name] = await newestBuild(get, app.id, platform, env.BETA_GROUP);
+    result[name] = await newestBuild(get, app.id, platform, group);
   }
   return result;
 }
 
+async function groupID(get, app, name) {
+  const query = new URLSearchParams({ "filter[app]": app, "filter[name]": name, "fields[betaGroups]": "name" });
+  const groups = await get(`/betaGroups?${query}`);
+  const group = groups.data?.find((entry) => entry.attributes?.name === name);
+  if (!group) throw new Error(`App Store Connect has no beta group ${name}.`);
+  return group.id;
+}
+
+// Builds in a group before Apple approves them, since the Beta Review workflow adds a build to the
+// group when it submits it. Only these states can be installed by the group's testers.
+const APPROVED = ["BETA_APPROVED", "IN_BETA_TESTING"];
+
 /**
- * Processed, unexpired builds, newest upload first. With `group` (a beta group's ID), only builds
- * given to that group, such as the external testers' after beta review; without it, the newest
- * processed build, which internal testers can install.
+ * Processed, unexpired builds, newest upload first. With `group` (a beta group's ID), the newest
+ * build given to that group that passed beta review, which external testers can install; without
+ * it, the newest processed build, which internal testers can install.
  */
 async function newestBuild(get, app, platform, group) {
   const query = new URLSearchParams({
@@ -71,9 +84,21 @@ async function newestBuild(get, app, platform, group) {
     "fields[builds]": "version,preReleaseVersion",
     "fields[preReleaseVersions]": "version",
   });
-  if (group) query.set("filter[betaGroups]", group);
+  if (group) {
+    query.set("filter[betaGroups]", group);
+    // A few recent ones, since the newest may still be waiting for review.
+    query.set("limit", "10");
+    query.set("include", "preReleaseVersion,buildBetaDetail");
+    query.set("fields[builds]", "version,preReleaseVersion,buildBetaDetail");
+    query.set("fields[buildBetaDetails]", "externalBuildState");
+  }
   const builds = await get(`/builds?${query}`);
-  const build = builds.data?.[0];
+  const approved = (entry) => {
+    const detailID = entry.relationships?.buildBetaDetail?.data?.id;
+    const detail = builds.included?.find((item) => item.type === "buildBetaDetails" && item.id === detailID);
+    return APPROVED.includes(detail?.attributes?.externalBuildState);
+  };
+  const build = group ? builds.data?.find(approved) : builds.data?.[0];
   if (!build) return null;
   const versionID = build.relationships?.preReleaseVersion?.data?.id;
   const version = builds.included?.find((entry) => entry.type === "preReleaseVersions" && entry.id === versionID);
