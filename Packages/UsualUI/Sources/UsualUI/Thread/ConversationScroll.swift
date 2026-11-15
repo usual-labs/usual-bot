@@ -17,7 +17,10 @@ struct ConversationScroll<Content: View>: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var settledReload = 0
     @State private var position = ScrollPosition()
-    @State private var scroll = ConversationScrollState()
+    /// Out of SwiftUI's sight, as the offset in it changes on every frame of a scroll; `chrome` is
+    /// the part that's drawn.
+    @State private var tracker = ScrollTracker()
+    @State private var chrome = ConversationChrome()
     /// Waiting for the first layout, which a jump into a chat just opened must follow.
     @State private var pendingJump: Int?
     @State private var highlighted: Int?
@@ -43,7 +46,7 @@ struct ConversationScroll<Content: View>: View {
     private var scrollView: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                GrowsOnly(release: scroll.releases) {
+                GrowsOnly(release: chrome.releases) {
                     // Lazy row-height estimates can leave a long transcript parked in blank space.
                     // Measure the loaded messages together so the scroll bounds are real at every offset.
                     VStack(alignment: .leading, spacing: 12) {
@@ -69,7 +72,7 @@ struct ConversationScroll<Content: View>: View {
             #endif
             .scrollPosition($position)
             #if os(macOS)
-                .scrollKnob($position) { byHand in move(to: scroll.scrollingByHand(byHand)) }
+                .scrollKnob($position) { byHand in apply { $0.scrollingByHand(byHand) } }
             #endif
             .scrollDismissesKeyboard(.interactively)
             .defaultScrollAnchor(.bottom, for: .initialOffset)
@@ -79,8 +82,8 @@ struct ConversationScroll<Content: View>: View {
                     contentHeight: geometry.contentSize.height, height: geometry.containerSize.height,
                     offset: geometry.contentOffset.y + geometry.contentInsets.top)
             } action: { _, viewport in
-                move(to: scroll.update(viewport))
-                if scroll.nearsTop, earlier() { scroll.addingAbove() }
+                apply { $0.update(viewport) }
+                if scroll.nearsTop, earlier() { tracker.state.addingAbove() }
                 if let pendingJump {
                     show(pendingJump, with: proxy)
                 } else if let shown = jumpShown {
@@ -90,18 +93,21 @@ struct ConversationScroll<Content: View>: View {
             }
             .onScrollPhaseChange { _, phase in
                 let byHand = phase == .tracking || phase == .interacting || phase == .decelerating
-                move(to: scroll.scrollingByHand(byHand))
+                apply { $0.scrollingByHand(byHand) }
             }
             .onChange(of: reload) {
                 settledReload = reload
-                move(to: scroll.reload(reload))
+                apply { $0.reload(reload) }
                 if let pendingJump { show(pendingJump, with: proxy) }
             }
             .onAppear { settledReload = reload }
             .onChange(of: jump, initial: true) { _, jump in
                 guard let jump else { return }
                 jumped()
-                scroll.leaveEnd(atReload: reload)
+                apply {
+                    $0.leaveEnd(atReload: reload)
+                    return nil
+                }
                 highlighted = jump.itemID
                 // A message in history just loaded waits for that load's layout.
                 if scroll.viewport == nil || reload != settledReload {
@@ -115,20 +121,25 @@ struct ConversationScroll<Content: View>: View {
                 }
             }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { move(to: scroll.resume()) }
+                if phase == .active { apply { $0.resume() } }
             }
-            .onChange(of: arrival, initial: true) { scroll.arrived(atReload: reload) }
-            .onChange(of: sent, initial: true) { move(to: scroll.sent(sent)) }
+            .onChange(of: arrival, initial: true) {
+                apply {
+                    $0.arrived(atReload: reload)
+                    return nil
+                }
+            }
+            .onChange(of: sent, initial: true) { apply { $0.sent(sent) } }
             // Over the scroll view, so it sits above the message box and stays put as you scroll.
             .overlay(alignment: .bottom) {
                 ZStack {
-                    if scroll.isAwayFromEnd {
-                        JumpToLatestButton(hasNew: scroll.hasNewBelow) { move(to: scroll.jumpToEnd()) }
+                    if chrome.isAwayFromEnd {
+                        JumpToLatestButton(hasNew: chrome.hasNewBelow) { apply { $0.jumpToEnd() } }
                             .transition(reduceMotion ? .opacity : .scale(scale: 0.6).combined(with: .opacity))
                     }
                 }
                 .padding(.bottom, 12)
-                .animation(.easeOut(duration: 0.18), value: scroll.isAwayFromEnd)
+                .animation(.easeOut(duration: 0.18), value: chrome.isAwayFromEnd)
             }
             #if os(iOS)
                 .environment(\.selectText) { selecting = SelectingText(text: $0, quote: $1) }
@@ -153,6 +164,16 @@ struct ConversationScroll<Content: View>: View {
         }
     #endif
 
+    private var scroll: ConversationScrollState { tracker.state }
+
+    /// Changes the scroll state, redraws only when what's drawn changed, and makes the correction
+    /// the change asks for.
+    private func apply(_ change: (inout ConversationScrollState) -> CGFloat?) {
+        let offset = change(&tracker.state)
+        if tracker.state.chrome != chrome { chrome = tracker.state.chrome }
+        move(to: offset)
+    }
+
     private func show(_ itemID: Int, with proxy: ScrollViewProxy) {
         pendingJump = nil
         jumpShown = itemID
@@ -172,6 +193,11 @@ struct ConversationScroll<Content: View>: View {
         transaction.disablesAnimations = true
         withTransaction(transaction) { position.scrollTo(y: offset) }
     }
+}
+
+/// Holds a conversation's scroll state where SwiftUI doesn't watch it.
+@MainActor private final class ScrollTracker {
+    var state = ConversationScrollState()
 }
 
 /// A conversation never gets shorter: what leaves its end, such as a card you answered, leaves its

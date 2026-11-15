@@ -448,9 +448,33 @@
                 let paragraph =
                     "Archive item \(index). This is a made-up review of a change to the search service. "
                     + "The checks cover indexing, fallbacks and a staged rollout."
-                let reply = Array(repeating: paragraph, count: index % 9 + 1).joined(separator: "\n\n")
+                var reply = Array(repeating: paragraph, count: index % 9 + 1).joined(separator: "\n\n")
+                // Every third review carries the lists, tables and code a working chat is full of.
+                if index % 3 == 0 {
+                    reply += """
+
+
+                        **What changed**
+                        - Indexing moved to a nightly job, with a manual run for urgent fixes.
+                        - The fallback now answers within 300 ms, or the old search takes over.
+                          - Timeouts are logged with the query, so slow ones can be replayed.
+                        - Rollout goes to 5%, then 25%, then everyone.
+
+                        | Check | Before | After |
+                        | --- | ---: | ---: |
+                        | Median query | 180 ms | 95 ms |
+                        | Slowest 1% | 1.4 s | 410 ms |
+                        | Index size | 2.1 GB | 1.3 GB |
+
+                        ```
+                        search reindex --since 2d --dry-run
+                        ```
+                        """
+                }
                 return [
                     HistoryMessage(role: "user", text: "Review archive item \(index)."),
+                    HistoryMessage(role: "tool", name: "read_file", context: "reviews/item-\(index).md"),
+                    HistoryMessage(role: "tool", name: "web_search", context: "search rollout checklist \(index)"),
                     HistoryMessage(role: "assistant", text: "## Review \(index)\n\n" + reply),
                 ]
             }

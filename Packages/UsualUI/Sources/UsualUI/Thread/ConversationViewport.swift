@@ -13,6 +13,15 @@ struct ConversationViewport: Equatable {
     }
 }
 
+/// What the conversation draws from its scroll state: the way back, its dot, and when the space
+/// kept at the end may go. The offset changes on every frame of a scroll and this rarely does, so
+/// the conversation's view reads only this; reading the whole state re-ran its body every frame.
+struct ConversationChrome: Equatable {
+    var isAwayFromEnd = false
+    var hasNewBelow = false
+    var releases = 0
+}
+
 /// Scroll intent is separate from geometry: changing a row's height isn't a user's scroll.
 struct ConversationScrollState {
     private(set) var followsEnd = true {
@@ -38,6 +47,10 @@ struct ConversationScrollState {
     var isAwayFromEnd: Bool {
         guard !followsEnd, let viewport else { return false }
         return !viewport.isNearEnd
+    }
+
+    var chrome: ConversationChrome {
+        ConversationChrome(isAwayFromEnd: isAwayFromEnd, hasNewBelow: hasNewBelow, releases: releases)
     }
 
     mutating func update(_ viewport: ConversationViewport) -> CGFloat? {
