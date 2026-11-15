@@ -30,6 +30,16 @@ struct ConversationScrollTests {
         #expect(!state.nearsTop)
     }
 
+    @Test func aReloadDoesntLeaveEarlierMessagesWaitingForever() {
+        var state = ConversationScrollState()
+        _ = state.update(.init(contentHeight: 1_000, height: 700, offset: 300))
+        state.addingAbove()
+        // The reload shows the newest page again before the earlier one is laid out. With the same
+        // newest messages it's just as tall, so no layout would ever say the page arrived.
+        _ = state.reload(1)
+        #expect(state.nearsTop)
+    }
+
     @Test func aLateLayoutChangeCannotLeaveTheViewportBeyondTheMessages() {
         var state = ConversationScrollState()
         _ = state.update(.init(contentHeight: 10_000, height: 700, offset: 9_300))

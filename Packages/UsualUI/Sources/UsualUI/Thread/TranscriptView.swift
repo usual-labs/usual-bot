@@ -44,7 +44,8 @@ struct TranscriptView: View {
                 }
             }
         }
-        .onChange(of: thread.transcriptLoad, initial: true) { window.reset(items) }
+        .onAppear { window.hold(items) }
+        .onChange(of: thread.transcriptLoad) { window.reset(items) }
         .onChange(of: items.isEmpty) { window.reset(items) }
         .onChange(of: jump, initial: true) { if let jump { target = jump.itemID } }
         .onChange(of: hasCards, initial: true) { cardsAfter = hasCards ? items.last?.id ?? -1 : nil }

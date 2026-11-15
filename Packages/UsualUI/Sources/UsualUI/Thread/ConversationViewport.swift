@@ -80,6 +80,9 @@ struct ConversationScrollState {
     /// The transcript was loaded again. `load` counts the loads.
     mutating func reload(_ load: Int) -> CGFloat? {
         releases += 1
+        // The reload shows the newest page again, so a page being added is gone; with the same
+        // newest messages no new height would ever say it arrived, and scrolling up would stop.
+        heightBeforeAbove = nil
         guard load != jumpedLoad else { return nil }
         followsEnd = true
         return correction
