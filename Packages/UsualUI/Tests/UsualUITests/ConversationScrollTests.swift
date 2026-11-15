@@ -143,6 +143,19 @@ struct ConversationScrollTests {
         #expect(!state.isAwayFromEnd)
     }
 
+    @Test func scrollingThroughTheMiddleLeavesWhatTheChatDrawsAlone() {
+        var state = ConversationScrollState()
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 4_300))
+        _ = state.scrollingByHand(true)
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 3_000))
+        let chrome = state.chrome
+        #expect(chrome.isAwayFromEnd)
+        for offset in stride(from: 2_990, through: 1_000, by: -10) {
+            _ = state.update(.init(contentHeight: 5_000, height: 700, offset: CGFloat(offset)))
+            #expect(state.chrome == chrome)
+        }
+    }
+
     @Test func scrollingBackDownByHandHidesTheWayBack() {
         var state = ConversationScrollState()
         _ = state.scrollingByHand(true)

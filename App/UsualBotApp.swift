@@ -52,6 +52,9 @@ struct UsualBotApp: App {
         #endif
         _model = State(initialValue: model)
         #if os(macOS)
+            #if DEBUG
+                ScrollBench.startIfAsked()
+            #endif
             let quickPanel = QuickPanelController(model: model)
             _quickPanel = State(initialValue: quickPanel)
             AgentNotifications.shared.watch(model, showApp: { quickPanel.showMainWindow() })

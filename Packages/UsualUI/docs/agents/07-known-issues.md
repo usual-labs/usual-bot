@@ -39,6 +39,17 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   its target in the window. The offscreen harness that measured this hosted `TranscriptView` in an
   `NSHostingView` and timed `layoutSubtreeIfNeeded()`; the continuity of a reveal during a real
   trackpad scroll was seen once, not frame by frame.
+- **Nothing that changes every frame of a scroll may reach a view's body.** `ConversationScroll`
+  kept its whole `ConversationScrollState`, offset included, in `@State`, so its body ran once a
+  frame (1,884 times in a 30 s trace) and redid the jump button, toolbar preferences and command
+  handlers each time. The state now lives in an object SwiftUI doesn't watch, and the body reads
+  only `ConversationChrome`, which changes when the way back, its dot or the kept space do. Total
+  SwiftUI update time while scrolling the long demo fell by about a third. Check a change here
+  with the SwiftUI template in Instruments and `USUALBOT_SCROLL_BENCH`. Not explained yet: the
+  developer's own chats scrolled at 17–30 fps in a screen recording, while the demo, in Debug or
+  optimised, stays near 60 before and after; only a trace of a real chat can say what it lacks.
+  Adding a page of 30 older messages still stalls 400–600 ms, nearly all of it SwiftUI making and
+  laying out the rows (`NSTextView` creation about 9%, building the attributed string under 3%).
 - **The Mac's grouped `Form` builds every row.** 120 switch rows took about 450 ms, against 60 ms in
   a `LazyVStack` inside the section, so the Skills page lays its rows out itself on the Mac.
   iPhone's form is lazy already.
