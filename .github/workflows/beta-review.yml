@@ -1,0 +1,69 @@
+name: Beta Review
+
+# Adds a TestFlight build to the external test group and sends it to Apple's beta review, with
+# scripts/beta-review.mjs. Run it by hand from the Actions tab, or with
+# `gh workflow run beta-review.yml -f build=202611142230 -f submit=true`. With Submit off it only
+# looks the build and group up and says what it would do.
+#
+# It uses the same individual App Store Connect API key as the TestFlight workflow, from the
+# `testflight` environment, which only main may use.
+
+on:
+  workflow_dispatch:
+    inputs:
+      build:
+        description: Build number (empty for the newest processed build)
+        type: string
+        default: ''
+      platforms:
+        description: Which apps
+        type: choice
+        options: [both, mac, iphone]
+        default: both
+      what_to_test:
+        description: What to Test (empty keeps the build's own)
+        type: string
+        default: ''
+      group:
+        description: External group (empty when there's only one)
+        type: string
+        default: ''
+      submit:
+        description: Add to the group and submit (off only looks things up)
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: beta-review
+  cancel-in-progress: false
+
+jobs:
+  review:
+    name: Submit for beta review
+    if: github.repository == 'usual-labs/usual-bot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: testflight
+    permissions:
+      contents: read # check out the script; nothing else
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Submit
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APP_STORE_CONNECT_KEY: ${{ secrets.APPSTORE_API_KEY_P8 }}
+          BUILD: ${{ inputs.build }}
+          PLATFORMS: ${{ inputs.platforms }}
+          WHAT_TO_TEST: ${{ inputs.what_to_test }}
+          GROUP: ${{ inputs.group }}
+          SUBMIT: ${{ inputs.submit }}
+        run: |
+          set -- --build "$BUILD" --group "$GROUP" --what-to-test "$WHAT_TO_TEST"
+          [ "$PLATFORMS" = both ] || set -- "$@" --platforms "$PLATFORMS"
+          [ "$SUBMIT" != true ] || set -- "$@" --submit
+          node scripts/beta-review.mjs "$@"
