@@ -627,7 +627,10 @@ and Settings opens with your gateway at the top. Preferences stay on this device
   background tasks finishing, plus sounds and previews. A preview shows a reply's words without its
   Markdown marks (pushed ones need the push plugin 0.3.2 or later). With previews off, new alerts say only who
   it's from. System notification settings and Focus also apply. A chat you're reading doesn't alert;
-  any other does, even while you're in the app. Tapping one opens that chat.
+  any other does, even while you're in the app. Tapping one opens that chat. The app's icon, in
+  the Dock and on the Home Screen, shows how many replies you haven't read, leaving out chats you
+  muted. If you'd allowed notifications before this came in, turn on **Badges** for Usual Bot in
+  the system's notification settings.
 - **Push:** with the plugin in [`Integrations/hermes-push`](../../Integrations/hermes-push/README.md)
   on your gateway, every device you sign in on is reached instantly, even with Usual Bot closed. Your
   gateway seals each notification for that device, and Usual's relay and Apple pass it on without

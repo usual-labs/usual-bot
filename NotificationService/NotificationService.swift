@@ -33,6 +33,7 @@ final class NotificationService: UNNotificationServiceExtension {
                 }
             }
             if opened.sound == false { content.sound = nil }
+            if opened.kind == "message", let count = Badge.added() { content.badge = NSNumber(value: count) }
         }
         contentHandler(content)
     }
@@ -45,6 +46,8 @@ private struct Sealed: Decodable {
     let body: String
     let chat: String?
     let sound: Bool?
+    /// `message`, `needs_you` or `test`.
+    let kind: String?
     /// Which of this device's gateways sent it (plugin 0.5.0 and later).
     let gateway: String?
 
@@ -99,5 +102,34 @@ private enum GatewayNames {
             return [:]
         }
         return (try? JSONDecoder().decode([String: String].self, from: data)) ?? [:]
+    }
+}
+
+/// The number on the app's icon, as the app last set it (`AppBadge` in HermesKit). A message pushed
+/// while the app is closed adds one; the app sets its own count again when it's next in front.
+private enum Badge {
+    /// Adds one and answers the new count, or `nil` without the app's count to add to.
+    static func added() -> Int? {
+        guard let group = Bundle.main.object(forInfoDictionaryKey: "UsualPushKeychainGroup") as? String else {
+            return nil
+        }
+        let item: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "Usual Bot push relay",
+            kSecAttrAccount as String: "badge",
+            kSecAttrAccessGroup as String: group,
+            kSecUseDataProtectionKeychain as String: true,
+        ]
+        var result: CFTypeRef?
+        var read = item
+        read[kSecReturnData as String] = true
+        read[kSecMatchLimit as String] = kSecMatchLimitOne
+        guard SecItemCopyMatching(read as CFDictionary, &result) == errSecSuccess, let data = result as? Data,
+            let count = Int(String(decoding: data, as: UTF8.self))
+        else { return nil }
+        let next = count + 1
+        let saved = SecItemUpdate(
+            item as CFDictionary, [kSecValueData as String: Data(String(next).utf8)] as CFDictionary)
+        return saved == errSecSuccess ? next : nil
     }
 }
