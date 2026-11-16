@@ -201,7 +201,7 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **iPhone paste needs iOS 27, and is unverified.** `onPasteCommand` is Mac-only even in the iOS 27 SDK, so the iPhone uses `pasteDestination` (iOS 27), on the box around the field rather than the field, so the field pastes text first and only what it can't reaches the box. Xcode 26's SDK marks `pasteDestination` unavailable on iOS outright, so it sits behind `#if compiler(>=6.4)`: a build from Xcode 26 has no iPhone paste at all, and CI and TestFlight build on `macos-26`, so shipped builds don't have it until they move to Xcode 27. Not run: the only iOS 27 Simulator was held by another session. If Paste doesn't appear in the field's menu with a photo copied, the next step is a Paste item in the + menu.
 - **Unverified: the iPhone sign-in sheet closes itself.** `SignInPage` cancels the task running `WebAuthenticationSession.authenticate` once Hermes says the app connected, relying on task cancellation to dismiss the sheet. Not yet run on a device or Simulator; if the sheet stays, keep an `ASWebAuthenticationSession` and call `cancel()` instead.
 - **The demo's Connect card and Apps page don't share state.** Connecting Notion in Scribe's chat leaves it unconnected on the Apps page; each fakes its own result.
-- **Demo mode can't show a thinking level change.** `ChatThread.setReasoning` needs a live session, so the slider snaps back there.
+- **Demo mode can't show a thinking level change.** `ChatThread.setReasoning` needs a live session, so the Thinking menu snaps back there.
 
 ## Audio and video
 

@@ -129,9 +129,8 @@ The film and all screenshots come from the built-in demo, with made-up Bots.
   or queue one for when it ends.
 - **Goals.** Give a Bot a goal with `/goal` and it keeps working on it reply after reply. The goal
   shows above the message box with how far along it is, and one button stops it.
-- **Model and thinking.** Pick each chat's model and how hard it thinks from the message box (on
-  iPhone, a gauge while you type). A small meter shows how full the context is, with a button to
-  compress it.
+- **Model and thinking.** Pick each chat's model and how hard it thinks in the Bot's profile. A
+  small meter there shows how full the context is, with a button to compress it.
 - **Needs you.** The sidebar marks Bots that are working and Bots waiting on you.
 
 **Getting more done**

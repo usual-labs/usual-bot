@@ -1,8 +1,8 @@
 import HermesKit
 import SwiftUI
 
-/// The message box under a chat with one agent. On iPhone its model, thinking and context sit
-/// inside it while you type; on the Mac they're in the agent's panel (ChatModelSection). Return
+/// The message box under a chat with one agent. The chat's model, thinking and context are in the
+/// agent's profile (ChatModelSection), on iPhone and Mac alike. Return
 /// sends. While the agent works, a message steers it, or waits in the queue above the box for the
 /// reply to end, and the empty box's button stops it. Files can go with a message between turns.
 struct Composer: View {
@@ -10,8 +10,6 @@ struct Composer: View {
     /// Whose chat this is, for its draft.
     let chatID: Contact.ID
     let agentName: String
-    /// The agent's default model, for the model menu's Make Default.
-    var agentDefault: AgentDetails?
     @Binding var attachments: [Attachment]
     @Binding var quotes: [QuotedMessage]
     /// The message of yours you're rewriting: Send replaces it, and removes what came after it.
@@ -77,7 +75,7 @@ struct Composer: View {
             commands: SlashCommands(
                 list: thread.commands, load: { Task { await thread.loadCommands() } },
                 prefill: Binding(get: { thread.prefill }, set: { thread.prefill = $0 })),
-            chat: ChatControls(thread: thread, agentName: agentName, agentDefault: agentDefault),
+            opensForTyping: true,
             queue: queue, send: send, stop: thread.stop)
     }
 

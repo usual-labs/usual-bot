@@ -3,8 +3,9 @@ import SwiftUI
 
 /// The rounded message box shared by chats and rooms: a growing text field, Send, and Stop while
 /// something runs and the box is empty. In rooms, typing `@` suggests members to mention. On
-/// iPhone a chat's box opens up while you type: the text gets its own row, and below it a row of
-/// buttons with the chat's context and a gauge for its model and thinking.
+/// iPhone a chat's box opens up while you type: the text gets its own row, and its buttons a row
+/// below it. The mic stays beside Send with text in the box, as in Grok's app; the chat's model,
+/// thinking and context are in the agent's profile.
 struct MessageBox: View {
     /// The chat or room this box writes to. The Mac shows the next one in the same pane, and the
     /// box goes with it.
@@ -34,8 +35,8 @@ struct MessageBox: View {
     var transcriptionProfile: String?
     /// Chats only: skills and commands to offer after `/`.
     var commands: SlashCommands?
-    /// Chats only: the model, thinking and context controls the iPhone shows while you type.
-    var chat: ChatControls?
+    /// Chats only: on iPhone the box opens up while you type (see `expanded`).
+    var opensForTyping = false
     /// Rooms: a message that didn't send, taken back into the box so its text isn't lost.
     var unsent: Binding<String?>?
     /// Chats only, while a reply runs: queues the message for when the reply ends, where Send
@@ -62,10 +63,6 @@ struct MessageBox: View {
     @State private var dictation = Dictation()
     @Environment(\.transcriber) private var transcriber
     @AppStorage(DictationSettings.engineKey) private var dictationEngine = ""
-    /// iPhone: the gauge's level picker is open above the box.
-    @State private var pickingLevel = false
-    /// iPhone: the model sheet is open.
-    @State private var choosingModel = false
     #if os(iOS)
         @Environment(\.keyboardUp) private var keyboardUp
         /// iPhone: the box is open for typing. It opens and closes with the keyboard, in the same
@@ -99,10 +96,10 @@ struct MessageBox: View {
     private var inset: CGFloat { Theme.zoomed(Self.inset, for: dynamicTypeSize) }
 
     /// The text gets the box's whole width and the buttons move to a row below it: on iPhone while
-    /// you type in a chat, with the chat's settings, and on the Mac once your text wraps.
+    /// you type in a chat, and on the Mac once your text wraps.
     private var expanded: Bool {
         #if os(iOS)
-            open && chat != nil
+            open && opensForTyping
         #else
             hasWrapped
         #endif
@@ -120,7 +117,6 @@ struct MessageBox: View {
                 .background { stopShortcut }
             #endif
             .environment(\.composerButtonSize, buttonSize)
-            .animation(.smooth(duration: 0.2), value: pickingLevel)
             .animation(.snappy(duration: 0.16), value: isEmpty)
             #if os(macOS)
                 .animation(.smooth(duration: 0.25), value: expanded)
@@ -142,10 +138,7 @@ struct MessageBox: View {
                 )
                 // In the keyboard's own animation, which this change arrives in.
                 .onChange(of: keyboardUp) { _, up in open = up && focused }
-                // The level picker closes as you type on, put the keyboard away, or tap the chat.
-                .onChange(of: text) { pickingLevel = false }
                 .onChange(of: focused) { _, focused in
-                    if !focused { pickingLevel = false }
                     // Focus came to keys already up, or left with none up: no keyboard will move.
                     if focused == keyboardUp {
                         withAnimation(.smooth(duration: 0.25)) { open = focused }
@@ -158,16 +151,12 @@ struct MessageBox: View {
                     guard !Task.isCancelled, focused, !open else { return }
                     withAnimation(.smooth(duration: 0.25)) { open = true }
                 }
-                .sheet(isPresented: $choosingModel) {
-                    if let chat { ModelSheet(chat: chat) }
-                }
             #endif
             .onDisappear { dictation.leave() }
             // The next conversation gets its own text, and none of what was open over the last one.
             .onChange(of: conversation) {
                 dictation.leave()
                 dismissedText = nil
-                pickingLevel = false
                 selection = TextSelection(insertionPoint: text.endIndex)
             }
             // The menu reads the gateway's list each time it opens.
@@ -176,7 +165,6 @@ struct MessageBox: View {
             // the keyboard away too, as a swipe down the conversation does.
             .onChange(of: conversationTaps) {
                 closeMenu()
-                pickingLevel = false
                 #if os(iOS)
                     focused = false
                 #endif
@@ -226,15 +214,6 @@ struct MessageBox: View {
                     items: menu, highlighted: min(highlighted, menu.count - 1), highlight: { highlighted = $0 },
                     pick: pick)
             }
-            #if os(iOS)
-                if menu.isEmpty, pickingLevel, let chat {
-                    LevelPanel(chat: chat) {
-                        pickingLevel = false
-                        choosingModel = true
-                    }
-                    .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .bottom)))
-                }
-            #endif
             VStack(alignment: .leading, spacing: 4) {
                 if let quotes, !quotes.wrappedValue.isEmpty { QuoteChips(quotes: quotes) }
                 if editing?.wrappedValue == true {
@@ -263,22 +242,8 @@ struct MessageBox: View {
                             .layoutValue(key: ComposerLayout.RoleKey.self, value: .leading)
                     }
                     field
-                    HStack(spacing: 6) {
-                        #if os(iOS)
-                            if expanded, let chat {
-                                // Arriving views don't slide with the rest: they're drawn where they
-                                // end up, below the box while it still grows. So they fade in once it
-                                // has, and go at once as it shrinks.
-                                ComposerControls(chat: chat, pickingLevel: $pickingLevel)
-                                    .transition(
-                                        .asymmetric(
-                                            insertion: .opacity.animation(.easeOut(duration: 0.15).delay(0.3)),
-                                            removal: .identity))
-                            }
-                        #endif
-                        sendButton
-                    }
-                    .layoutValue(key: ComposerLayout.RoleKey.self, value: .trailing)
+                    buttons
+                        .layoutValue(key: ComposerLayout.RoleKey.self, value: .trailing)
                 }
                 switch dictation.state {
                 case .denied(let message):
@@ -434,6 +399,17 @@ struct MessageBox: View {
         #endif
     }
 
+    /// The mic, then Stop, the call button or Send. The mic stays with text in the box, as in
+    /// Grok's app: dictating adds to what's there. A call holds the microphone meanwhile.
+    private var buttons: some View {
+        HStack(spacing: 6) {
+            if !inCall {
+                MicButton(dictation: dictation, throughGateway: dictatesThroughGateway, start: startDictation)
+            }
+            sendButton
+        }
+    }
+
     @ViewBuilder private var sendButton: some View {
         if attaching?.isUploading == true {
             ProgressView()
@@ -442,14 +418,10 @@ struct MessageBox: View {
                 .accessibilityLabel(Text("Uploading"))
         } else if isRunning, isEmpty, !hasAttachments, !dictation.isActive {
             RoundButton(systemImage: "stop.fill", label: stopLabel, prominent: false, action: stop)
-        } else if !inCall, dictation.isActive || (isEmpty && !hasAttachments) {
-            // An empty box offers the mic; in a chat, the call button beside it holds the spot
-            // Send takes over once there's something to send.
-            HStack(spacing: 6) {
-                MicButton(dictation: dictation, throughGateway: dictatesThroughGateway, start: startDictation)
-                if let startCall, !dictation.isActive, !isRunning {
-                    CallStartButton(action: startCall)
-                }
+        } else if !inCall, isEmpty, !hasAttachments {
+            // In a chat, the call button holds the spot Send takes over once there's something to send.
+            if let startCall, !dictation.isActive, !isRunning {
+                CallStartButton(action: startCall)
             }
         } else {
             HStack(spacing: 6) {
