@@ -83,6 +83,16 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 
 ## Gateway
 
+- **The gateway answers one socket's requests one at a time.** Each chat open (`session.resume`)
+  builds an agent: about 1 s on an idle host, several on a busy one. Opening all 11 of the
+  developer's chats at once on connect left the last ones, and the roster read behind them, past
+  the 30 s call timeout; the roster timeout dropped the link and the reconnect opened them all
+  again, every 40 s (iPhone, 16 November 2026). So `attachChats` opens the chat on screen at once
+  and the rest `backgroundOpens` at a time, and a roster read that times out on a link still open
+  is skipped, not a reason to reconnect; the channel's heartbeat closes a silent one. Don't add
+  calls that fan out over every Bot on connect. Still open: a chat whose own open times out shows
+  the error instead of its saved copy.
+
 - **A Bot renamed outside the app refuses its chat for up to 5 minutes** ("This chat is open in
   another Hermes window/terminal"). A chat's lease is filed in the profile folder, and the session
   that took it releases it at the path it had, which the rename moved. The dashboard's 5-minute sweep

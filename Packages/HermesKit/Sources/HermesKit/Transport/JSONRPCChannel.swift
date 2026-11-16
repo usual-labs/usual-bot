@@ -67,6 +67,8 @@ public actor JSONRPCChannel {
     private var readyWaiters: [CheckedContinuation<GatewayReady, any Error>] = []
     private var lastInbound = ContinuousClock.now
     private var closedError: GatewayError?
+    /// Not closed yet, by either side or the heartbeat.
+    public var isOpen: Bool { closedError == nil }
     private var tasks: [Task<Void, Never>] = []
 
     private static let log = Logger(subsystem: "UsualBot", category: "gateway")
