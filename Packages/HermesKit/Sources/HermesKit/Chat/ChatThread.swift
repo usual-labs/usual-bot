@@ -147,6 +147,12 @@ public final class ChatThread {
     }
 
     private var openTask: Task<Void, Never>?
+    /// Opening is under way.
+    var isOpening: Bool { openTask != nil }
+    /// `open` would start opening: not attached and not already opening.
+    var needsOpening: Bool { sessionID == nil && openTask == nil }
+    /// Set by the app: an open finished, either way, so another chat can start opening.
+    var openEnded: (() -> Void)?
     /// The session of a chat moved here from another ID letting go of it, which opening waits for.
     var released: Task<Void, Never>?
     let channel: @MainActor () -> JSONRPCChannel?
@@ -195,7 +201,10 @@ public final class ChatThread {
         if case .failed = phase { phase = .loading }
         Self.log.notice("Opening chat \(self.contactID, privacy: .private)")
         openTask = Task {
-            defer { openTask = nil }
+            defer {
+                openTask = nil
+                openEnded?()
+            }
             await released?.value
             released = nil
             do {

@@ -151,6 +151,8 @@ public final class AppModel {
     }()
 
     private static let rosterInterval: Duration = .seconds(5)
+    /// Chats opening alongside the one on screen; see `attachChats`.
+    static let backgroundOpens = 2
     private static let log = Logger(subsystem: "UsualBot", category: "app")
 
     public convenience init() {
@@ -367,7 +369,7 @@ public final class AppModel {
                 }
                 var firstRead = true
                 while !Task.isCancelled {
-                    try await refreshRoster(on: channel)
+                    try await refreshRosterKeepingLink(on: channel)
                     attachChats()
                     // Chats may have been read elsewhere while this link was down; after that, a
                     // chat that turns unread is looked at on the next read.
@@ -454,6 +456,7 @@ public final class AppModel {
         thread.gateway = { [weak self] in self?.auth?.gateway }
         thread.replayEpoch = replayEpoch
         thread.wasRead = { [weak self] in self?.readSync.markRead(id) }
+        thread.openEnded = { [weak self] in self?.attachChats() }
         thread.gatewayIsUnencrypted = { [weak self] in self?.auth?.gateway.isUnencrypted ?? true }
         return thread
     }
@@ -486,9 +489,18 @@ public final class AppModel {
 
     /// Keeps every agent's existing Bot Chat attached, so its approvals reach this app and the
     /// sidebar shows when it's working. Agents without a Bot Chat get one only when you open them.
-    private func attachChats() {
-        for contact in contacts where contact.kind == .agent && (contact.chatID != nil || threads[contact.id] != nil) {
+    /// The chat on screen opens at once and the rest `backgroundOpens` at a time: the gateway
+    /// answers a socket's requests one by one and each open builds an agent, so opening every
+    /// chat together left the last ones, and the roster read behind them, past their timeout.
+    func attachChats() {
+        guard case .online = link else { return }
+        let chats = contacts.filter { $0.kind == .agent && ($0.chatID != nil || threads[$0.id] != nil) }
+        if let visible = chats.first(where: { $0.id == visibleContactID }) { openThread(for: visible) }
+        let others = chats.filter { $0.id != visibleContactID }
+        var opening = others.filter { threads[$0.id]?.isOpening == true }.count
+        for contact in others where opening < Self.backgroundOpens && thread(for: contact).needsOpening {
             openThread(for: contact)
+            opening += 1
         }
     }
 
@@ -663,8 +675,20 @@ public final class AppModel {
         }
     }
 
-    func refreshRoster(on channel: JSONRPCChannel) async throws {
-        let result = try await channel.call("profiles.list", params: ["include_sessions": true])
+    /// Reads the roster, and skips a read that timed out while the link is still open: a slow
+    /// gateway answering other requests first isn't a dead link, and dropping it would open every
+    /// chat again. A silent link closes itself (`JSONRPCChannel`'s heartbeat).
+    func refreshRosterKeepingLink(on channel: JSONRPCChannel, timeout: Duration = .seconds(30)) async throws {
+        do {
+            try await refreshRoster(on: channel, timeout: timeout)
+        } catch GatewayError.timedOut {
+            guard await channel.isOpen else { throw GatewayError.timedOut }
+            Self.log.notice("The roster read timed out; keeping the link")
+        }
+    }
+
+    func refreshRoster(on channel: JSONRPCChannel, timeout: Duration = .seconds(30)) async throws {
+        let result = try await channel.call("profiles.list", params: ["include_sessions": true], timeout: timeout)
         let list = try result.decode(ProfileList.self)
         followProfileChanges(list.profiles)
         let all = rosterHolds.apply(to: list.profiles.map(Contact.init(profile:)))
