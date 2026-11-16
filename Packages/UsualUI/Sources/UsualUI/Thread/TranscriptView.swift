@@ -67,6 +67,8 @@ struct TranscriptView: View {
                 TranscriptAnnouncement.post(text)
             }
         }
+        // The chat's widgets talk back to it.
+        .environment(\.widgetChat, thread)
     }
 
     private var items: [TranscriptItem] { thread.state.items }

@@ -111,6 +111,9 @@ Child-local ideas stay in their package KBs.
   pausing without stopping the reply; a push when a goal ends with the app closed (Hermes fires no
   hook at the judge's verdict, so the plugin has nothing to send it from); and bars for `/loop`
   and `/heartbeat`, which come in the same `session.control` snapshot.
+- **Widgets in rooms that talk back.** Hermes has no hidden room turn, and a room's message goes to
+  members, so `window.hermes.canSend` is false in rooms. It would need a hidden `groups` send and a
+  rule for which member answers.
 - **Queue: files, and a choice of what Send does.** A queued message can't carry attachments (the
   gateway takes them on `prompt.submit`, but uploads are staged for the next message). Someone who
   always queues has to press Queue each time; a setting would follow Hermes's `busy_input_mode`.

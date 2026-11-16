@@ -407,6 +407,7 @@ public final class AppModel {
                 contact.isMarkedUnread = thread.isMarkedUnread
                 if let newest = Self.newestMessage(in: thread.state.items),
                     newest.date > contact.lastActive ?? .distantPast
+                        || contact.preview.map(thread.state.isHiddenPreview) == true
                 {
                     contact.preview = newest.text
                     contact.lastActive = newest.date

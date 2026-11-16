@@ -12,11 +12,12 @@ from pathlib import Path
 
 from . import relay, store
 from .plain import plain
+from .turns import asked_hidden
 
 logger = logging.getLogger(__name__)
 
 # As in plugin.yaml. The app reads it to know this plugin says which gateway sent each notification.
-VERSION = "0.5.0"
+VERSION = "0.5.1"
 
 # Where a person talks to the agent. Leaves out helpers ("subagent"), routines and other platforms.
 _CHAT_PLATFORMS = {"tui", "desktop", "dashboard"}
@@ -150,8 +151,8 @@ def _deliver_room_reply(profile: str, text: str) -> None:
         deliver("message", "{name}", text, f"room:{room}", speaker=profile)
 
 
-def _on_reply(assistant_response="", platform="", **_) -> None:
-    if not assistant_response.strip():
+def _on_reply(assistant_response="", platform="", conversation_history=None, **_) -> None:
+    if not assistant_response.strip() or asked_hidden(conversation_history):
         return
     said = plain(assistant_response)
     if platform in _CHAT_PLATFORMS:

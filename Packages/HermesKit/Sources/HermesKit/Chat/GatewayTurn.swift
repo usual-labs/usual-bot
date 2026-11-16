@@ -22,9 +22,15 @@ enum GatewayTurn {
     /// Whether a queued or running turn (`pending`'s `input_id`) is one Hermes started for a goal.
     static func isGoalAdmission(_ inputID: String?) -> Bool { inputID?.hasPrefix("[\"goal-continuation\"") == true }
 
-    /// How a user row reads in a chat. Rows saved before Hermes typed them have only their wording
-    /// to go on. An unknown kind stays a message, so nothing you wrote can disappear.
-    static func content(text: String, kind: String?, title: String?) -> TranscriptItem.Content {
+    /// The kind of a row the model reads and no chat shows: a widget's prompt, Hermes's own
+    /// onboarding opening, the official app's goal controls (`gateway/session_display.py`).
+    static let hiddenKind = "hidden"
+
+    /// How a user row reads in a chat; `nil` for a hidden one. Rows saved before Hermes typed them
+    /// have only their wording to go on. Any other unknown kind stays a message, so nothing you
+    /// wrote can disappear.
+    static func content(text: String, kind: String?, title: String?) -> TranscriptItem.Content? {
+        if kind == hiddenKind { return nil }
         let body = withoutFooter(text)
         if kind == "process_complete" || body.hasPrefix(processPrefix) {
             let (headline, detail) = firstLine(of: unwrapped(body))

@@ -189,6 +189,9 @@ public struct ThreadState: Equatable, Sendable, Codable {
     /// Notices Hermes can replace or take back, by its key.
     private var keyedNotices: [String: Int] = [:]
 
+    /// The hidden prompts in this chat (`GatewayTurn.hiddenKind`), newest last. Not cached.
+    private(set) var hiddenPrompts: [String] = []
+
     private enum CodingKeys: String, CodingKey { case items, draft, isRunning, nextID, turnStart }
 
     public init() {}
@@ -210,10 +213,13 @@ public struct ThreadState: Equatable, Sendable, Codable {
             }
             switch message.role {
             case "user":
-                if let text = message.text?.nonBlank {
-                    append(
-                        GatewayTurn.content(text: text, kind: message.displayKind, title: message.displayText),
-                        rowID: message.rowId, reactions: message.reactions, date: message.date)
+                if message.displayKind == GatewayTurn.hiddenKind, let text = message.text?.nonBlank {
+                    noteHidden(text)
+                }
+                if let text = message.text?.nonBlank,
+                    let content = GatewayTurn.content(text: text, kind: message.displayKind, title: message.displayText)
+                {
+                    append(content, rowID: message.rowId, reactions: message.reactions, date: message.date)
                 }
             case "assistant":
                 if let text = message.text?.nonBlank {
@@ -234,8 +240,9 @@ public struct ThreadState: Equatable, Sendable, Codable {
         turnStart = items.count
         if running, let inflight {
             // The running turn's prompt may not be in the stored history yet.
-            if let user = inflight.user.nonBlank {
+            if let user = inflight.user.nonBlank,
                 let prompt = GatewayTurn.content(text: user, kind: inflight.displayKind, title: inflight.displayText)
+            {
                 if items.last?.content != prompt {
                     append(prompt)
                     turnStart = items.count
@@ -244,6 +251,22 @@ public struct ThreadState: Equatable, Sendable, Codable {
             draft = inflight.assistant
         }
         if running, let todoState { live.restoreTodos(todoState) }
+    }
+
+    /// A hidden prompt: the model reads it and no chat shows it.
+    mutating func noteHidden(_ text: String) {
+        hiddenPrompts = Array((hiddenPrompts + [text]).suffix(20))
+    }
+
+    /// Whether the roster's preview of this chat is a hidden prompt: Hermes's preview is the newest
+    /// message, hidden or not (`_latest_message_preview`), squeezed to one line and cut at 80.
+    func isHiddenPreview(_ preview: String) -> Bool {
+        hiddenPrompts.contains { text in
+            let line = text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            let scalars = line.unicodeScalars
+            let cut = scalars.count > 80 ? String(String.UnicodeScalarView(scalars.prefix(80))) + "..." : line
+            return Contact.plainPreview(cut) == preview
+        }
     }
 
     /// Keeps only the last `limit` items, for the offline cache. A running turn is cut off.
@@ -279,10 +302,10 @@ public struct ThreadState: Equatable, Sendable, Codable {
 
     /// Puts a turn's message where the turn began, for one sent from another device.
     mutating func insertPrompt(_ message: HistoryMessage, at index: Int) {
-        guard index <= items.count, let text = message.text?.nonBlank else { return }
-        append(
-            GatewayTurn.content(text: text, kind: message.displayKind, title: message.displayText),
-            rowID: message.rowId, reactions: message.reactions, date: message.date ?? .now)
+        guard index <= items.count, let text = message.text?.nonBlank,
+            let content = GatewayTurn.content(text: text, kind: message.displayKind, title: message.displayText)
+        else { return }
+        append(content, rowID: message.rowId, reactions: message.reactions, date: message.date ?? .now)
         items.insert(items.removeLast(), at: index)
         if index <= turnStart { turnStart += 1 }
     }
@@ -336,10 +359,11 @@ public struct ThreadState: Equatable, Sendable, Codable {
             // A turn Hermes started itself may say why, for a viewer that didn't submit it.
             if let kind = payload["display_kind"]?.stringValue,
                 let title = payload["display_text"]?.stringValue?.nonBlank,
-                let text = payload["text"]?.stringValue?.nonBlank
+                let text = payload["text"]?.stringValue?.nonBlank,
+                let content = GatewayTurn.content(text: text, kind: kind, title: title)
             {
                 sealDraft()
-                append(GatewayTurn.content(text: text, kind: kind, title: title))
+                append(content)
             }
             if !isRunning { turnStart = items.count }
             isRunning = true

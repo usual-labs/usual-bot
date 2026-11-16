@@ -4,6 +4,9 @@ import SwiftUI
 extension EnvironmentValues {
     /// Whether widgets run here; where they don't (the ⌥Space panel), they show as a card.
     @Entry var runsWidgets = true
+    /// The chat a widget's prompts go to (`window.hermes.send`). Only a Bot Chat's transcript
+    /// sets it: elsewhere, rooms included, a widget can't talk back.
+    @Entry var widgetChat: ChatThread? = nil
 }
 
 /// A `::preview{file="…"}` page in a reply, running live in the message as in Hermes's desktop
@@ -18,6 +21,7 @@ struct InlineWidget: View {
     @Environment(\.mediaProfile) private var profile
     @Environment(\.runsWidgets) private var runs
     @Environment(\.gatewayOnline) private var isOnline
+    @Environment(\.widgetChat) private var chat
     @Environment(\.messageTextSize) private var textSize
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.self) private var environment
@@ -32,6 +36,11 @@ struct InlineWidget: View {
     @State private var pageWidth: CGFloat?
     /// How wide the frame came out, which a page wider than it scrolls across.
     @State private var frameWidth: CGFloat?
+    /// When the page last had a prompt let through (`WidgetIntent`), and the tap it used.
+    @State private var lastSent: ContinuousClock.Instant?
+    @State private var spentTap: ContinuousClock.Instant?
+    /// The chat's `turnsEnded` when the page was last read.
+    @State private var readAfterTurn: Int?
 
     enum Phase: Equatable {
         case loading
@@ -42,15 +51,21 @@ struct InlineWidget: View {
     }
 
     /// What the load task does when it runs: on appearing, when the reply finishes, when the
-    /// gateway comes back, or on Try Again. A page already read stays: the transcript keeps its
-    /// views, so this runs once per widget each time a chat opens, not as it scrolls.
+    /// gateway comes back, on Try Again, or when a turn in its chat ends. A page already read
+    /// stays: the transcript keeps its views, so this runs once per widget each time a chat opens,
+    /// not as it scrolls.
     enum LoadStep: Equatable {
         case load, waitForGateway, keep
     }
 
-    static func loadStep(_ phase: Phase, runs: Bool, isBeingWritten: Bool, isOnline: Bool) -> LoadStep {
+    /// `isStale`: a turn in the chat ended since the page was read, and the page is running. Its
+    /// agent may have rewritten it (widgets talking back are answered that way); one off screen is
+    /// read when it runs again, so a long chat doesn't read every widget after every reply.
+    static func loadStep(_ phase: Phase, runs: Bool, isBeingWritten: Bool, isOnline: Bool, isStale: Bool = false)
+        -> LoadStep
+    {
         guard runs, !isBeingWritten else { return .keep }
-        if case .loaded = phase { return .keep }
+        if case .loaded = phase { return isStale && isOnline ? .load : .keep }
         return isOnline ? .load : .waitForGateway
     }
 
@@ -83,14 +98,20 @@ struct InlineWidget: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Widget \(name)"))
         // The connection is in the key, so a page that failed or waited while it was down loads
-        // when it's back.
+        // when it's back; the chat's turns are too, as its agent may have rewritten the page.
         .task(
             id: LoadKey(
                 file: directive.file, profile: profile, isBeingWritten: isBeingWritten, isOnline: isOnline,
-                attempt: attempt)
+                attempt: attempt, turn: chat?.turnsEnded, isRunning: isRunning)
         ) {
-            switch Self.loadStep(phase, runs: runs, isBeingWritten: isBeingWritten, isOnline: isOnline) {
-            case .load: await load()
+            let turn = chat?.turnsEnded
+            switch Self.loadStep(
+                phase, runs: runs, isBeingWritten: isBeingWritten, isOnline: isOnline,
+                isStale: isRunning && readAfterTurn != turn)
+            {
+            case .load:
+                readAfterTurn = turn
+                await load()
             case .waitForGateway: phase = .offline
             case .keep: break
             }
@@ -104,7 +125,7 @@ struct InlineWidget: View {
     @ViewBuilder private var frame: some View {
         Group {
             if case .loaded(let html) = phase, isRunning {
-                WidgetFrame(html: html, theme: theme, scrolls: scrolls, onMessage: receive)
+                WidgetFrame(html: html, theme: theme, scrolls: scrolls, canSend: chat != nil, onMessage: receive)
             } else {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Theme.ink.opacity(0.04))
@@ -144,6 +165,21 @@ struct InlineWidget: View {
             // Taken once: following it would shrink a page whose parts are a share of its width,
             // a little more each time.
             if pageWidth == nil, width > 0 { pageWidth = width }
+        case .send(let request):
+            guard let chat else {
+                request.reply(.undelivered(.room, String(localized: "This widget can't send messages here.")))
+                return
+            }
+            switch WidgetIntent.evaluate(
+                request.body, now: .now, tappedAt: request.tappedAt, spentTap: spentTap, lastAccepted: lastSent)
+            {
+            case .failure(let refusal):
+                request.reply(refusal.ack)
+            case .success(let prompt):
+                lastSent = .now
+                spentTap = request.tappedAt
+                Task { request.reply(await chat.sendFromWidget(prompt)) }
+            }
         }
     }
 
@@ -172,9 +208,12 @@ struct InlineWidget: View {
                 phase = .failed(String(localized: "\(name) isn't a web page."))
                 return
             }
-            phase = .loaded(html)
+            // The same page keeps running, with its state.
+            if phase != .loaded(html) { phase = .loaded(html) }
         } catch {
             guard !Task.isCancelled else { return }
+            // A page already showing stays, offline included.
+            if case .loaded = phase { return }
             phase = .failed(AppModel.describe(error))
         }
     }
@@ -185,6 +224,8 @@ struct InlineWidget: View {
         let isBeingWritten: Bool
         let isOnline: Bool
         let attempt: Int
+        let turn: Int?
+        let isRunning: Bool
     }
 }
 

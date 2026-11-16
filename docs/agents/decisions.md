@@ -130,7 +130,8 @@ read at Hermes `2bd378ed1b`.
   updates a widget by rewriting its file. It's read only once the message is finished, as the
   desktop app waits, because a page mid-write renders as garbage. It's read once per view: the
   transcript isn't lazy, so scrolling keeps the view and its page (one read per widget each time a
-  chat opens, checked in the Simulator past the 20 s teardown).
+  chat opens, checked in the Simulator past the 20 s teardown), and again when a turn in its chat
+  ends (Talking back, below).
 - **Offline and reconnecting.** With the gateway unreachable, a widget not yet read says it loads
   when the app is connected again. The connection (`gatewayOnline`) is in its load task's key, so
   that card and a failed read both load again when it comes back. A failure while connected (say
@@ -142,7 +143,7 @@ read at Hermes `2bd378ed1b`.
   or mailto link opens in the browser, as a link in a message does, and everything else is
   cancelled; no new windows, downloads, camera or microphone. The theme and size scripts run in
   their own `WKContentWorld`, and the size channel is registered only there, so the page can't see
-  them or fake a size. The page has no channel to the app at all yet.
+  them or fake a size (or a tap). The page's one channel to the app is `send` (below).
 - **Network is allowed.** Hermes's own preview policy keeps "any http(s) library, image, fetch,
   worker or embed" and isolates by the opaque sandbox, not a source list; agents load chart
   libraries from CDNs. The page can't reach the app, its tokens or the gateway, and what it could
@@ -166,9 +167,53 @@ read at Hermes `2bd378ed1b`.
   they're told about widgets. Bot Chats are created with `source: "tui"` and aren't; switching to
   `gui` would also hand agents the desktop app's own tools (`desktop_ui`, `catalog`), which the app
   can't serve. Telling them through the push plugin is a separate change.
-- **Talking back (`window.hermes.send`, `data-hermes-send`) isn't built.** `WidgetMessage` is the one
-  way a page's message reaches the app; a page-world channel for it would add a case there, handled
-  where `InlineWidget` receives it.
+- **Talking back.** `window.hermes.send(prompt)`, and `data-hermes-send="…"` on any clickable
+  element, send the prompt as a turn with `display_kind: "hidden"`, as the desktop app does: the
+  agent runs and the row is stored, but no chat shows it. The script and its channel are the only
+  ones in the page's own world (it has to call them); `WidgetMessage.send` carries each call to
+  `InlineWidget`, which checks it (`WidgetIntent`) and hands it to `ChatThread.sendFromWidget`.
+  - **The desktop app's gate and answers.** Trimmed; over 500 characters refused, never cut; one a
+    second per widget. `send()` resolves with `{ok}` or `{ok:false, error}` using only the desktop
+    app's four errors (`invalid`, `too_long`, `throttled`, `undelivered`), so widgets written for it
+    work; why it didn't go is in `reason` (`offline`, `busy`, `room`, `refused`) and a sentence in
+    `message`. `ok` only once the gateway has accepted the prompt, so a widget says "saved" only
+    when it was. The page gives up after 20 s, not the desktop's 5: our answer waits on the network.
+  - **Only right after a tap, stricter than the desktop app.** A send goes only within 3 s of a
+    trusted pointer down, key press or click in that widget's main frame, and each tap sends at
+    most once; otherwise it's `undelivered` with `reason: "needs_tap"`. The desktop app takes a
+    send from the page's script at any time. Here an accepted prompt is a turn the agent runs,
+    costs money and doesn't show in the chat, and widgets load scripts from any CDN: a page, or a
+    script it pulled in, could otherwise send on a timer. The tap is seen by a listener in the
+    app's world (`WidgetPage.gestureScript`) that checks `isTrusted` and reports on a channel only
+    that world has, so the page can neither fake nor hide it; `el.click()`, `dispatchEvent` and
+    timers carry no tap. A trusted click counts because VoiceOver presses with a click alone. 3 s
+    leaves room for a handler that awaits something first, and is too short to save a tap for
+    later; a page that asks "Are you sure?" gets a new tap when you answer. A reloaded page starts
+    with no tap. `data-hermes-send` passes, as its click follows your tap.
+  - **While a reply runs, queue, never steer.** On the gateway's listener the prompt joins its queue
+    (still hidden) and runs as its own turn. The desktop app steers it into the running reply; that
+    mixes a click into another answer and a steer can't be marked hidden. It shows in the queue as
+    "From a widget", with only Remove: nothing waits invisibly, and editing or sending it as yours
+    makes no sense. Stop drops it rather than holding it, since sent after Resume it would answer a
+    click from long before. The dashboard keeps no queue, so there it's refused (`busy`).
+  - **Offline it's refused at once** (`offline`), not held for later, for the same reason.
+  - **Not from rooms.** A room's message goes to members, and Hermes has no hidden room turn.
+    `window.hermes.canSend` is false there (and anywhere but a Bot Chat's transcript) so a page can
+    hide its buttons; a send is refused with `room`.
+  - **The widget changing is the answer.** Agents are told to answer by rewriting the widget's file.
+    The desktop app doesn't reload a widget after one (it reads the file again only when its own
+    message finishes), so here every running widget in a chat reads its file again when any turn in
+    that chat ends (`ChatThread.turnsEnded`), and swaps the page only if it changed, so an untouched
+    widget keeps its state. One off screen or stopped is read when it runs again, so a long chat
+    doesn't read every widget after every reply. A read that fails keeps the page that's showing.
+  - **No alert for its reply.** You were looking at the widget; the push plugin (0.5.1) skips a
+    reply whose prompt was hidden too, reading the kind off the turn's newest user message.
+- **Hidden rows never show as yours.** `GatewayTurn.content` returns nothing for `hidden`, which also
+  covers Hermes's onboarding opening and the official app's goal controls, which used to show as
+  your messages and be what Undo and Edit took back. Legacy `session.undo` already skips them in
+  Hermes (`split_user_originated_turn` counts no displayed kind but `/steer` as yours). Hermes's
+  roster preview is the newest message, hidden or not (`_latest_message_preview`), so the sidebar
+  shows the chat's own newest message instead when the preview is a hidden prompt it knows of.
 
 ## Commands
 

@@ -70,6 +70,10 @@
             hiddenBots = [demo.courier]
             addDemoBot(demo.courier)
             media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }.merging(DemoWidget.files) { $1 }
+            threads["ops"]?.demoWidgetAnswered = { [weak media] prompt in
+                guard prompt.hasPrefix("Clear") else { return }
+                media?.demoFiles[DemoWidget.diskPath] = DemoWidget.diskAfterCleanup
+            }
         }
     }
 
