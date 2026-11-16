@@ -277,12 +277,14 @@ struct KeptSpaceTests {
         @Observable final class Rows {
             var height: CGFloat = 500
             var release = 0
+            /// Stands in for the conversation's `arrival`: what's at its end.
+            var end = 0
         }
 
         struct Column: View {
             let rows: Rows
             var body: some View {
-                GrowsOnly(release: rows.release) { Color.clear.frame(height: rows.height) }
+                GrowsOnly(release: rows.release, end: [rows.end]) { Color.clear.frame(height: rows.height) }
                     .frame(width: 300)
             }
         }
@@ -298,6 +300,7 @@ struct KeptSpaceTests {
             view.frame = CGRect(x: 0, y: 0, width: 300, height: 800)
             #expect(height(view) == 500)
             rows.height = 400
+            rows.end += 1
             #expect(height(view) == 500)
             // What arrives fills the space first.
             rows.height = 450
@@ -306,9 +309,27 @@ struct KeptSpaceTests {
             #expect(height(view) == 600)
             // More than the limit goes, as an undo can.
             rows.height = 100
+            rows.end += 1
             #expect(height(view) == 100 + GrowsOnly.limit)
             rows.release += 1
             #expect(height(view) == 100)
+        }
+
+        /// Opening a chat, an image above can load smaller or the transcript can reload shorter:
+        /// nothing left the end, so nothing is kept there, or the chat opens over a blank.
+        @Test func whatShrinksAboveTheEndKeepsNoSpace() {
+            let rows = Rows()
+            let view = NSHostingView(rootView: Column(rows: rows))
+            view.frame = CGRect(x: 0, y: 0, width: 300, height: 800)
+            #expect(height(view) == 500)
+            rows.height = 300
+            #expect(height(view) == 300)
+            // Space kept for what left the end stays while something above shrinks too.
+            rows.height = 250
+            rows.end += 1
+            #expect(height(view) == 300)
+            rows.height = 200
+            #expect(height(view) == 300)
         }
     }
 #endif
