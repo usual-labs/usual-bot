@@ -94,7 +94,7 @@ enum WidgetPage {
             height.isFinite, height > 0
         else { return nil }
         let width = (report["width"] as? NSNumber)?.doubleValue ?? 0
-        return (height.rounded(), width.isFinite && width > 0 ? width.rounded() : 0)
+        return (CGFloat(height.rounded()), CGFloat(width.isFinite && width > 0 ? width.rounded() : 0))
     }
 
     private static func json(_ text: String) -> String {
