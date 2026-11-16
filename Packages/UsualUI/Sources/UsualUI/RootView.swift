@@ -86,6 +86,7 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                 renameRoom: { try await model.renameRoom($0, to: $1) },
                 deleteRoom: { try await model.deleteRoom($0) },
                 botEditing: BotEditing(model),
+                readMarking: ReadMarking(model),
                 currentID: { model.currentID(for: $0) },
                 search: MessageSearching(
                     hits: { model.searchMessages($0) }, status: { model.messageSearchStatus($0) },
@@ -232,6 +233,8 @@ struct ContactsSplitView<Footer: View>: View {
     var deleteRoom: ((Contact) async throws -> Void)?
     /// Making and changing Bots; `nil` hides New Bot and the Bot actions.
     var botEditing: BotEditing?
+    /// Mark as Unread and Mark as Read on Bot Chats; `nil` hides them.
+    var readMarking: ReadMarking?
     /// A contact ID as it is now, after a Bot was renamed on the gateway.
     var currentID: (Contact.ID) -> Contact.ID = { $0 }
     /// Messages in every chat and room that match a search.
@@ -287,6 +290,7 @@ struct ContactsSplitView<Footer: View>: View {
         content
             .tint(Theme.ink)
             .environment(\.roomEditing, roomEditing)
+            .environment(\.readMarking, readMarking)
             .environment(
                 \.botEditing,
                 // Hiding or deleting the open Bot closes its chat.

@@ -26,6 +26,9 @@ struct MessageActions {
     var edit: (TranscriptItem) -> Void = { _ in }
     var retry: (TranscriptItem) -> Void = { _ in }
     var undo: (TranscriptItem) -> Void = { _ in }
+    /// Chats only: Mark as Unread from this message, which opening the chat again goes back to.
+    /// `nil` hides it.
+    var markUnread: ((TranscriptItem) -> Void)?
 }
 
 extension EnvironmentValues {
@@ -129,6 +132,7 @@ struct MessageRow<Content: View>: View {
         Button("Reply") { actions.reply(item) }
         Button("Copy", action: copy)
         if canRead { Button(readLabel, action: readAloud) }
+        if actions.markUnread != nil { Button("Mark as Unread") { markUnread(actions) } }
         // VoiceOver can't grey an action out, so they're offered only while they'd run.
         if actions.rewindUnavailable(item) == nil {
             if actions.canEdit(item) { Button("Edit") { actions.edit(item) } }
@@ -257,6 +261,7 @@ struct MessageRow<Content: View>: View {
                 Menu {
                     Button("Copy", systemImage: "doc.on.doc", action: copy)
                     readButton
+                    markUnreadButton(actions)
                     rewindButtons(actions)
                 } label: {
                     Image(systemName: "ellipsis").zoomedFrame(width: 28, height: 28)
@@ -332,6 +337,7 @@ struct MessageRow<Content: View>: View {
         Button("Reply", systemImage: "arrowshape.turn.up.left") { actions.reply(item) }
         Button("Copy", systemImage: "doc.on.doc", action: copy)
         readButton
+        markUnreadButton(actions)
         // Only iPhone provides this: the Mac selects within the message itself.
         if let selectText, !text.isEmpty {
             Button("Select Text", systemImage: "selection.pin.in.out") {
@@ -344,6 +350,17 @@ struct MessageRow<Content: View>: View {
                 Section { Text(date.formatted(date: .abbreviated, time: .shortened)) }
             }
         #endif
+    }
+
+    @ViewBuilder private func markUnreadButton(_ actions: MessageActions) -> some View {
+        if actions.markUnread != nil {
+            Button("Mark as Unread", systemImage: "envelope.badge") { markUnread(actions) }
+        }
+    }
+
+    private func markUnread(_ actions: MessageActions) {
+        actions.markUnread?(item)
+        AccessibilityNotification.Announcement(String(localized: "Marked as unread")).post()
     }
 
     /// Edit for your messages, Try Again for the Bot's last reply, Undo for your last message.

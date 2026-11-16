@@ -21,6 +21,18 @@ struct SidebarSpeechTests {
         #expect(SidebarSpeech.row(pinned, preview: "", stamp: nil) == "Atlas, pinned, 3 unread")
     }
 
+    @Test func aChatMarkedUnreadSaysUnreadWithoutACount() {
+        var marked = Contact(id: "scribe", name: "Scribe")
+        marked.isMarkedUnread = true
+        #expect(SidebarSpeech.row(marked, preview: "Done", stamp: nil) == "Scribe, unread, Done")
+        #expect(
+            SidebarSpeech.section(SidebarBlock(section: nil, contacts: [marked, ops]), isFolded: true)
+                == "Folded, unread")
+        // A count says more.
+        marked.unreadCount = 1
+        #expect(SidebarSpeech.row(marked, preview: "", stamp: nil) == "Scribe, 1 unread")
+    }
+
     @Test func aFoldedSectionSaysWhatItsHiddenRowsWould() {
         let block = SidebarBlock(section: nil, contacts: [forge, atlas, ops])
         #expect(SidebarSpeech.section(block, isFolded: true) == "Folded, needs you, 5 unread")

@@ -75,7 +75,8 @@ struct ContactRow: View {
                         .foregroundStyle(Theme.secondaryInk)
                         .lineLimit(1, accessibility: 3)
                     Spacer(minLength: 0)
-                    ContactIndicator(needsYou: false, unreadCount: contact.unreadCount)
+                    ContactIndicator(
+                        needsYou: false, unreadCount: contact.unreadCount, isMarkedUnread: contact.isMarkedUnread)
                 }
                 // The text's own height: the taller unread badge overhangs it rather than moving
                 // the row when a count appears. At accessibility sizes the preview wraps instead.
@@ -142,8 +143,8 @@ struct ContactRow: View {
     }
 }
 
-/// The badge on an avatar that stands alone, in the rail and on a pinned chat: the unread count, or
-/// a dot when the agent needs you.
+/// The badge on an avatar that stands alone, in the rail and on a pinned chat: the unread count, a
+/// dot when the agent needs you, or a smaller one when the chat was marked unread.
 struct AvatarBadge: View {
     let contact: Contact
 
@@ -158,7 +159,20 @@ struct AvatarBadge: View {
                 .zoomedFrame(minWidth: 18, minHeight: 18)
                 .background(Capsule().fill(Theme.primary))
                 .overlay(Capsule().strokeBorder(Theme.window, lineWidth: 2))
+        } else if contact.isMarkedUnread {
+            UnreadDot().overlay(Circle().strokeBorder(Theme.window, lineWidth: 2))
         }
+    }
+}
+
+/// Marked unread, which has no count: Hermes keeps only that it's unread, not how much.
+struct UnreadDot: View {
+    var body: some View {
+        Circle()
+            .fill(Theme.primary)
+            .zoomedFrame(width: 12, height: 12)
+            .accessibilityElement()
+            .accessibilityLabel(Text("Unread"))
     }
 }
 
@@ -174,11 +188,12 @@ struct NeedsYouDot: View {
     }
 }
 
-/// A dot for "needs you", or else the unread count: on a row, and on a folded section for the rows
-/// it hides.
+/// A dot for "needs you", or else the unread count, or a plain dot for a chat marked unread: on a
+/// row, and on a folded section for the rows it hides.
 struct ContactIndicator: View {
     let needsYou: Bool
     let unreadCount: Int
+    var isMarkedUnread = false
 
     var body: some View {
         if needsYou {
@@ -191,6 +206,8 @@ struct ContactIndicator: View {
                 .zoomedFrame(minWidth: 20, minHeight: 20)
                 .background(Capsule().fill(Theme.primary))
                 .accessibilityLabel(Text("\(unreadCount) unread"))
+        } else if isMarkedUnread {
+            UnreadDot()
         }
     }
 }

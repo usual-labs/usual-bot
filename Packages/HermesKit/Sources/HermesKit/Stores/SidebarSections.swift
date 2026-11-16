@@ -49,6 +49,8 @@ public struct SidebarBlock: Identifiable, Hashable, Sendable {
     public var id: String { isPinned ? Self.pinnedID : section?.id ?? Self.unassignedID }
     public var needsYou: Bool { contacts.contains { $0.activity == .needsYou } }
     public var unreadCount: Int { contacts.reduce(0) { $0 + $1.unreadCount } }
+    /// A chat in it is marked unread, with no count.
+    public var hasMarkedUnread: Bool { contacts.contains(where: \.isMarkedUnread) }
 
     /// The sidebar's groups for `contacts`: the pinned ones if any, each of `sections`, then what's
     /// left, including anything filed under a section this device doesn't have. With no sections

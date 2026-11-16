@@ -353,7 +353,7 @@ public final class AppModel {
                 replayEpoch = ready.replayEpoch?.stringValue
                 for thread in threads.values { thread.replayEpoch = replayEpoch }
                 link = .online(ready.dialect)
-                readSync.reset()
+                readSync.reconnected()
                 for screen in screens.values { screen.linkChanged() }
                 await push.refresh()
                 let events = Task { for await event in channel.events { route(event) } }
@@ -404,6 +404,7 @@ public final class AppModel {
             if let thread = threads[contact.id] {
                 contact.activity = thread.activity
                 contact.unreadCount = thread.unreadCount
+                contact.isMarkedUnread = thread.isMarkedUnread
                 if let newest = Self.newestMessage(in: thread.state.items),
                     newest.date > contact.lastActive ?? .distantPast
                 {
