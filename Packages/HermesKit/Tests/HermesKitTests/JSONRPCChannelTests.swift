@@ -102,23 +102,32 @@ struct JSONRPCChannelTests {
     }
 }
 
-/// Polls a main-actor `condition` until it holds, failing after a second.
+/// Polls a main-actor `condition` until it holds, failing after five seconds.
 @MainActor
 func waitUntilOnMain(_ condition: @escaping @MainActor () -> Bool) async throws {
-    for _ in 0..<200 {
+    for _ in 0..<waitPolls {
         if condition() { return }
         // sleep-ok: the poll behind every wait in these tests
         try await Task.sleep(for: .milliseconds(5))
     }
-    Issue.record("Condition never became true")
+    throw WaitTimedOut()
 }
 
-/// Polls `condition` until it holds, failing after a second.
+/// Polls `condition` until it holds, failing after five seconds.
 func waitUntil(_ condition: @escaping @Sendable () -> Bool) async throws {
-    for _ in 0..<200 {
+    for _ in 0..<waitPolls {
         if condition() { return }
         // sleep-ok: the poll behind every wait in these tests
         try await Task.sleep(for: .milliseconds(5))
     }
-    Issue.record("Condition never became true")
+    throw WaitTimedOut()
+}
+
+/// Five seconds of polls. A second wasn't enough with every suite running at once on a busy Mac.
+private let waitPolls = 1000
+
+/// Thrown, not just recorded: a test that went on past a wait indexed requests that never came
+/// (`ScriptedGateway.answer`) and crashed the whole run.
+struct WaitTimedOut: Error, CustomStringConvertible {
+    var description: String { "Condition never became true" }
 }

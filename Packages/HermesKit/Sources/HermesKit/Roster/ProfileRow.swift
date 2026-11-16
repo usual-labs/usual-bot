@@ -143,6 +143,10 @@ extension Contact {
     /// gateway (so bold or code can be left unclosed). The list shows them as plain text.
     static func plainPreview(_ text: String) -> String {
         if let note = GatewayTurn.preview(of: text) { return note }
+        // A widget line, whole or cut short by the gateway, isn't words to read.
+        let words = text.replacing(/::preview\{[^}]*\}?/, with: "")
+        if words != text, words.allSatisfy(\.isWhitespace) { return WidgetDirective.sentWords }
+        let text = words
         if let speech = text.range(of: #"(MEDIA:)?[`"']?(/|~/)\S*tts_\d"#, options: .regularExpression) {
             // An agent naming the voice file it made; often cut short, so the name can't be checked.
             let label = text[..<speech.lowerBound].trimmingCharacters(in: .whitespaces)

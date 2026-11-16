@@ -21,7 +21,8 @@ public struct AgentAlert: Equatable, Sendable {
     public let preview: String
 
     /// Markdown's words on one line, as a notification shows them: no heading, list, quote, table
-    /// or code fence marks, bold and code as plain words, and links by their text. Not for a command
+    /// or code fence marks, bold and code as plain words, links by their text, and no widget lines
+    /// ("Sent a widget" when that's all there is). Not for a command
     /// to approve, where a `*` is part of the command.
     ///
     /// `Integrations/hermes-push/plain.py` does the same to what the gateway pushes.
@@ -29,12 +30,16 @@ public struct AgentAlert: Equatable, Sendable {
         let inline = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
         var inCode = false
         var lines: [String] = []
+        var widget = false
         for line in markdown.split(whereSeparator: \.isNewline) {
             var line = line.trimmingCharacters(in: .whitespaces)
             if line.hasPrefix("```") || line.hasPrefix("~~~") {
                 inCode.toggle()
             } else if inCode {
                 lines.append(line)
+            } else if WidgetDirective.parse(line) != nil {
+                // A page that runs only in the chat; the rest of the message says what it is.
+                widget = true
             } else if line.contains(where: { !"-*_=|: ".contains($0) }) {
                 // Any other line is a rule, a table's divider or the line under a heading.
                 line = line.replacing(/^(>\s*)*(#{1,6}\s+|[-*+]\s+)?/, with: "")
@@ -46,7 +51,8 @@ public struct AgentAlert: Equatable, Sendable {
                 lines.append(words.map { String($0.characters) } ?? line)
             }
         }
-        return lines.joined(separator: " ").split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        let plain = lines.joined(separator: " ").split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        return plain.isEmpty && widget ? WidgetDirective.sentWords : plain
     }
 }
 

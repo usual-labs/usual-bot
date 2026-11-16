@@ -37,6 +37,19 @@ struct MediaStoreTests {
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer a0")
     }
 
+    @Test func aWidgetsPageIsReadAgainEachTime() async throws {
+        let html = Data("<p>hi</p>".utf8)
+        let http = ScriptedHTTP { _ in (200, #"{"dataUrl":"data:text/html;base64,\#(html.base64EncodedString())"}"#) }
+        let media = store(http)
+
+        #expect(try await media.file(at: "/w/chart.html", profile: "ops", fresh: true) == html)
+        #expect(try await media.file(at: "/w/chart.html", profile: "ops", fresh: true) == html)
+        // Nor kept for an ordinary read: the agent rewrites the page to update it.
+        #expect(try await media.file(at: "/w/chart.html", profile: "ops") == html)
+
+        #expect(http.requests.count == 3)
+    }
+
     @Test func viewsAskingAtOnceShareOneRequest() async throws {
         let png = png
         let started = Mutex(0)

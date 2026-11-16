@@ -27,10 +27,11 @@ struct QuotedMessage: Hashable {
     init(author: String, text: String, mention: String? = nil) {
         self.author = author
         self.mention = mention
-        // Plain words: no attachment or `MEDIA:` lines, no Markdown marks.
+        // Plain words: no attachment, `MEDIA:` or widget lines, no Markdown marks.
         let lines = AttachmentRef.split(text).text.split(whereSeparator: \.isNewline)
             .filter {
                 !$0.trimmingCharacters(in: .whitespaces).hasPrefix("MEDIA:") && !MarkdownBlock.isDeliveryMarker($0)
+                    && WidgetDirective.parse($0) == nil
             }
         let joined = lines.joined(separator: " ")
         let flat =

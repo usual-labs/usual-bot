@@ -125,6 +125,13 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   content; Core Animation's private `variableBlur` on an effect view's backdrop drew a smeared blob.
   Use glass and the system's scroll edge effect.
 
+## Inline widgets
+
+- **WebKit doesn't paint in a covered window.** A widget in a Mac window behind others is blank in a
+  background `screencapture` even though its page loaded and measured itself. Look at widgets on
+  the iOS Simulator, or with the window uncovered. Setting WebKit's private
+  `_windowOcclusionDetectionEnabled` crashes the app.
+
 ## macOS window and sidebar
 
 - **macOS 26's sidebar width can't be set.** Its floating sidebar keeps a 140 pt floor and ignores `navigationSplitViewColumnWidth`, `NSSplitView.setPosition` and pinned item thickness. Don't drive sidebar widths through NavigationSplitView or its AppKit split view; ContactsSplitView lays the Mac sidebar out itself. Dragging the edge wasn't verified by automation.

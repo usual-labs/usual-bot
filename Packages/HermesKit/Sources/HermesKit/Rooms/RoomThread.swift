@@ -107,9 +107,11 @@ public final class RoomThread {
         return nil
     }
 
-    /// A message as one plain line, without its `MEDIA:` and attachment lines.
+    /// A message as one plain line, without its `MEDIA:`, widget and attachment lines.
     nonisolated static func readable(_ text: String) -> String {
-        MessageSearch.plain(text).nonBlank ?? String(localized: "Sent a file")
+        if let plain = MessageSearch.plain(text).nonBlank { return plain }
+        let widget = text.split(whereSeparator: \.isNewline).contains { WidgetDirective.parse($0) != nil }
+        return widget ? WidgetDirective.sentWords : String(localized: "Sent a file")
     }
 
     func update(_ summary: RoomSummary) {

@@ -17,6 +17,7 @@ struct MarkdownBlockTests {
             case .media(let path, let voice): return (voice ? "voice:" : "media:") + path
             case .image(let url, let alt): return "img(\(alt)):" + url.absoluteString
             case .table(let table): return "table:" + table.lines.joined(separator: " / ")
+            case .widget(let widget): return "widget:" + widget.file
             }
         }
     }

@@ -34,9 +34,12 @@ public final class MediaStore {
 
     /// The file at `path` on the gateway, as `profile` sees it: absolute, or relative to that
     /// profile's workspace. The gateway reads up to 16 MB.
-    public func file(at path: String, profile: String) async throws -> Data {
+    ///
+    /// `fresh`: read it again instead of from memory, and don't keep it. For an inline widget's
+    /// page, which its agent rewrites in place to update it.
+    public func file(at path: String, profile: String, fresh: Bool = false) async throws -> Data {
         let key = profile + "\u{0}" + path
-        if let data = cache[key] { return data }
+        if !fresh, let data = cache[key] { return data }
         #if DEBUG
             if let data = demoFiles[path] { return data }
         #endif
@@ -46,7 +49,7 @@ public final class MediaStore {
         loading[key] = task
         defer { loading[key] = nil }
         let data = try await task.value
-        remember(data, for: key)
+        if !fresh { remember(data, for: key) }
         return data
     }
 

@@ -80,6 +80,8 @@ public struct QuickMessageView: View {
         .environment(\.botPictures, model.pictures)
         .environment(\.media, model.media)
         .environment(\.playbackScope, "panel")
+        // A widget runs in the chat, which the panel is too small and short-lived for.
+        .environment(\.runsWidgets, false)
         #if os(macOS)
             .onExitCommand(perform: close)
         #endif

@@ -166,6 +166,11 @@ sending also puts the keyboard away; tap the message box to write again.
   50 MB.
 - **Images from the Bot.** When a reply names an image (a screenshot, a chart, a generated
   picture), it shows inline. Click it for full size, to share or to save.
+- **Widgets.** A Bot can write a small web page, such as a chart or a calculator, that runs inside
+  its message, as in Hermes's desktop app. Use it right there; it takes the chat's colours, light or
+  dark. Links in it open in your browser. Bots in rooms know how to make them; Bot Chats show them
+  too, but Bots there aren't told about them yet. In the ⌥Space panel a widget shows as a card:
+  open the chat to use it. If its file can't be read, the card says why.
 - **Audio and video.** Voice replies (Hermes's text to speech), audio files and videos play in the
   chat or room, one at a time; leaving the chat stops them. A voice memo has its waveform, a speed
   button and, when Hermes sent the words it spoke, **Show transcript**. A video plays in place;

@@ -1,4 +1,5 @@
 import Foundation
+import HermesKit
 import SwiftUI
 
 /// A block of a Markdown reply, rendered as its own view.
@@ -16,6 +17,8 @@ enum MarkdownBlock: Equatable {
     /// A Markdown image from the web.
     case image(URL, alt: String)
     case table(MarkdownTable)
+    /// An HTML page the agent wrote, run in the message (`::preview{file="…"}`).
+    case widget(WidgetDirective)
 
     /// `parse`, remembered: a chat's views are made again on every change to it (each word of a
     /// reply being written), and parsing every message each time made long chats slow.
@@ -30,7 +33,7 @@ enum MarkdownBlock: Equatable {
     @MainActor private static var parsed: [String: [MarkdownBlock]] = [:]
 
     /// Splits a reply into blocks: `MEDIA:` lines (Hermes's line-level file delivery) become media
-    /// blocks, and everything between them is Markdown.
+    /// blocks, `::preview` lines widgets, and everything between them is Markdown.
     static func parse(_ markdown: String) -> [MarkdownBlock] {
         // "\r\n" is one Character in Swift, so splitting on "\n" alone wouldn't find its lines.
         let markdown = markdown.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
@@ -49,6 +52,10 @@ enum MarkdownBlock: Equatable {
             if trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") { inFence.toggle() }
             if !inFence, isDeliveryMarker(trimmed) {
                 continue
+            } else if !inFence, let widget = WidgetDirective.parse(trimmed) {
+                flush()
+                // A file that isn't a page shows as the file, as in Hermes's desktop app.
+                blocks.append(widget.isPage ? .widget(widget) : .media(path: widget.file))
             } else if !inFence, trimmed.hasPrefix("MEDIA:"),
                 let path = mediaPath(trimmed.dropFirst("MEDIA:".count))
             {
@@ -218,11 +225,14 @@ enum MarkdownBlock: Equatable {
 /// Renders a Markdown reply, block by block.
 struct MarkdownView: View {
     let blocks: [MarkdownBlock]
+    /// Its widgets wait for it to finish: their pages may still be being written too.
+    private let isBeingWritten: Bool
     @Environment(\.messageTextSize) private var messageSize
 
     /// A reply still being written changes with each word, so it isn't remembered.
     init(_ markdown: String, isBeingWritten: Bool = false) {
         blocks = isBeingWritten ? MarkdownBlock.parse(markdown) : MarkdownBlock.blocks(of: markdown)
+        self.isBeingWritten = isBeingWritten
     }
 
     var body: some View {
@@ -350,6 +360,8 @@ struct MarkdownView: View {
         case .table(let table):
             MarkdownTableView(table: table) { styled($0, weight: $1) }
                 .tint(Theme.link)
+        case .widget(let directive):
+            InlineWidget(directive: directive, isBeingWritten: isBeingWritten)
         }
     }
 

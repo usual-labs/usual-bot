@@ -113,6 +113,63 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   member beside the replies under way, so there's nothing to wait behind. The panel is for one
   message and its answer; what it sends to a busy Bot steers, as before.
 
+## Inline widgets
+
+A `::preview{file="…"}` line runs that HTML file live in the message. Hermes's desktop renderer
+(`apps/desktop/src/components/assistant-ui/inline-preview-directive.tsx`) is the reference, and the
+"desktop" entry of `PLATFORM_HINTS` in `agent/prompt_builder.py` is what agents are promised; both
+read at Hermes `2bd378ed1b`.
+
+- **Matches the desktop app's promises:** the theme first (`--foreground`, `--muted-foreground`,
+  `--accent`, `--border`, `--card`, the system font at the chat's text size, no margins, a
+  transparent background) so the page's own styles win; height follows the page live, clamped to
+  120–1200 pt; width is taken once from the first report (following it shrinks pages whose parts
+  are a share of the width); `height=` is only the start. A file that isn't HTML shows as a file.
+- **The page is read through the same `read-data-url` route as `MEDIA:` files,** as the message's
+  profile (a room reply's author), fresh each time and never kept in the media cache: the agent
+  updates a widget by rewriting its file. It's read only once the message is finished, as the
+  desktop app waits, because a page mid-write renders as garbage. It's read once per view: the
+  transcript isn't lazy, so scrolling keeps the view and its page (one read per widget each time a
+  chat opens, checked in the Simulator past the 20 s teardown).
+- **Offline and reconnecting.** With the gateway unreachable, a widget not yet read says it loads
+  when the app is connected again. The connection (`gatewayOnline`) is in its load task's key, so
+  that card and a failed read both load again when it comes back. A failure while connected (say
+  the agent hasn't written the file yet) can't pass by itself, so its card says why and has Try
+  Again. A page already running stays as it is when the connection drops. The demo can't go
+  offline, so this was checked in tests only.
+- **Sandbox.** One `WKWebView` per widget, with its own non-persistent data store, loaded with no
+  base URL (relative assets don't load, as in Hermes). The frame never navigates: a tapped http(s)
+  or mailto link opens in the browser, as a link in a message does, and everything else is
+  cancelled; no new windows, downloads, camera or microphone. The theme and size scripts run in
+  their own `WKContentWorld`, and the size channel is registered only there, so the page can't see
+  them or fake a size. The page has no channel to the app at all yet.
+- **Network is allowed.** Hermes's own preview policy keeps "any http(s) library, image, fetch,
+  worker or embed" and isolates by the opaque sandbox, not a source list; agents load chart
+  libraries from CDNs. The page can't reach the app, its tokens or the gateway, and what it could
+  send out is what its agent wrote into it. The app already loads a reply's web images directly,
+  which tells a server the same thing (the device's address).
+- **Memory.** The transcript isn't lazy, so a long chat holds every widget. Only one on screen runs:
+  `onScrollVisibilityChange` starts it, and 20 s after it scrolls away its web view is dismantled
+  (its WebContent process goes with it) and a placeholder of the same size stands in. Scrolling back
+  within 20 s keeps the page's state; after that it starts again. Not measured on a device.
+- **Where a widget doesn't run:** the ⌥Space panel shows a card naming the file and saying to open
+  the chat (it's small and closes as you leave it). Notifications (the app's and the push plugin's
+  `plain.py`), sidebar previews, search, quotes, Read Aloud and Select Text leave the line out, and
+  say "Sent a widget" when that's all a message was. The menu bar shows no messages.
+- **Light and dark** come from the app's `Theme` colours, resolved for the current appearance. A
+  change of appearance or text size swaps the theme's style in the running page, so it keeps its
+  state. **VoiceOver** reads into the page (WebKit's own accessibility) inside an element named
+  "Widget <file>".
+- **Scrolling (iPhone).** The page scrolls inside its frame only when it's taller than 1200 pt or
+  wider than the message; otherwise a swipe on it scrolls the chat.
+- **Chats and rooms both run widgets.** Room members already run as Hermes's `gui` surface, so
+  they're told about widgets. Bot Chats are created with `source: "tui"` and aren't; switching to
+  `gui` would also hand agents the desktop app's own tools (`desktop_ui`, `catalog`), which the app
+  can't serve. Telling them through the push plugin is a separate change.
+- **Talking back (`window.hermes.send`, `data-hermes-send`) isn't built.** `WidgetMessage` is the one
+  way a page's message reaches the app; a page-world channel for it would add a case there, handled
+  where `InlineWidget` receives it.
+
 ## Commands
 
 - The `/` menu offers skills, quick and plugin commands, and the built-ins the official app offers
