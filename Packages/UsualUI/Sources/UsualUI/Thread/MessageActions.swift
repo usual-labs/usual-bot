@@ -86,14 +86,21 @@ struct MessageRow<Content: View>: View {
             // bubble. Its slot is always there, so nothing moves when it appears. Padding and an
             // overlay rather than a stack with a spacer: a stack measures each message several
             // ways to share out the room, which made opening a long chat slow.
-            let slot: CGFloat = actions == nil ? 0 : Self.barWidth + 6
+            // The slot grows with the zoom, as the bar does: at a fixed width a zoomed-in bar
+            // spilled over the bubble.
+            let slot: CGFloat = actions == nil ? 0 : barWidth + 6
             message
-                // Only the message itself shows the bar, not the empty row around it.
                 .contentShape(Rectangle())
-                .background { PointerTracking(changed: hoverMessage) }
                 .contextMenu { if let actions { menu(actions) } }
                 .padding(isMine ? .leading : .trailing, slot)
                 .overlay(alignment: isMine ? .leading : .trailing) { barSlot }
+                // Near the message shows the bar: its slot, hidden bar and all, and a margin on
+                // the other side. Not above or below, where it would reach the next message and
+                // show two bars at once.
+                .background {
+                    PointerTracking(changed: hoverMessage)
+                        .padding(isMine ? .trailing : .leading, -Self.nearMargin)
+                }
                 .padding(isMine ? .leading : .trailing, isMine ? 70 : 6)
                 .frame(maxWidth: .infinity, alignment: isMine ? .trailing : .leading)
         #else
@@ -211,7 +218,10 @@ struct MessageRow<Content: View>: View {
     // MARK: Mac: the hover bar
 
     #if os(macOS)
-        private static var barWidth: CGFloat { 164 }
+        private static var defaultBarWidth: CGFloat { 164 }
+        @Zoomed private var barWidth: CGFloat = Self.defaultBarWidth
+        /// How far beside the message, away from the bar, the pointer still counts as on it.
+        private static var nearMargin: CGFloat { 24 }
 
         @ViewBuilder private var barSlot: some View {
             if let actions {
@@ -230,7 +240,7 @@ struct MessageRow<Content: View>: View {
                 // Room for all three buttons and the time, so every reply wraps at the same width.
                 // A fixed size, so the bar coming and going as the pointer passes doesn't lay the
                 // conversation out again.
-                .zoomedFrame(width: Self.barWidth, height: 28, alignment: isMine ? .trailing : .leading)
+                .zoomedFrame(width: Self.defaultBarWidth, height: 28, alignment: isMine ? .trailing : .leading)
             }
         }
 
