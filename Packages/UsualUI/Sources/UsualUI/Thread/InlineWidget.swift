@@ -17,10 +17,13 @@ struct InlineWidget: View {
     @Environment(\.media) private var store
     @Environment(\.mediaProfile) private var profile
     @Environment(\.runsWidgets) private var runs
+    @Environment(\.gatewayOnline) private var isOnline
     @Environment(\.messageTextSize) private var textSize
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.self) private var environment
     @State private var phase = Phase.loading
+    /// Counts Try Again presses, so the load runs again.
+    @State private var attempt = 0
     /// On screen now, and whether its page is running: it stops a while after it scrolls away.
     @State private var isVisible = false
     @State private var isRunning = false
@@ -33,7 +36,22 @@ struct InlineWidget: View {
     enum Phase: Equatable {
         case loading
         case loaded(String)
+        /// Not read yet, and the gateway isn't reachable: it loads when it is.
+        case offline
         case failed(String)
+    }
+
+    /// What the load task does when it runs: on appearing, when the reply finishes, when the
+    /// gateway comes back, or on Try Again. A page already read stays: the transcript keeps its
+    /// views, so this runs once per widget each time a chat opens, not as it scrolls.
+    enum LoadStep: Equatable {
+        case load, waitForGateway, keep
+    }
+
+    static func loadStep(_ phase: Phase, runs: Bool, isBeingWritten: Bool, isOnline: Bool) -> LoadStep {
+        guard runs, !isBeingWritten else { return .keep }
+        if case .loaded = phase { return .keep }
+        return isOnline ? .load : .waitForGateway
     }
 
     /// How long a page keeps running off screen, so scrolling past and back keeps its state.
@@ -46,17 +64,36 @@ struct InlineWidget: View {
             if !runs {
                 WidgetCard(
                     name: name, detail: String(localized: "Open the chat in Usual Bot to use this widget."))
+            } else if phase == .offline {
+                WidgetCard(
+                    name: name,
+                    detail: String(localized: "Usual Bot isn't connected to the gateway. This widget loads when it is.")
+                )
             } else if case .failed(let reason) = phase {
-                WidgetCard(name: name, detail: String(localized: "Couldn't show this widget. \(reason)"))
+                // A failure while the gateway is reachable may not pass by itself, such as a page
+                // the agent hasn't written yet, so it can be tried again.
+                WidgetCard(name: name, detail: String(localized: "Couldn't show this widget. \(reason)")) {
+                    phase = .loading
+                    attempt += 1
+                }
             } else {
                 frame
             }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Widget \(name)"))
-        .task(id: LoadKey(file: directive.file, profile: profile, isBeingWritten: isBeingWritten)) {
-            guard runs, !isBeingWritten else { return }
-            await load()
+        // The connection is in the key, so a page that failed or waited while it was down loads
+        // when it's back.
+        .task(
+            id: LoadKey(
+                file: directive.file, profile: profile, isBeingWritten: isBeingWritten, isOnline: isOnline,
+                attempt: attempt)
+        ) {
+            switch Self.loadStep(phase, runs: runs, isBeingWritten: isBeingWritten, isOnline: isOnline) {
+            case .load: await load()
+            case .waitForGateway: phase = .offline
+            case .keep: break
+            }
         }
     }
 
@@ -126,14 +163,18 @@ struct InlineWidget: View {
     private func load() async {
         do {
             guard let store, let profile else { throw GatewayError.disconnected }
-            // Read again each time: the agent updates a widget by rewriting its page.
+            // Not from the media cache: the agent updates a widget by rewriting its page.
             let data = try await store.file(at: directive.file, profile: profile, fresh: true)
+            // The key changed while it read (the connection dropped or came back): the newer load
+            // decides.
+            guard !Task.isCancelled else { return }
             guard let html = String(data: data, encoding: .utf8) else {
                 phase = .failed(String(localized: "\(name) isn't a web page."))
                 return
             }
             phase = .loaded(html)
         } catch {
+            guard !Task.isCancelled else { return }
             phase = .failed(AppModel.describe(error))
         }
     }
@@ -142,6 +183,8 @@ struct InlineWidget: View {
         let file: String
         let profile: String?
         let isBeingWritten: Bool
+        let isOnline: Bool
+        let attempt: Int
     }
 }
 
@@ -149,6 +192,7 @@ struct InlineWidget: View {
 struct WidgetCard: View {
     let name: String
     let detail: String
+    var tryAgain: (() -> Void)?
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -159,6 +203,13 @@ struct WidgetCard: View {
                 Text(name).scaledFont(size: 13, weight: .semibold).foregroundStyle(Theme.ink)
                 Text(detail).scaledFont(size: 12.5).foregroundStyle(Theme.secondaryInk)
                     .fixedSize(horizontal: false, vertical: true)
+                if let tryAgain {
+                    Button("Try Again", action: tryAgain)
+                        .buttonStyle(.clickable(.borderless))
+                        .scaledFont(size: 12.5, weight: .medium)
+                        .foregroundStyle(Theme.ink)
+                        .padding(.top, 4)
+                }
             }
         }
         .padding(12)

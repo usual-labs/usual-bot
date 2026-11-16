@@ -63,3 +63,29 @@ struct WidgetTests {
         #expect(WidgetPage.themeScript(theme).contains("insertBefore(s,d.firstChild)"))
     }
 }
+
+struct WidgetLoadingTests {
+    private func step(_ phase: InlineWidget.Phase, online: Bool = true, writing: Bool = false, runs: Bool = true)
+        -> InlineWidget.LoadStep
+    {
+        InlineWidget.loadStep(phase, runs: runs, isBeingWritten: writing, isOnline: online)
+    }
+
+    @Test func aFailedOrWaitingPageLoadsWhenTheGatewayIsBack() {
+        #expect(step(.failed("Not connected"), online: false) == .waitForGateway)
+        #expect(step(.failed("Not connected"), online: true) == .load)
+        #expect(step(.offline, online: true) == .load)
+        #expect(step(.loading, online: false) == .waitForGateway)
+    }
+
+    @Test func aPageAlreadyReadIsntReadAgain() {
+        #expect(step(.loaded("<p>hi</p>"), online: true) == .keep)
+        // Losing the gateway leaves a running page as it is.
+        #expect(step(.loaded("<p>hi</p>"), online: false) == .keep)
+    }
+
+    @Test func nothingLoadsWhileTheReplyIsWrittenOrWhereWidgetsDontRun() {
+        #expect(step(.loading, writing: true) == .keep)
+        #expect(step(.loading, runs: false) == .keep)
+    }
+}

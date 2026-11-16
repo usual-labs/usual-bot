@@ -128,8 +128,15 @@ read at Hermes `2bd378ed1b`.
 - **The page is read through the same `read-data-url` route as `MEDIA:` files,** as the message's
   profile (a room reply's author), fresh each time and never kept in the media cache: the agent
   updates a widget by rewriting its file. It's read only once the message is finished, as the
-  desktop app waits, because a page mid-write renders as garbage. An unreadable file is a plain
-  card that says why.
+  desktop app waits, because a page mid-write renders as garbage. It's read once per view: the
+  transcript isn't lazy, so scrolling keeps the view and its page (one read per widget each time a
+  chat opens, checked in the Simulator past the 20 s teardown).
+- **Offline and reconnecting.** With the gateway unreachable, a widget not yet read says it loads
+  when the app is connected again. The connection (`gatewayOnline`) is in its load task's key, so
+  that card and a failed read both load again when it comes back. A failure while connected (say
+  the agent hasn't written the file yet) can't pass by itself, so its card says why and has Try
+  Again. A page already running stays as it is when the connection drops. The demo can't go
+  offline, so this was checked in tests only.
 - **Sandbox.** One `WKWebView` per widget, with its own non-persistent data store, loaded with no
   base URL (relative assets don't load, as in Hermes). The frame never navigates: a tapped http(s)
   or mailto link opens in the browser, as a link in a message does, and everything else is
