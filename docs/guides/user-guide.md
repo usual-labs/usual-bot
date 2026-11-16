@@ -218,8 +218,9 @@ sending also puts the keyboard away; tap the message box to write again.
   A new goal can't be set while a reply runs: stop this one first. The goal line
   was checked with Hermes 0.23.1; on a gateway too old to report goals, nothing shows. Rooms have
   no goals.
-- **React, reply, copy.** Hover or right-click a message on the Mac, or long-press it on iPhone.
-  **More Reactions** has the full set. Reply quotes the message above the box; on iPhone you can
+- **React, reply, copy.** Hover or right-click a message on the Mac, or long-press it on iPhone,
+  which opens a sheet with reactions above the message's actions and when it was sent. **+** (or
+  **More Reactions** on the Mac) has the full set. Reply quotes the message above the box; on iPhone you can
   also swipe a message to the right to reply to it. To copy part of a
   message, drag across its text on the Mac, across paragraphs, headings and list items alike; on
   iPhone, long-press it, choose **Select Text**, and select what you want in the sheet that opens.

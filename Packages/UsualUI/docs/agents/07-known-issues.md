@@ -159,8 +159,8 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 
 ## Message actions
 
-- **macOS 26 swaps the face symbols with the appearance.** `face.smiling` is an outline in light mode and filled in dark mode; `face.smiling.inverse` is the opposite. `MessageRow.reactSymbol` picks by `colorScheme` so React stays an outline. Seen in the app and in `ImageRenderer`; not checked on iPhone, where only the long-press menu shows it.
-- **A Mac menu's palette drops buttons without an image.** A `.palette` `ControlGroup` in a Mac context menu showed only the `+`, not the emoji, so the Mac menu puts reactions in a React submenu; iPhone keeps the palette.
+- **macOS 26 swaps the face symbols with the appearance.** `face.smiling` is an outline in light mode and filled in dark mode; `face.smiling.inverse` is the opposite. `MessageRow.reactSymbol` picks by `colorScheme` so React stays an outline. Seen in the app and in `ImageRenderer`; iPhone's long-press sheet doesn't use it.
+- **A Mac menu's palette drops buttons without an image.** A `.palette` `ControlGroup` in a Mac context menu showed only the `+`, not the emoji, so the Mac menu puts reactions in a React submenu. iPhone has no context menu on a message: touch and hold opens `MessageMenuSheet`, as in Grok's app, because a context menu lifted a long reply over the whole screen and pushed its menu half off it. The sheet runs a picked action only once it has closed (`onDismiss`), since Select Text and Reply open a sheet or the keyboard, which can't start while it's still up. Scrolling past a message, Reply and Select Text from the sheet, and the + grid were checked in the iOS 27 Simulator; a reaction from it wasn't, because the demo has no session to react in.
 - **Accessibility modifiers inside a `.contain` group reach each element in it** (checked on the Mac through AX). `MessageRow` puts its actions on the message's content, so every paragraph carries Reply, Copy and React. On the group itself they'd belong to the container, which VoiceOver on iPhone doesn't focus.
 - **iPhone's sideways swipes are UIKit pans, not SwiftUI drags** (`MessageSwipes.swift`). A
   `DragGesture` inside the conversation either stops it scrolling or runs alongside it. `SidewaysPan`
@@ -172,7 +172,7 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **An `alignmentGuide` on an overlay's content was ignored** when placing the swipe's times past a
   row's edge: they sat inside the row, over your bubbles. `RevealedTime` uses a zero-width frame
   the text overflows instead.
-- **Unverified on iPhone:** the 44 pt hit areas from `touchTarget` (negative padding, so they spill past the control; a scroll view's edge may still clip them), the reaction sheet opened from the long-press menu, and whether VoiceOver reads a message group's author label on the way in.
+- **Unverified on iPhone:** the 44 pt hit areas from `touchTarget` (negative padding, so they spill past the control; a scroll view's edge may still clip them), the VoiceOver React action's reaction sheet, and whether VoiceOver reads a message group's author label on the way in.
 
 ## Message box
 
