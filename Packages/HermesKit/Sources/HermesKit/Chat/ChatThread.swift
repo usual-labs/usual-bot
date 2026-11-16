@@ -127,6 +127,13 @@ public final class ChatThread {
     var readOnGateway: Date?
     /// Set by the app: you've just seen this chat's replies so far, so the gateway can hear of it.
     var wasRead: (() -> Void)?
+    /// When the chat was marked unread, here or on another device (`ChatThread+ReadState.swift`).
+    /// Until you open it again it shows unread, with no count, even while it's on screen.
+    var markedUnreadAt: Date?
+    /// The message Mark as Unread was chosen on, on this device, which opening the chat goes back to.
+    var returnPoint: ReturnPoint?
+    /// The gateway holds this chat's read time as 0, Hermes's "unread" (`ReadSync`).
+    var unreadOnGateway = false
     /// Set by the app while this chat is on screen.
     var isVisible = false {
         didSet { if isVisible { markViewed() } }
@@ -147,6 +154,8 @@ public final class ChatThread {
             state = cached.state
             lastViewed = cached.lastViewed
             unreadCount = cached.unreadCount
+            markedUnreadAt = cached.markedUnreadAt
+            returnPoint = cached.returnPoint
             sideQuestions = cached.sideQuestions ?? []
             backgroundTasks = cached.backgroundTasks ?? []
             backgroundResults = cached.backgroundResults ?? []
@@ -333,7 +342,7 @@ public final class ChatThread {
         #endif
         if isVisible {
             lastViewed = Date()
-            if event.type == "message.complete" { wasRead?() }
+            if event.type == "message.complete", !isMarkedUnread { wasRead?() }
         }
     }
 
@@ -678,10 +687,11 @@ public final class ChatThread {
         }
     }
 
-    private func markViewed() {
+    /// A chat marked unread stays so while on screen; opening it again (`opened()`) reads it.
+    func markViewed() {
         lastViewed = Date()
         unreadCount = 0
-        wasRead?()
+        if !isMarkedUnread { wasRead?() }
     }
 
     // MARK: - Offline cache
@@ -690,7 +700,8 @@ public final class ChatThread {
         CachedThread(
             state: state.trimmed(to: CachedThread.itemLimit), lastViewed: lastViewed, unreadCount: unreadCount,
             sideQuestions: sideQuestions, backgroundTasks: backgroundTasks,
-            backgroundResults: Array(backgroundResults.suffix(20)), heldMessages: queue.filter(\.isHeld), goal: goal)
+            backgroundResults: Array(backgroundResults.suffix(20)), heldMessages: queue.filter(\.isHeld), goal: goal,
+            markedUnreadAt: markedUnreadAt, returnPoint: returnPoint)
     }
 
     #if DEBUG

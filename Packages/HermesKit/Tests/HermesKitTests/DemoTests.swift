@@ -43,6 +43,7 @@ struct DemoTests {
                 "Launch crew": .idle,
             ])
         #expect(contacts.first { $0.id == "atlas" }?.unreadCount == 1)
+        #expect(contacts.first { $0.id == "ledger" }?.isMarkedUnread == true)
         #expect(contacts.first { $0.id == "ops" }?.preview == "Find what's filling the disk on db-1.")
     }
 

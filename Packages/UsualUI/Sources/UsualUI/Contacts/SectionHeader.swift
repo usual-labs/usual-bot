@@ -74,7 +74,8 @@ struct SectionHeader<Actions: View>: View {
             #endif
             Spacer(minLength: 0)
             if isFolded {
-                ContactIndicator(needsYou: block.needsYou, unreadCount: block.unreadCount)
+                ContactIndicator(
+                    needsYou: block.needsYou, unreadCount: block.unreadCount, isMarkedUnread: block.hasMarkedUnread)
             }
             #if os(macOS)
                 chevron

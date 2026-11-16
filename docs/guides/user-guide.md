@@ -83,8 +83,8 @@ section.
 - **Reorder them:** a new pin goes after the others, and pinned chats stay where you put them
   however recent their messages. On the Mac, drag an avatar onto another to take its place. On
   either, choose **Move Left** or **Move Right** from its menu.
-- A pinned chat shows its name without a preview. A number on its avatar counts unread replies, and
-  a dot means it needs you.
+- A pinned chat shows its name without a preview. A number on its avatar counts unread replies, a
+  dot means it needs you, and a smaller dot that it's marked unread.
 - A search lists pinned chats first, marked with a pin. Quick Message lists them first too.
 
 A Bot's pin is saved on the Bot, so it's pinned on your other devices and in the Hermes desktop
@@ -232,6 +232,15 @@ sending also puts the keyboard away; tap the message box to write again.
   the language, voice and speed from Settings › Voice, so it's free, works offline and sends
   nothing anywhere. One sound plays at a time: reading pauses a voice memo or video, playing one
   stops the reading, and so does leaving the chat or starting a voice call.
+- **Mark as Unread.** To come back to a Bot Chat later, choose **Mark as Unread** on a message
+  (**…** beside it or a right-click on the Mac, a long-press on iPhone, or its VoiceOver actions), or
+  on the chat in the sidebar (right-click on the Mac, touch and hold on iPhone). The chat shows a
+  dot until you open it again; it stays marked while it's on screen, and coming back to the window
+  or the app doesn't count as opening it. **Mark as Read** in the sidebar's menu clears it, and any
+  unread count. Hermes keeps the mark, so it's unread on your other devices and in the Hermes
+  desktop app too, and their Mark as Unread shows here. Opening the chat on the device where you
+  marked it goes back to that message; the others open at the end, as Hermes keeps no message.
+  Rooms have no read state in Hermes, so they don't offer it.
 - **Quote part of a message.** Select some words and choose **Add to Chat**: on the Mac from the
   button over the selection, by right-clicking it, or with ⌘L; on iPhone from the selection's menu
   in **Select Text**. The words wait above the message box and go in front of what you write. Add

@@ -33,6 +33,7 @@ struct ContactList: View {
     #endif
     @Environment(\.roomEditing) private var roomEditing
     @Environment(\.botEditing) private var botEditing
+    @Environment(\.readMarking) private var readMarking
 
     var body: some View {
         let byID = Dictionary((contacts + hiddenBots).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -298,6 +299,10 @@ struct ContactList: View {
     /// once it's unpinned. A tile moves among the other `pinned` chats; the rail and a search,
     /// which list them as rows, leave that out.
     @ViewBuilder private func rowMenu(_ contact: Contact, pinned: [Contact.ID] = []) -> some View {
+        if let readMarking, contact.kind == .agent {
+            readMarking.rowItem(for: contact)
+            Divider()
+        }
         if let sections {
             if contact.isPinned {
                 Button("Unpin", systemImage: "pin.slash") { setPinned(false, contact) }

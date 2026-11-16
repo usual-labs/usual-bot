@@ -13,6 +13,8 @@ struct TranscriptView: View {
     @State private var window = TranscriptWindow()
     /// A message a search jumped to, kept in what's shown.
     @State private var target: Int?
+    /// The message the chat was marked unread from on this device, gone back to on opening it.
+    @State private var returnJump: MessageJump?
     @AppStorage(AppPreferences.streamRepliesKey) private var streamsReplies = true
 
     var body: some View {
@@ -21,7 +23,10 @@ struct TranscriptView: View {
         ConversationScroll(
             reload: thread.transcriptLoad, arrival: arrival,
             sent: SentMessages(load: thread.transcriptLoad, count: thread.state.items.count(where: \.isYours)),
-            jump: jump, jumped: jumped,
+            jump: jump ?? returnJump,
+            jumped: {
+                if jump == nil { returnJump = nil } else { jumped() }
+            },
             earlier: { window.showEarlier(in: items, including: target) }
         ) {
             if let banner = thread.banner {
@@ -44,10 +49,16 @@ struct TranscriptView: View {
                 }
             }
         }
-        .onAppear { window.hold(items) }
+        .onAppear {
+            window.hold(items)
+            // Opening the chat reads it, unless a search is taking you somewhere already.
+            if let itemID = thread.opened(), jump == nil {
+                returnJump = MessageJump(contactID: thread.contactID, itemID: itemID)
+            }
+        }
         .onChange(of: thread.transcriptLoad) { window.reset(items) }
         .onChange(of: items.isEmpty) { window.reset(items) }
-        .onChange(of: jump, initial: true) { if let jump { target = jump.itemID } }
+        .onChange(of: jump ?? returnJump, initial: true) { _, jump in if let jump { target = jump.itemID } }
         .onChange(of: hasCards, initial: true) { cardsAfter = hasCards ? items.last?.id ?? -1 : nil }
         .onChange(of: thread.transcriptLoad) { if hasCards { cardsAfter = items.last?.id ?? -1 } }
         // A card may be out of sight, or VoiceOver elsewhere in the chat.

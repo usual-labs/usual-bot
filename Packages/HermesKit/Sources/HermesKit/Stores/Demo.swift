@@ -281,6 +281,10 @@
             for prompt in Demo.vaultPrompts { threads["ledger"]?.receive(prompt) }
             // Shows the warning a gateway on plain http gets.
             threads["ledger"]?.gateway = { try? GatewayAddress(parsing: "http://192.168.1.20:9119") }
+            // Marked unread from an earlier reply, to come back to: a dot, and opening it goes there.
+            if let ledger = threads["ledger"] {
+                ledger.markUnread(from: ledger.state.items.first { $0.isReply })
+            }
             for thread in threads.values { thread.playsDemoReplies = true }
             return threads
         }

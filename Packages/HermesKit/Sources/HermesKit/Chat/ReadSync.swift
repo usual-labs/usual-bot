@@ -3,13 +3,16 @@ import os
 
 /// Shares how far each Bot Chat has been read between your devices, so a reply read on one stops
 /// counting as unread on the others. Hermes keeps one read time per conversation
-/// (`sessions.last_read_at`, the official app's Mark as Read); the unread count stays this app's own.
+/// (`sessions.last_read_at`, the official app's Mark as Read and Mark as Unread); the unread count
+/// stays this app's own.
 ///
-/// Reading a chat here stamps the gateway's time on it, once per new reply. The gateway sends
-/// `sessions.changed` when any conversation changes, without saying which, so this device then looks
-/// again at the chats it counts unread: first the small `mutation-snapshot`, then the chat's whole
+/// Reading a chat here stamps the gateway's time on it, once per new reply; Mark as Unread sets it
+/// to 0. The gateway sends `sessions.changed` when any conversation changes, without saying which,
+/// so this device then looks again: first the small `mutation-snapshot`, then the chat's whole
 /// record (system prompt included, about 90 KB) only when the revision moved, as every write moves it.
-/// Rooms have no read time in Hermes, so they stay per device.
+/// Chats unread here are looked at on every change; the rest, which only Mark as Unread elsewhere
+/// can change, at most every `sweepInterval`. Rooms have no read time in Hermes, so they stay per
+/// device.
 @MainActor
 final class ReadSync {
     struct Chat {
@@ -32,6 +35,9 @@ final class ReadSync {
     private var stale: Set<Contact.ID> = []
     private var writing: Set<String> = []
     private var isLooking = false
+    /// When chats read here were last looked at.
+    private var lastSweep: ContinuousClock.Instant?
+    var sweepInterval: Duration = .seconds(30)
     private var looksAgain = false
     /// What's under way, for `settled()`.
     private var work: [Task<Void, Never>] = []
@@ -51,16 +57,21 @@ final class ReadSync {
         look()
     }
 
-    /// Looks up the read time of each chat unread here that may have changed. A chat with nothing
-    /// unread stays due, so it's looked at once it has something.
+    /// Looks up the read time of each chat that may have changed. One read here stays due until
+    /// the next sweep, or until it has something unread.
     func look() {
         guard !isUnsupported else { return }
         guard !isLooking else {
             looksAgain = true
             return
         }
-        let due = chats().filter { stale.contains($0.thread.contactID) && $0.thread.unreadCount > 0 }
+        let sweeps = lastSweep.map { $0.duration(to: .now) >= sweepInterval } ?? true
+        let due = chats().filter { chat in
+            stale.contains(chat.thread.contactID) && !writing.contains(chat.storedID)
+                && (sweeps || chat.thread.unreadCount > 0 || chat.thread.isMarkedUnread)
+        }
         guard !due.isEmpty, let auth = auth() else { return }
+        if sweeps { lastSweep = .now }
         stale.subtract(due.map(\.thread.contactID))
         isLooking = true
         run { [self] in
@@ -74,22 +85,36 @@ final class ReadSync {
     }
 
     private func lookUp(_ chat: Chat, auth: AuthSession) async {
+        let known = revisions[chat.storedID]
         do {
             let revision = try await snapshot(of: chat, auth: auth)
-            guard revision != revisions[chat.storedID] else { return }
+            guard revision != known else { return }
             let record = try await auth.json(
                 Record.self, path: Self.path(chat) + "?profile=\(Self.escape(chat.profile))")
             guard record.hasReadTime else {
                 isUnsupported = true
                 return
             }
+            // A write from here meanwhile knows better than what was read before it: look again after.
+            guard revisions[chat.storedID] == known, !writing.contains(chat.storedID) else {
+                stale.insert(chat.thread.contactID)
+                return
+            }
             revisions[chat.storedID] = revision
-            // 0 is the official app's Mark as Unread, which leaves this device's count alone.
-            guard let readAt = record.lastReadAt, readAt > 0 else { return }
             let thread = chat.thread
-            let before = thread.unreadCount
-            thread.adoptRead(at: Date(timeIntervalSince1970: readAt))
-            if before > 0, thread.unreadCount == 0 { cleared?(thread.contactID) }
+            switch record.lastReadAt {
+            case 0:
+                // Hermes's Mark as Unread, from here or elsewhere. It has no count.
+                thread.adoptUnread()
+            case let readAt?:
+                let wasUnread = thread.unreadCount > 0 || thread.isMarkedUnread
+                thread.adoptRead(at: Date(timeIntervalSince1970: readAt))
+                if wasUnread, thread.unreadCount == 0, !thread.isMarkedUnread { cleared?(thread.contactID) }
+            case nil:
+                break  // never marked, which Hermes counts as read
+            }
+            // Marked here, but the write didn't get there.
+            if thread.isMarkedUnread, !thread.unreadOnGateway { markUnread(thread.contactID) }
         } catch {
             note(error)
         }
@@ -97,26 +122,62 @@ final class ReadSync {
 
     // MARK: - Reading here
 
-    /// You've seen `id`'s replies: tells the gateway, unless it already knows them read.
+    /// You've seen `id`'s replies: tells the gateway, unless it already knows them read. Not while
+    /// the chat is marked unread.
     func markRead(_ id: Contact.ID) {
-        guard !isUnsupported, let chat = chats().first(where: { $0.thread.contactID == id }),
-            let newest = chat.thread.newestUnreadable, newest > chat.thread.readOnGateway ?? .distantPast,
+        guard !isUnsupported, let chat = chat(id), !chat.thread.isMarkedUnread,
+            !writing.contains(chat.storedID), let auth = auth()
+        else { return }
+        let newest = chat.thread.newestUnreadable
+        let isNew = newest.map { $0 > chat.thread.readOnGateway ?? .distantPast } ?? false
+        guard isNew || chat.thread.unreadOnGateway else { return }
+        writing.insert(chat.storedID)
+        run { [self] in
+            let saved = await write(chat, unread: false, auth: auth)
+            writing.remove(chat.storedID)
+            guard saved else { return }
+            chat.thread.unreadOnGateway = false
+            if let newest { chat.thread.readOnGateway = max(chat.thread.readOnGateway ?? .distantPast, newest) }
+            settle(chat)
+        }
+    }
+
+    /// You marked `id` unread: tells the gateway, so it's unread on your other devices and in the
+    /// official app too.
+    func markUnread(_ id: Contact.ID) {
+        guard !isUnsupported, let chat = chat(id), chat.thread.isMarkedUnread, !chat.thread.unreadOnGateway,
             !writing.contains(chat.storedID), let auth = auth()
         else { return }
         writing.insert(chat.storedID)
         run { [self] in
-            let saved = await write(chat, auth: auth)
+            let saved = await write(chat, unread: true, auth: auth)
             writing.remove(chat.storedID)
             guard saved else { return }
-            chat.thread.readOnGateway = max(chat.thread.readOnGateway ?? .distantPast, newest)
-            // A reply that came in meanwhile, while you watched, gets its own write.
-            if chat.thread.isVisible { markRead(id) }
+            chat.thread.unreadOnGateway = true
+            settle(chat)
         }
     }
 
-    /// `PATCH /api/sessions/{id}` with `unread: false`, at the chat's current revision. A write
-    /// elsewhere can move the revision in between; that one is tried once more.
-    private func write(_ chat: Chat, auth: AuthSession) async -> Bool {
+    /// After a write: what changed meanwhile gets its own, such as a chat marked or opened, or a
+    /// reply that came in while you watched. A failed write waits for the next change.
+    private func settle(_ chat: Chat) {
+        let id = chat.thread.contactID
+        if chat.thread.isMarkedUnread {
+            if !chat.thread.unreadOnGateway { markUnread(id) }
+        } else if chat.thread.unreadCount == 0 {
+            markRead(id)
+        }
+        // A look skips a chat while it's written.
+        if !writing.contains(chat.storedID), stale.contains(id) { look() }
+    }
+
+    private func chat(_ id: Contact.ID) -> Chat? {
+        chats().first { $0.thread.contactID == id }
+    }
+
+    /// `PATCH /api/sessions/{id}` with `unread`, at the chat's current revision. A write elsewhere
+    /// can move the revision in between; that one is tried once more.
+    private func write(_ chat: Chat, unread: Bool, auth: AuthSession) async -> Bool {
         var known = revisions[chat.storedID]
         for _ in 0..<2 {
             do {
@@ -127,7 +188,7 @@ final class ReadSync {
                     revision = try await snapshot(of: chat, auth: auth)
                 }
                 let mark = Mark(
-                    unread: false, requestId: UUID().uuidString.lowercased(), expectedRevision: revision,
+                    unread: unread, requestId: UUID().uuidString.lowercased(), expectedRevision: revision,
                     profile: chat.profile)
                 let receipt = try await auth.json(Receipt.self, path: Self.path(chat), method: "PATCH", body: mark)
                 revisions[chat.storedID] = receipt.revision
@@ -172,11 +233,19 @@ final class ReadSync {
         Self.log.notice("Read state not shared: \(AppModel.describe(error), privacy: .public)")
     }
 
-    /// Forgets everything on signing out or reconnecting, as the gateway may have been updated.
+    /// Forgets everything on signing out or switching gateways.
     func reset() {
         revisions = [:]
         stale = []
+        lastSweep = nil
         isUnsupported = false
+    }
+
+    /// Reconnected: the gateway may have been updated, so it's asked again whether it keeps read
+    /// times. A revision still says whether a chat changed, so they're kept.
+    func reconnected() {
+        isUnsupported = false
+        lastSweep = nil
     }
 
     private static func path(_ chat: Chat) -> String {

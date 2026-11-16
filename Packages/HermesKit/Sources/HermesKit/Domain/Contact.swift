@@ -24,6 +24,9 @@ public struct Contact: Identifiable, Hashable, Sendable, Codable {
     public var preview: String?
     public var lastActive: Date?
     public var unreadCount: Int
+    /// Marked unread, with no count (`ChatThread.isMarkedUnread`). Not kept with the roster: the
+    /// chat keeps it.
+    public var isMarkedUnread = false
     public var activity: Activity
     public var isPinned: Bool
     /// The stored ID of the agent's "Bot Chat" session, when the gateway reported one.
@@ -38,6 +41,14 @@ public struct Contact: Identifiable, Hashable, Sendable, Codable {
     public var sectionID: String?
     /// The section's name as last saved on the agent, for rebuilding it on another device.
     public var sectionName: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, kind, tint, preview, lastActive, unreadCount, activity, isPinned, chatID, details, picture
+        case sectionID, sectionName
+    }
+
+    /// Something unread: replies, or a mark.
+    public var hasUnread: Bool { unreadCount > 0 || isMarkedUnread }
 
     public init(
         id: String,

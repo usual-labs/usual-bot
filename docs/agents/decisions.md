@@ -353,18 +353,33 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   yes/no that your messages set too, as does `last_activity_at` moving mid-turn. The official app
   never reads it for Bots (a Bot Chat is hidden, so its dot is per window), so the two apps don't
   agree there.
+- **Mark as Unread is the same field set to 0** (`PATCH … unread: true`); Hermes can't take a time
+  or a message. A 0 from anywhere marks the chat here: a dot without a number (Hermes gives no
+  count), next to any count this device already had. Opening the chat (`ChatThread.opened()`, from
+  the transcript appearing) clears it and writes `unread: false`, even with no new reply. The mark
+  holds while the chat stays on screen, including when `visibleContactID` drops and comes back as
+  the window or app loses and regains focus: otherwise marking on iPhone and locking it would read
+  the chat on unlock. A newer read time from elsewhere clears a mark made before it; an older one
+  means this device's write didn't land, so it's sent again.
+- **The message it was marked from is per device** (`ReturnPoint`, by text and time, as a reload
+  renumbers items and re-dates live ones), kept in the offline cache with the mark.
+- **Rooms don't offer it:** `hosted_rooms` has no read position and no field to keep one in, and a
+  mark only this device sees misses the point (read on the phone, come back on the Mac).
 - **A write needs a `request_id` and the chat's `expected_revision`** (`GET …/mutation-snapshot`)
   and moves that revision, which the chat's other edits share. A write that lost a race (409
-  `revision_conflict`) is tried once more.
+  `revision_conflict`) is tried once more. A write after another finishes is how a mark or an
+  open made meanwhile reaches the gateway.
 - **Reading it back costs the whole record.** `GET /api/sessions/{id}` sends the system prompt too
   (about 90 KB on the developer's gateway), and lists leave hidden chats out. `sessions.changed`
-  comes at most every 2 s, on any session change, naming none, so the app looks only at chats unread
-  here: the snapshot first, the record only when the revision moved.
+  comes at most every 2 s, on any session change, naming none, so the app reads the snapshot first
+  and the record only when the revision moved. Chats unread or marked here are looked at on every
+  change; the rest only every 30 s, as only a Mark as Unread elsewhere changes them. Revisions are
+  kept across reconnects (they still say whether a chat changed), so a reconnect costs snapshots,
+  not records; a launch reads each Bot Chat's record once.
 - **Only while you're looking.** `visibleContactID` is set only while a window has you, so a Mac left
   on a chat doesn't mark replies read.
-- **Rooms stay per device:** `hosted_rooms` has no read position and no field to keep one in.
 - A gateway answering 400, 404, 405 or 422, or a record without `last_read_at`, turns sharing off
-  until the next connection.
+  until the next connection. Marks then stay on this device.
 
 ## Bot pictures
 
@@ -725,7 +740,9 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
 - Read state: its routes were run on the developer's gateway on 2026-11-08 by a script signed in
   the app's way (native PKCE on the dashboard): the snapshot, a PATCH on a hidden Bot Chat, a stale
   revision's 409 and `sessions.changed` on the dashboard socket. The app itself hasn't: a Mac and an
-  iPhone clearing each other's counts is untested.
+  iPhone clearing each other's counts is untested. Mark as Unread (`unread: true`, and reading a 0
+  back) is from the Hermes source and fakes only; whether the official app shows a hidden Bot
+  Chat's 0 as unread is unchecked.
 - The Browser view hasn't run in the app against a real gateway: the plugin's feed and `BotBrowser`
   were each tested on their own (`BotBrowserTests`, and a script client on the developer's gateway).
 

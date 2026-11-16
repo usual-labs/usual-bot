@@ -15,6 +15,9 @@ struct CachedThread: Codable, Equatable, Sendable {
     var heldMessages: [QueuedMessage]? = nil
     /// The chat's goal as last seen, so it shows before the gateway answers and while offline.
     var goal: Goal? = nil
+    /// Marked unread, and the message it was marked from (`ChatThread+ReadState.swift`).
+    var markedUnreadAt: Date? = nil
+    var returnPoint: ReturnPoint? = nil
 }
 
 extension TranscriptItem {

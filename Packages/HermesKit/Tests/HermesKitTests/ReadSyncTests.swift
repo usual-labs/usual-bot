@@ -47,7 +47,9 @@ private final class ReadGateway: Sendable {
                 state.conflicts -= 1
                 return (409, #"{"detail":"revision_conflict"}"#)
             }
-            return (200, #"{"ok":true,"revision":\#(state.revision),"operation":"sidebar","unread":false}"#)
+            let unread = request.jsonBody?["unread"] == true
+            state.lastReadAt = unread ? 0 : 300
+            return (200, #"{"ok":true,"revision":\#(state.revision),"operation":"sidebar","unread":\#(unread)}"#)
         }
         let readAt = state.lastReadAt.map { String($0) } ?? "null"
         let field = state.keepsReadTimes ? #","last_read_at":\#(readAt)"# : ""
@@ -171,25 +173,112 @@ struct ReadSyncTests {
         #expect(gateway.paths.filter { $0 == "GET /api/sessions/chat-1" }.count == 2)
     }
 
-    @Test func markedUnreadElsewhereLeavesTheCountAlone() async {
+    @Test func markedUnreadElsewhereKeepsTheCount() async {
         let (sync, thread, gateway, _) = makeSync()
         gateway.change { $0.lastReadAt = 0 }
         sync.somethingChanged()
         await sync.settled()
         #expect(thread.unreadCount == 2)
+        #expect(thread.isMarkedUnread)
     }
 
-    @Test func aChatWithNothingUnreadIsLookedAtOnceItHasSomething() async {
+    @Test func aReadChatMarkedUnreadElsewhereShowsUnreadHere() async {
+        let (sync, thread, gateway, box) = makeSync(unread: 0)
+        gateway.change { $0.lastReadAt = 0 }
+        sync.somethingChanged()
+        await sync.settled()
+        #expect(thread.isMarkedUnread)
+        #expect(thread.unreadCount == 0)
+        #expect(box.cleared.isEmpty)
+
+        // Read on another device: the mark goes here too.
+        gateway.change {
+            $0.lastReadAt = Date.now.timeIntervalSince1970 + 60
+            $0.revision += 1
+        }
+        sync.sweepInterval = .zero
+        sync.somethingChanged()
+        await sync.settled()
+        #expect(!thread.isMarkedUnread)
+        #expect(box.cleared == ["ops"])
+    }
+
+    @Test func readChatsAreLookedAtLessOften() async {
         let (sync, thread, gateway, _) = makeSync(unread: 0)
         gateway.change { $0.lastReadAt = 250 }
         sync.somethingChanged()
         await sync.settled()
-        #expect(gateway.http.requests.isEmpty)
+        let first = gateway.http.requests.count
+        #expect(first == 2)
+
+        // Within the interval a read chat waits; an unread one doesn't.
+        gateway.change {
+            $0.revision += 1
+            $0.lastReadAt = 260
+        }
+        sync.somethingChanged()
+        await sync.settled()
+        #expect(gateway.http.requests.count == first)
 
         thread.unreadCount = 1
         sync.look()
         await sync.settled()
         #expect(thread.unreadCount == 0)
+    }
+
+    // MARK: - Marking unread
+
+    @Test func markingUnreadTellsTheGatewayAndOpeningUndoesIt() async throws {
+        let (sync, thread, gateway, _) = makeSync(unread: 0)
+        thread.wasRead = { sync.markRead("ops") }
+        sync.markRead("ops")
+        await sync.settled()
+
+        thread.markUnread(from: nil)
+        sync.markUnread("ops")
+        await sync.settled()
+        let mark = try #require(gateway.http.requests.last?.jsonBody)
+        #expect(mark["unread"] == true)
+        #expect(mark["expected_revision"] == 4)
+        #expect(thread.isMarkedUnread)
+
+        // Still on screen, a new reply doesn't read it.
+        let writes = gateway.http.requests.count
+        thread.isVisible = true
+        thread.state = ThreadState(history: [reply("Done", at: 200), reply("More", at: 400)], running: false)
+        sync.markRead("ops")
+        await sync.settled()
+        #expect(gateway.http.requests.count == writes)
+        #expect(thread.isMarkedUnread)
+
+        // Opening it afresh does, though nothing new came since the last read.
+        _ = thread.opened()
+        await sync.settled()
+        #expect(!thread.isMarkedUnread)
+        #expect(gateway.http.requests.last?.jsonBody?["unread"] == false)
+    }
+
+    @Test func aMarkThatDidntReachTheGatewayIsSentAgain() async throws {
+        let (sync, thread, gateway, _) = makeSync(unread: 0)
+        gateway.change { $0.lastReadAt = 100 }
+        thread.markUnread(from: nil)
+        sync.somethingChanged()
+        await sync.settled()
+        #expect(thread.isMarkedUnread)
+        #expect(gateway.http.requests.last?.jsonBody?["unread"] == true)
+    }
+
+    @Test func markAsReadClearsTheMarkAndTellsTheGateway() async throws {
+        let (sync, thread, gateway, _) = makeSync()
+        thread.wasRead = { sync.markRead("ops") }
+        thread.markUnread(from: nil)
+        sync.markUnread("ops")
+        await sync.settled()
+        thread.markRead()
+        await sync.settled()
+        #expect(!thread.isMarkedUnread)
+        #expect(thread.unreadCount == 0)
+        #expect(gateway.http.requests.last?.jsonBody?["unread"] == false)
     }
 
     @Test func aGatewayWithoutReadTimesIsLeftAlone() async {
@@ -241,6 +330,44 @@ struct ChatReadTests {
         #expect(thread.unreadCount == 1)
     }
 
+    @Test func openingGoesBackToTheMessageMarkedFrom() throws {
+        let history = [
+            HistoryMessage(role: "user", text: "Status?", timestamp: 50),
+            HistoryMessage(role: "assistant", text: "Deploying", timestamp: 100),
+            HistoryMessage(role: "assistant", text: "Done", timestamp: 200),
+        ]
+        let thread = ChatThread.sample("forge", state: ThreadState(history: history, running: false))
+        thread.markUnread(from: thread.state.items[1])
+        // The gateway's copy numbers its items afresh.
+        let older = HistoryMessage(role: "user", text: "Hi", timestamp: 10)
+        thread.state = ThreadState(history: [older] + history, running: false)
+        let deploying = try #require(thread.state.items.first { $0.content == .assistant("Deploying") })
+        #expect(thread.opened() == deploying.id)
+        #expect(!thread.isMarkedUnread)
+        #expect(thread.opened() == nil)
+    }
+
+    @Test func aMarkSurvivesARelaunch() {
+        let thread = ChatThread.sample(
+            "forge",
+            state: ThreadState(
+                history: [HistoryMessage(role: "assistant", text: "Done", timestamp: 200)], running: false))
+        thread.markUnread(from: thread.state.items.last)
+        let relaunched = ChatThread(contactID: "forge", cached: thread.cacheEntry, channel: { nil })
+        #expect(relaunched.isMarkedUnread)
+        #expect(relaunched.opened() == relaunched.state.items.last?.id)
+    }
+
+    @Test func returningToAMarkedChatLeavesItMarked() {
+        let (thread, counter) = makeChat(visible: true)
+        thread.markUnread(from: nil)
+        thread.isVisible = false
+        thread.isVisible = true
+        reply(thread)
+        #expect(thread.isMarkedUnread)
+        #expect(counter.count == 1)
+    }
+
     @Test func openingAChatCountsAsRead() {
         let (thread, counter) = makeChat(visible: false)
         reply(thread)
@@ -283,7 +410,11 @@ struct AppReadSyncTests {
         }
     }
 
-    private func signedIn() async throws -> (AppModel, ChatThread, FakeSocket, ScriptedHTTP, Task<Void, Never>) {
+    /// `readAt`: when the gateway says the chat was last read; by default a minute after each
+    /// request, read on another device after this one last had it on screen.
+    private func signedIn(readAt: Double? = nil) async throws -> (
+        AppModel, ChatThread, FakeSocket, ScriptedHTTP, Task<Void, Never>
+    ) {
         let store = MemoryTokenStore()
         try store.save(
             TokenSet(
@@ -292,13 +423,22 @@ struct AppReadSyncTests {
         let defaults = UserDefaults(suiteName: UUID().uuidString)!
         defaults.set(testGateway.baseURL.absoluteString, forKey: "gatewayAddress")
         let socket = FakeSocket()
+        // Each look finds the chat changed, as a read elsewhere would leave it.
+        let revision = Mutex(6)
         let http = ScriptedHTTP { request in
             let path = request.url?.path() ?? ""
-            if path.hasSuffix("/mutation-snapshot") { return (200, #"{"runtime_revision":7}"#) }
+            if path.hasSuffix("/mutation-snapshot") {
+                let next = revision.withLock {
+                    $0 += 1
+                    return $0
+                }
+                return (200, #"{"runtime_revision":\#(next)}"#)
+            }
             if request.httpMethod == "PATCH" { return (200, #"{"ok":true,"revision":8}"#) }
-            // Read on another device a minute from now, after this one last had the chat on screen.
-            let readAt = Date.now.timeIntervalSince1970 + 60
-            if path == "/api/sessions/stored-1" { return (200, #"{"id":"stored-1","last_read_at":\#(readAt)}"#) }
+            if path == "/api/sessions/stored-1" {
+                let read = readAt ?? Date.now.timeIntervalSince1970 + 60
+                return (200, #"{"id":"stored-1","last_read_at":\#(read)}"#)
+            }
             return (200, #"{"ticket":"t1"}"#)
         }
         let model = AppModel(
@@ -338,7 +478,8 @@ struct AppReadSyncTests {
     }
 
     @Test func openingAChatTellsTheGateway() async throws {
-        let (model, _, _, http, server) = try await signedIn()
+        // Last read before the reply at 200, which this device then shows.
+        let (model, _, _, http, server) = try await signedIn(readAt: 100)
         defer {
             server.cancel()
             model.signOut()
@@ -346,7 +487,8 @@ struct AppReadSyncTests {
         model.visibleContactID = "scout"
         try await waitUntil { sessionRequests(http).contains("PATCH /api/sessions/stored-1") }
         let mark = try #require(http.requests.last { $0.httpMethod == "PATCH" }?.jsonBody)
-        #expect(mark["expected_revision"] == 7)
+        #expect(mark["expected_revision"] != nil)
+        #expect(mark["unread"] == false)
         #expect(mark["profile"] == "scout")
     }
 }

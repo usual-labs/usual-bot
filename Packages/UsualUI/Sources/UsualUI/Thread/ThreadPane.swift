@@ -45,6 +45,7 @@ struct ThreadPane: View {
     @State private var showsComputer = false
     @State private var showsBrowser = false
     @Environment(\.screens) private var screens
+    @Environment(\.readMarking) private var readMarking
     @Environment(\.gatewayOnline) private var isOnline
     #if os(macOS)
         @Environment(\.openWindow) private var openWindow
@@ -190,7 +191,8 @@ struct ThreadPane: View {
             undo: { _ in
                 editing = nil
                 Task { await thread.undo() }
-            })
+            },
+            markUnread: readMarking.map { marking in { marking.markUnread(contact, $0) } })
     }
 
     /// The name opens the profile, as a contact's name does in Messages.

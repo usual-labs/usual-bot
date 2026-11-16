@@ -6,7 +6,8 @@ enum SidebarSpeech {
     /// "Forge, pinned, needs you, 2 unread, Needs your OK…, 10:44 AM".
     static func row(_ contact: Contact, preview: String, stamp: String?) -> String {
         let pinned = contact.isPinned ? [String(localized: "pinned")] : []
-        let facts = facts(activity: contact.activity, unreadCount: contact.unreadCount)
+        let facts = facts(
+            activity: contact.activity, unreadCount: contact.unreadCount, marked: contact.isMarkedUnread)
         return ([contact.name] + pinned + facts + [preview, stamp ?? ""])
             .filter { !$0.isEmpty }
             .joined(separator: ", ")
@@ -15,18 +16,23 @@ enum SidebarSpeech {
     /// A heading's value. Folded, it says what its hidden rows would, as its indicator shows it.
     static func section(_ block: SidebarBlock, isFolded: Bool) -> String {
         guard isFolded else { return String(localized: "Open") }
-        let facts = facts(activity: block.needsYou ? .needsYou : .idle, unreadCount: block.unreadCount)
+        let facts = facts(
+            activity: block.needsYou ? .needsYou : .idle, unreadCount: block.unreadCount, marked: block.hasMarkedUnread)
         return ([String(localized: "Folded")] + facts).joined(separator: ", ")
     }
 
-    private static func facts(activity: Contact.Activity, unreadCount: Int) -> [String] {
+    private static func facts(activity: Contact.Activity, unreadCount: Int, marked: Bool) -> [String] {
         var facts: [String] = []
         switch activity {
         case .needsYou: facts.append(String(localized: "needs you"))
         case .working: facts.append(String(localized: "working"))
         case .idle: break
         }
-        if unreadCount > 0 { facts.append(String(localized: "\(unreadCount) unread")) }
+        if unreadCount > 0 {
+            facts.append(String(localized: "\(unreadCount) unread"))
+        } else if marked {
+            facts.append(String(localized: "unread"))
+        }
         return facts
     }
 }
