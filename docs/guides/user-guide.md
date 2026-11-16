@@ -179,7 +179,7 @@ sending also puts the keyboard away; tap the message box to write again.
   see each one. A helper left working in the background stays listed after the reply until it
   finishes.
 - **Stop and steer.** While a reply runs, the send button becomes Stop, and ⌘. stops it even once
-  you've started typing. Or just send another message: it steers the running turn instead of
+  you've started typing (on the Mac it's also View ▸ Stop Reply). Or just send another message: it steers the running turn instead of
   waiting for it.
 - **Queue a message for later.** To have a message wait instead, type it while a reply runs and
   choose **Queue** beside Send (on the Mac, ⌥Return). It's sent as a message of its own when the

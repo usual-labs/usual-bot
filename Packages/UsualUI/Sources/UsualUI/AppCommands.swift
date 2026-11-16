@@ -87,15 +87,22 @@ struct ChatHistory: Equatable {
         let toggle: () -> Void
     }
 
+    /// The open chat or room's Stop; `stop` is `nil` while nothing runs.
+    struct StopReplyCommand {
+        let stop: (() -> Void)?
+    }
+
     extension FocusedValues {
         @Entry var windowCommands: WindowCommands?
         @Entry var chatPanel: ChatPanelCommand?
+        @Entry var stopReply: StopReplyCommand?
     }
 
     /// The menu bar's File, View, Go and Help items for the main window.
     public struct UsualBotCommands: Commands {
         @FocusedValue(\.windowCommands) private var window
         @FocusedValue(\.chatPanel) private var panel
+        @FocusedValue(\.stopReply) private var stopReply
         @AppStorage(Zoom.key) private var zoom = Zoom.initialLevel(
             chatTextSize: UserDefaults.standard.integer(forKey: AppPreferences.textSizeKey))
 
@@ -139,6 +146,11 @@ struct ChatHistory: Equatable {
                 Button(panel?.title ?? "Show Profile") { panel?.toggle() }
                     .keyboardShortcut("i")
                     .disabled(panel == nil)
+                Divider()
+                // Where Safari keeps Stop, on the same key.
+                Button("Stop Reply") { stopReply?.stop?() }
+                    .keyboardShortcut(".")
+                    .disabled(stopReply?.stop == nil)
                 Divider()
             }
             CommandGroup(after: .toolbar) {

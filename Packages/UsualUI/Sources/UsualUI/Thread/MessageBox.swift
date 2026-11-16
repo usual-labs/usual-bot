@@ -111,16 +111,14 @@ struct MessageBox: View {
     var body: some View {
         // One container: the menus above the box, the box and its glass buttons are drawn together.
         GlassEffectContainer(spacing: 0) { stack }
-            .background {
-                // ⌘. stops the reply even after Send has taken Stop's place.
-                if isRunning {
-                    Button(stopLabel, action: stop)
-                        .keyboardShortcut(".", modifiers: .command)
-                        .opacity(0)
-                        .allowsHitTesting(false)
-                        .accessibilityHidden(true)
-                }
-            }
+            // ⌘. stops the reply even after Send has taken Stop's place.
+            #if os(macOS)
+                // From the menu bar: a default-style button in the chat's bottom bar, even a hidden
+                // one, makes macOS draw a grey backing across the bar.
+                .focusedSceneValue(\.stopReply, StopReplyCommand(stop: isRunning ? stop : nil))
+            #else
+                .background { stopShortcut }
+            #endif
             .environment(\.composerButtonSize, buttonSize)
             .animation(.smooth(duration: 0.2), value: pickingLevel)
             .animation(.snappy(duration: 0.16), value: isEmpty)
@@ -207,6 +205,19 @@ struct MessageBox: View {
                 focused = true
             }
     }
+
+    #if os(iOS)
+        /// ⌘. on a hardware keyboard.
+        @ViewBuilder private var stopShortcut: some View {
+            if isRunning {
+                Button(stopLabel, action: stop)
+                    .keyboardShortcut(".", modifiers: .command)
+                    .opacity(0)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+        }
+    #endif
 
     private var stack: some View {
         VStack(alignment: .leading, spacing: 8) {
