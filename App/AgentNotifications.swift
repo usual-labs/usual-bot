@@ -1,7 +1,12 @@
 import HermesKit
+import Observation
 import UserNotifications
 import UsualUI
 import os
+
+#if os(iOS)
+    import UIKit
+#endif
 
 /// Tells you what agents did while you weren't looking, and opens the chat when you tap it.
 ///
@@ -19,6 +24,8 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
     private static let log = Logger(subsystem: "UsualBot", category: "notifications")
     private var model: AppModel?
     private var showApp: () -> Void = {}
+    /// The number last put on the app's icon.
+    private var shownBadge: Int?
 
     func watch(_ model: AppModel, showApp: @escaping () -> Void) {
         self.model = model
@@ -40,18 +47,74 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
                 previews: Self.isOn(AppPreferences.notificationPreviewsKey),
                 sound: Self.isOn(AppPreferences.notificationSoundKey))
         }
+        followBadge()
         Task { await lookForNews() }
     }
 
     func askForPermission() async {
         let center = UNUserNotificationCenter.current()
-        guard await center.notificationSettings().authorizationStatus == .notDetermined else { return }
+        let status = await center.notificationSettings().authorizationStatus
+        // Builds before the badge didn't ask for it. Asking again shows nothing once you've
+        // answered, but it puts Badges among the app's notification settings, off.
+        let defaults = UserDefaults.standard
+        let asksForBadge = status != .denied && !defaults.bool(forKey: Self.askedForBadgeKey)
+        guard status == .notDetermined || asksForBadge else { return }
+        defaults.set(true, forKey: Self.askedForBadgeKey)
         do {
-            _ = try await center.requestAuthorization(options: [.alert, .sound])
+            _ = try await center.requestAuthorization(options: [.alert, .sound, .badge])
         } catch {
             // An ad-hoc signed Mac build lands here: macOS doesn't let those notify.
             Self.log.error("Couldn't ask to notify: \(error.localizedDescription, privacy: .public)")
         }
+    }
+
+    private static let askedForBadgeKey = "askedForBadge"
+
+    // MARK: - Badge
+
+    /// Keeps the app's icon showing the unread count, as it changes.
+    private func followBadge() {
+        guard let model else { return }
+        let count = withObservationTracking {
+            Self.badge(for: model)
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.followBadge() }
+        }
+        if let count, count != shownBadge { show(badge: count) }
+    }
+
+    /// `nil` while the count isn't known yet: before the saved chats are read, or while you sign
+    /// in. Until then the icon keeps what the notification extension put there.
+    private static func badge(for model: AppModel) -> Int? {
+        if model.isRestoring { return nil }
+        switch model.session {
+        case .signedIn: return model.badgeCount
+        case .signingIn: return nil
+        case .signedOut: return model.gateways.isEmpty ? 0 : nil
+        }
+    }
+
+    private func show(badge count: Int) {
+        shownBadge = count
+        model?.badgeShown(count)
+        Task {
+            do {
+                try await UNUserNotificationCenter.current().setBadgeCount(count)
+            } catch {
+                Self.log.error("Couldn't set the badge: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
+    /// The notification extension adds one for each message pushed, even one the app counts
+    /// itself, so the app puts its own count back once it's in front. Not from the background:
+    /// what it knows then is from before it was suspended.
+    private func restoreBadge() {
+        #if os(iOS)
+            guard UIApplication.shared.applicationState == .active else { return }
+        #endif
+        guard let model, let count = Self.badge(for: model) else { return }
+        show(badge: count)
     }
 
     private func heard(_ alert: AgentAlert, from contact: Contact) {
@@ -144,6 +207,7 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
 
     /// Tells the model which gateways have notifications waiting, for the switcher's dot.
     func lookForNews() async {
+        restoreBadge()
         let delivered = await UNUserNotificationCenter.current().deliveredNotifications()
         model?.showNews(on: Set(delivered.compactMap { $0.request.content.userInfo[Self.gatewayKey] as? String }))
     }

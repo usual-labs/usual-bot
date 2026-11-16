@@ -285,6 +285,12 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   first report after a notification sends anything. iOS rations silent pushes and drops them for an
   app swiped away in the app switcher; those notifications stay until the app next runs there.
   Apple has no reliable way to remove a delivered notification from the server.
+- **The icon's badge is the app's own unread count, kept going by the extension.** The app sets it
+  from the chats and rooms of the gateway in use, less muted ones, and saves it in the push keychain
+  group (`AppBadge`); the extension adds one for each pushed `message` while the app is closed,
+  since the relay can't count what it can't read. The app puts its own number back when it's in
+  front, so a push for a reply it already counted, a chat read elsewhere, or the other gateway's
+  message is corrected only then. A build without push has the badge only while the app runs.
 - **The app reports the open chat every roster tick, and "none" once,** and the plugin forgets an
   entry after 15 s, so a crash can't silence pushes. Repeating "none" would let a Mac in the
   background overrule the iPhone in your hand.
