@@ -11,6 +11,34 @@ struct DictationTests {
         #expect(Dictation.merge("Draft", "") == "Draft")
     }
 
+    @Test func wordsAfterAPauseFollowTheEarlierOnes() {
+        // Apple's recognizer closes an utterance at a pause, then reports only the next one.
+        var spoken = Utterances()
+        _ = spoken.adding("To be", endsUtterance: false)
+        _ = spoken.adding("To be or not to be", endsUtterance: true)
+        #expect(spoken.adding("I'm", endsUtterance: false) == "To be or not to be I'm")
+        #expect(
+            spoken.adding("I'm talking after a while", endsUtterance: true)
+                == "To be or not to be I'm talking after a while")
+        // The final result repeats the last utterance.
+        #expect(
+            spoken.adding("I'm talking after a while", endsUtterance: false)
+                == "To be or not to be I'm talking after a while")
+    }
+
+    @Test func revisionsReplaceTheCurrentUtterance() {
+        var spoken = Utterances()
+        _ = spoken.adding("Two be or", endsUtterance: false)
+        #expect(spoken.adding("To be or not", endsUtterance: false) == "To be or not")
+        #expect(spoken.adding("", endsUtterance: false) == "To be or not")
+    }
+
+    @Test func aNewUtteranceIsKeptWhenThePauseWasntReported() {
+        var spoken = Utterances()
+        _ = spoken.adding("I'm talking after a while", endsUtterance: false)
+        #expect(spoken.adding("Just", endsUtterance: false) == "I'm talking after a while Just")
+    }
+
     @Test func gatewayWordsReplaceTheLiveOnes() {
         // The box shows "Note: check the" from the stream; the final words take their place.
         #expect(

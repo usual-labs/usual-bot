@@ -130,6 +130,13 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   the login Keychain from `security`; to let a test gateway borrow the Claude Code sign-in, link
   only `~/Library/Keychains` into it.
 
+## Dictation
+
+- **Apple's recognizer starts over after a pause.** A result marked with `speechRecognitionMetadata`
+  closes an utterance, and the next results hold only the new one, so showing `bestTranscription`
+  as is replaces what was said. `Utterances` keeps the closed ones. Seen on an iPhone with on-device
+  recognition. The joining is tested with made-up results, not yet on a device.
+
 ## Push notifications
 
 - **A Mac notification extension needs `NSExtension` › `Subsystems` = `NSExtensionService_Subsystem`.**

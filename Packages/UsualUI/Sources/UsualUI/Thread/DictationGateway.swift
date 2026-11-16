@@ -155,10 +155,17 @@ extension Dictation {
         request.addsPunctuation = true
         request.requiresOnDeviceRecognition = recognizer.supportsOnDeviceRecognition
         let answer = RecognitionAnswer()
+        // Each utterance's result holds only that utterance; the callbacks come one at a time.
+        nonisolated(unsafe) var spoken = Utterances()
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
                 answer.start(continuation)
                 answer.task = recognizer.recognitionTask(with: request) { result, error in
+                    let text = result.map {
+                        spoken.adding(
+                            $0.bestTranscription.formattedString,
+                            endsUtterance: $0.speechRecognitionMetadata != nil)
+                    }
                     if let error {
                         // Hearing nothing is an empty transcript, not a failure.
                         if Dictation.isQuietEnd(error) {
@@ -167,7 +174,7 @@ extension Dictation {
                             answer.finish(.failure(error))
                         }
                     } else if let result, result.isFinal {
-                        answer.finish(.success(result.bestTranscription.formattedString))
+                        answer.finish(.success(text ?? ""))
                     }
                 }
             }
