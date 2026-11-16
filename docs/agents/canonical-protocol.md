@@ -76,6 +76,9 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   `["goal-continuation"`, with no `controls`) when the judged one ends, so a goal between two
   replies is told from an idle one by that row. `goal.resume` answers with the prompt to send
   (`dispatch.message`); the gateway doesn't send it.
+- **A widget's prompt is `prompt.submit` with `display_kind: "hidden"`**, the one kind a client may
+  set (`gateway/session_display.py`; the dashboard takes the same key). The stored row has the
+  kind; the queue's `pending` rows don't, so the app knows its own by `submission_id`.
 - **Rooms dismiss with `groups.discard`** when the retry action offers only discard, which needs the
   turn's `member_id` and `execution_generation`. It leaves the room's other replies running.
 
@@ -139,3 +142,6 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   `room.assignment`, `room.routed` and `room.continued` events and a real pause, which need a model.
   None of it in the app against a gateway.
 - `clarify.settled` gives no reason, so a question that timed out shows no notice.
+- Hidden turns (widgets) against fakes and the demo only: a hidden `prompt.submit` on either
+  dialect, queued behind a reply, a hidden row in `pending` and `display_messages`, and the push
+  plugin's hook seeing `display_kind` in `conversation_history` are read from Hermes `2bd378ed1b`.

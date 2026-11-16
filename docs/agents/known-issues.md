@@ -154,6 +154,18 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 - **APNs from `wrangler dev` fails:** workerd has no HTTP/2 client. Deployed Workers reach APNs
   through Cloudflare's proxy.
 
+## Inline widgets talking back
+
+- **A hidden prompt can still show once, as yours, after reattaching mid-turn.** The attach snapshot's
+  running admission carries no display kind; `legacySnapshot` tells it's already stored by its
+  `submission_id`, but one not stored yet shows its text as your message until the chat reloads.
+- **The roster's preview can be a widget's prompt.** Hermes doesn't skip hidden rows there. The
+  sidebar replaces it only when this run of the app has seen that prompt (sent it or loaded the chat);
+  the list isn't cached, so straight after launch, offline, it can show.
+- **A turn started elsewhere that wrote no reply put the previous prompt in twice** (`finishTurnElsewhere`
+  takes the user row before the last assistant row). A widget's turn often writes no reply, so a
+  hidden row after that reply now skips the insert; a typed turn with no reply still has the bug.
+
 ## Bot browser
 
 - **On macOS, a gateway running as a launchd service can't read the browser's own profile folder.**

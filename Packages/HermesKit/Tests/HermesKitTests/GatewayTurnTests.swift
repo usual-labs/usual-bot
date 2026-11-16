@@ -156,4 +156,56 @@ struct GatewayTurnTests {
 
         #expect(thread.lastSent?.content == .user("Run it"))
     }
+    // MARK: - Hidden turns
+
+    /// What a widget sends, Hermes's onboarding opening and the official app's goal controls: the
+    /// model reads it, nobody wrote it as a message.
+    private static let widgetPrompt = HistoryMessage(
+        role: "user", text: "Clean up /var/log on db-1", rowId: 4, displayKind: "hidden")
+
+    @Test func aHiddenTurnShowsNothing() {
+        let history = [
+            HistoryMessage(role: "user", text: "Show me disk use", rowId: 1),
+            HistoryMessage(role: "assistant", text: "Here it is.", rowId: 2),
+            Self.widgetPrompt,
+            HistoryMessage(role: "assistant", text: "Cleared 9 GB.", rowId: 5),
+        ]
+
+        #expect(
+            contents(history) == [.user("Show me disk use"), .assistant("Here it is."), .assistant("Cleared 9 GB.")])
+    }
+
+    @Test func aHiddenTurnRunningWhenTheAppAttachesShowsNothing() {
+        let state = ThreadState(
+            history: [], running: true,
+            inflight: InflightTurn(user: "Clean up /var/log on db-1", assistant: "", displayKind: "hidden"))
+
+        #expect(state.items.isEmpty)
+        #expect(state.isRunning)
+    }
+
+    @Test func aHiddenPromptIsntPutBackWhereItsTurnBegan() {
+        var state = ThreadState(history: [HistoryMessage(role: "user", text: "Hi")], running: false)
+        state.insertPrompt(Self.widgetPrompt, at: 1)
+
+        #expect(state.items.map(\.content) == [.user("Hi")])
+    }
+
+    @Test func undoOnTheGatewaysListenerSkipsAHiddenRow() {
+        let rows: JSONValue = [
+            ["role": "user", "text": "Show me disk use", "row_id": 1],
+            ["role": "assistant", "text": "Here it is.", "row_id": 2],
+            ["role": "user", "text": "Clean up /var/log on db-1", "row_id": 3, "display_kind": "hidden"],
+        ]
+        #expect(CanonicalProtocol.lastSent(in: rows) == 1)
+    }
+
+    @MainActor @Test func undoHereSkipsAHiddenRow() {
+        let state = ThreadState(
+            history: [HistoryMessage(role: "user", text: "Run it"), Self.widgetPrompt], running: false)
+        let thread = ChatThread(
+            contactID: "hermes", cached: CachedThread(state: state, lastViewed: nil, unreadCount: 0), channel: { nil })
+
+        #expect(thread.lastSent?.content == .user("Run it"))
+    }
 }

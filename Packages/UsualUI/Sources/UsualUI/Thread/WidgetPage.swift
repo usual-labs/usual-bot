@@ -1,4 +1,5 @@
 import Foundation
+import HermesKit
 
 /// What runs around an inline widget's page: the app's theme before the page's own styles, and a
 /// script that reports how big the page is. Both run in their own script world (`WidgetFrame`),
@@ -86,6 +87,30 @@ enum WidgetPage {
         if(typeof ResizeObserver==="function"){var o=new ResizeObserver(post);o.observe(document.documentElement);\
         if(document.body)o.observe(document.body)}addEventListener("load",post);post()})()
         """
+
+    static let sendChannel = "hermes"
+    /// How long `send()` waits for the app. The app answers once the gateway has the prompt, a
+    /// network round trip, so longer than the desktop app's 5 s.
+    static let sendTimeout = 20
+
+    /// `window.hermes.send(prompt)` and `data-hermes-send="…"` on any clickable element, as in
+    /// Hermes's desktop app. Unlike the theme and size scripts it runs in the page's own world, as
+    /// the page has to call it; what it sends is checked in the app (`WidgetIntent`). `send()`
+    /// resolves to the app's answer (`WidgetAck`), or `undelivered` if none comes. `canSend` is
+    /// false where the widget can't talk back (rooms), so a page can hide its buttons.
+    static func sendScript(canSend: Bool) -> String {
+        """
+        (function(){var h=window.webkit&&webkit.messageHandlers&&webkit.messageHandlers.\(sendChannel);\
+        function send(p){if(typeof p!=="string"||!p.trim())return Promise.resolve({ok:false,error:"invalid"});\
+        if(!h)return Promise.resolve({ok:false,error:"undelivered"});\
+        return new Promise(function(res){var done=false;function end(a){if(done)return;done=true;clearTimeout(k);res(a)}\
+        var k=setTimeout(function(){end({ok:false,error:"undelivered"})},\(sendTimeout * 1000));\
+        h.postMessage(p).then(end,function(){end({ok:false,error:"undelivered"})})})}\
+        window.hermes={send:send,maxLength:\(WidgetIntent.maxLength),canSend:\(canSend)};\
+        addEventListener("click",function(e){var el=e.target&&e.target.closest?e.target.closest("[data-hermes-send]"):null;\
+        if(el)send(el.getAttribute("data-hermes-send")||"")},true)})()
+        """
+    }
 
     /// The size in a report from `measureScript`; `nil` for anything malformed. `width` is 0 when
     /// the page has nothing to measure.

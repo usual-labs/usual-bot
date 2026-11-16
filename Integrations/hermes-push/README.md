@@ -31,7 +31,8 @@ and a switch for each Bot on that device.
 - When a Bot asks for approval, asks a question or wants the sudo password. Passwords and your
   answers never reach the plugin.
 
-Helpers, routines and other platforms stay quiet, and so does a Bot you've hidden, in Usual Bot or
+Helpers, routines and other platforms stay quiet, and so does the reply to a widget's button (from
+0.5.1: its answer is the widget changing), and a Bot you've hidden, in Usual Bot or
 the Hermes app, except in rooms. A chat you're reading on any device is quiet on
 all of them; everything else reaches every device that hasn't turned that Bot off. Opening a chat
 on one device takes down what your other devices show about it, with a silent push that names

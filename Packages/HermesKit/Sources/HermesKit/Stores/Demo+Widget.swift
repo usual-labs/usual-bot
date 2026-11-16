@@ -8,7 +8,12 @@
         static let pricingPath = "/home/hermes/.hermes/profiles/atlas/work/pricing.html"
 
         static var files: [String: Data] {
-            [diskPath: Data(disk.utf8), pricingPath: Data(pricing.utf8)]
+            [diskPath: Data(disk(db1: 78, note: nil).utf8), pricingPath: Data(pricing.utf8)]
+        }
+
+        /// What Ops writes when the widget asks it to clear old logs: db-1 with room to spare.
+        static var diskAfterCleanup: Data {
+            Data(disk(db1: 63, note: "Cleared 14 GB of logs older than two weeks on db-1.").utf8)
         }
 
         /// Ops shows disk use per server as bars you can tap.
@@ -34,7 +39,10 @@
             ::preview{file="\(pricingPath)"}
             """
 
-        private static let disk = """
+        /// Talks back both ways a widget can: `window.hermes.send` for the button, which shows
+        /// whether the prompt went, and `data-hermes-send` for "Check again".
+        private static func disk(db1: Int, note: String?) -> String {
+            """
             <!doctype html>
             <html><head><meta charset="utf-8">
             <style>
@@ -47,15 +55,25 @@
               .pct{width:40px;text-align:right;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
               #detail{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--card);
                 border:1px solid var(--border);color:var(--muted-foreground)}
+              .actions{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+              .actions button{font:inherit;border-radius:8px;padding:5px 10px;cursor:pointer;
+                border:1px solid var(--border);background:var(--card);color:var(--foreground)}
+              .actions a{color:var(--accent);cursor:pointer}
+              #status{color:var(--muted-foreground)}
             </style></head>
             <body>
             <div id="rows"></div>
-            <div id="detail">Tap a server.</div>
+            <div id="detail">\(note ?? "Tap a server.")</div>
+            <div class="actions">
+              \(db1 > 70 ? "<button id=\"clean\">Clear old logs on db-1</button>" : "")
+              <a role="button" data-hermes-send="Check disk use on each server again and update the widget.">Check again</a>
+              <span id="status" role="status"></span>
+            </div>
             <script>
             const servers = [
               {name:"web-1", used:41, top:"/var/log 6 GB · /srv/app 4 GB · /home 2 GB"},
               {name:"web-2", used:38, top:"/srv/app 4 GB · /var/log 3 GB · /tmp 1 GB"},
-              {name:"db-1", used:78, top:"/var/lib/postgres 61 GB · /var/backups 22 GB · /var/log 9 GB"},
+              {name:"db-1", used:\(db1), top:"/var/lib/postgres 61 GB · /var/backups 22 GB · /var/log \(db1 > 70 ? 9 : 2) GB"},
             ];
             const rows = document.getElementById("rows");
             for (const s of servers) {
@@ -67,9 +85,23 @@
               row.onclick = () => document.getElementById("detail").textContent = `${s.name}: ${s.top}`;
               rows.appendChild(row);
             }
+            const status = document.getElementById("status");
+            const clean = document.getElementById("clean");
+            if (!window.hermes || !window.hermes.canSend) {
+              document.querySelector(".actions").hidden = true;
+            } else if (clean) {
+              clean.onclick = async () => {
+                clean.disabled = true;
+                status.textContent = "Sending…";
+                const ack = await window.hermes.send("Clear logs older than two weeks on db-1, then update this widget.");
+                status.textContent = ack.ok ? "Sent. Ops is on it." : "Not sent. " + (ack.message || ack.error);
+                if (!ack.ok) clean.disabled = false;
+              };
+            }
             </script>
             </body></html>
             """
+        }
 
         private static let pricing = """
             <!doctype html>

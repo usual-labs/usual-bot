@@ -1,5 +1,6 @@
 import Foundation
 import HermesKit
+import JavaScriptCore
 import Testing
 
 @testable import UsualUI
@@ -62,13 +63,59 @@ struct WidgetTests {
         // Inserted before the page's own markup, so the page's styles win.
         #expect(WidgetPage.themeScript(theme).contains("insertBefore(s,d.firstChild)"))
     }
+
+    // MARK: - Talking back
+
+    /// Runs the page's `send` script in JavaScriptCore, with the app's channel and the page's
+    /// click listener stood in for. `answer` is what the app replies with.
+    private func page(canSend: Bool, answer: String = "{ok:true}") throws -> JSContext {
+        let context = try #require(JSContext())
+        context.evaluateScript(
+            """
+            var window = this, sent = [], listeners = {}, timers = 0;
+            function setTimeout(f, ms) { timers++; return timers }
+            function clearTimeout() {}
+            function addEventListener(type, f) { listeners[type] = f }
+            var webkit = {messageHandlers: {hermes: {postMessage: function(p) {
+              sent.push(p); return Promise.resolve(\(answer)) }}}};
+            """)
+        context.evaluateScript(WidgetPage.sendScript(canSend: canSend))
+        return context
+    }
+
+    @Test func sendHandsThePromptToTheAppAndResolvesWithItsAnswer() throws {
+        let context = try page(canSend: true, answer: #"{ok:false,error:"undelivered",reason:"offline"}"#)
+        context.evaluateScript(
+            """
+            var results = [];
+            window.hermes.send("Refresh").then(function(a) { results.push(a.reason) });
+            window.hermes.send("   ").then(function(a) { results.push(a.error) });
+            window.hermes.send(42).then(function(a) { results.push(a.error) });
+            """)
+        #expect(context.evaluateScript("JSON.stringify(sent)").toString() == #"["Refresh"]"#)
+        #expect(context.evaluateScript("JSON.stringify(results)").toString() == #"["invalid","invalid","offline"]"#)
+        #expect(context.evaluateScript("window.hermes.maxLength").toInt32() == 500)
+        #expect(context.evaluateScript("window.hermes.canSend").toBool())
+    }
+
+    @Test func aClickOnADataHermesSendElementSendsItsPrompt() throws {
+        let context = try page(canSend: false)
+        context.evaluateScript(
+            """
+            var button = {getAttribute: function(name) { return name === "data-hermes-send" ? "Check again" : null }};
+            listeners.click({target: {closest: function(selector) { return selector === "[data-hermes-send]" ? button : null }}});
+            listeners.click({target: {closest: function() { return null }}});
+            """)
+        #expect(context.evaluateScript("JSON.stringify(sent)").toString() == #"["Check again"]"#)
+        #expect(!context.evaluateScript("window.hermes.canSend").toBool())
+    }
 }
 
 struct WidgetLoadingTests {
-    private func step(_ phase: InlineWidget.Phase, online: Bool = true, writing: Bool = false, runs: Bool = true)
-        -> InlineWidget.LoadStep
-    {
-        InlineWidget.loadStep(phase, runs: runs, isBeingWritten: writing, isOnline: online)
+    private func step(
+        _ phase: InlineWidget.Phase, online: Bool = true, writing: Bool = false, runs: Bool = true, stale: Bool = false
+    ) -> InlineWidget.LoadStep {
+        InlineWidget.loadStep(phase, runs: runs, isBeingWritten: writing, isOnline: online, isStale: stale)
     }
 
     @Test func aFailedOrWaitingPageLoadsWhenTheGatewayIsBack() {
@@ -82,6 +129,13 @@ struct WidgetLoadingTests {
         #expect(step(.loaded("<p>hi</p>"), online: true) == .keep)
         // Losing the gateway leaves a running page as it is.
         #expect(step(.loaded("<p>hi</p>"), online: false) == .keep)
+    }
+
+    @Test func aRunningPageIsReadAgainAfterATurnInItsChat() {
+        #expect(step(.loaded("<p>hi</p>"), stale: true) == .load)
+        // Offline the page stays as it is, and is read when a later turn ends.
+        #expect(step(.loaded("<p>hi</p>"), online: false, stale: true) == .keep)
+        #expect(step(.loaded("<p>hi</p>"), writing: true, stale: true) == .keep)
     }
 
     @Test func nothingLoadsWhileTheReplyIsWrittenOrWhereWidgetsDontRun() {

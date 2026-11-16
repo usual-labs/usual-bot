@@ -1,3 +1,4 @@
+import HermesKit
 import SwiftUI
 import WebKit
 
@@ -6,14 +7,36 @@ import WebKit
 enum WidgetMessage: Equatable {
     /// The page's size, from `WidgetPage.measureScript`. `width` is 0 when it couldn't be measured.
     case size(height: CGFloat, width: CGFloat)
+    /// The page called `window.hermes.send` (`WidgetPage.sendScript`), with whatever it passed.
+    case send(WidgetSendRequest)
+}
+
+/// A page's `send()` waiting for its answer, which resolves the page's promise.
+@MainActor final class WidgetSendRequest: Equatable {
+    /// What the page passed, unchecked.
+    let body: Any
+    private var answer: ((WidgetAck) -> Void)?
+
+    init(body: Any, answer: @escaping (WidgetAck) -> Void) {
+        self.body = body
+        self.answer = answer
+    }
+
+    /// Answers the page, once.
+    func reply(_ ack: WidgetAck) {
+        answer?(ack)
+        answer = nil
+    }
+
+    nonisolated static func == (lhs: WidgetSendRequest, rhs: WidgetSendRequest) -> Bool { lhs === rhs }
 }
 
 /// An inline widget's page, running in WebKit with nothing of the app's: its own storage that
 /// ends with it, no way to leave the page, and no message channel the page can reach. The theme
 /// and the size report run in a script world of their own, so the page can't see or fake them.
 ///
-/// Talking back to the chat (`window.hermes.send`) would be a channel in the page's world, sent
-/// on as another `WidgetMessage` case; its handling belongs where `onMessage` is set.
+/// Talking back to the chat (`window.hermes.send`) is the one channel in the page's own world,
+/// sent on as `WidgetMessage.send`; `InlineWidget` checks and answers it.
 @MainActor struct WidgetFrame {
     /// The page's HTML, as the agent wrote it.
     let html: String
@@ -21,6 +44,8 @@ enum WidgetMessage: Equatable {
     /// Whether the page scrolls inside the frame (iPhone): only when it doesn't fit, so a swipe
     /// over a widget that fits scrolls the chat.
     let scrolls: Bool
+    /// Whether the page can talk back here, which `window.hermes.canSend` tells it.
+    var canSend = false
     let onMessage: (WidgetMessage) -> Void
 
     @Environment(\.openURL) private var openURL
@@ -52,6 +77,12 @@ enum WidgetMessage: Equatable {
                 source: WidgetPage.measureScript, injectionTime: .atDocumentEnd, forMainFrameOnly: true,
                 in: Self.world))
         scripts.add(WeakHandler(coordinator), contentWorld: Self.world, name: WidgetPage.sizeChannel)
+        scripts.addUserScript(
+            WKUserScript(
+                source: WidgetPage.sendScript(canSend: canSend), injectionTime: .atDocumentStart,
+                forMainFrameOnly: true, in: .page))
+        scripts.addScriptMessageHandler(
+            WeakReplyHandler(coordinator), contentWorld: .page, name: WidgetPage.sendChannel)
 
         let view = WKWebView(frame: .zero, configuration: configuration)
         view.navigationDelegate = coordinator
@@ -69,8 +100,7 @@ enum WidgetMessage: Equatable {
             view.scrollView.isScrollEnabled = scrolls
         #endif
         coordinator.theme = theme
-        // No base URL: the page has no origin to share and its relative links lead nowhere.
-        view.loadHTMLString(html, baseURL: nil)
+        coordinator.load(html, in: view)
         return view
     }
 
@@ -83,6 +113,8 @@ enum WidgetMessage: Equatable {
             coordinator.theme = theme
             view.evaluateJavaScript(WidgetPage.retheme(theme), in: nil, in: Self.world) { _ in }
         }
+        // The agent rewrote the page: it starts again with the new one.
+        if coordinator.html != html { coordinator.load(html, in: view) }
     }
 
     @MainActor private static func dismantle(_ view: WKWebView) {
@@ -92,11 +124,35 @@ enum WidgetMessage: Equatable {
         view.uiDelegate = nil
     }
 
-    @MainActor final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
+    @MainActor
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler,
+        WKScriptMessageHandlerWithReply
+    {
         var parent: WidgetFrame?
         var theme: WidgetPage.Theme?
+        /// The page showing.
+        private(set) var html: String?
         /// The page loaded; any later navigation of the frame would leave it.
         private var loaded = false
+
+        func load(_ html: String, in view: WKWebView) {
+            self.html = html
+            loaded = false
+            // No base URL: the page has no origin to share and its relative links lead nowhere.
+            view.loadHTMLString(html, baseURL: nil)
+        }
+
+        func userContentController(
+            _ controller: WKUserContentController, didReceive message: WKScriptMessage,
+            replyHandler: @escaping @MainActor @Sendable (Any?, String?) -> Void
+        ) {
+            // A frame inside the page (an ad, an embed) isn't the widget.
+            guard message.name == WidgetPage.sendChannel, message.frameInfo.isMainFrame, let parent else {
+                replyHandler(WidgetAck(failure: .undelivered).object, nil)
+                return
+            }
+            parent.onMessage(.send(WidgetSendRequest(body: message.body) { replyHandler($0.object, nil) }))
+        }
 
         func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
             guard message.name == WidgetPage.sizeChannel, let size = WidgetPage.size(from: message.body) else {
@@ -154,6 +210,21 @@ enum WidgetMessage: Equatable {
         private func openOutside(_ url: URL?) {
             guard let url, ["http", "https", "mailto"].contains(url.scheme?.lowercased() ?? "") else { return }
             parent?.openURL(url)
+        }
+    }
+
+    /// The same for the page's `send()` channel, which answers.
+    private final class WeakReplyHandler: NSObject, WKScriptMessageHandlerWithReply {
+        weak var target: (any WKScriptMessageHandlerWithReply)?
+
+        init(_ target: any WKScriptMessageHandlerWithReply) { self.target = target }
+
+        func userContentController(
+            _ controller: WKUserContentController, didReceive message: WKScriptMessage,
+            replyHandler: @escaping @MainActor @Sendable (Any?, String?) -> Void
+        ) {
+            guard let target else { return replyHandler(WidgetAck(failure: .undelivered).object, nil) }
+            target.userContentController(controller, didReceive: message, replyHandler: replyHandler)
         }
     }
 

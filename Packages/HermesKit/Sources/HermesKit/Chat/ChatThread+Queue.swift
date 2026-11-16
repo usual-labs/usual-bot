@@ -10,6 +10,20 @@ public struct QueuedMessage: Identifiable, Equatable, Sendable, Codable {
     public var isHeld = false
     /// The gateway's own name for it, once the gateway has it.
     var admissionID: String?
+    /// Optional, so held messages cached before it was added still load.
+    private var widget: Bool?
+
+    /// A widget's prompt (`ChatThread+Widgets.swift`): sent hidden, shown as "From a widget", and
+    /// only removable. Never held: it's dropped instead.
+    public var isFromWidget: Bool { widget == true }
+
+    init(id: String, text: String, isHeld: Bool = false, admissionID: String? = nil, isFromWidget: Bool = false) {
+        self.id = id
+        self.text = text
+        self.isHeld = isHeld
+        self.admissionID = admissionID
+        widget = isFromWidget ? true : nil
+    }
 
     /// On its way to the gateway: there's nothing to take back yet.
     public var isSending: Bool { !isHeld && admissionID == nil }
@@ -26,7 +40,7 @@ extension ChatThread {
     /// Whether any queued message is held on this device.
     public var holdsQueue: Bool { queue.contains(where: \.isHeld) }
 
-    private var isDemo: Bool {
+    var isDemo: Bool {
         #if DEBUG
             playsDemoReplies && channel() == nil
         #else
@@ -49,7 +63,7 @@ extension ChatThread {
     /// Sends a queued message at once: into the running reply as a steer, or as the next message
     /// when nothing runs.
     public func sendNow(_ item: QueuedMessage) {
-        guard canSend, queue.contains(item) else { return }
+        guard canSend, queue.contains(item), !item.isFromWidget else { return }
         Task {
             guard await takeBack(item) else { return }
             send(item.text)
@@ -58,7 +72,7 @@ extension ChatThread {
 
     /// Takes a queued message out of the queue and puts its text in the message box.
     public func edit(_ item: QueuedMessage) {
-        guard queue.contains(item) else { return }
+        guard queue.contains(item), !item.isFromWidget else { return }
         Task {
             guard await takeBack(item) else { return }
             prefill = item.text
@@ -93,29 +107,37 @@ extension ChatThread {
 
     /// Gives a queued message to the gateway, which sends it when the turns before it end. A
     /// failure holds it here under the same ID: the gateway answers a second try of an ID it did
-    /// take with the first one's receipt, so trying again can't send the message twice.
-    private func admit(_ item: QueuedMessage) async {
+    /// take with the first one's receipt, so trying again can't send the message twice. A widget's
+    /// prompt isn't held but dropped, and the failure returned for the widget to hear.
+    @discardableResult
+    func admit(_ item: QueuedMessage) async -> (any Error)? {
         do {
             guard let sessionID = liveSessionID, let channel = channel() else { throw GatewayError.disconnected }
-            let receipt = try await channel.call(
-                "prompt.submit",
-                params: [
-                    "session_id": .string(sessionID), "text": .string(item.text), "submission_id": .string(item.id),
-                ]
-            )
-            guard let index = queue.firstIndex(where: { $0.id == item.id }) else { return }
+            var params: [String: JSONValue] = [
+                "session_id": .string(sessionID), "text": .string(item.text), "submission_id": .string(item.id),
+            ]
+            if item.isFromWidget { params["display_kind"] = .string(GatewayTurn.hiddenKind) }
+            let receipt = try await channel.call("prompt.submit", params: .object(params))
+            guard let index = queue.firstIndex(where: { $0.id == item.id }) else { return nil }
             switch receipt["status"]?.stringValue {
             case "started": began(item.id)
             // An earlier try that didn't hear back had gone out after all.
             case "terminal": queue.remove(at: index)
             default: queue[index].admissionID = receipt["admission_id"]?.stringValue
             }
+            return nil
         } catch {
-            guard let index = queue.firstIndex(where: { $0.id == item.id }) else { return }
+            let index = queue.firstIndex(where: { $0.id == item.id })
+            if item.isFromWidget {
+                if let index { queue.remove(at: index) }
+                return error
+            }
+            guard let index else { return error }
             queue[index].isHeld = true
             queue[index].admissionID = nil
             state.addNotice(
                 String(localized: "Couldn't queue your message, so it's held here: \(AppModel.describe(error))"))
+            return error
         }
     }
 
@@ -138,7 +160,7 @@ extension ChatThread {
             let receipt = try await channel.call(
                 "prompt.cancel", params: ["session_id": .string(sessionID), "admission_id": .string(admission)])
             if receipt["status"] == "terminal", receipt["outcome"] == "cancelled" { return true }
-            show(started: item.text)
+            show(started: item)
             if !quiet {
                 state.addNotice(String(localized: "That message had already started, so its reply was stopped."))
             }
@@ -156,8 +178,9 @@ extension ChatThread {
         for item in queue where !item.isHeld && !item.isSending {
             if isDemo {
                 if let index = queue.firstIndex(of: item) { queue[index].isHeld = true }
-            } else if await takeBack(item, quiet: true) {
-                // A new ID: the gateway knows the old one as cancelled.
+            } else if await takeBack(item, quiet: true), !item.isFromWidget {
+                // A new ID: the gateway knows the old one as cancelled. A widget's prompt isn't
+                // kept: sent after you resume, it would answer a click from long before.
                 queue.append(QueuedMessage(id: UUID().uuidString, text: item.text, isHeld: true))
             }
         }
@@ -200,10 +223,17 @@ extension ChatThread {
     /// A queued message's turn began: it leaves the queue and shows as sent.
     private func began(_ id: String) {
         guard let index = queue.firstIndex(where: { $0.id == id }) else { return }
-        show(started: queue.remove(at: index).text)
+        show(started: queue.remove(at: index))
     }
 
-    private func show(started text: String) {
+    private func show(started item: QueuedMessage) {
+        if item.isFromWidget {
+            // Nothing to show: the widget changing is the answer.
+            widgetTurnRunning = true
+            if !state.isRunning { state.beginTurn() }
+            return
+        }
+        let text = item.text
         if let start = elsewhereTurnStart {
             // `message.start` came first and marked where the turn begins.
             elsewhereTurnStart = nil
@@ -219,8 +249,13 @@ extension ChatThread {
         /// The demo has no gateway to send the next queued message when a reply ends.
         func startNextDemoQueued() {
             guard isDemo, !state.isRunning, let index = queue.firstIndex(where: { !$0.isHeld }) else { return }
-            state.sendLocally(queue.remove(at: index).text)
-            playDemoReply()
+            let item = queue.remove(at: index)
+            if item.isFromWidget {
+                playDemoWidgetTurn(item.text)
+            } else {
+                state.sendLocally(item.text)
+                playDemoReply()
+            }
         }
     #endif
 }

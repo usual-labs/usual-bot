@@ -78,23 +78,34 @@ private struct QueuedMessageRow: View {
         // A held message stays yours offline; one on the gateway needs the gateway.
         let ready = !message.isSending && (message.isHeld || thread.canSend)
         HStack(spacing: 2) {
-            Text(message.text)
-                .scaledFont(size: 13)
-                .foregroundStyle(message.isSending ? Theme.secondaryInk : Theme.ink)
-                .lineLimit(2, accessibility: 4)
-                .truncationMode(.tail)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityLabel(
-                    Text(message.isHeld ? "Held message: \(message.text)" : "Queued message: \(message.text)"))
-            button("pencil", "Edit", hint: "Takes it out of the queue and puts it in the message box") {
-                thread.edit(message)
+            if message.isFromWidget {
+                // What a widget asks is for the agent, as when it's sent at once: only taking it
+                // back is yours.
+                Text("From a widget")
+                    .scaledFont(size: 13)
+                    .italic()
+                    .foregroundStyle(Theme.secondaryInk)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityLabel(Text("Queued from a widget"))
+            } else {
+                Text(message.text)
+                    .scaledFont(size: 13)
+                    .foregroundStyle(message.isSending ? Theme.secondaryInk : Theme.ink)
+                    .lineLimit(2, accessibility: 4)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityLabel(
+                        Text(message.isHeld ? "Held message: \(message.text)" : "Queued message: \(message.text)"))
+                button("pencil", "Edit", hint: "Takes it out of the queue and puts it in the message box") {
+                    thread.edit(message)
+                }
+                .disabled(!ready)
+                button(
+                    "arrow.up", "Send Now",
+                    hint: thread.state.isRunning ? "Steers the reply that's running" : "Sends it as your next message"
+                ) { thread.sendNow(message) }
+                .disabled(!ready || !thread.canSend)
             }
-            .disabled(!ready)
-            button(
-                "arrow.up", "Send Now",
-                hint: thread.state.isRunning ? "Steers the reply that's running" : "Sends it as your next message"
-            ) { thread.sendNow(message) }
-            .disabled(!ready || !thread.canSend)
             button("xmark", "Remove", hint: "Takes it out of the queue") { thread.remove(message) }
                 .disabled(!ready)
         }

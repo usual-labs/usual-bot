@@ -105,6 +105,13 @@ public final class ChatThread {
     /// Queued messages taken back, or on their way back: the gateway's lists may still have them.
     var takenBack: Set<String> = []
 
+    /// Goes up each time a turn ends, when an inline widget reads its page again: its agent may
+    /// have rewritten it (`ChatThread+Widgets.swift`).
+    public private(set) var turnsEnded = 0
+    /// The running turn is a widget's prompt, which you're looking at the widget for: its reply
+    /// doesn't alert.
+    var widgetTurnRunning = false
+
     /// Turns Hermes has queued to carry the goal on, by admission ID (the gateway's listener).
     var goalContinuations: [String] = []
     /// A reply ended and its verdict hasn't come (the dashboard, which judges after the reply).
@@ -327,7 +334,12 @@ public final class ChatThread {
             let reply = state.items[min(itemsBefore, state.items.count)...].last(where: \.isReply)
         {
             unreadCount += 1
-            announce(reply)
+            if !widgetTurnRunning { announce(reply) }
+        }
+        // A queued message taken back sends one too, with no status: no turn ended.
+        if event.type == "message.complete", event.payload["status"] != nil || event.payload["outcome"] != "cancelled" {
+            widgetTurnRunning = false
+            turnsEnded += 1
         }
         if event.type == "message.start" { isCheckingGoal = false }
         if event.type == "message.complete" {
@@ -606,6 +618,7 @@ public final class ChatThread {
         #if DEBUG
             // The demo's running reply has no gateway to interrupt it.
             if playsDemoReplies, state.isRunning, channel() == nil {
+                queue.removeAll(where: \.isFromWidget)
                 for index in queue.indices { queue[index].isHeld = true }
                 apply(
                     GatewayEvent(
@@ -707,6 +720,8 @@ public final class ChatThread {
     #if DEBUG
         /// The demo: a sent message gets a scripted reply, as there's no gateway to answer it.
         var playsDemoReplies = false
+        /// The demo: a widget's prompt was answered, so its page can change (`DemoWidget`).
+        var demoWidgetAnswered: ((String) -> Void)?
         /// The demo: the history a chat holding only its last messages loads when search opens an
         /// older one (`loadDemoHistory()`).
         var demoFullHistory: [HistoryMessage]?

@@ -171,6 +171,11 @@ sending also puts the keyboard away; tap the message box to write again.
   dark. Links in it open in your browser. Bots in rooms know how to make them; Bot Chats show them
   too, but Bots there aren't told about them yet. In the ⌥Space panel a widget shows as a card:
   open the chat to use it. If its file can't be read, the card says why.
+- **Widgets that answer back.** A button in a widget can ask the Bot to do something, such as clear
+  old logs. That goes to the Bot without showing as your message, and the widget changes when the
+  Bot has done it. If the Bot is still replying, it waits in the queue as "From a widget", where you
+  can remove it. Offline, or on the dashboard while the Bot is replying, the widget is told it
+  wasn't sent. Widgets in rooms can't send.
 - **Audio and video.** Voice replies (Hermes's text to speech), audio files and videos play in the
   chat or room, one at a time; leaving the chat stops them. A voice memo has its waveform, a speed
   button and, when Hermes sent the words it spoke, **Show transcript**. A video plays in place;
