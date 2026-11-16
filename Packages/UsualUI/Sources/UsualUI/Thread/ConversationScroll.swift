@@ -46,7 +46,7 @@ struct ConversationScroll<Content: View>: View {
     private var scrollView: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                GrowsOnly(release: chrome.releases) {
+                GrowsOnly(release: chrome.releases, end: arrival) {
                     // Lazy row-height estimates can leave a long transcript parked in blank space.
                     // Measure the loaded messages together so the scroll bounds are real at every offset.
                     VStack(alignment: .leading, spacing: 12) {
@@ -200,19 +200,27 @@ struct ConversationScroll<Content: View>: View {
     var state = ConversationScrollState()
 }
 
-/// A conversation never gets shorter: what leaves its end, such as a card you answered, leaves its
-/// space behind, and what arrives next fills that space first. Following the newest message, the
-/// chat then only ever moves up. The space goes when `release` changes, which happens while it's
-/// out of sight, and when the width changes. It's at most `limit` tall: removing more than that,
-/// as an undo can, is something you did, and the chat may move for it.
+/// A conversation never gets shorter at its end: what leaves it, such as a card you answered,
+/// leaves its space behind, and what arrives next fills that space first. Following the newest
+/// message, the chat then only ever moves up. Only a change at the end (`end`, the conversation's
+/// `arrival`) starts keeping space: something shrinking above it, as an image loads or the
+/// transcript reloads shorter while a chat opens, would otherwise open the chat over a blank. The
+/// space goes when `release` changes, which happens while it's out of sight, and when the width
+/// changes. It's at most `limit` tall: removing more than that, as an undo can, is something you
+/// did, and the chat may move for it.
 struct GrowsOnly: Layout {
     var release: Int
+    var end: [Int]
     static let limit: CGFloat = 320
 
     struct Cache {
         var width: CGFloat?
         var release: Int?
+        var end: [Int]?
         var floor: CGFloat = 0
+        /// The content's own height in the last measure, to tell whether space is being kept.
+        var natural: CGFloat = 0
+        var keeping = false
     }
 
     func makeCache(subviews: Subviews) -> Cache { Cache() }
@@ -222,15 +230,20 @@ struct GrowsOnly: Layout {
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) -> CGSize {
         guard let child = subviews.first else { return .zero }
         let size = child.sizeThatFits(proposal)
-        guard proposal.width != nil, proposal.width == cache.width, cache.release == release else { return size }
+        cache.natural = size.height
+        guard proposal.width != nil, proposal.width == cache.width, cache.release == release,
+            cache.keeping || cache.end != end
+        else { return size }
         return CGSize(width: size.width, height: max(size.height, min(cache.floor, size.height + Self.limit)))
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) {
         guard let child = subviews.first else { return }
         child.place(at: bounds.origin, proposal: proposal)
+        cache.keeping = cache.width == bounds.width && cache.release == release && bounds.height > cache.natural + 0.5
         cache.width = bounds.width
         cache.release = release
+        cache.end = end
         cache.floor = bounds.height
     }
 }

@@ -23,7 +23,10 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   it out of sight, or an undo, reload or width change lets it go. Measured on a real gateway, frame
   by frame: up only. A new row that comes and goes at the end needs the same care; `GrowsOnly` hides
   the bounce but leaves a gap. The demo can't answer a card, so that case is covered by
-  `GrowsOnlyTests`, not seen.
+  `GrowsOnlyTests`, not seen. `GrowsOnly` once kept space for any shrink, so a chat sometimes
+  opened over a blank below its last message (seen on a real gateway, November 2026): something
+  above got shorter as it opened. It now starts keeping space only in a layout where `arrival`
+  changed. Which shrink it was (an image loading, a reload) wasn't pinned down.
 - **A scroll by hand can still be under way when you ask for the end.** While the scroll view
   reports a hand phase the policy corrects nothing, and the phase's end decides anew whether the
   chat follows. So a message sent mid-scroll stayed out of sight and its reply wasn't followed:
