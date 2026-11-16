@@ -57,9 +57,16 @@ public struct AttachmentRef: Equatable, Sendable {
         return prefix + quote + path + quote
     }
 
-    /// Reads one `@image:` or `@file:` line; `nil` for anything else.
+    /// Reads one `@image:` or `@file:` line, or Hermes's older `[Image attached at: <path>]`, which
+    /// its history passes on as stored when the row lost its image part; `nil` for anything else.
     init?(line: String) {
         let line = line.trimmingCharacters(in: .whitespaces)
+        if line.hasPrefix(Self.legacyImagePrefix), line.hasSuffix("]") {
+            let path = line.dropFirst(Self.legacyImagePrefix.count).dropLast().trimmingCharacters(in: .whitespaces)
+            guard !path.isEmpty else { return nil }
+            self.init(kind: .image, path: path)
+            return
+        }
         let kind: Attachment.Kind
         let value: Substring
         if line.hasPrefix("@image:") {
@@ -84,14 +91,21 @@ public struct AttachmentRef: Equatable, Sendable {
         self.path = path
     }
 
+    private static let legacyImagePrefix = "[Image attached at:"
+    /// Hermes's text-only copy of a message adds one per image it carried.
+    private static let imagePlaceholder = "[screenshot]"
+
     /// Splits the attachment lines off the end of a message: what you wrote, and what you sent with it.
     public static func split(_ message: String) -> (text: String, attachments: [AttachmentRef]) {
         var lines = message.components(separatedBy: "\n")
         var attachments: [AttachmentRef] = []
         while let last = lines.last {
+            let trimmed = last.trimmingCharacters(in: .whitespaces)
             if let ref = AttachmentRef(line: last) {
                 attachments.insert(ref, at: 0)
-            } else if !last.trimmingCharacters(in: .whitespaces).isEmpty || attachments.isEmpty {
+            } else if trimmed == imagePlaceholder {
+                // Dropped only alongside an image: the guard below keeps a message that has none.
+            } else if !trimmed.isEmpty || attachments.isEmpty {
                 break
             }
             lines.removeLast()

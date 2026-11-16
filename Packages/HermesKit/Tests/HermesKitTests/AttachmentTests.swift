@@ -17,6 +17,20 @@ struct AttachmentRefTests {
         #expect(attachments[1].name == "Q3 report.pdf")
     }
 
+    @Test func readsHermesTextOnlyImageRows() {
+        let path = "/Users/h/.hermes/cache/documents/native-inputs/f4eb/upload one.png"
+        for message in [
+            "Testing share button\n\n[Image attached at: \(path)]\n[screenshot]",
+            "Testing share button\n@image:`\(path)`\n[screenshot]",
+        ] {
+            let (text, attachments) = AttachmentRef.split(message)
+            #expect(text == "Testing share button")
+            #expect(attachments == [AttachmentRef(kind: .image, path: path)])
+        }
+        #expect(AttachmentRef.split("Look\n[screenshot]").text == "Look\n[screenshot]")
+        #expect(AttachmentRef.split("[Image attached at: ]").attachments.isEmpty)
+    }
+
     @Test func leavesOrdinaryMessagesAlone() {
         for message in ["Hello", "Use @file:notes.md for this", "@image: not a path", ""] {
             #expect(AttachmentRef.split(message).text == message)
