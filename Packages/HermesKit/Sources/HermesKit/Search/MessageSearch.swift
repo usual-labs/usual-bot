@@ -105,7 +105,7 @@ public struct MessageSearch: Sendable {
         let words = lines.compactMap { line -> String? in
             guard var line = SpokenAudio.withoutSpeechPaths(Substring(line.trimmingCharacters(in: .whitespaces)))
             else { return nil }
-            if line.hasPrefix("MEDIA:") { return nil }
+            if line.hasPrefix("MEDIA:") || WidgetDirective.parse(line) != nil { return nil }
             for mark in ["#", ">", "- ", "* ", "+ "] {
                 while line.hasPrefix(mark) { line = String(line.dropFirst(mark.count)) }
                 line = line.trimmingCharacters(in: .whitespaces)

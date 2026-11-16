@@ -69,7 +69,7 @@
             // One Bot hidden, so Settings › General has one to show again.
             hiddenBots = [demo.courier]
             addDemoBot(demo.courier)
-            media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }
+            media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }.merging(DemoWidget.files) { $1 }
         }
     }
 
@@ -206,6 +206,7 @@
                 "ops",
                 state: ThreadState(
                     history: dated(opsChat, from: ago(6 * 60 + 4), to: ago(6 * 60))
+                        + dated(DemoWidget.diskTurn, from: ago(3 * 60 + 2), to: ago(3 * 60))
                         + dated(DemoMedia.voiceMemoTurn, from: ago(5), to: ago(4)), running: false))
             threads["ops"]?.state.addBackgroundResult(
                 task: "Check last night's backups on all three servers",
@@ -614,15 +615,7 @@
                     "message.member", from: member("forge"),
                     "Search on Turbopuffer ships behind a flag tomorrow. Staging is waiting on one migration.",
                     minutesAgo: 40),
-                event(
-                    "message.member", from: member("atlas"),
-                    """
-                    I checked the three competitors' pricing pages again; nobody changed theirs this week.
-                    Tallyhouse: $12 a seat
-                    Brightdesk: $15 a seat
-                    Pinwheel: free up to 3 seats
-                    """,
-                    minutesAgo: 38),
+                event("message.member", from: member("atlas"), DemoWidget.pricingReply, minutesAgo: 38),
                 event("message.user", from: you, "@scribe how's the post?", minutesAgo: 33),
                 event(
                     "message.member", from: member("scribe"),

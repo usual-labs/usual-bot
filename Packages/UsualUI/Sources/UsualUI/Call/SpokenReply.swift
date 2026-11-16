@@ -1,4 +1,5 @@
 import Foundation
+import HermesKit
 
 /// Cuts a reply that's still streaming into sentences to speak, as plain words: no Markdown
 /// marks, no code, no file lines. Fed the whole reply so far each time; gives back only what's new.
@@ -47,7 +48,8 @@ struct SpokenReply {
     /// File and delivery lines, and the rules of tables and sections: nothing a voice would say.
     private static func isUnspoken(_ line: String) -> Bool {
         line.hasPrefix("MEDIA:") || line.hasPrefix("@image:") || line.hasPrefix("@file:")
-            || MarkdownBlock.isDeliveryMarker(line) || !line.contains { $0.isLetter || $0.isNumber }
+            || MarkdownBlock.isDeliveryMarker(line) || WidgetDirective.parse(line) != nil
+            || !line.contains { $0.isLetter || $0.isNumber }
     }
 
     /// A table row as its cells with commas between; any other line unchanged.

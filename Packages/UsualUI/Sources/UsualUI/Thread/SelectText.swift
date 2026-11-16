@@ -24,7 +24,7 @@ enum SelectableText {
                 line = code
             case .table(let table):
                 line = table.lines.joined(separator: "\n")
-            case .rule, .media, .image:
+            case .rule, .media, .image, .widget:
                 continue
             }
             if !text.isEmpty { text += isListItem && lastWasListItem ? "\n" : "\n\n" }
