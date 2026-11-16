@@ -143,7 +143,7 @@ read at Hermes `2bd378ed1b`.
   or mailto link opens in the browser, as a link in a message does, and everything else is
   cancelled; no new windows, downloads, camera or microphone. The theme and size scripts run in
   their own `WKContentWorld`, and the size channel is registered only there, so the page can't see
-  them or fake a size. The page's one channel to the app is `send` (below).
+  them or fake a size (or a tap). The page's one channel to the app is `send` (below).
 - **Network is allowed.** Hermes's own preview policy keeps "any http(s) library, image, fetch,
   worker or embed" and isolates by the opaque sandbox, not a source list; agents load chart
   libraries from CDNs. The page can't reach the app, its tokens or the gateway, and what it could
@@ -178,6 +178,18 @@ read at Hermes `2bd378ed1b`.
     work; why it didn't go is in `reason` (`offline`, `busy`, `room`, `refused`) and a sentence in
     `message`. `ok` only once the gateway has accepted the prompt, so a widget says "saved" only
     when it was. The page gives up after 20 s, not the desktop's 5: our answer waits on the network.
+  - **Only right after a tap, stricter than the desktop app.** A send goes only within 3 s of a
+    trusted pointer down, key press or click in that widget's main frame, and each tap sends at
+    most once; otherwise it's `undelivered` with `reason: "needs_tap"`. The desktop app takes a
+    send from the page's script at any time. Here an accepted prompt is a turn the agent runs,
+    costs money and doesn't show in the chat, and widgets load scripts from any CDN: a page, or a
+    script it pulled in, could otherwise send on a timer. The tap is seen by a listener in the
+    app's world (`WidgetPage.gestureScript`) that checks `isTrusted` and reports on a channel only
+    that world has, so the page can neither fake nor hide it; `el.click()`, `dispatchEvent` and
+    timers carry no tap. A trusted click counts because VoiceOver presses with a click alone. 3 s
+    leaves room for a handler that awaits something first, and is too short to save a tap for
+    later; a page that asks "Are you sure?" gets a new tap when you answer. A reloaded page starts
+    with no tap. `data-hermes-send` passes, as its click follows your tap.
   - **While a reply runs, queue, never steer.** On the gateway's listener the prompt joins its queue
     (still hidden) and runs as its own turn. The desktop app steers it into the running reply; that
     mixes a click into another answer and a steer can't be marked hidden. It shows in the queue as

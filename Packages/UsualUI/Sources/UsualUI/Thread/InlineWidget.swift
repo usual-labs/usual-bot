@@ -36,8 +36,9 @@ struct InlineWidget: View {
     @State private var pageWidth: CGFloat?
     /// How wide the frame came out, which a page wider than it scrolls across.
     @State private var frameWidth: CGFloat?
-    /// When the page last had a prompt let through (`WidgetIntent`).
+    /// When the page last had a prompt let through (`WidgetIntent`), and the tap it used.
     @State private var lastSent: ContinuousClock.Instant?
+    @State private var spentTap: ContinuousClock.Instant?
     /// The chat's `turnsEnded` when the page was last read.
     @State private var readAfterTurn: Int?
 
@@ -169,11 +170,14 @@ struct InlineWidget: View {
                 request.reply(.undelivered(.room, String(localized: "This widget can't send messages here.")))
                 return
             }
-            switch WidgetIntent.evaluate(request.body, now: .now, lastAccepted: lastSent) {
+            switch WidgetIntent.evaluate(
+                request.body, now: .now, tappedAt: request.tappedAt, spentTap: spentTap, lastAccepted: lastSent)
+            {
             case .failure(let refusal):
                 request.reply(refusal.ack)
             case .success(let prompt):
                 lastSent = .now
+                spentTap = request.tappedAt
                 Task { request.reply(await chat.sendFromWidget(prompt)) }
             }
         }

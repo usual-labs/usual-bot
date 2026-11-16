@@ -202,26 +202,63 @@ struct WidgetSendTests {
 
     // MARK: - The gate
 
+    /// The gate with a tap a moment ago, none spent.
+    private func gate(
+        _ body: Any?, now: ContinuousClock.Instant, tappedAt: ContinuousClock.Instant?? = .none,
+        spentTap: ContinuousClock.Instant? = nil, lastAccepted: ContinuousClock.Instant? = nil
+    ) -> Result<String, WidgetIntentRefusal> {
+        WidgetIntent.evaluate(
+            body, now: now, tappedAt: tappedAt ?? now - .milliseconds(100), spentTap: spentTap,
+            lastAccepted: lastAccepted)
+    }
+
     @Test func theGateTrimsRefusesAndSlowsDown() throws {
         let now = ContinuousClock.now
-        #expect(try WidgetIntent.evaluate("  Refresh  ", now: now, lastAccepted: nil).get() == "Refresh")
+        #expect(try gate("  Refresh  ", now: now).get() == "Refresh")
+        #expect(gate("   ", now: now) == .failure(.init(ack: .init(failure: .invalid))))
+        #expect(gate(42, now: now) == .failure(.init(ack: .init(failure: .invalid))))
         #expect(
-            WidgetIntent.evaluate("   ", now: now, lastAccepted: nil) == .failure(.init(ack: .init(failure: .invalid))))
-        #expect(
-            WidgetIntent.evaluate(42, now: now, lastAccepted: nil) == .failure(.init(ack: .init(failure: .invalid))))
-        #expect(
-            WidgetIntent.evaluate(String(repeating: "a", count: 501), now: now, lastAccepted: nil)
+            gate(String(repeating: "a", count: 501), now: now)
                 == .failure(.init(ack: .init(failure: .tooLong, maxLength: 500))))
-        #expect(
-            (try? WidgetIntent.evaluate(String(repeating: "a", count: 500), now: now, lastAccepted: nil).get()) != nil)
+        #expect((try? gate(String(repeating: "a", count: 500), now: now).get()) != nil)
 
-        let throttled = WidgetIntent.evaluate("Refresh", now: now, lastAccepted: now - .milliseconds(400))
+        let throttled = gate("Refresh", now: now, lastAccepted: now - .milliseconds(400))
         guard case .failure(let refusal) = throttled else {
             Issue.record("A second prompt within a second went through")
             return
         }
         #expect(refusal.ack.failure == .throttled)
         #expect(refusal.ack.retryAfterMilliseconds == 600)
-        #expect((try? WidgetIntent.evaluate("Refresh", now: now, lastAccepted: now - .seconds(1)).get()) == "Refresh")
+        #expect((try? gate("Refresh", now: now, lastAccepted: now - .seconds(1)).get()) == "Refresh")
+    }
+
+    @Test func aSendNeedsATapInTheLastThreeSeconds() {
+        let now = ContinuousClock.now
+        // A page's script on its own: a timer, or `el.click()`.
+        let untapped = gate("Refresh", now: now, tappedAt: .some(nil))
+        guard case .failure(let refusal) = untapped else {
+            Issue.record("A send with no tap went through")
+            return
+        }
+        #expect(refusal.ack.failure == .undelivered)
+        #expect(refusal.ack.reason == .needsTap)
+        #expect(refusal.ack.object["reason"] as? String == "needs_tap")
+        #expect(refusal.ack.message?.isEmpty == false)
+
+        #expect((try? gate("Refresh", now: now, tappedAt: now - .seconds(3)).get()) == "Refresh")
+        #expect((try? gate("Refresh", now: now, tappedAt: now - .milliseconds(3001)).get()) == nil)
+    }
+
+    @Test func aTapSendsOnce() {
+        let now = ContinuousClock.now
+        let tap = now - .milliseconds(1500)
+        // A script that waits for your click and sends twice gets the second refused.
+        let again = gate("Refresh", now: now, tappedAt: tap, spentTap: tap, lastAccepted: now - .seconds(2))
+        guard case .failure(let refusal) = again else {
+            Issue.record("One tap sent twice")
+            return
+        }
+        #expect(refusal.ack.reason == .needsTap)
+        #expect((try? gate("Refresh", now: now, tappedAt: now, spentTap: tap).get()) == "Refresh")
     }
 }

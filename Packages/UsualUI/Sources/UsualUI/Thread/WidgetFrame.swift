@@ -15,10 +15,13 @@ enum WidgetMessage: Equatable {
 @MainActor final class WidgetSendRequest: Equatable {
     /// What the page passed, unchecked.
     let body: Any
+    /// When you last tapped or pressed a key in the page, as the app's own script saw it.
+    let tappedAt: ContinuousClock.Instant?
     private var answer: ((WidgetAck) -> Void)?
 
-    init(body: Any, answer: @escaping (WidgetAck) -> Void) {
+    init(body: Any, tappedAt: ContinuousClock.Instant?, answer: @escaping (WidgetAck) -> Void) {
         self.body = body
+        self.tappedAt = tappedAt
         self.answer = answer
     }
 
@@ -55,7 +58,7 @@ enum WidgetMessage: Equatable {
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
-    @MainActor private func make(_ coordinator: Coordinator) -> WKWebView {
+    @MainActor func make(_ coordinator: Coordinator) -> WKWebView {
         coordinator.parent = self
         let configuration = WKWebViewConfiguration()
         // A store of its own that's never written to disk: a page can't read another's cookies or
@@ -77,6 +80,12 @@ enum WidgetMessage: Equatable {
                 source: WidgetPage.measureScript, injectionTime: .atDocumentEnd, forMainFrameOnly: true,
                 in: Self.world))
         scripts.add(WeakHandler(coordinator), contentWorld: Self.world, name: WidgetPage.sizeChannel)
+        // Before the page's own scripts, so none can stop the event first.
+        scripts.addUserScript(
+            WKUserScript(
+                source: WidgetPage.gestureScript, injectionTime: .atDocumentStart, forMainFrameOnly: true,
+                in: Self.world))
+        scripts.add(WeakHandler(coordinator), contentWorld: Self.world, name: WidgetPage.gestureChannel)
         scripts.addUserScript(
             WKUserScript(
                 source: WidgetPage.sendScript(canSend: canSend), injectionTime: .atDocumentStart,
@@ -132,12 +141,16 @@ enum WidgetMessage: Equatable {
         var theme: WidgetPage.Theme?
         /// The page showing.
         private(set) var html: String?
+        /// When you last tapped or pressed a key in the page.
+        private(set) var tappedAt: ContinuousClock.Instant?
         /// The page loaded; any later navigation of the frame would leave it.
         private var loaded = false
 
         func load(_ html: String, in view: WKWebView) {
             self.html = html
             loaded = false
+            // A tap on the old page doesn't let the new one send.
+            tappedAt = nil
             // No base URL: the page has no origin to share and its relative links lead nowhere.
             view.loadHTMLString(html, baseURL: nil)
         }
@@ -151,10 +164,16 @@ enum WidgetMessage: Equatable {
                 replyHandler(WidgetAck(failure: .undelivered).object, nil)
                 return
             }
-            parent.onMessage(.send(WidgetSendRequest(body: message.body) { replyHandler($0.object, nil) }))
+            parent.onMessage(
+                .send(WidgetSendRequest(body: message.body, tappedAt: tappedAt) { replyHandler($0.object, nil) }))
         }
 
         func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+            // A tap in a frame inside the page (an ad, an embed) isn't a tap on the widget.
+            if message.name == WidgetPage.gestureChannel {
+                if message.frameInfo.isMainFrame { tappedAt = .now }
+                return
+            }
             guard message.name == WidgetPage.sizeChannel, let size = WidgetPage.size(from: message.body) else {
                 return
             }

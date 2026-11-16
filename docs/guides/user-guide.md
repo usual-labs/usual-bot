@@ -175,7 +175,8 @@ sending also puts the keyboard away; tap the message box to write again.
   old logs. That goes to the Bot without showing as your message, and the widget changes when the
   Bot has done it. If the Bot is still replying, it waits in the queue as "From a widget", where you
   can remove it. Offline, or on the dashboard while the Bot is replying, the widget is told it
-  wasn't sent. Widgets in rooms can't send.
+  wasn't sent. Widgets in rooms can't send. A widget sends only when you tap it or press a key in
+  it, so a page can't ask the Bot for things on its own.
 - **Audio and video.** Voice replies (Hermes's text to speech), audio files and videos play in the
   chat or room, one at a time; leaving the chat stops them. A voice memo has its waveform, a speed
   button and, when Hermes sent the words it spoke, **Show transcript**. A video plays in place;

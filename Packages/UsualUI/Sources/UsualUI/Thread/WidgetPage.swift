@@ -88,6 +88,19 @@ enum WidgetPage {
         if(document.body)o.observe(document.body)}addEventListener("load",post);post()})()
         """
 
+    static let gestureChannel = "gesture"
+
+    /// Tells the app when you tap or press a key in the page, which a send needs
+    /// (`WidgetIntent.tapWindow`). It runs in the app's world, as the size report does, so the
+    /// page can't post to its channel; and only a trusted event counts, which a script can't make
+    /// (`el.click()` and `dispatchEvent` aren't trusted). A trusted `click` counts too: VoiceOver
+    /// presses a button with a click and nothing before it. At most one report a quarter second.
+    static let gestureScript = """
+        (function(){var last=0;function seen(e){if(!e.isTrusted)return;var t=Date.now();if(t-last<250)return;\
+        last=t;webkit.messageHandlers.\(gestureChannel).postMessage(1)}\
+        ["pointerdown","keydown","click"].forEach(function(n){addEventListener(n,seen,true)})})()
+        """
+
     static let sendChannel = "hermes"
     /// How long `send()` waits for the app. The app answers once the gateway has the prompt, a
     /// network round trip, so longer than the desktop app's 5 s.
