@@ -364,35 +364,24 @@ Commands that only make sense in a terminal or the desktop app are left out of t
 
 ## Model, thinking and context
 
-On the Mac, the model, thinking and context menus are under **This Chat** in the Bot's profile
-panel (click the Bot's name above the chat):
+The model, thinking and context menus are under **This Chat** in the Bot's profile (tap or click
+the Bot's name above the chat):
 
 - **The model menu** switches the model for this chat only. Expensive models ask first. If the
   Bot is mid-reply, the switch takes effect from your next message.
 - **The thinking menu** sets how hard the model reasons (for models that can).
-- **Context** shows how full the conversation's context window is (on iPhone, a ring that turns
-  amber past 80%). Its menu has the numbers and **Compress Conversation**, which summarises older
+- **Context** shows how full the conversation's context window is. Its menu has the numbers and **Compress Conversation**, which summarises older
   messages to free space.
 
 Both menus also offer **Make Default for <Bot>**, which saves the choice as the Bot's default
 everywhere, including in the official Hermes app.
 
-On iPhone they appear inside the message box while you type, in the row of buttons under your
-text:
-
-- **The context ring** shows how full the context is; tap it for the numbers and **Compress
-  Conversation**.
-- **The gauge** shows how hard the model thinks: its needle rises with the level. Tap it to open a
-  slider of levels above the box, with the keyboard still up; tap or slide to a level.
-- **The model name** above the slider opens **Model and thinking**, with the full model list and
-  every level, each with **Make Default for <Bot>**.
-
 ## Dictation and voice calls
 
-- **Dictation.** In an empty message box, tap the mic and speak. Words appear as you talk,
-  recognised on the device when it can. Tap the mic again to stop, then edit and send. On the Mac,
-  ⌘D starts it too, even with text in the box: press it again to stop, or hold ⌘D while you talk and
-  let go to stop.
+- **Dictation.** Tap the mic beside Send and speak; your words go after anything already in the
+  box. Words appear as you talk, recognised on the device when it can. Tap the mic again to stop,
+  then edit and send. On the Mac, ⌘D starts it too: press it again to stop, or hold ⌘D while you
+  talk and let go to stop.
 - **Dictation through your gateway.** In **Settings › Voice › Dictation**, choose **Gateway** to
   have the Bot's own speech-to-text on Hermes hear you instead. Your voice goes to your gateway,
   which may send it on to a paid service, depending on how its speech-to-text is set up. Words

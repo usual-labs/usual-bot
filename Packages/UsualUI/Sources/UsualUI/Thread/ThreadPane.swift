@@ -89,7 +89,7 @@ struct ThreadPane: View {
             } bottom: {
                 if let thread, thread.phase == .ready {
                     Composer(
-                        thread: thread, chatID: contact.id, agentName: contact.name, agentDefault: contact.details,
+                        thread: thread, chatID: contact.id, agentName: contact.name,
                         attachments: $attachments, quotes: $quotes,
                         editing: $editing, confirm: { rewindRequest = $0 },
                         inCall: calling, startCall: { calling = true }

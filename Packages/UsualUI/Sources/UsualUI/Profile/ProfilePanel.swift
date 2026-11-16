@@ -34,7 +34,7 @@ struct ProfilePanel: View {
     let link: AppModel.Link
     let gatewayDetails: GatewayDetails?
     let loadGatewayDetails: () async -> Void
-    /// The agent's chat, whose model and thinking the Mac panel sets.
+    /// The agent's chat, whose model, thinking and context the profile shows.
     var thread: ChatThread? = nil
     let close: () -> Void
 
@@ -66,6 +66,9 @@ struct ProfilePanel: View {
                 Section {
                 } header: {
                     header.textCase(nil).padding(.bottom, 8)
+                }
+                if let thread {
+                    ChatModelSection(thread: thread, agentName: contact.name, agentDefault: contact.details)
                 }
                 PhoneProfileRows(
                     contact: contact, routines: routines, skills: skills, apps: apps, vault: vault
