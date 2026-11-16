@@ -70,6 +70,7 @@ final class Dictation {
             return
         }
         throughGateway = false
+        var spoken = Utterances()
         Task {
             if let problem = await Self.permissionProblem() {
                 state = .denied(problem)
@@ -78,10 +79,10 @@ final class Dictation {
             guard state == .starting else { return }  // Stopped while asking.
             do {
                 let session = try SpeechSession(
-                    onText: { [weak self] words in
+                    onText: { [weak self] words, endsUtterance in
                         guard let self else { return }
                         self.heardWords = true
-                        update(Self.merge(self.prefix, words))
+                        update(Self.merge(self.prefix, spoken.adding(words, endsUtterance: endsUtterance)))
                     },
                     onLevel: { [weak self] level in self?.level = level },
                     onEnd: { [weak self] error in self?.finish(error) })
@@ -196,6 +197,43 @@ final class Dictation {
     }
 }
 
+/// Everything said in one recording. After a pause Apple's recognizer starts a new utterance and
+/// its results hold only that, so the finished ones are kept here and the current one goes after.
+struct Utterances {
+    private var done = ""
+    private var current = ""
+    private var currentEnded = false
+
+    /// The whole text, given a result's words and whether they close an utterance (the result
+    /// carries `speechRecognitionMetadata`).
+    mutating func adding(_ words: String, endsUtterance: Bool) -> String {
+        guard !words.isEmpty else { return text }
+        // The same words again, as the final result repeats the last utterance.
+        guard words != current else {
+            currentEnded = currentEnded || endsUtterance
+            return text
+        }
+        if currentEnded || Self.startsOver(words, after: current) {
+            done = Dictation.merge(done, current)
+        }
+        current = words
+        currentEnded = endsUtterance
+        return text
+    }
+
+    var text: String { Dictation.merge(done, current) }
+
+    /// Words that don't revise the current utterance but begin a new one, for when the recognizer
+    /// doesn't say the last one ended: much shorter, and starting with another word.
+    static func startsOver(_ words: String, after current: String) -> Bool {
+        guard !current.isEmpty, words.count * 2 < current.count else { return false }
+        func first(_ text: String) -> String {
+            String(text.split(separator: " ").first ?? "").lowercased().filter(\.isLetter)
+        }
+        return first(words) != first(current)
+    }
+}
+
 /// One recording: the microphone feeding the recognizer. Lives off the main actor because the
 /// audio tap runs on the audio thread; its callbacks hop back to the main actor.
 private final class SpeechSession: @unchecked Sendable {
@@ -208,7 +246,7 @@ private final class SpeechSession: @unchecked Sendable {
     private var task: SFSpeechRecognitionTask?
 
     init(
-        onText: @escaping @MainActor (String) -> Void, onLevel: @escaping @MainActor (Double) -> Void,
+        onText: @escaping @MainActor (String, Bool) -> Void, onLevel: @escaping @MainActor (Double) -> Void,
         onEnd: @escaping @MainActor ((any Error)?) -> Void
     ) throws {
         guard let recognizer = SFSpeechRecognizer(), recognizer.isAvailable else {
@@ -240,9 +278,10 @@ private final class SpeechSession: @unchecked Sendable {
 
         task = recognizer.recognitionTask(with: request) { [weak self] result, error in
             let words = result?.bestTranscription.formattedString
+            let endsUtterance = result?.speechRecognitionMetadata != nil
             let ended = error != nil || result?.isFinal == true
             Task { @MainActor in
-                if let words { onText(words) }
+                if let words { onText(words, endsUtterance) }
                 if ended { onEnd(error) }
             }
             if ended { self?.stopAudio() }
