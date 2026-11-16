@@ -39,13 +39,13 @@ extension EnvironmentValues {
 }
 
 /// The quick reactions, as in Messages and Grok Bot, and the rest behind + (or More Reactions).
-private let quickReactions = ["👍", "👎", "❤️", "😂", "🎉"]
-private let moreReactions = [
+let quickReactions = ["👍", "👎", "❤️", "😂", "🎉"]
+let moreReactions = [
     "🙏", "👀", "🔥", "✅", "💯", "🤔", "😮", "😢", "👏", "🚀", "💡", "⚠️", "🙌", "😅", "🤝", "⭐️", "🧐", "❌",
 ]
 
 /// A message in a transcript with its actions: a bar on hover and a right-click menu (Mac), a
-/// long-press menu (iPhone), VoiceOver actions on both, and its reactions underneath.
+/// touch-and-hold sheet (iPhone), VoiceOver actions on both, and its reactions underneath.
 struct MessageRow<Content: View>: View {
     let item: TranscriptItem
     /// The text Copy takes.
@@ -73,6 +73,12 @@ struct MessageRow<Content: View>: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var leaving: Task<Void, Never>?
     @State private var picking = false
+    #if os(iOS)
+        @State private var menuShown = false
+        @State private var pressing = false
+        /// What was picked in the menu, run once it has closed.
+        @State private var afterMenu: (() -> Void)?
+    #endif
 
     var body: some View {
         row
@@ -104,7 +110,17 @@ struct MessageRow<Content: View>: View {
                 .frame(maxWidth: .infinity, alignment: isMine ? .trailing : .leading)
                 // Pulling the conversation left shows it.
                 .overlay(alignment: .trailing) { if let date = item.date { RevealedTime(date: date) } }
-                .contextMenu { if let actions { menu(actions) } }
+                .scaleEffect(pressing ? 0.97 : 1)
+                .animation(.easeOut(duration: 0.2), value: pressing)
+                .onLongPressGesture(minimumDuration: 0.4) {
+                    if actions != nil { menuShown = true }
+                } onPressingChanged: {
+                    pressing = $0 && actions != nil
+                }
+                .sensoryFeedback(.impact(weight: .medium), trigger: menuShown) { _, shown in shown }
+                .sheet(isPresented: $menuShown, onDismiss: runAfterMenu) {
+                    if let actions { menuSheet(actions) }
+                }
                 .sheet(isPresented: $picking) {
                     if let actions {
                         picker(actions)
@@ -311,46 +327,95 @@ struct MessageRow<Content: View>: View {
         }
     }
 
-    // MARK: The right-click (Mac) and long-press (iPhone) menu
+    // MARK: The right-click menu (Mac) and the touch-and-hold sheet (iPhone)
 
     @ViewBuilder private func menu(_ actions: MessageActions) -> some View {
         if canReact(actions) {
-            #if os(macOS)
-                // A Mac menu's palette leaves out buttons without an image, so emoji go in a submenu.
-                Menu("React", systemImage: reactSymbol) {
-                    ForEach(quickReactions, id: \.self) { emoji in
-                        Button(emoji) { actions.react(emoji, item) }
-                    }
-                    Divider()
-                    Button("More Reactions…") { picking = true }
+            // A Mac menu's palette leaves out buttons without an image, so emoji go in a submenu.
+            Menu("React", systemImage: reactSymbol) {
+                ForEach(quickReactions, id: \.self) { emoji in
+                    Button(emoji) { actions.react(emoji, item) }
                 }
-            #else
-                ControlGroup {
-                    ForEach(quickReactions, id: \.self) { emoji in
-                        Button(emoji) { actions.react(emoji, item) }
-                    }
-                    Button("More Reactions", systemImage: "plus") { picking = true }
-                }
-                .controlGroupStyle(.palette)
-            #endif
+                Divider()
+                Button("More Reactions…") { picking = true }
+            }
         }
         Button("Reply", systemImage: "arrowshape.turn.up.left") { actions.reply(item) }
         Button("Copy", systemImage: "doc.on.doc", action: copy)
         readButton
         markUnreadButton(actions)
-        // Only iPhone provides this: the Mac selects within the message itself.
-        if let selectText, !text.isEmpty {
-            Button("Select Text", systemImage: "selection.pin.in.out") {
-                selectText(SelectableText.plain(text)) { actions.quote(item, $0) }
+        rewindButtons(actions)
+    }
+
+    #if os(iOS)
+        /// The touch-and-hold menu: reactions, then Reply and Mark as Unread, as Grok groups them;
+        /// Copy, Select Text and Read Aloud; then Edit, Try Again and Undo.
+        private func menuSheet(_ actions: MessageActions) -> some View {
+            var words: [MessageMenuItem] = [
+                MessageMenuItem(title: Text("Copy"), systemImage: "doc.on.doc", action: copy)
+            ]
+            // The Mac selects within the message itself; iPhone shows its words in a sheet.
+            if let selectText, !text.isEmpty {
+                words.append(
+                    MessageMenuItem(title: Text("Select Text"), systemImage: "selection.pin.in.out") {
+                        selectText(SelectableText.plain(text)) { actions.quote(item, $0) }
+                    })
+            }
+            if canRead {
+                words.append(
+                    MessageMenuItem(
+                        title: Text(readLabel), systemImage: isReading ? "stop.circle" : "speaker.wave.2",
+                        action: readAloud))
+            }
+            let reason = actions.rewindUnavailable(item)
+            var rewind: [MessageMenuItem] = []
+            if actions.canEdit(item) {
+                rewind.append(
+                    MessageMenuItem(title: Text("Edit"), systemImage: "pencil", isDisabled: reason != nil) {
+                        actions.edit(item)
+                    })
+            }
+            if actions.canRetry(item) {
+                rewind.append(
+                    MessageMenuItem(title: Text("Try Again"), systemImage: "arrow.clockwise", isDisabled: reason != nil)
+                    {
+                        actions.retry(item)
+                    })
+            }
+            if actions.canRewind(item) {
+                rewind.append(
+                    MessageMenuItem(
+                        title: Text("Undo"), systemImage: "arrow.uturn.backward", isDestructive: true,
+                        isDisabled: reason != nil
+                    ) { actions.undo(item) })
+            }
+            let reply = MessageMenuItem(title: Text("Reply"), systemImage: "arrowshape.turn.up.left") {
+                actions.reply(item)
+            }
+            var answer = [reply]
+            if actions.markUnread != nil {
+                answer.append(
+                    MessageMenuItem(title: Text("Mark as Unread"), systemImage: "envelope.badge") {
+                        markUnread(actions)
+                    })
+            }
+            return MessageMenuSheet(
+                react: canReact(actions) ? { actions.react($0, item) } : nil,
+                groups: [answer, words, rewind],
+                note: rewind.isEmpty ? nil : reason,
+                date: item.date
+            ) { action in
+                afterMenu = action
+                menuShown = false
             }
         }
-        rewindButtons(actions)
-        #if os(iOS)
-            if let date = item.date {
-                Section { Text(date.formatted(date: .abbreviated, time: .shortened)) }
-            }
-        #endif
-    }
+
+        private func runAfterMenu() {
+            let action = afterMenu
+            afterMenu = nil
+            action?()
+        }
+    #endif
 
     @ViewBuilder private func markUnreadButton(_ actions: MessageActions) -> some View {
         if actions.markUnread != nil {
