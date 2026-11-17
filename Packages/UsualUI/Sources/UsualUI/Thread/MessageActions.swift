@@ -119,11 +119,14 @@ struct MessageRow<Content: View>: View {
                 .overlay(alignment: .trailing) { if let date = item.date { RevealedTime(date: date) } }
                 .scaleEffect(pressing ? 0.97 : 1)
                 .animation(.easeOut(duration: 0.2), value: pressing)
-                .onLongPressGesture(minimumDuration: 0.4) {
-                    if actions != nil { menuShown = true }
-                } onPressingChanged: {
-                    pressing = $0 && actions != nil
-                }
+                .environment(\.selectsTextInPlace, false)
+                .gesture(
+                    MessageLongPress { down in
+                        pressing = down && actions != nil
+                    } began: {
+                        if actions != nil { menuShown = true }
+                    }
+                )
                 .sensoryFeedback(.impact(weight: .medium), trigger: menuShown) { _, shown in shown }
                 .sheet(isPresented: $menuShown, onDismiss: runAfterMenu) {
                     if let actions { menuSheet(actions) }

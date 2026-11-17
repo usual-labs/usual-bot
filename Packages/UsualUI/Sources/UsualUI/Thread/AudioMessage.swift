@@ -138,7 +138,7 @@ struct AudioMessage: View {
                 Text(text)
                     .scaledFont(size: 14)
                     .foregroundStyle(Theme.ink)
-                    .textSelection(.enabled)
+                    .messageTextSelection()
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
