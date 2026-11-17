@@ -37,7 +37,7 @@ in light and dark if colours changed. Upload pull request evidence to GitHub; do
 
 ## What the demo can't show
 
-- A thinking level change: `ChatThread.setReasoning` needs a live session, so the Thinking menu snaps back.
+- A thinking level change: `ChatThread.setReasoning` needs a live session, so the Thinking slider snaps back.
 - Dictation in the Simulator, which has no speech model. Use the Mac or a device.
 - Menu items added by AppKit before the menu opens. Open the menu, then check it.
 - Notifications from an ad-hoc build: macOS refuses them (`Packages/UsualUI/docs/agents/07-known-issues.md`).

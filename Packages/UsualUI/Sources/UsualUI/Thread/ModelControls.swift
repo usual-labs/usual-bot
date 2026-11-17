@@ -27,12 +27,10 @@ enum ModelControls {
     }
 }
 
-/// The chat's model, how hard it thinks and how full its context is, as menus in the agent's
-/// profile: the gateway's models (this provider's first, others in submenus), the thinking levels
-/// for models that take one, and the context's numbers with Compress. A model or level pick changes
-/// this chat only; Make Default saves it as the agent's own. On the Mac since November 2026; on
-/// iPhone too since then, when the developer judged them not worth a place in the message box
-/// while chatting, and gave the spot back to the mic.
+/// The chat's model, how hard it thinks and how full its context is, in the agent's profile on the
+/// Mac and iPhone: the model as a glass button opening a list of the gateway's models, thinking as a
+/// stepped slider, and the context as a bar with Compress. A model or level pick changes this chat
+/// only; Make Default saves it as the agent's own.
 struct ChatModelSection: View {
     let thread: ChatThread
     let agentName: String
@@ -44,44 +42,21 @@ struct ChatModelSection: View {
         if let model = thread.model {
             Section {
                 LabeledContent("Model") {
-                    Menu {
-                        ModelMenu(
-                            thread: thread, agentName: agentName, agentDefault: agentDefault, picking: picking)
-                    } label: {
-                        Text(ModelControls.short(model.name)).lineLimit(1)
-                    }
-                    .fixedSize()
-                    .clickable()
-                    .help("Model for this chat")
-                    .accessibilityLabel(Text("Model: \(ModelControls.short(model.name))"))
+                    ModelButton(
+                        thread: thread, model: model, agentName: agentName, agentDefault: agentDefault,
+                        picking: picking)
                 }
                 if thread.takesReasoning(model) {
-                    LabeledContent("Thinking") {
-                        Menu {
-                            LevelMenu(thread: thread, agentName: agentName)
-                        } label: {
-                            Text(ModelControls.levelName(model.reasoning)).lineLimit(1)
-                        }
-                        .fixedSize()
-                        .clickable()
-                        .help("How hard the Bot thinks in this chat")
-                        .accessibilityLabel(Text("Thinking: \(thinking(model))"))
-                    }
+                    ThinkingControl(thread: thread, model: model, agentName: agentName)
                 }
                 if let usage = thread.usage, let context = usage.context {
-                    LabeledContent("Context") {
-                        ContextMeter(thread: thread, usage: usage, context: context)
-                    }
+                    ContextGauge(thread: thread, usage: usage, context: context)
                 }
             } header: {
                 ProfileSectionHeader("This Chat")
             }
             .modelPickingAlerts(picking, thread: thread)
         }
-    }
-
-    private func thinking(_ model: ChatModel) -> String {
-        model.reasoning.map(ModelControls.name(of:)) ?? String(localized: "Default")
     }
 }
 
@@ -180,136 +155,4 @@ private struct ModelPickingAlerts: ViewModifier {
                 Text(picking.problem ?? "")
             }
     }
-}
-
-/// A menu's model choices: this provider's models first, the others' in submenus, then Make Default.
-struct ModelMenu: View {
-    let thread: ChatThread
-    let agentName: String
-    let agentDefault: AgentDetails?
-    let picking: ModelPicking
-
-    var body: some View {
-        if let model = thread.model {
-            let providers = thread.modelProviders
-            if let current = providers.first(where: { $0.slug == model.provider }) {
-                Section(current.name) { picker(current, model) }
-            } else if providers.isEmpty {
-                // The catalog hasn't arrived (or can't): the current model, at least.
-                Section(model.provider) {
-                    Button(ModelControls.short(model.name), systemImage: "checkmark") {}.disabled(true)
-                }
-            }
-            let others = providers.filter { $0.slug != model.provider }
-            if !others.isEmpty {
-                Section {
-                    ForEach(others) { provider in
-                        Menu(provider.name) { picker(provider, model) }
-                    }
-                }
-            }
-            Section {
-                if isAgentDefault(model) {
-                    Label("\(agentName)'s Default", systemImage: "checkmark.seal").disabled(true)
-                } else {
-                    Button("Make Default for \(agentName)", systemImage: "pin") {
-                        Task { await picking.makeDefault(in: thread) }
-                    }
-                }
-            }
-        }
-    }
-
-    /// Whether the chat runs on the model the roster lists as the agent's default.
-    private func isAgentDefault(_ model: ChatModel) -> Bool {
-        guard let name = agentDefault?.model else { return false }
-        return name == model.name && (agentDefault?.provider.map { $0 == model.provider } ?? true)
-    }
-
-    /// One provider's models, the chat's own ticked.
-    private func picker(_ provider: ModelProvider, _ model: ChatModel) -> some View {
-        Picker(
-            provider.name,
-            selection: Binding(
-                get: { provider.slug == model.provider ? model.name : "" },
-                set: { name in Task { await picking.switchTo(name, provider: provider.slug, in: thread) } })
-        ) {
-            // The chat's model may sit outside an aggregator's shortlist.
-            let names =
-                provider.slug == model.provider && !provider.models.contains(model.name)
-                ? [model.name] + provider.models : provider.models
-            ForEach(names, id: \.self) { name in Text(ModelControls.short(name)).tag(name) }
-        }
-        .pickerStyle(.inline)
-        .labelsHidden()
-    }
-}
-
-/// A menu's thinking levels, then Make Default.
-struct LevelMenu: View {
-    let thread: ChatThread
-    let agentName: String
-
-    var body: some View {
-        if let model = thread.model {
-            Picker(
-                "Thinking",
-                selection: Binding(
-                    get: { model.reasoning }, set: { level in if let level { thread.setReasoning(level) } })
-            ) {
-                ForEach(ReasoningLevel.allCases, id: \.self) { level in
-                    Text(ModelControls.name(of: level)).tag(Optional(level))
-                }
-            }
-            .pickerStyle(.inline)
-            Section {
-                Button("Make Default for \(agentName)", systemImage: "pin") {
-                    Task { await thread.makeReasoningDefault() }
-                }
-                .disabled(model.reasoning == nil)
-            }
-        }
-    }
-}
-
-/// How full the chat's context is, as a menu in the agent's profile beside the model and thinking.
-/// Its menu gives the numbers and compresses the conversation when it's getting full.
-struct ContextMeter: View {
-    let thread: ChatThread
-    let usage: ChatUsage
-    let context: ChatUsage.Context
-
-    var body: some View {
-        Menu {
-            Section {
-                Text(
-                    "Context: \(approx)\(ChatThread.tokens(context.used)) of \(ChatThread.tokens(context.max)) tokens (\(approx)\(context.percent)%)"
-                )
-                Text(
-                    "This chat: \(ChatThread.tokens(usage.input)) tokens in, \(ChatThread.tokens(usage.output)) out, ^[\(usage.calls) call](inflect: true)"
-                )
-                if usage.compressions > 0 {
-                    Text("Compressed ^[\(usage.compressions) time](inflect: true)")
-                }
-            }
-            Button("Compress Conversation", systemImage: "arrow.down.right.and.arrow.up.left") {
-                Task { await thread.compress() }
-            }
-            .disabled(!thread.canCompress)
-        } label: {
-            // Plain text, like the model and thinking menus above it: a menu's label drops images.
-            if thread.isCompressing {
-                Text("Compressing…")
-            } else {
-                Text("\(approx)\(context.percent)% full").lineLimit(1)
-            }
-        }
-        .fixedSize()
-        .clickable()
-        .help("How full this chat's context is")
-        .accessibilityLabel(Text("Context \(context.percent) percent full"))
-    }
-
-    /// Hermes's own count rather than the provider's.
-    private var approx: String { context.estimated ? "~" : "" }
 }

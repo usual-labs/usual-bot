@@ -5,9 +5,10 @@ import SwiftUI
     import AppKit
 #endif
 
-/// The agent's card beside the chat: who it is, its routines, skills, apps and vault, and the machine it runs on.
-/// A trailing column with tabs on the Mac; on iPhone a page of rows that open each page, as in
-/// Settings.
+/// The agent's card beside the chat: who it is, this chat's model, thinking and context, a row for
+/// each of its pages (routines, skills, apps, vault, the machine it runs on) and its next routines.
+/// A trailing column on the Mac, where a row opens its page in place with a glass back button; on
+/// iPhone a list whose rows push each page, as in Settings.
 struct ProfilePanel: View {
     enum Tab: Hashable, CaseIterable {
         case routines, skills, apps, vault, machine
@@ -38,69 +39,88 @@ struct ProfilePanel: View {
     var thread: ChatThread? = nil
     let close: () -> Void
 
-    @State private var tab = Tab.routines
+    /// The Mac panel's open page; none shows the Bot's overview.
+    @State private var page: Tab?
     @State private var botEdit: BotEdit?
     @State private var isDropTarget = false
+    @State private var showsWholeDescription = false
     @Environment(\.botEditing) private var botEditing
 
-    /// The Mac panel's width until you drag it, and the narrowest it goes: the grouped form with its
-    /// five tabs is no narrower, and a narrower panel cut it off at both sides.
+    /// The Mac panel's width until you drag it, and the narrowest it goes.
     static let width: CGFloat = 390
-
-    #if os(iOS)
-        private static let nameSize: CGFloat = 24
-    #else
-        private static let nameSize: CGFloat = 20
-    #endif
 
     var body: some View {
         #if os(macOS)
-            // One form per tab, with the Bot and the tabs scrolling at its top.
-            page(tab, top: AnyView(macTop))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .overlay(alignment: .topTrailing) { editMenu }
-                .botEditor($botEdit)
-        #else
-            // Pushed from the chat: who it is, then a row for each page, as in Settings.
-            List {
-                Section {
-                } header: {
-                    header.textCase(nil).padding(.bottom, 8)
-                }
-                if let thread {
-                    ChatModelSection(thread: thread, agentName: contact.name, agentDefault: contact.details)
-                }
-                PhoneProfileRows(
-                    contact: contact, routines: routines, skills: skills, apps: apps, vault: vault
-                ) { tab in
-                    page(tab)
-                        .navigationTitle(tab.title)
-                        .navigationBarTitleDisplayMode(.inline)
+            Group {
+                if let page {
+                    self.page(page, top: AnyView(pageTitle(page)))
+                } else {
+                    ProfileForm(top: nil) { overview }
                 }
             }
-            .listStyle(.insetGrouped)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                if let botEditing {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Menu {
-                            BotMenuItems(contact: contact, editing: botEditing, edit: $botEdit)
-                        } label: {
-                            Label("Edit Bot", systemImage: "ellipsis")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay(alignment: .topLeading) { backButton }
+            .overlay(alignment: .topTrailing) { editMenu }
+            .onExitCommand(perform: page == nil ? nil : { page = nil })
+            .onChange(of: contact.id) { page = nil }
+            .botEditor($botEdit)
+            .task(id: contact.id) { await loadCounts() }
+        #else
+            // Pushed from the chat: who it is, then a row for each page, as in Settings.
+            List { overview }
+                .listStyle(.insetGrouped)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    if let botEditing {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Menu {
+                                BotMenuItems(contact: contact, editing: botEditing, edit: $botEdit)
+                            } label: {
+                                Label("Edit Bot", systemImage: "ellipsis")
+                            }
                         }
                     }
                 }
-            }
-            .botEditor($botEdit)
-            .task(id: contact.id) {
-                // The rows' counts; each page reloads its own when opened.
-                async let routinesLoad: Void = routines.refresh()
-                async let skillsLoad: Void = skills.refresh()
-                async let appsLoad: Void = apps.refresh()
-                _ = await (routinesLoad, skillsLoad, appsLoad)
-                if isOnline { await vault.refresh() }
-            }
+                .botEditor($botEdit)
+                .task(id: contact.id) { await loadCounts() }
         #endif
+    }
+
+    /// The Bot, this chat's settings, the rows for its pages and its next routines.
+    @ViewBuilder private var overview: some View {
+        Section {
+        } header: {
+            header
+                .textCase(nil)
+                #if os(macOS)
+                    // As the pages' titles, under the panel's round buttons.
+                    .padding(.top, 8)
+                #endif
+                .padding(.bottom, 14)
+        }
+        if let thread {
+            ChatModelSection(thread: thread, agentName: contact.name, agentDefault: contact.details)
+        }
+        ProfileRows(
+            contact: contact, routines: routines, skills: skills, apps: apps, vault: vault,
+            open: { page = $0 }
+        ) { tab in
+            page(tab)
+                #if os(iOS)
+                    .navigationTitle(tab.title)
+                    .navigationBarTitleDisplayMode(.inline)
+                #endif
+        }
+        NextRoutines(routines: routines) { page = .routines }
+    }
+
+    /// The rows' counts; each page reloads its own when opened.
+    private func loadCounts() async {
+        async let routinesLoad: Void = routines.refresh()
+        async let skillsLoad: Void = skills.refresh()
+        async let appsLoad: Void = apps.refresh()
+        _ = await (routinesLoad, skillsLoad, appsLoad)
+        if isOnline { await vault.refresh() }
     }
 
     @ViewBuilder private func page(_ tab: Tab, top: AnyView? = nil) -> some View {
@@ -129,6 +149,47 @@ struct ProfilePanel: View {
     }
 
     #if os(macOS)
+        /// Back to the overview from a page, level with the close button. Esc and ⌘[ do the same.
+        @ViewBuilder private var backButton: some View {
+            if page != nil {
+                Button {
+                    page = nil
+                } label: {
+                    SidePanelIcon(systemName: "chevron.left")
+                }
+                .buttonStyle(.clickable)
+                .keyboardShortcut("[", modifiers: .command)
+                .help("Back to \(contact.name)")
+                .accessibilityLabel(Text("Back to \(contact.name)"))
+                .padding(.top, 9)
+                .padding(.leading, 8)
+                .ignoresSafeArea(.container, edges: .top)
+            }
+        }
+
+        /// A page's title and whose it is, at the top of its form, under the panel's round buttons.
+        private func pageTitle(_ tab: Tab) -> some View {
+            Section {
+            } header: {
+                HStack(spacing: 10) {
+                    AgentAvatar(contact: contactWithoutActivity, size: 32)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(tab.title)
+                            .scaledFont(size: 17, weight: .semibold)
+                            .foregroundStyle(Theme.ink)
+                            .accessibilityAddTraits(.isHeader)
+                        Text(contact.name)
+                            .zoomedFont(.subheadline)
+                            .foregroundStyle(Theme.secondaryInk)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .textCase(nil)
+                .padding(.top, 8)
+                .padding(.bottom, 6)
+            }
+        }
+
         /// Rename, picture and delete, beside the panel's close button. A menu with a drawn label
         /// takes the plain style and its own pointing hand (see known issues).
         @ViewBuilder private var editMenu: some View {
@@ -148,57 +209,71 @@ struct ProfilePanel: View {
                 .sidePanelTopRow(beforeClose: true)
             }
         }
-
-        /// The Bot, this chat's model and thinking, and the tabs, as the first sections of each
-        /// page's form.
-        @ViewBuilder private var macTop: some View {
-            Section {
-            } header: {
-                header.padding(.top, 8).padding(.bottom, 10)
-            }
-            if let thread {
-                ChatModelSection(thread: thread, agentName: contact.name, agentDefault: contact.details)
-            }
-            Section {
-            } header: {
-                ProfileTabs(selection: $tab)
-                    .textCase(nil)
-                    // A header sits 10 pt in from the sections' cards; the tabs reach their edges,
-                    // and keep clear of the page's first section below.
-                    .padding(.horizontal, -10)
-                    .padding(.bottom, 12)
-            }
-        }
     #endif
 
+    /// The Bot's picture beside its name and what it's doing, then its description, cut to three
+    /// lines until More.
     private var header: some View {
-        VStack(spacing: 6) {
-            AgentAvatar(contact: contactWithoutActivity, size: 88)
-                .overlay {
-                    if isDropTarget {
-                        Circle().strokeBorder(Theme.ink.opacity(0.4), style: StrokeStyle(lineWidth: 2, dash: [5, 4]))
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                AgentAvatar(contact: contactWithoutActivity, size: 56)
+                    .overlay {
+                        if isDropTarget {
+                            Circle().strokeBorder(
+                                Theme.ink.opacity(0.4), style: StrokeStyle(lineWidth: 2, dash: [5, 4]))
+                        }
+                    }
+                    .botPictureDrop(isTargeted: $isDropTarget, enabled: botEditing?.unavailable == nil) { data in
+                        botEdit = .usePicture(contact, data)
+                    }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(contact.name)
+                        .scaledFont(size: 20, weight: .semibold)
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(2)
+                        .accessibilityAddTraits(.isHeader)
+                    HStack(spacing: 5) {
+                        Circle().fill(isOnline ? Theme.online : Theme.secondaryInk).frame(width: 7, height: 7)
+                        Text(status)
+                    }
+                    .zoomedFont(.subheadline)
+                    .foregroundStyle(Theme.secondaryInk)
+                    .accessibilityElement(children: .combine)
+                }
+                Spacer(minLength: 0)
+            }
+            if let description = contact.details?.description {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(description)
+                        .scaledFont(size: 13.5)
+                        .foregroundStyle(Theme.secondaryInk)
+                        .lineLimit(showsWholeDescription ? nil : 3)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+                    if description.count > Self.longDescription {
+                        Button(showsWholeDescription ? "Less" : "More") { showsWholeDescription.toggle() }
+                            .buttonStyle(.clickable(.borderless))
+                            .zoomedFont(.subheadline)
                     }
                 }
-                .botPictureDrop(isTargeted: $isDropTarget, enabled: botEditing?.unavailable == nil) { data in
-                    botEdit = .usePicture(contact, data)
-                }
-            Text(contact.name)
-                .scaledFont(size: Self.nameSize, weight: .semibold)
-                .foregroundStyle(Theme.ink)
-                .padding(.top, 6)
-                .accessibilityAddTraits(.isHeader)
-            if let description = contact.details?.description {
-                Text(description)
-                    .scaledFont(size: 13.5)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The panel's big avatar never pulses.
+    /// About where three lines run out at the panel's narrowest.
+    private static let longDescription = 140
+
+    /// What the Bot is doing, or why it can't be reached.
+    private var status: String {
+        switch link {
+        case .connecting: return String(localized: "Connecting…")
+        case .offline: return String(localized: "Offline")
+        case .online: return contact.activity == .idle ? String(localized: "Online") : contact.activity.label
+        }
+    }
+
+    /// The panel's avatar never pulses.
     private var contactWithoutActivity: Contact {
         var copy = contact
         copy.activity = .idle
@@ -207,7 +282,7 @@ struct ProfilePanel: View {
 }
 
 /// A profile page: a grouped form whose switches keep the app's legible grey, under what the Mac
-/// panel puts at the top of every page (the Bot and its tabs).
+/// panel puts at the top of every page (its title and whose it is).
 struct ProfileForm<Content: View>: View {
     let top: AnyView?
     @ViewBuilder let content: () -> Content
