@@ -308,6 +308,7 @@ private struct JumpToLatestButton: View {
                     .contentShape(Circle())
             }
             .buttonStyle(.clickable)
+            .handOverText()
         #endif
     }
 }

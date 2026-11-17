@@ -78,6 +78,10 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 - **The menu bar's File, View and Go items follow the window in front** (`UsualBotCommands`, through
   `focusedSceneValue`). They're disabled while the app is in the background or has no main window,
   so a demo run in the background shows them all disabled; check what they do with the app active.
+- **A message's text keeps its I-beam under buttons drawn over it.** `SelectableTextView` sets the
+  I-beam by cursor rectangle and on every mouse move, which beats SwiftUI's `pointerStyle`, so
+  `.clickable` alone shows the hand only for a moment. A button that floats over the conversation
+  also needs `.handOverText()`, which the text views leave alone.
 - **AppKit fills menus when they open.** `NSApp.mainMenu` read at launch shows neither the tab items nor
   Enter Full Screen, so open the menu before checking its items.
 

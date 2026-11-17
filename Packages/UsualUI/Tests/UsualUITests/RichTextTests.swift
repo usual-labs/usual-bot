@@ -97,6 +97,29 @@
             #expect(view.pointerRects() == nil)
         }
 
+        @Test func thePointerIsAHandOverAButtonFloatingOverTheText() throws {
+            let view = SelectableTextView()
+            view.frame = NSRect(x: 0, y: 0, width: 400, height: 200)
+            let window = NSWindow(
+                contentRect: view.frame, styleMask: [.borderless], backing: .buffered, defer: false)
+            window.contentView?.addSubview(view)
+            #expect(view.pointerRects() == nil)
+
+            // Jump to latest, drawn over the scroll view rather than inside the text.
+            let jump = HandArea(frame: NSRect(x: 184, y: 160, width: 32, height: 32))
+            window.contentView?.addSubview(jump)
+            let rects = try #require(view.pointerRects())
+            let hand = rects.filter { $0.cursor == .pointingHand }.map(\.rect)
+            #expect(hand == [view.convert(jump.bounds, from: jump)])
+            let beams = rects.filter { $0.cursor == .iBeam }.map(\.rect)
+            #expect(beams.allSatisfy { !$0.intersects(hand[0]) })
+            let covered = rects.reduce(0) { $0 + $1.rect.width * $1.rect.height }
+            #expect(covered == view.bounds.width * view.bounds.height)
+
+            jump.removeFromSuperview()
+            #expect(view.pointerRects() == nil)
+        }
+
         @Test func aShortMessageIsAsWideAsItsWords() {
             let view = SelectableTextView()
             view.show(.mine("Hi", size: 15))

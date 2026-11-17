@@ -309,21 +309,36 @@
         // MARK: Pointer
 
         // A text view shows the I-beam all over itself, by a cursor rectangle and again each time
-        // the pointer moves. SwiftUI draws Add to Chat over it and sets the pointing hand only as
-        // the pointer arrives, so the I-beam came back while it moved across the button.
+        // the pointer moves. SwiftUI draws Add to Chat and Jump to Latest over it and sets the
+        // pointing hand only as the pointer arrives, so the I-beam came back while it moved across
+        // them, or as the text scrolled under them.
 
-        /// With Add to Chat over the text, the pointing hand there and the I-beam around it; `nil`
-        /// without, when the text view's own I-beam is right.
+        /// With Add to Chat or a `HandArea` over the text, the pointing hand there and the I-beam
+        /// around it; `nil` without, when the text view's own I-beam is right.
         func pointerRects() -> [(rect: NSRect, cursor: NSCursor)]? {
             let text = visibleRect
-            guard let button = button?.intersection(text), !button.isEmpty else { return nil }
-            let around = [
-                NSRect(x: text.minX, y: text.minY, width: text.width, height: button.minY - text.minY),
-                NSRect(x: text.minX, y: button.maxY, width: text.width, height: text.maxY - button.maxY),
-                NSRect(x: text.minX, y: button.minY, width: button.minX - text.minX, height: button.height),
-                NSRect(x: button.maxX, y: button.minY, width: text.maxX - button.maxX, height: button.height),
-            ]
-            return [(button, .pointingHand)] + around.filter { !$0.isEmpty }.map { ($0, .iBeam) }
+            let hands = handRects().map { $0.intersection(text) }.filter { !$0.isEmpty }
+            guard !hands.isEmpty else { return nil }
+            let beams = hands.reduce([text]) { rects, hand in rects.flatMap { Self.remove(hand, from: $0) } }
+            return hands.map { ($0, .pointingHand) } + beams.map { ($0, .iBeam) }
+        }
+
+        /// Add to Chat, and every `HandArea` in this window, in this view's coordinates.
+        private func handRects() -> [NSRect] {
+            let floating = HandArea.all.allObjects.filter { $0.window === window && window != nil }
+            return (button.map { [$0] } ?? []) + floating.map { convert($0.bounds, from: $0) }
+        }
+
+        /// What's left of `rect` without `hole`, as up to four rectangles.
+        private static func remove(_ hole: NSRect, from rect: NSRect) -> [NSRect] {
+            let hole = rect.intersection(hole)
+            guard !hole.isEmpty else { return [rect] }
+            return [
+                NSRect(x: rect.minX, y: rect.minY, width: rect.width, height: hole.minY - rect.minY),
+                NSRect(x: rect.minX, y: hole.maxY, width: rect.width, height: rect.maxY - hole.maxY),
+                NSRect(x: rect.minX, y: hole.minY, width: hole.minX - rect.minX, height: hole.height),
+                NSRect(x: hole.maxX, y: hole.minY, width: rect.maxX - hole.maxX, height: hole.height),
+            ].filter { !$0.isEmpty }
         }
 
         override func resetCursorRects() {
@@ -332,18 +347,25 @@
         }
 
         override func mouseMoved(with event: NSEvent) {
-            if isOverAddToChat(event) { NSCursor.pointingHand.set() } else { super.mouseMoved(with: event) }
+            if isUnderHand(event) { NSCursor.pointingHand.set() } else { super.mouseMoved(with: event) }
         }
 
         override func cursorUpdate(with event: NSEvent) {
-            if isOverAddToChat(event) { NSCursor.pointingHand.set() } else { super.cursorUpdate(with: event) }
+            if isUnderHand(event) { NSCursor.pointingHand.set() } else { super.cursorUpdate(with: event) }
         }
 
-        /// The button belongs to the text with the selection, and can reach over the text above it.
-        private func isOverAddToChat(_ event: NSEvent) -> Bool {
+        /// Add to Chat belongs to the text with the selection, and can reach over the text above
+        /// it; a `HandArea` can be over any text.
+        private func isUnderHand(_ event: NSEvent) -> Bool {
             let owner = button == nil ? window?.firstResponder as? SelectableTextView : self
-            guard let owner, let button = owner.button else { return false }
-            return button.contains(owner.convert(event.locationInWindow, from: nil))
+            if let owner, let button = owner.button,
+                button.contains(owner.convert(event.locationInWindow, from: nil))
+            {
+                return true
+            }
+            return HandArea.all.allObjects.contains {
+                $0.window === window && $0.bounds.contains($0.convert(event.locationInWindow, from: nil))
+            }
         }
 
         // MARK: Drawing
