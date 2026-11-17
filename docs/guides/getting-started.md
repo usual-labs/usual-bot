@@ -7,12 +7,12 @@ get the app, get your Hermes gateway ready, and sign in.
 
 ### Install the beta (Mac and iPhone)
 
-Usual Bot is in beta on TestFlight. A public link to join is coming soon; until then, build it
-yourself as below. Once it's out:
+Usual Bot is in beta on TestFlight, and anyone can join:
 
 1. Install Apple's [TestFlight](https://apps.apple.com/app/testflight/id899247664) app on your Mac
    or iPhone.
-2. Open the Usual Bot beta link on that device and choose **Accept**, then **Install**.
+2. Open the [Usual Bot beta link](https://testflight.apple.com/join/y1wPqfUH) on that device and
+   choose **Accept**, then **Install**.
 3. Open Usual Bot. TestFlight updates it when a new build is out, and the app says so too; your
    sign-in and settings stay.
 
