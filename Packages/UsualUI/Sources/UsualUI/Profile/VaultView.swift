@@ -7,7 +7,7 @@ struct VaultView: View {
     let list: VaultList
     let agentName: String
     let isOnline: Bool
-    /// The Mac panel's Bot and tabs, above the page.
+    /// The Mac panel's page title, above the page.
     var top: AnyView? = nil
 
     /// What New Item is adding.

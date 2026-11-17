@@ -5,7 +5,7 @@ import SwiftUI
 struct SkillsView: View {
     let list: SkillList
     let agentName: String
-    /// The Mac panel's Bot and tabs, above the page.
+    /// The Mac panel's page title, above the page.
     var top: AnyView? = nil
 
     var body: some View {

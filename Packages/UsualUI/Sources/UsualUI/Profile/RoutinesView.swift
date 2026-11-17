@@ -6,7 +6,7 @@ import SwiftUI
 struct RoutinesView: View {
     let list: RoutineList
     let agentName: String
-    /// The Mac panel's Bot and tabs, above the page.
+    /// The Mac panel's page title, above the page.
     var top: AnyView? = nil
 
     @State private var sheet: RoutineSheet?

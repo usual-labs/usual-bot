@@ -309,8 +309,8 @@ without it. A secret is saved on the gateway under the name the card shows; Usua
 If your gateway uses plain `http` away from this device and outside Tailscale, others on your
 network could read what you send, so the card warns you and the button says **Send Unencrypted**.
 
-Bots can sign in to sites for you without seeing your passwords. Open a Bot's profile and pick the
-**Vault** tab to see what's saved for it (labels, usernames and sites, never the secrets), add a
+Bots can sign in to sites for you without seeing your passwords. Open a Bot's profile and pick
+**Vault** to see what's saved for it (labels, usernames and sites, never the secrets), add a
 login, card or address, remove one, or switch on, unlock or lock a password manager on the gateway.
 In a chat, cards ask for a master password, a login to save or a one-time code, and you can skip any
 of them. On that same kind of plain `http` gateway, nothing secret goes out until you tick **Send it
@@ -364,17 +364,19 @@ Commands that only make sense in a terminal or the desktop app are left out of t
 
 ## Model, thinking and context
 
-The model, thinking and context menus are under **This Chat** in the Bot's profile (tap or click
-the Bot's name above the chat):
+The model, thinking and context are under **This Chat** in the Bot's profile (tap or click the
+Bot's name above the chat):
 
-- **The model menu** switches the model for this chat only. Expensive models ask first. If the
-  Bot is mid-reply, the switch takes effect from your next message.
-- **The thinking menu** sets how hard the model reasons (for models that can).
-- **Context** shows how full the conversation's context window is. Its menu has the numbers and **Compress Conversation**, which summarises older
-  messages to free space.
-
-Both menus also offer **Make Default for <Bot>**, which saves the choice as the Bot's default
-everywhere, including in the official Hermes app.
+- **Model** opens a list of your gateway's models, this chat's provider first and the others
+  folded; type to search all of them. A pick switches the model for this chat only. Expensive
+  models ask first. If the Bot is mid-reply, the switch takes effect from your next message.
+  **Make Default for <Bot>** at the bottom saves it as the Bot's default everywhere, including in
+  the official Hermes app.
+- **Thinking** is a slider from Off to Ultra that sets how hard the model reasons (for models that
+  can). The pin beside the level makes it the Bot's default.
+- **Context** shows how full the conversation's context window is, with the chat's totals.
+  **Compress** summarises older messages to free space; it stands out once the context is 70%
+  full, and waits while the Bot is replying. A note in the chat says what it did.
 
 ## Dictation and voice calls
 
@@ -497,8 +499,10 @@ Rooms are text only on the dashboard: attachments in rooms need the gateway's We
 ## A Bot's profile: routines, skills, apps and machine
 
 Click the Bot's name at the top of the chat (⌘I) to open its profile beside the chat. On iPhone,
-tap the name, **…** › **View Profile**, or flick the chat to the left: the profile opens as a page with a row for each part below,
-showing at a glance how many are on.
+tap the name, **…** › **View Profile**, or flick the chat to the left. The profile shows this
+chat's settings, a row for each part below showing at a glance how many are on, and **Next Up**,
+the Bot's two soonest routines with their switches. A row opens its page; on the Mac, the back
+button (or Esc, or ⌘[) returns to the profile.
 
 - **Routines** are the Bot's scheduled jobs. Each shows when it runs, whether it's on, and why the
   last run failed if it did. The switch pauses or resumes one.
