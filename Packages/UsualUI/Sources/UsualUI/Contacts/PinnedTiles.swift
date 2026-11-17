@@ -3,20 +3,20 @@ import SwiftUI
 
 /// The pinned chats at the top of the sidebar, as in Grok: a large avatar over the name for each,
 /// in centred rows, in the order you put them. A tile shows no preview, so its badge says what's
-/// waiting. On the Mac a tile dragged onto another takes its place.
+/// waiting. On the Mac a tile dragged onto another takes its place (`SidebarDropRules`).
 struct PinnedTiles<Actions: View>: View {
     let contacts: [Contact]
     /// Every contact by ID, to draw a room's members.
     let byID: [Contact.ID: Contact]
     @Binding var selection: Contact.ID?
-    /// Moves the first chat to where the second is.
-    var move: (Contact.ID, Contact.ID) -> Void = { _, _ in }
+    #if os(macOS)
+        /// The tile a chat is being dragged over.
+        var dropTarget: Contact.ID?
+        /// Where the tiles are, for the sidebar's drop layer.
+        var geometry: SidebarDragGeometry?
+    #endif
     /// A tile's context menu.
     @ViewBuilder let actions: (Contact) -> Actions
-    #if os(macOS)
-        /// The tile a pinned chat is being dragged over.
-        @State private var dropTarget: Contact.ID?
-    #endif
 
     var body: some View {
         TileRows(minWidth: PinnedTile.minWidth, maxWidth: PinnedTile.maxWidth, spacing: PinnedTile.spacing) {
@@ -43,19 +43,15 @@ struct PinnedTiles<Actions: View>: View {
         .contextMenu { actions(contact) }
         #if os(macOS)
             tile
-                .draggable(PinnedDrag(id: contact.id)) {
-                    AgentOrRoomAvatar(contact: contact, members: members, size: 32)
-                }
-                .dropDestination(for: PinnedDrag.self) { drags, _ in
-                    guard let drag = drags.first, drag.id != contact.id else { return false }
-                    move(drag.id, contact.id)
-                    return true
-                } isTargeted: { targeted in
-                    if targeted {
-                        dropTarget = contact.id
-                    } else if dropTarget == contact.id {
-                        dropTarget = nil
+                .overlay {
+                    SidebarDragSource(id: contact.id) {
+                        AgentOrRoomAvatar(contact: contact, members: members, size: 32)
                     }
+                }
+                .onGeometryChange(for: CGRect.self) {
+                    $0.frame(in: .named(SidebarDragGeometry.space))
+                } action: {
+                    geometry?.pins[contact.id] = $0
                 }
         #else
             tile

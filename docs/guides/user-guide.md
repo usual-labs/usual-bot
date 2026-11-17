@@ -78,8 +78,10 @@ Pin the chats you use most and they stay at the top of the sidebar as large avat
 section.
 
 - **Pin one:** right-click a chat on the Mac, or touch and hold it on iPhone, and choose **Pin**.
+  On the Mac you can also drag a chat onto the pinned chats: dropped on one, it takes that one's
+  place.
 - **Unpin it:** choose **Unpin** from the same menu on its avatar. It goes back to the section it
-  was in.
+  was in. On the Mac you can also drag it to a section, which unpins it and files it there.
 - **Reorder them:** a new pin goes after the others, and pinned chats stay where you put them
   however recent their messages. On the Mac, drag an avatar onto another to take its place. On
   either, choose **Move Left** or **Move Right** from its menu.

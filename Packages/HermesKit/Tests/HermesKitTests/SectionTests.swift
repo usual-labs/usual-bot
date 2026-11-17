@@ -299,6 +299,15 @@ struct SidebarSectionsTests {
         #expect(pinned(sections, roster) == ["b", "c", "a"])
     }
 
+    @Test func aChatPinnedByDroppingItOnAPinTakesThatPinsPlace() async {
+        let sections = store()
+        sections.reconcile([bot("a", pinned: true), bot("b", active: 5, pinned: true), bot("c", active: 9)])
+        sections.setPinned(true, bot("c", active: 9), at: "b")
+        await sections.writesFinished()
+        let roster = [bot("a", pinned: true), bot("b", active: 5, pinned: true), bot("c", active: 9, pinned: true)]
+        #expect(pinned(sections, roster) == ["a", "c", "b"])
+    }
+
     @Test func aPinnedChatMovesToWhereItIsDroppedAndStaysOnThisDevice() {
         let first = store()
         first.load(for: gateway)

@@ -24,12 +24,13 @@ struct ContactList: View {
     /// The section whose name is being edited in its heading.
     @State private var renaming: ContactSection.ID?
     @State private var deleting: ContactSection?
-    /// The block a chat is being dragged over.
-    @State private var dropTarget: SidebarBlock.ID?
+    /// Where the chat being dragged would land.
+    @State private var dropTarget: SidebarDropTarget?
     @State private var roomEdit: RoomEdit?
     @State private var botEdit: BotEdit?
     #if os(macOS)
         @State private var scrollPosition = ScrollPosition()
+        @State private var dragGeometry = SidebarDragGeometry()
     #endif
     @Environment(\.roomEditing) private var roomEditing
     @Environment(\.botEditing) private var botEditing
@@ -119,10 +120,18 @@ struct ContactList: View {
 
     private func pinnedTiles(_ block: SidebarBlock, byID: [Contact.ID: Contact]) -> some View {
         let pinned = block.contacts.map(\.id)
-        return PinnedTiles(
-            contacts: block.contacts, byID: byID, selection: $selection,
-            move: { movePinned($0, to: $1, among: pinned) }
-        ) { rowMenu($0, pinned: pinned) }
+        #if os(macOS)
+            let hovered: Contact.ID? =
+                if case .pin(let id) = dropTarget { id } else { nil }
+            return PinnedTiles(
+                contacts: block.contacts, byID: byID, selection: $selection, dropTarget: hovered,
+                geometry: dragGeometry
+            ) { rowMenu($0, pinned: pinned) }
+        #else
+            return PinnedTiles(contacts: block.contacts, byID: byID, selection: $selection) {
+                rowMenu($0, pinned: pinned)
+            }
+        #endif
     }
 
     private func movePinned(_ id: Contact.ID, to target: Contact.ID, among pinned: [Contact.ID]) {
@@ -170,6 +179,20 @@ struct ContactList: View {
                 }
                 .padding(.horizontal, compact ? 6 : 10)
                 .padding(.vertical, 6)
+                .coordinateSpace(.named(SidebarDragGeometry.space))
+                .overlay {
+                    if !isSearching {
+                        let rules = SidebarDropRules(blocks: visible, isGrouped: isGrouped, geometry: dragGeometry)
+                        SidebarDropLayer(
+                            target: { id, point in
+                                contacts.first { $0.id == id }.flatMap { rules.target(for: $0, at: point) }
+                            },
+                            highlighted: $dropTarget
+                        ) { id, target in
+                            drop(id, on: target, in: visible)
+                        }
+                    }
+                }
             }
             // The conversation's thin knob, not the system's wide scroller; none in the rail.
             .scrollPosition($scrollPosition)
@@ -352,9 +375,7 @@ struct ContactList: View {
     #if os(macOS)
         /// A heading and its rows, which together are where a dragged chat lands.
         private func blockView(_ block: SidebarBlock, byID: [Contact.ID: Contact], isFirst: Bool) -> some View {
-            // A section takes a chat dragged to it; the pinned chats aren't one.
-            let takesDrops = isGrouped && !block.isPinned
-            return VStack(spacing: 4) {
+            VStack(spacing: 4) {
                 if block.isPinned, !compact {
                     pinnedTiles(block, byID: byID).padding(.bottom, 6)
                 } else {
@@ -370,19 +391,33 @@ struct ContactList: View {
                 }
             }
             .padding(.top, showsHeadings && !isFirst ? 8 : 0)
+            .onGeometryChange(for: CGRect.self) {
+                $0.frame(in: .named(SidebarDragGeometry.space))
+            } action: {
+                dragGeometry.blocks[block.id] = $0
+            }
             .background(
-                dropTarget == block.id ? Theme.selection : .clear, in: RoundedRectangle(cornerRadius: 12)
+                dropTarget == .block(block.id) ? Theme.selection : .clear, in: RoundedRectangle(cornerRadius: 12)
             )
-            .dropDestination(for: SidebarDrag.self) { drags, _ in
-                guard takesDrops, let drag = drags.first, let contact = contacts.first(where: { $0.id == drag.id })
-                else { return false }
-                sections?.move(contact, to: block.section)
-                return true
-            } isTargeted: { targeted in
-                if targeted, takesDrops {
-                    dropTarget = block.id
-                } else if dropTarget == block.id {
-                    dropTarget = nil
+        }
+
+        /// Does what `SidebarDropRules` said dropping chat `id` on `target` would.
+        private func drop(_ id: Contact.ID, on target: SidebarDropTarget, in blocks: [SidebarBlock]) {
+            guard let sections, let contact = contacts.first(where: { $0.id == id }) else { return }
+            let pinned = blocks.first(where: \.isPinned)?.contacts.map(\.id) ?? []
+            withAnimation(.smooth(duration: 0.25)) {
+                switch target {
+                case .pin(let other) where contact.isPinned:
+                    sections.movePinned(id, to: other, among: pinned)
+                case .pin(let other):
+                    sections.setPinned(true, contact, at: other)
+                case .block(SidebarBlock.pinnedID):
+                    sections.setPinned(true, contact)
+                case .block(let blockID):
+                    if contact.isPinned { sections.setPinned(false, contact) }
+                    if isGrouped, let block = blocks.first(where: { $0.id == blockID }) {
+                        sections.move(contact, to: block.section)
+                    }
                 }
             }
         }
@@ -405,13 +440,22 @@ struct ContactList: View {
             .buttonStyle(.clickable)
             .accessibilityAddTraits(isSelected ? .isSelected : [])
             .contextMenu { rowMenu(contact) }
-            // A pinned chat shows in no section, so dragging it to one would show nothing.
-            if contact.isPinned {
-                row
-            } else {
-                row.draggable(SidebarDrag(id: contact.id)) {
-                    ContactRow(contact: contact, members: members, compact: true)
+            .overlay {
+                if !isSearching {
+                    SidebarDragSource(id: contact.id) {
+                        ContactRow(contact: contact, members: members, compact: true)
+                    }
                 }
+            }
+            // The rail shows the pinned chats as rows, which take another pinned chat's place.
+            if contact.isPinned, !isSearching {
+                row.onGeometryChange(for: CGRect.self) {
+                    $0.frame(in: .named(SidebarDragGeometry.space))
+                } action: {
+                    dragGeometry.pins[contact.id] = $0
+                }
+            } else {
+                row
             }
         }
 
