@@ -253,7 +253,7 @@ struct MarkdownView: View {
         }
         .messageFont()
         .foregroundStyle(Theme.ink)
-        .textSelection(.enabled)
+        .messageTextSelection()
     }
 
     /// What the reply draws. On the Mac, paragraphs, headings, list items and quotes in a row are

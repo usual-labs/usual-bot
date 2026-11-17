@@ -443,7 +443,7 @@ struct UserBubbleContent: View {
                     }
                 }
                 .foregroundStyle(Theme.userBubbleInk)
-                .textSelection(.enabled)
+                .messageTextSelection()
                 .padding(.horizontal, Theme.bubblePadding)
                 .padding(.vertical, 9)
                 .background(Theme.userBubble, in: RoundedRectangle(cornerRadius: 18))
@@ -524,7 +524,7 @@ struct CommandOutput: View {
                 .scaledFont(size: 12.5, design: .monospaced)
                 .foregroundStyle(Theme.ink)
                 .fixedSize()
-                .textSelection(.enabled)
+                .messageTextSelection()
                 .padding(12)
         }
         .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
