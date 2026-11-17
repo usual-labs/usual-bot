@@ -220,14 +220,16 @@ public final class SidebarSections {
         }
     }
 
-    /// Pins `contact` after the other pinned chats, or with `false` puts it back where it was filed.
-    public func setPinned(_ isPinned: Bool, _ contact: Contact) {
+    /// Pins `contact` after the other pinned chats, or in the place of the pinned chat `target`, or
+    /// with `false` puts it back where it was filed.
+    public func setPinned(_ isPinned: Bool, _ contact: Contact, at target: Contact.ID? = nil) {
         let id = contact.id
         let place = pinOrder.firstIndex(of: id)
+        let newPlace = target.flatMap { pinOrder.firstIndex(of: $0) }
         if contact.kind == .agent {
             guard contact.isPinned != isPinned else { return }
             pendingPins[id] = Pending(value: isPinned)
-            arrange(id, pinned: isPinned)
+            arrange(id, pinned: isPinned, at: newPlace)
             let profile = contact.details?.profile ?? id
             enqueue { [savePin] in
                 try await savePin(profile, isPinned)
@@ -242,7 +244,7 @@ public final class SidebarSections {
             }
         } else if isPinned != pinnedRooms.contains(id) {
             if isPinned { pinnedRooms.insert(id) } else { pinnedRooms.remove(id) }
-            arrange(id, pinned: isPinned)
+            arrange(id, pinned: isPinned, at: newPlace)
         }
     }
 

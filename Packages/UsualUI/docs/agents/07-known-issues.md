@@ -148,6 +148,15 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **A Mac sheet's bar draws no `.navigation` item.** `SheetForm` put Back there: it was invisible, and its Esc with it, so a routine's run had no way out. Back now takes the bottom-left slot (`.destructiveAction`); a sheet using `extra` and `back` together would share it.
 - **SwiftUI won't quit while a window shows a sheet,** and the app delegate's `applicationShouldTerminate` isn't asked. Closing the sheet's `NSWindow` doesn't help: SwiftUI puts it back while its state says it's open. `UsualBotCommands.quit()` closes the sheets, calls `terminate`, and exits half a second later if that was refused. Quitting from the Dock or at logout still goes through `terminate` alone and is unverified with a sheet open.
 
+- **A SwiftUI drop destination holds the drag picture after the drop.** With `.draggable` and
+  `.dropDestination` (or `onDrop`) the picture stayed frozen where the chat was dropped for about
+  350 ms, though the drop was handled at once and the main thread was idle: timed in the demo,
+  November 2026. Plain AppKit ends the drag 0–1 ms after `performDragOperation`. An AppKit drag
+  source alone didn't help; the drop side has to be AppKit too. So the sidebar drags through
+  `SidebarDrag.swift`: a source over each row and tile that watches the press rather than taking
+  it, and one drop layer over the list that is found only while a drag is under way, and finds
+  sections and pins from frames SwiftUI reports. Keep new sidebar drags on it.
+
 ## Lists and text
 
 - **`.font(.system(size:))` ignores Dynamic Type,** and `Font.custom(_:size:relativeTo:)` doesn't help with the system font. Use `scaledFont`, and don't scale a size twice: `messageTextSize` and `composerButtonSize` arrive scaled. A `Spacer` in an `AnyLayout` that switches from a row to a column at accessibility sizes stretches the column; add it only in the row.

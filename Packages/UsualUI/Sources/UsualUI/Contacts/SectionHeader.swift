@@ -1,7 +1,5 @@
-import CoreTransferable
 import HermesKit
 import SwiftUI
-import UniformTypeIdentifiers
 
 /// A section's heading in the sidebar. Click it to fold the section; a folded heading shows what
 /// its hidden rows would, so nothing waiting for you goes out of sight. A section's actions are a
@@ -214,30 +212,3 @@ struct SectionNameField: View {
         #endif
     }
 }
-
-#if os(macOS)
-    extension UTType {
-        /// Declared in `Config/Info.plist`.
-        fileprivate static let sidebarChat = UTType(exportedAs: "dev.usualbot.sidebar-chat")
-        fileprivate static let pinnedChat = UTType(exportedAs: "dev.usualbot.pinned-chat")
-    }
-
-    /// A chat on its way to another section.
-    struct SidebarDrag: Codable, Transferable {
-        let id: Contact.ID
-
-        static var transferRepresentation: some TransferRepresentation {
-            CodableRepresentation(contentType: .sidebarChat)
-        }
-    }
-
-    /// A pinned chat on its way to another place among the pinned chats. Its own type, so a section
-    /// doesn't light up for it.
-    struct PinnedDrag: Codable, Transferable {
-        let id: Contact.ID
-
-        static var transferRepresentation: some TransferRepresentation {
-            CodableRepresentation(contentType: .pinnedChat)
-        }
-    }
-#endif

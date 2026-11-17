@@ -548,9 +548,10 @@ read at Hermes `2bd378ed1b`.
 - **Pinned chats are tiles above the sections, as in Grok,** not rows with a pin as in the official
   app. A tile has no preview, so its badge carries what's waiting.
 - **A pinned chat keeps its section but isn't listed in it,** so folding a section can't hide a
-  chat you pinned, and unpinning puts it back. Its menu leaves out the section items and it can't
-  be dragged, since moving it would show nothing. Deleting a section still asks when only pinned
-  chats are filed under it.
+  chat you pinned, and unpinning puts it back. Its menu leaves out the section items. On the Mac,
+  dragging it to a section unpins it and files it there, and dragging a chat onto the pinned chats
+  pins it, in the place of the one it's dropped on (`SidebarDropRules`). Deleting a section still
+  asks when only pinned chats are filed under it.
 - **Search and the rail have no tiles.** They list pinned chats first as rows; a search marks them
   with a pin, and the rail draws a line under them.
 - **Pinned chats stay where you put them; everything else follows its newest message.** The order
@@ -558,9 +559,9 @@ read at Hermes `2bd378ed1b`.
   saves no order, and writing one to each Bot would mean a write per Bot for every move. A new
   pin goes last, and a Bot first seen pinned (from another device, or from before the order was
   kept) joins the end by recency. Every list that puts pinned chats first (⌘1 to ⌘9, Quick
-  Message, the share sheet, search) reads the same order. Reordering is a drag on the Mac and
-  Move Left and Move Right in the tile's menu everywhere; the rail and search, which show pinned
-  chats as rows, don't reorder.
+  Message, the share sheet, search) reads the same order. Reordering is a drag on the Mac, in the
+  rail too, and Move Left and Move Right in the tile's menu everywhere; search, which shows pinned
+  chats as rows, doesn't take drags.
 
 ## Search
 
@@ -854,8 +855,9 @@ read at Hermes `2bd378ed1b`.
   all three room actions have run through `AppModel` on a live dashboard socket, but not in the real
   app window: its UI was checked in the demo.
 - Sections against a live gateway: `profiles.configure` is confirmed from the Hermes source only,
-  never run on the app's dashboard socket. Dragging between sections and Esc in the name field
-  haven't been run, because both need the real pointer or keyboard on the Mac.
+  never run on the app's dashboard socket. Esc in the name field hasn't been run, because it
+  needs the real keyboard on the Mac. Dragging between sections and the pinned chats was tried by
+  hand in the demo (November 2026), not in the rail.
 - Agent defaults against a live gateway; they're left out of shakedowns because they change an
   agent's default model everywhere.
 - iPhone on a real device beyond sign-in: calls, dictation and GPT-Live audio routing.
