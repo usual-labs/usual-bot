@@ -38,11 +38,13 @@ skill setup and everything else stay in the official Hermes app.
 
 ## Install
 
-Usual Bot is in beta on **TestFlight**, for the Mac and the iPhone. A public link to join is coming
-soon; until then, build it from source (below). Needs macOS 26 or iOS 26 or later.
+Usual Bot is in beta on **TestFlight**, for the Mac and the iPhone:
+**[join the beta](https://testflight.apple.com/join/y1wPqfUH)**. Install Apple's
+[TestFlight](https://apps.apple.com/app/testflight/id899247664) app first, then open the link on
+your Mac or iPhone. Needs macOS 26 or iOS 26 or later. You can also build it from source (below).
 
 The Homebrew cask and the GitHub download stopped at version 0.3.0. If you installed one, join
-the beta once the link is here to keep getting updates.
+the beta to keep getting updates.
 
 Then sign in to your gateway; [Getting started](docs/guides/getting-started.md#2-get-your-gateway-ready)
 shows what it needs.
