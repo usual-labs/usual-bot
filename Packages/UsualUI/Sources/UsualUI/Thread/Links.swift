@@ -35,6 +35,60 @@ enum Links {
         detect(in: AttributedString(text))
     }
 
+    /// The address a link attribute names: for `[the guide](https://…)` the target, not the words.
+    /// A `.link` is a `URL`, or a `String` where AppKit kept the text as it was written.
+    static func url(from link: Any?) -> URL? {
+        (link as? URL) ?? (link as? String).flatMap(URL.init(string:))
+    }
+
+    /// Whether this Mac or iPhone can open it. A Markdown link to a path names a file on the
+    /// gateway, which it can't.
+    static func isOpenable(_ url: URL) -> Bool {
+        guard let scheme = url.scheme else { return false }
+        return scheme != "file"
+    }
+
+    /// Where the links in `text` go, in reading order, each once.
+    static func urls(in text: AttributedString) -> [URL] {
+        var seen: Set<URL> = []
+        return text.runs[\.link].compactMap { link, _ in
+            guard let link, seen.insert(link).inserted else { return nil }
+            return link
+        }
+    }
+
+    /// Where the links in a reply go, in reading order, each once. Code has none.
+    static func urls(in blocks: [MarkdownBlock]) -> [URL] {
+        var seen: Set<URL> = []
+        var all: [URL] = []
+        for block in blocks {
+            let texts: [AttributedString]
+            switch block {
+            case .paragraph(let text), .heading(_, let text), .listItem(_, _, let text), .quote(let text):
+                texts = [text]
+            case .table(let table):
+                texts = table.header + table.rows.flatMap { $0 }
+            default:
+                continue
+            }
+            for url in texts.flatMap(urls(in:)) where seen.insert(url).inserted { all.append(url) }
+        }
+        return all
+    }
+
+    /// Where the addresses typed in a plain message, such as your own, go.
+    static func urls(inPlain text: String) -> [URL] {
+        urls(in: detect(in: text))
+    }
+
+    /// A link as a few words for a menu: `docs.example.com/search/limits`.
+    static func shortName(_ url: URL) -> String {
+        guard let host = url.host else { return url.absoluteString }
+        let path = url.path == "/" ? "" : url.path
+        let name = (host.hasPrefix("www.") ? String(host.dropFirst(4)) : host) + path
+        return name.count > 40 ? name.prefix(39) + "…" : name
+    }
+
     /// Only what reads as an address: `https://…`, `www.…` or `name@host`. The detector also
     /// takes file names such as `README.md` for web sites (`.md` is a country's domain).
     private static func isWritten(_ found: String, as url: URL) -> Bool {

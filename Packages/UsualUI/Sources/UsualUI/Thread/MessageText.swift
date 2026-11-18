@@ -255,14 +255,16 @@
             return super.performKeyEquivalent(with: event)
         }
 
-        /// Right-clicking the selection offers Add to Chat and the text's own commands; anywhere
-        /// else, the message's menu (React, Reply, Copy).
+        /// Right-clicking the selection offers Add to Chat and the text's own commands; right-clicking
+        /// a link outside it, Open Link and Copy Link; anywhere else, the message's menu (React,
+        /// Reply, Copy), whose Copy takes the whole message.
         override func menu(for event: NSEvent) -> NSMenu? {
+            let point = convert(event.locationInWindow, from: nil)
             let range = selectedRange()
-            let index = characterIndexForInsertion(at: convert(event.locationInWindow, from: nil))
-            guard range.length > 0, index >= range.location, index <= NSMaxRange(range),
-                let menu = super.menu(for: event)
-            else { return nil }
+            let index = characterIndexForInsertion(at: point)
+            let inSelection = range.length > 0 && index >= range.location && index <= NSMaxRange(range)
+            if !inSelection { return linkURL(at: point).map(linkMenu) }
+            guard let menu = super.menu(for: event) else { return nil }
             Self.dropEditing(from: menu)
             if quote != nil {
                 let item = NSMenuItem(
@@ -274,6 +276,54 @@
                 menu.insertItem(.separator(), at: 1)
             }
             return menu
+        }
+
+        /// Where a link is under `point`, in this view's coordinates. Only on the link's own
+        /// characters: a point past the end of a line is nearest the line's last character, which
+        /// isn't under it.
+        func linkURL(at point: NSPoint) -> URL? {
+            guard let layoutManager, let textContainer, let textStorage, textStorage.length > 0 else { return nil }
+            let origin = textContainerOrigin
+            let inContainer = NSPoint(x: point.x - origin.x, y: point.y - origin.y)
+            var fraction: CGFloat = 0
+            let glyph = layoutManager.glyphIndex(
+                for: inContainer, in: textContainer, fractionOfDistanceThroughGlyph: &fraction)
+            let bounds = layoutManager.boundingRect(
+                forGlyphRange: NSRange(location: glyph, length: 1), in: textContainer)
+            guard bounds.contains(inContainer) else { return nil }
+            let index = layoutManager.characterIndexForGlyph(at: glyph)
+            return Links.url(from: textStorage.attribute(.link, at: index, effectiveRange: nil))
+        }
+
+        /// Open Link, when this Mac can open it, and Copy Link, which copies the address the link
+        /// goes to, not its words and not the whole message.
+        func linkMenu(for url: URL) -> NSMenu {
+            let menu = NSMenu()
+            if Links.isOpenable(url) {
+                let open = NSMenuItem(
+                    title: String(localized: "Open Link"), action: #selector(openLinkFromMenu(_:)), keyEquivalent: "")
+                open.image = NSImage(systemSymbolName: "safari", accessibilityDescription: nil)
+                open.representedObject = url
+                open.target = self
+                menu.addItem(open)
+            }
+            let copy = NSMenuItem(
+                title: String(localized: "Copy Link"), action: #selector(copyLinkFromMenu(_:)), keyEquivalent: "")
+            copy.image = NSImage(systemSymbolName: "link", accessibilityDescription: nil)
+            copy.representedObject = url
+            copy.target = self
+            menu.addItem(copy)
+            return menu
+        }
+
+        @objc private func openLinkFromMenu(_ sender: NSMenuItem) {
+            if let url = sender.representedObject as? URL { NSWorkspace.shared.open(url) }
+        }
+
+        @objc private func copyLinkFromMenu(_ sender: NSMenuItem) {
+            guard let url = sender.representedObject as? URL else { return }
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(url.absoluteString, forType: .string)
         }
 
         /// Leaves Look Up, Translate, Search, Copy, Share and Speech: the words can't be edited, so
@@ -396,8 +446,7 @@
         /// Opens web and mail links. A Markdown link to a path names a file on the gateway, which
         /// this Mac can't open.
         func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
-            let url = (link as? URL) ?? (link as? String).flatMap(URL.init(string:))
-            if let url, let scheme = url.scheme, scheme != "file" { NSWorkspace.shared.open(url) }
+            if let url = Links.url(from: link), Links.isOpenable(url) { NSWorkspace.shared.open(url) }
             return true
         }
     }
