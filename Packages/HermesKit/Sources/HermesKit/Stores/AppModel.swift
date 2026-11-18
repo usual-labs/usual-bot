@@ -98,7 +98,7 @@ public final class AppModel {
     @ObservationIgnored var rooms: [Contact.ID: RoomThread] = [:]
     /// Agents' computers, once a chat asked about one.
     @ObservationIgnored var screens: [Contact.ID: BotScreen] = [:]
-    /// Agents' browsers (`usual-browser` plugin), once a chat asked about one.
+    /// Agents' browsers (`usual-bot` plugin), once a chat asked about one.
     @ObservationIgnored var browsers: [Contact.ID: BotBrowser] = [:]
     let makeScreenSocket: ScreenSocketFactory
     /// Chats' messages ready to search (`searchMessages`).
@@ -458,6 +458,10 @@ public final class AppModel {
         thread.wasRead = { [weak self] in self?.readSync.markRead(id) }
         thread.openEnded = { [weak self] in self?.attachChats() }
         thread.gatewayIsUnencrypted = { [weak self] in self?.auth?.gateway.isUnencrypted ?? true }
+        thread.chatOpened = { [weak self] sessionID in
+            guard let self, !self.isDemo, let auth = self.auth else { return }
+            Task { await UsualPlugin.noteChat(sessionID, on: auth) }
+        }
         return thread
     }
 

@@ -1,4 +1,5 @@
-"""The devices Usual Bot pushes to, and which chat each has open. Shared by every profile on this gateway."""
+"""The devices Usual Bot pushes to, which chat each has open, and which chats are the app's. Shared by
+every profile on this gateway."""
 
 from __future__ import annotations
 
@@ -26,10 +27,16 @@ CHOICES = {"message": True, "needs_you": True, "previews": True, "sound": True}
 # Kept here, never shown back: the relay's key to push to the device, and the key that seals for it.
 SECRETS = ("send_key", "seal_key")
 
+# A chat the app hasn't opened, nor a Bot used, in this long is forgotten: it gets no chat context.
+CHAT_LIFETIME = 30 * 24 * 3600
+# How old a chat's last use can get before a turn writes it down again, so most turns write nothing.
+_CHAT_REFRESH = 24 * 3600
+
 
 def _root() -> Path:
     from hermes_constants import get_default_hermes_root
 
+    # Named for the plugin push came from, so devices added before the plugins merged stay.
     return get_default_hermes_root() / "usual-push"
 
 
@@ -127,15 +134,16 @@ def is_open(chat: str) -> bool:
 
 
 @contextmanager
-def _shared():
-    """For `told.json`, which the gateway writes as it notifies and the dashboard as you read."""
+def _shared(name: str = "told"):
+    """For a file both the gateway and the dashboard write: `told.json`, which the gateway writes as
+    it notifies and the dashboard as you read, and `chats.json`."""
     with _lock:
         if fcntl is None:
             yield
             return
         root = _root()
         root.mkdir(mode=0o700, parents=True, exist_ok=True)
-        with open(root / ".told.lock", "a") as handle:
+        with open(root / f".{name}.lock", "a") as handle:
             fcntl.flock(handle, fcntl.LOCK_EX)
             yield
 
@@ -168,3 +176,34 @@ def take_told(chat: str, reader: str) -> list[str]:
                 del told[device_id]
         _write("told.json", told)
     return [device_id for device_id in showing if device_id != reader]
+
+
+def _fresh_chats(now: float) -> dict[str, float]:
+    return {
+        key: used
+        for key, used in _read("chats.json").items()
+        if isinstance(used, (int, float)) and now - used < CHAT_LIFETIME
+    }
+
+
+def note_chat(session_id: str) -> None:
+    """The app opened this chat: its turns get the chat context."""
+    now = time.time()
+    with _shared("chats"):
+        _write("chats.json", _fresh_chats(now) | {session_id: now})
+
+
+def is_app_chat(session_id: str, parent_session_id: str = "") -> bool:
+    """Whether the app opened this chat, or the one it continues: compression can move a chat to a
+    new session, whose parent is the old one. Each use keeps it from being forgotten."""
+    if not session_id:
+        return False
+    now = time.time()
+    chats = _fresh_chats(now)
+    used = chats.get(session_id)
+    if used is None and not (parent_session_id and parent_session_id in chats):
+        return False
+    if used is None or now - used > _CHAT_REFRESH:
+        with _shared("chats"):
+            _write("chats.json", _fresh_chats(now) | {session_id: now})
+    return True

@@ -16,7 +16,7 @@ struct PushSection: View {
     @State private var problem: String?
 
     private static let guide = URL(
-        string: "https://github.com/usual-labs/usual-bot/tree/main/Integrations/hermes-push")!
+        string: "https://github.com/usual-labs/usual-bot/tree/main/Integrations/usual-bot#install")!
 
     var body: some View {
         Section {
@@ -24,7 +24,7 @@ struct PushSection: View {
             case .loading:
                 Text("Checking your gateway…").foregroundStyle(Theme.secondaryInk)
             case .notInstalled:
-                Text("Your gateway doesn’t have the Usual Bot push plugin yet.")
+                Text("Your gateway doesn’t have the Usual Bot plugin yet.")
                 Link("How to install it", destination: Self.guide)
             case .failed(let reason):
                 Text(reason).foregroundStyle(Theme.danger)

@@ -21,12 +21,13 @@
   user runs in their own agent; linked from `docs/guides/troubleshooting.md`
 - `CLAUDE.md` imports `AGENTS.md`; shared agent skills live in `.agents/skills`, linked from
   `.claude/skills`
-- `Integrations/hermes-push/` — the Hermes plugin that seals notifications per device and sends them
-  to the relay (Python, standard library plus Hermes and its `cryptography`; installed on the
-  gateway, not built with the app)
-- `Integrations/hermes-browser/` — the Hermes plugin that streams a real-profile Bot's headless
-  browser to the app and keeps that browser's Chrome flags (window size, user agent) in step
-  (Python, Hermes and its `aiohttp`; installed on the gateway only for real-profile Bots)
+- `Integrations/usual-bot/` — the one Hermes plugin the app uses, in every profile: it seals
+  notifications per device and sends them to the relay, streams a real-profile Bot's headless
+  browser and keeps that browser's Chrome flags in step, and tells Bots in the app's chats where
+  they are (Python, standard library plus Hermes and its `cryptography` and `aiohttp`; installed on
+  the gateway, not built with the app). `Integrations/install-usual-bot.sh` installs it from a
+  clone; `hermes-push/` and `hermes-browser/` keep only an `install.sh` that runs it, for older
+  apps' setup steps
 - `Services/push-relay/` — the push relay at `push.usual.dev`: a Cloudflare Worker (plain JS, no
   dependencies) and D1, deployed with Wrangler, not built with the app
 - `Services/updates/` — the update check at `bot.usual.dev`: a Cloudflare Worker (plain JS, no

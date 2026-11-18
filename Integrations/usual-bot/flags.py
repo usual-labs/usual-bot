@@ -142,7 +142,7 @@ def tab_strip_width(profile: Path) -> int | None:
     except (OSError, ValueError, AttributeError) as exc:
         # macOS keeps a background gateway out of the browser's own folder unless it has Full Disk
         # Access; Hermes then can't refresh its copy either, and launches on the last one.
-        log.debug("usual-browser: could not read %s: %r", prefs, exc)
+        log.debug("usual-bot: could not read %s: %r", prefs, exc)
         width = None
     else:
         if not isinstance(tabs, dict) or not tabs.get("enabled"):
@@ -212,6 +212,7 @@ def merge(current: list[str], ours_before: list[str], want: list[str]) -> tuple[
 
 
 def _state_file(home: Path) -> Path:
+    # Named for the plugin this part came from, so flags an older version wrote still come back out.
     return home / "usual-browser" / "flags.json"
 
 
@@ -249,7 +250,7 @@ def sync() -> bool:
         changed = updated != current
         if changed:
             write_config_key(config_path, "browser.chromium_args", updated)
-            log.info("usual-browser: browser flags in %s are now %s", config_path, " ".join(written) or "(none)")
+            log.info("usual-bot: browser flags in %s are now %s", config_path, " ".join(written) or "(none)")
         if written != ours_before:
             _write_state(home, written)
     return changed

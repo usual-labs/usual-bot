@@ -4,7 +4,7 @@ A Cloudflare Worker and D1 database at `push.usual.dev` that hands sealed notifi
 gateways to Apple's push service. It holds Usual Bot's APNs key, which only the app's signer can
 have, so each gateway doesn't need one.
 
-It can't read what it carries. The gateway plugin ([`Integrations/hermes-push`](../../Integrations/hermes-push/README.md))
+It can't read what it carries. The gateway plugin ([`Integrations/usual-bot`](../../Integrations/usual-bot/README.md))
 seals each notification with a key the device made and gave only to its gateway, and the app's
 notification extension opens it. The relay adds a generic "New message", which is what shows if a
 device can't open it.

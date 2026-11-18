@@ -39,7 +39,7 @@ final class NotificationService: UNNotificationServiceExtension {
     }
 }
 
-/// What `Integrations/hermes-push` seals: JSON under AES-GCM, as nonce, then ciphertext and tag.
+/// What `Integrations/usual-bot` seals: JSON under AES-GCM, as nonce, then ciphertext and tag.
 private struct Sealed: Decodable {
     let title: String
     let subtitle: String?

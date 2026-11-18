@@ -15,7 +15,7 @@ struct PluginsSettings: View {
             let bots = model.contacts.filter { $0.kind == .agent }.sorted {
                 $0.name.localizedStandardCompare($1.name) == .orderedAscending
             }
-            PushSetup(push: model.push, bots: bots, ask: ask)
+            PluginSetup(model: model, bots: bots, ask: ask)
             BrowserSetup(model: model, bots: bots, ask: ask)
             ComputerSetup(model: model, bots: bots)
             Section {
@@ -46,39 +46,90 @@ struct PluginsSettings: View {
     }
 }
 
-/// The `usual-push` plugin (`Integrations/hermes-push`), which notifies your devices.
-private struct PushSetup: View {
-    let push: PushSettings
+/// The `usual-bot` plugin (`Integrations/usual-bot`): installed, out of date or missing. Install
+/// and Update go through Hermes's own installer, into every Bot, after you say yes to what
+/// Hermes's check found; the commands are there for a gateway that refuses.
+private struct PluginSetup: View {
+    let model: AppModel
     let bots: [Contact]
     let ask: (Contact, String) -> Void
 
+    @State private var isConfirming = false
+    @State private var isInstalling = false
+    @State private var problem: String?
+    @State private var needsRestart = false
+
+    private var push: PushSettings { model.push }
+
     var body: some View {
         Section {
-            LabeledContent("usual-push plugin") {
-                switch push.phase {
-                case .loading: ProgressView().controlSize(.small)
-                case .ready: Text("Installed")
-                case .notInstalled: Text("Not installed").foregroundStyle(Theme.needsYouInk)
-                case .failed(let message): Text(message).foregroundStyle(Theme.danger)
+            LabeledContent("usual-bot plugin") {
+                if isInstalling {
+                    ProgressView().controlSize(.small)
+                } else {
+                    status
                 }
             }
-            if push.phase == .notInstalled {
+            if push.phase == .notInstalled || push.needsUpdate {
+                Button(push.needsUpdate ? "Update in Every Bot…" : "Install in Every Bot…") { isConfirming = true }
+                    .disabled(isInstalling)
+                    .clickable()
+                    .confirmationDialog(
+                        push.needsUpdate ? "Update the plugin in every Bot?" : "Install the plugin in every Bot?",
+                        isPresented: $isConfirming, titleVisibility: .visible
+                    ) {
+                        Button(push.needsUpdate ? "Update" : "Install") { install() }
+                    } message: {
+                        Text(
+                            "Hermes downloads it from Usual Bot’s GitHub and installs it into each of your Bots. Hermes checks plugins first and marks this one “caution”: it reads your browser’s version, and its notifications mention sudo when a Bot asks for the password. Choosing \(push.needsUpdate ? "Update" : "Install") accepts that."
+                        )
+                    }
+                if let problem {
+                    Text(problem).foregroundStyle(Theme.danger)
+                }
                 SetupStep(
-                    "On the computer your gateway runs on, install it, then restart the gateway:",
-                    command: SetupCommands.install(.push), message: SetupCommands.askInstall(.push), bots: bots,
-                    ask: ask)
+                    "Or, on the computer your gateway runs on, install it, then restart the gateway:",
+                    command: SetupCommands.install, message: SetupCommands.askInstall, bots: bots, ask: ask)
+            }
+            if needsRestart {
+                Text("Restart your gateway to finish: hermes gateway restart")
+                    .foregroundStyle(Theme.needsYouInk)
             }
         } header: {
-            Text("Notifications")
+            Text("Usual Bot Plugin")
         } footer: {
             Text(
-                "Tells your devices when a Bot replies, messages you or needs you, even with Usual Bot closed. Each device then turns itself on under Settings › Notifications."
+                "Tells your devices when a Bot replies, messages you or needs you, even with Usual Bot closed; lets you watch a Bot’s browser; and tells Bots in your Usual Bot chats that they’re talking through Usual Bot. It does nothing for your other apps’ chats. Each device turns notifications on under Settings › Notifications."
             )
+        }
+    }
+
+    @ViewBuilder private var status: some View {
+        switch push.phase {
+        case .loading: ProgressView().controlSize(.small)
+        case .ready where push.needsUpdate:
+            Text("Update available").foregroundStyle(Theme.needsYouInk)
+        case .ready: Text("Installed")
+        case .notInstalled: Text("Not installed").foregroundStyle(Theme.needsYouInk)
+        case .failed(let message): Text(message).foregroundStyle(Theme.danger)
+        }
+    }
+
+    private func install() {
+        isInstalling = true
+        problem = nil
+        Task {
+            do {
+                needsRestart = try await model.installPlugin()
+            } catch {
+                problem = AppModel.describe(error)
+            }
+            isInstalling = false
         }
     }
 }
 
-/// The `usual-browser` plugin, then each Bot: ready to watch, or what's left to do for it.
+/// Each Bot, once the gateway has the plugin: ready to watch, or what's left to do for it.
 private struct BrowserSetup: View {
     let model: AppModel
     let bots: [Contact]
@@ -88,33 +139,23 @@ private struct BrowserSetup: View {
         let browsers = bots.map { model.browser(for: $0) }
         let plugin = Self.hasPlugin(browsers.map(\.hasPlugin))
         Section {
-            LabeledContent("usual-browser plugin") {
-                switch plugin {
-                case true: Text("Installed")
-                case false: Text("Not installed").foregroundStyle(Theme.needsYouInk)
-                default: ProgressView().controlSize(.small)
-                }
-            }
             if plugin == false {
-                SetupStep(
-                    "On the computer your gateway runs on, install it, then restart the gateway:",
-                    command: SetupCommands.install(.browser), message: SetupCommands.askInstall(.browser),
-                    bots: bots, ask: ask)
+                Text("Needs the Usual Bot plugin, above.").foregroundStyle(Theme.secondaryInk)
+            } else if plugin == nil {
+                ProgressView().controlSize(.small)
             }
-            if plugin == true {
-                ForEach(bots) { bot in
-                    let browser = model.browser(for: bot)
-                    LabeledContent(bot.name) {
-                        if browser.isAvailable {
-                            Text("Ready")
-                        } else {
-                            HStack(spacing: 8) {
-                                Text("Off").foregroundStyle(.secondary)
-                                SetupMenu(
-                                    command: SetupCommands.turnOnBrowser(profile: browser.profile),
-                                    message: SetupCommands.askTurnOnBrowser(profile: browser.profile, name: bot.name),
-                                    bots: bots, ask: ask)
-                            }
+            ForEach(plugin == true ? bots : []) { bot in
+                let browser = model.browser(for: bot)
+                LabeledContent(bot.name) {
+                    if browser.isAvailable {
+                        Text("Ready")
+                    } else {
+                        HStack(spacing: 8) {
+                            Text("Off").foregroundStyle(.secondary)
+                            SetupMenu(
+                                command: SetupCommands.turnOnBrowser(profile: browser.profile),
+                                message: SetupCommands.askTurnOnBrowser(profile: browser.profile, name: bot.name),
+                                bots: bots, ask: ask)
                         }
                     }
                 }

@@ -1,9 +1,12 @@
-"""Usual Bot's devices for this plugin. The dashboard's own sign-in guards these routes."""
+"""The routes Usual Bot calls: its devices, the chats it opened, and a Bot's browser
+(``browser_api.py``). The dashboard's own sign-in guards them all."""
 
 from __future__ import annotations
 
 import base64
 import importlib.util
+import logging
+import re
 import sys
 from pathlib import Path
 
@@ -11,11 +14,10 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 
-def _load_plugin():
+def _load(name: str, path: Path, package: Path | None = None):
     # By path: the dashboard imports this file on its own, outside the plugin's package.
-    root = Path(__file__).resolve().parent.parent
     spec = importlib.util.spec_from_file_location(
-        "usual_push_plugin", root / "__init__.py", submodule_search_locations=[str(root)]
+        name, path, submodule_search_locations=[str(package)] if package else None
     )
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
@@ -23,9 +25,17 @@ def _load_plugin():
     return module
 
 
-plugin = _load_plugin()
+_here = Path(__file__).resolve().parent
+plugin = _load("usual_bot_plugin", _here.parent / "__init__.py", _here.parent)
 store = plugin.store
 router = APIRouter()
+try:
+    router.include_router(_load("usual_bot_browser_api", _here / "browser_api.py").router)
+except ImportError as error:  # No aiohttp: everything but the browser view still works.
+    logging.getLogger(__name__).warning("usual-bot: no browser view: %s", error)
+
+# What Hermes names sessions with, and no more: the ID becomes a key in a file.
+_SESSION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 
 
 class Device(BaseModel):
@@ -92,7 +102,7 @@ def delete_device(device_id: str) -> dict:
 def presence(new: Presence) -> dict:
     store.set_open(new.device, new.chat)
     if new.chat:
-        plugin.read_on(new.device, new.chat)
+        plugin.push.read_on(new.device, new.chat)
     if new.names is not None:
         store.set_names(new.names)
     return {"ok": True}
@@ -100,9 +110,18 @@ def presence(new: Presence) -> dict:
 
 @router.post("/test")
 def test(new: Test) -> dict:
-    fate = plugin.send_test(new.device)
+    fate = plugin.push.send_test(new.device)
     if fate == "gone":
         raise HTTPException(status_code=404, detail="Your gateway doesn’t know this device. Open Usual Bot again.")
     if fate != "sent":
         raise HTTPException(status_code=502, detail="The push relay couldn’t deliver it. Try again in a moment.")
+    return {"ok": True}
+
+
+@router.put("/chats/{session_id}")
+def put_chat(session_id: str) -> dict:
+    """The app opened this chat, so its Bot is told it's talking through Usual Bot."""
+    if not _SESSION.match(session_id):
+        raise HTTPException(status_code=400, detail="That isn't a chat's session ID.")
+    store.note_chat(session_id)
     return {"ok": True}

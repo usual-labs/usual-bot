@@ -404,6 +404,22 @@ Bot's name above the chat):
   - **GPT-Live** uses OpenAI's realtime voice through your gateway, for a more natural
     conversation. It's offered when the gateway has an OpenAI key, and OpenAI bills the minutes.
 
+## The Usual Bot plugin
+
+Usual Bot's plugin runs on your gateway. It sends notifications to your devices, lets you watch a
+Bot's browser, and tells your Bots, in the chats you open in Usual Bot, that you're talking through
+Usual Bot and what shows there: Markdown, files and widgets. It tells them nothing about you or your
+device, and does nothing for chats in your other apps. Rooms don't get that note.
+
+On the Mac, **Plugins** (the puzzle piece at the foot of the sidebar) says whether your gateway has
+it: Installed, Update available or Not installed. **Install in Every Bot…** asks Hermes to install
+it into each of your Bots, hidden ones included, from Usual Bot's GitHub. Hermes checks plugins
+first and marks this one "caution", because it reads your browser's version and its notifications
+mention sudo; Usual Bot says so and installs only once you agree. A Bot you make in Usual Bot gets
+the plugin too. If your gateway won't install it, the same place has the commands to run on the
+gateway's computer, or **Ask a Bot** to run them. The plugin replaces the two older ones,
+`usual-push` and `usual-browser`, and keeps your devices.
+
 ## A Bot's computer
 
 Some Bots have a computer of their own: a Linux desktop Hermes runs for the Bot's profile,
@@ -434,17 +450,16 @@ not installed, or Not on this gateway. Rooms have no Computer button: open the B
 
 A Bot can browse with a copy of your own browser profile, signed in where you are, in a browser
 that runs out of sight on your gateway (Hermes' `browser.use_real_profile`). With the
-[`usual-browser` plugin](../../Integrations/hermes-browser/README.md) on your gateway, its chat
+[Usual Bot plugin](../../Integrations/usual-bot/README.md) on your gateway, its chat
 shows a **Browser** button (a globe) beside **Computer**, with a green dot while the Bot is browsing.
 
 On the Mac, **Plugins** (the puzzle piece at the foot of the sidebar, between the gateway and
 Settings) helps set it up. It says whether your gateway has the plugin and, for each Bot, whether
 it's Ready. **Set Up** beside a Bot that's Off copies the commands that turn real-profile browsing on
-for it, add the plugin and restart the gateway, or asks a Bot to run them: **Ask a Bot** opens that
+for it and restart the gateway, or asks a Bot to run them: **Ask a Bot** opens that
 Bot's chat with the request typed in its box, for you to read and send. Pick a Bot whose terminal
 runs on the gateway's computer, not in a Docker or SSH sandbox. The restart drops the chat for a
-moment. The app itself changes nothing on the gateway. Plugins also shows whether the gateway has
-the push plugin that sends notifications, with the same ways to install it.
+moment.
 
 - **Watch.** The Mac opens the page in a window of its own; iPhone shows it full screen, and you
   pinch to zoom. The bar shows the open tab's title and address, and the view follows the tab the
@@ -647,8 +662,7 @@ and Settings opens with your gateway at the top. Preferences stay on this device
   the Dock and on the Home Screen, shows how many replies you haven't read, leaving out chats you
   muted. If you'd allowed notifications before this came in, turn on **Badges** for Usual Bot in
   the system's notification settings.
-- **Push:** with the plugin in [`Integrations/hermes-push`](../../Integrations/hermes-push/README.md)
-  on your gateway, every device you sign in on is reached instantly, even with Usual Bot closed. Your
+- **Push:** with the [Usual Bot plugin](../../Integrations/usual-bot/README.md) on your gateway, every device you sign in on is reached instantly, even with Usual Bot closed. Your
   gateway seals each notification for that device, and Usual's relay and Apple pass it on without
   reading it. Reading a chat on one device keeps it quiet on the others, and takes down the
   notifications they already show about it (push plugin 0.4.0 or later). If you swiped Usual Bot

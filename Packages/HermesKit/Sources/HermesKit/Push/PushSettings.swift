@@ -2,8 +2,8 @@ import Foundation
 import Observation
 import os
 
-/// How the gateway reaches this device when the app can't: the `usual-push` plugin
-/// (`Integrations/hermes-push`) seals each notification for this device and hands it to Usual's
+/// How the gateway reaches this device when the app can't: the `usual-bot` plugin
+/// (`Integrations/usual-bot`, `UsualPlugin`) seals each notification for this device and hands it to Usual's
 /// push relay (`PushRelay`). The gateway keeps this device's choices; the relay only its address.
 @MainActor
 @Observable
@@ -39,6 +39,11 @@ public final class PushSettings {
     /// The plugin seals which gateway sent each notification (0.5.0 and later, which say their
     /// version). An older one's notifications can't be told apart from another gateway's.
     public private(set) var tagsGateway = false
+    /// The plugin's version, when it says. It's also `usual-push`'s from before the plugins merged.
+    public private(set) var pluginVersion: String?
+    /// The gateway has the plugin, but older than this build's: from before the merge, or before
+    /// a change since.
+    public var needsUpdate: Bool { phase == .ready && UsualPlugin.isOlder(pluginVersion) }
     /// Read when the gateway first meets this device. The app sets it.
     @ObservationIgnored public var currentChoices: @MainActor () -> Choices = { Choices() }
     /// A window has you, or the quick panel is open.
@@ -64,7 +69,9 @@ public final class PushSettings {
     /// Changes stay here, as if the gateway took them.
     private var isDemo = false
 
-    private static let path = "/api/plugins/usual-push"
+    /// Where the plugin answers: `usual-bot`'s routes, or `usual-push`'s on a gateway that has
+    /// the plugins from before they merged.
+    private var path = UsualPlugin.path
     private static let log = Logger(subsystem: "UsualBot", category: "push")
 
     init(
@@ -103,11 +110,12 @@ public final class PushSettings {
         if isDemo { return }
         guard let auth = auth() else { return }
         do {
-            let known = try await auth.json(Known.self, path: "\(Self.path)/settings")
+            let known = try await settings(on: auth)
             let mine = relay()?.registration.flatMap { registration in
                 known.devices.first { $0.id == registration.id }
             }
             tagsGateway = known.version != nil
+            pluginVersion = known.version
             phase = .ready
             if gateway()?.notifies == false {
                 // Turned off here: a device the gateway still has (a failed removal) goes now.
@@ -129,6 +137,18 @@ public final class PushSettings {
         await connectIfNeeded()
     }
 
+    private func settings(on auth: AuthSession) async throws -> Known {
+        do {
+            let known = try await auth.json(Known.self, path: "\(UsualPlugin.path)/settings")
+            path = UsualPlugin.path
+            return known
+        } catch GatewayError.http(status: 404, _) {
+            let known = try await auth.json(Known.self, path: "\(UsualPlugin.oldPushPath)/settings")
+            path = UsualPlugin.oldPushPath
+            return known
+        }
+    }
+
     /// Gives the gateway this device: where to reach it, the keys to do so, and its choices.
     func connectIfNeeded() async {
         guard phase == .ready, !isConnected, !isConnecting, !isDemo, gateway()?.notifies != false,
@@ -147,7 +167,7 @@ public final class PushSettings {
         device.gateway = gateway()?.id
         do {
             let saved = try await auth.json(
-                Device.self, path: "\(Self.path)/devices/\(registration.id)", method: "PUT", body: device)
+                Device.self, path: "\(path)/devices/\(registration.id)", method: "PUT", body: device)
             isConnected = true
             muted = Set(saved.muted ?? [])
         } catch {
@@ -175,7 +195,7 @@ public final class PushSettings {
         guard let auth = auth() else { throw GatewayError.disconnected }
         guard let registration = relay()?.registration else { throw PushError.notRegistered }
         _ = try await auth.json(
-            Done.self, path: "\(Self.path)/test", method: "POST", body: ["device": registration.id])
+            Done.self, path: "\(path)/test", method: "POST", body: ["device": registration.id])
     }
 
     public enum PushError: LocalizedError {
@@ -191,7 +211,7 @@ public final class PushSettings {
         guard let auth = auth() else { throw GatewayError.disconnected }
         guard let registration = relay()?.registration else { throw PushError.notRegistered }
         let saved = try await auth.json(
-            Device.self, path: "\(Self.path)/devices/\(registration.id)", method: "PUT", body: device)
+            Device.self, path: "\(path)/devices/\(registration.id)", method: "PUT", body: device)
         muted = Set(saved.muted ?? [])
     }
 
@@ -223,7 +243,7 @@ public final class PushSettings {
         isReporting = true
         do {
             _ = try await auth.json(
-                Done.self, path: "\(Self.path)/presence", method: "PUT",
+                Done.self, path: "\(path)/presence", method: "PUT",
                 body: Presence(device: registration.id, chat: chat, names: changed ? names : nil))
             lastNames = names
             reportedChat = .some(chat)
@@ -239,7 +259,7 @@ public final class PushSettings {
         guard !isDemo, let registration = relay()?.registration else { return }
         do {
             _ = try await auth.json(
-                Done.self, path: "\(Self.path)/presence", method: "PUT",
+                Done.self, path: "\(path)/presence", method: "PUT",
                 body: Presence(device: registration.id, chat: nil, names: nil))
         } catch {
             Self.log.error("Couldn't say no chat is open: \(AppModel.describe(error), privacy: .public)")
@@ -250,7 +270,7 @@ public final class PushSettings {
     func forget(on auth: AuthSession) async {
         guard !isDemo, let registration = relay()?.registration else { return }
         do {
-            _ = try await auth.json(Done.self, path: "\(Self.path)/devices/\(registration.id)", method: "DELETE")
+            _ = try await auth.json(Done.self, path: "\(path)/devices/\(registration.id)", method: "DELETE")
         } catch {
             Self.log.error("Couldn't take this device off the gateway: \(AppModel.describe(error), privacy: .public)")
         }
@@ -261,6 +281,8 @@ public final class PushSettings {
         isConnected = false
         muted = []
         tagsGateway = false
+        pluginVersion = nil
+        path = UsualPlugin.path
         lastNames = nil
         reportedChat = nil
     }
@@ -287,6 +309,7 @@ public final class PushSettings {
             phase = .ready
             isConnected = true
             tagsGateway = true
+            pluginVersion = UsualPlugin.version
             isDemo = true
         }
     #endif

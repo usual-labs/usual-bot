@@ -12,6 +12,9 @@ enum BotChat {
     struct Opened: Sendable {
         /// The live session ID: what `prompt.submit` takes and gateway events carry.
         let sessionID: String
+        /// The stored session's ID, which plugins' hooks see: the canonical protocol's
+        /// `stored_session_id`, the same as its live one, or the legacy dialect's `session_key`.
+        var storedID: String? = nil
         let history: [HistoryMessage]
         let running: Bool
         /// The history was too long for the gateway to send, so only new messages show.
@@ -84,12 +87,17 @@ enum BotChat {
                 displayText: turn["display_metadata"]?["display_text"]?.stringValue)
         }
         return Opened(
-            sessionID: live, history: history, running: result["running"]?.boolValue ?? false,
+            sessionID: live, storedID: storedID(result) ?? live, history: history,
+            running: result["running"]?.boolValue ?? false,
             historyOmitted: omitted || result["messages_omitted"]?.boolValue == true, inflight: inflight,
             openRequests: requests, info: result["info"],
             todoState: result["todo_state"], pendingConnection: result["pending_connection"],
             replayEpoch: result["replay_epoch"]?.stringValue,
             queue: result["pending"].map { ["pending": $0, "running": result["running"] ?? false] })
+    }
+
+    private static func storedID(_ result: JSONValue) -> String? {
+        (result["stored_session_id"] ?? result["session_key"])?.stringValue?.nonBlank
     }
 
     static func create(profile: String, dialect: GatewayReady.Dialect, on channel: JSONRPCChannel) async throws
@@ -113,6 +121,8 @@ enum BotChat {
             }
             throw GatewayError.invalidResponse
         }
-        return Opened(sessionID: live, history: [], running: false, historyOmitted: false, info: created["info"])
+        return Opened(
+            sessionID: live, storedID: storedID(created) ?? live, history: [], running: false,
+            historyOmitted: false, info: created["info"])
     }
 }

@@ -1,0 +1,10 @@
+{
+  "name": "usual-bot",
+  "label": "Usual Bot",
+  "description": "The routes Usual Bot calls on your gateway, and a test viewer for a Bot's browser.",
+  "icon": "Globe",
+  "version": "0.6.0",
+  "tab": { "path": "/usual-bot", "hidden": true },
+  "entry": "dist/index.js",
+  "api": "plugin_api.py"
+}

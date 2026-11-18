@@ -127,7 +127,7 @@ def _authorized(ws: WebSocket) -> bool:
     try:
         from hermes_cli import web_server_chat
     except Exception:  # noqa: BLE001 - no dashboard, no way to check: refuse
-        log.warning("usual-browser: dashboard auth unavailable; refusing the socket")
+        log.warning("usual-bot: dashboard auth unavailable; refusing the socket")
         return False
     return bool(web_server_chat._ws_auth_ok(ws))
 
@@ -199,7 +199,7 @@ class _Viewer:
                     try:
                         await self._watch(http, url)
                     except Exception as exc:  # noqa: BLE001 - the browser went away mid-watch: look again
-                        log.info("usual-browser: lost the browser: %r", exc)
+                        log.info("usual-bot: lost the browser: %r", exc)
                         with contextlib.suppress(asyncio.TimeoutError):
                             await asyncio.wait_for(self.gone.wait(), _WAIT_S)
         finally:

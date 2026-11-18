@@ -18,7 +18,7 @@ extension PushRelay {
         return chatReadElsewhere(sealed: sealed, key: key)
     }
 
-    /// What `Integrations/hermes-push` seals: JSON under AES-GCM, as nonce, then ciphertext and tag.
+    /// What `Integrations/usual-bot` seals: JSON under AES-GCM, as nonce, then ciphertext and tag.
     /// The kind inside is checked too, so a message's sealed text passed off as a clear opens nothing.
     nonisolated static func chatReadElsewhere(sealed: String, key: Data) -> ReadElsewhere? {
         struct Read: Decodable {

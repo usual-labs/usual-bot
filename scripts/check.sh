@@ -12,7 +12,7 @@ checks() {
     swift format lint --strict --recursive App NotificationService ShareExtension Packages scripts/fixtures
     scripts/check-test-waits.sh
     scripts/check-shortcuts.sh
-    python3 -m unittest discover -s Integrations/hermes-push/tests
+    python3 -m unittest discover -s Integrations/usual-bot/tests
     swift test --package-path Packages/HermesKit
     swift test --package-path Packages/UsualUI
 }

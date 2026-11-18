@@ -375,13 +375,14 @@ read at Hermes `2bd378ed1b`.
 - **Push goes through Usual's own relay, sealed for each device.** ntfy and Pushover arrived late or
   under another app's icon, so the developer chose Apple's push under Usual Bot's own name. Apple's
   key belongs to the app's signer, so a relay we run (`Services/push-relay`, a Cloudflare Worker and
-  D1 at `push.usual.dev`) holds it. The gateway plugin (`Integrations/hermes-push`) seals each
+  D1 at `push.usual.dev`) holds it. The gateway plugin (`Integrations/usual-bot`) seals each
   notification with a key that only that device and its gateway have, and the app's notification
   extension opens it. The relay and Apple see a generic "New message" and which device it's for,
   never the text, the Bot or the gateway. This replaces the earlier rule that a relay of ours would
   break "Private".
 - **The gateway keeps the choices; the relay keeps only addresses.** Each device's choices, muted
-  chats and keys live in `~/.hermes/usual-push/settings.json`, shared by all profiles. The relay's D1
+  chats and keys live in `~/.hermes/usual-push/settings.json` (named for the plugin push came from,
+  so devices survive the merge), shared by all profiles. The relay's D1
   holds the APNs token, its environment and hashes of two secrets: the device's own, to update or
   remove its row, and the send key that lets its gateway push to it. There are no accounts. A
   gateway can push only to devices that handed it a send key.
@@ -717,9 +718,52 @@ read at Hermes `2bd378ed1b`.
   needs no global-event routing. Disconnect removes every live account of that app from the Nous
   Portal, so it says it affects every agent. Hidden when `available` is false or the gate says 4031.
 
+## The gateway plugin
+
+- **One plugin, `usual-bot`, in every profile.** Push and the browser view were two plugins
+  (`usual-push`, `usual-browser`); the developer merged them (November 2026) with a third part that
+  tells Bots about the app. It adds no agent tools: Hermes shows a plugin's tools in every app, not
+  just ours. The browser part acts only for Bots with `browser.use_real_profile`, so being in every
+  profile changes nothing for the rest. Data stays in the old folders (`~/.hermes/usual-push/`,
+  `<profile>/usual-browser/flags.json`) so devices and written flags survive the move.
+- **Bots are told where they are with a `pre_llm_call` hook, in the app's chats only.** The app's
+  chats use `source: "tui"`, so Hermes tells the agent it's in the terminal UI, where `MEDIA:`
+  prints as text. `source: "gui"` would give the desktop hint, but also the desktop app's own
+  toolsets (`desktop_ui`, `catalog`), which the app can't serve, and clients can't set any other
+  context (`session_surface.py` takes only `hud` and `voice-live`). Hermes appends a hook's context
+  to the user message and keeps it in `api_content`, which later turns replay and the hook's
+  `conversation_history` carries, so the plugin adds it when no user message has its marker: once
+  per chat, and again after compression drops it. The text (`context.py`) says who the app is (not
+  official, not Nous) and what renders; nothing about the user or their device, no feature list,
+  no off switch. Whether to add what doesn't render (math) was left open.
+- **The app names its chats; the plugin can't tell otherwise.** No client identity reaches a hook
+  (`client.capabilities` takes only `server_requests` and `desktop_local`). The app sends each Bot
+  Chat's stored session ID (`PUT /chats/<id>`) when it attaches; the plugin keeps it while it's
+  used within 30 days, and follows compression to a child session through `parent_session_id`, for
+  chat platforms only, so helpers (`subagent`) never get it. The accepted catch: the official app's
+  turns in the same Bot Chat get the context too. Routines' results and other Bots' messages are
+  turns in the chat, so they get it. Rooms don't: a member's room session is nothing the app knows,
+  and `on_room_member_activity`, which says the room, runs on a queue of its own with no order
+  against the turn.
+- **The app installs our plugin, and only ours, with Hermes's installer.** The developer chose
+  one-tap install (November 2026) as the exception to "gateway administration stays in the
+  official app". `plugins.manage install` takes `usual-labs/usual-bot#Integrations/usual-bot` per
+  profile, from the default branch: its `ref` has to be a full commit, which a build doesn't know.
+  Hermes scans what it installs: `install.sh` inside the plugin's folder made the verdict
+  "dangerous" (its `rm -rf "$home/plugins/…"`), which `force` can't override, so the installer
+  lives outside it (`Integrations/install-usual-bot.sh`). Without it the verdict is "caution" (a
+  `subprocess` in `flags.py`, "sudo" in push's text), which `force: true` accepts, so the app says
+  what Hermes found and installs only after you agree. Installing again replaces the copy, which is
+  Update. A running gateway loads it at once (`activate_plugin_now`); `restart_required` comes back
+  when none answered. New plugin routes mount on the dashboard's first request to them
+  (`_try_hot_mount_plugin_api`). Bots made in the app get it when the others have this build's.
+- **The app finds the plugin under its new name or the old ones.** `/api/plugins/usual-bot/…`
+  first, then `usual-push` or `usual-browser` on a 404, so an old gateway keeps working until
+  Update. An older version, or one that doesn't say, shows Update available.
+
 ## A Bot's browser
 
-- **The browser view comes from the `usual-browser` plugin, not Hermes.** Hermes has no way to watch
+- **The browser view comes from the `usual-bot` plugin, not Hermes.** Hermes has no way to watch
   a headless real-profile browser (`browser.use_real_profile`). Its Bot Screen is a Linux desktop
   only. The plugin's dashboard route attaches to that browser's DevTools port and streams CDP
   screencast frames. A plugin route keeps it working without changes to Hermes; the cost is that it
@@ -731,12 +775,12 @@ read at Hermes `2bd378ed1b`.
 - **The Plugins sheet guides, it doesn't administer.** The developer asked for a home for the
   browser and computer setup (November 2026): a puzzle-piece button in the Mac sidebar's footer,
   between the gateway and Settings, not a Settings tab (tried, and turned down). Mac only; the rail
-  leaves it out, keeping Expand Sidebar and Settings. It reads the plugin's status (404 means no plugin,
-  `BotBrowser.hasPlugin`) and `display.status` per Bot, and offers commands to copy; it never sets
-  `browser.use_real_profile` or installs anything, as gateway administration stays in Hermes. The
-  copied `hermes … config set browser.use_real_profile true` hasn't been run against a gateway, and
-  the headless requirement has no command here. It lists every Usual gateway plugin (push from
-  `PushSettings.phase`, browser from `BotBrowser.hasPlugin`). **Ask a Bot** (the developer's pick
+  leaves it out, keeping Expand Sidebar and Settings. It reads the plugin's status (push from
+  `PushSettings.phase`, per Bot from `BotBrowser.hasPlugin`; 404 means no plugin) and
+  `display.status` per Bot. It installs and updates our own plugin and nothing else (see "One
+  plugin"); it never sets `browser.use_real_profile`, as gateway administration stays in Hermes.
+  The copied `hermes … config set browser.use_real_profile true` hasn't been run against a gateway,
+  and the headless requirement has no command here. **Ask a Bot** (the developer's pick
   over an app-side shell, SSH or a setup route in our plugin) fills the chosen Bot's box with the
   steps through `ChatThread.prefill` and opens its chat; it never sends. The request tells the Bot
   to stop if its terminal is sandboxed, and to restart the gateway last, since the restart drops
@@ -860,6 +904,13 @@ read at Hermes `2bd378ed1b`.
   iPhone clearing each other's counts is untested. Mark as Unread (`unread: true`, and reading a 0
   back) is from the Hermes source and fakes only; whether the official app shows a hidden Bot
   Chat's 0 as unread is unchecked.
+- The `usual-bot` plugin ran under Hermes's own code (`2bd378ed1b`) in a throwaway home: the
+  installer over the old plugins, Hermes's plugin loader, `_collect_pre_llm_call_context` adding
+  the context once and not again with its `api_content`, the dashboard routes in a FastAPI test
+  client, and `dashboard_install_plugin` from a local git copy with a subfolder (blocked, then
+  "caution", then installed with `force`). Not run: `plugins.manage` over the Webapp with the app's
+  sign-in, a running gateway reloading it, a model's turn reading the context, compression moving
+  a Bot Chat to a new session, and the app's Install button against a gateway.
 - The Browser view hasn't run in the app against a real gateway: the plugin's feed and `BotBrowser`
   were each tested on their own (`BotBrowserTests`, and a script client on the developer's gateway).
 

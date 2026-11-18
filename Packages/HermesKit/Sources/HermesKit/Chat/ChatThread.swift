@@ -67,6 +67,10 @@ public final class ChatThread {
     public internal(set) var isCompressing = false
     /// Set by the app: whether vault secrets would cross the network unencrypted. Assumes so until told.
     var gatewayIsUnencrypted: @MainActor () -> Bool = { true }
+    /// The chat is open, under this stored session ID: the app tells the plugin it's one of its
+    /// chats (`UsualPlugin.noteChat`). A message sent before the plugin hears goes without the
+    /// chat context, and the next one carries it.
+    var chatOpened: ((String) -> Void)?
     /// Set by the app: a background task finished, with its task and result (or failure).
     var backgroundTaskFinished: ((_ task: String, _ result: String) -> Void)?
     /// Set by the app: a goal ended without you: done, out of turns, or unable to go on.
@@ -227,6 +231,7 @@ public final class ChatThread {
         elsewhereTurnStart = nil
         sessionID = opened.sessionID
         lastSessionID = opened.sessionID
+        if let stored = opened.storedID { chatOpened?(stored) }
         seqEpoch = epoch
         model = ChatModel(info: opened.info) ?? model
         state = ThreadState(

@@ -185,9 +185,8 @@ push plugin, its notifications. Signing out signs out of the gateway in use only
 
 **Moving from the dashboard to the Webapp.** The Webapp has its own address, so sign out of the
 dashboard in Usual Bot and sign in again with the Webapp's address. Your Bots and chats are the same
-on both. If you use push notifications, run the push plugin's
-[install script](../../Integrations/hermes-push/README.md#install) again to update it: older
-versions don't notify you when a Bot on the Webapp needs you.
+on both. If you use push notifications, update the [Usual Bot plugin](../../Integrations/usual-bot/README.md#install)
+from **Plugins** on the Mac: older versions don't notify you when a Bot on the Webapp needs you.
 
 ## What's next
 
