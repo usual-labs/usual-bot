@@ -47,10 +47,14 @@ private struct Breathing: ViewModifier {
 
     func body(content: Content) -> some View {
         if isActive {
-            content.phaseAnimator([false, true]) { view, up in
-                view.scaleEffect(x: up ? 1.05 : 0.97, y: up ? 0.95 : 1.03, anchor: .bottom)
-            } animation: { _ in
-                .easeInOut(duration: 0.55)
+            // Keyframes, not a phase animator: a phase animator changes phase inside an animated
+            // transaction, which also animates the avatar's position. A chat that opens with its
+            // agent at work would show the avatar sliding down from the top of the transcript.
+            content.keyframeAnimator(initialValue: 0.0, repeating: true) { view, up in
+                view.scaleEffect(x: 0.97 + 0.08 * up, y: 1.03 - 0.08 * up, anchor: .bottom)
+            } keyframes: { _ in
+                CubicKeyframe(1, duration: 0.55)
+                CubicKeyframe(0, duration: 0.55)
             }
         } else {
             content
