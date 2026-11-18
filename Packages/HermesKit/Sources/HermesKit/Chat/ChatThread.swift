@@ -258,9 +258,10 @@ public final class ChatThread {
         } else if let lastViewed {
             let since = lastViewed.timeIntervalSince1970
             let unreadBefore = unreadCount
-            unreadCount = opened.history.filter { $0.role == "assistant" && ($0.timestamp ?? 0) > since }.count
+            let replies = GatewayTurn.repliesToYou(in: opened.history)
+            unreadCount = replies.filter { ($0.timestamp ?? 0) > since }.count
             // A running turn alerts when it ends; its rows so far may not be the reply.
-            if unreadCount > unreadBefore, !opened.running { announceReply(in: opened.history) }
+            if unreadCount > unreadBefore, !opened.running { announceReply(in: replies) }
         } else {
             // First time this device sees the chat: nothing is new yet.
             markViewed()
@@ -298,6 +299,13 @@ public final class ChatThread {
     }
 
     // MARK: - Gateway traffic
+
+    /// The turn now running, or about to end, answers another Bot's message: what it does folds into
+    /// that exchange. A turn started on another device after it is yours, its message shown once
+    /// it's known.
+    public var turnIsForABot: Bool {
+        BotExchange.last(in: state.items).map { $0.items.lowerBound >= (elsewhereTurnStart ?? 0) } ?? false
+    }
 
     func apply(_ event: GatewayEvent) {
         if let seq = event.seq { lastSeq = max(lastSeq, seq) }
@@ -343,8 +351,10 @@ public final class ChatThread {
         }
         let wasRunning = state.isRunning
         let itemsBefore = state.items.count
+        // A reply to another Bot goes back to it; that Bot's report to you is the news.
+        let forABot = turnIsForABot
         state.apply(event)
-        if event.type == "message.complete", wasRunning, !isVisible,
+        if event.type == "message.complete", wasRunning, !isVisible, !forABot,
             let reply = state.items[min(itemsBefore, state.items.count)...].last(where: \.isReply)
         {
             unreadCount += 1

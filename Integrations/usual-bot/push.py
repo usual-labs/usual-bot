@@ -12,7 +12,7 @@ from pathlib import Path
 
 from . import relay, store
 from .plain import plain
-from .turns import asked_hidden
+from .turns import asked_by_bot, asked_hidden
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +149,7 @@ def _deliver_room_reply(profile: str, text: str) -> None:
 
 
 def on_reply(assistant_response="", platform="", conversation_history=None, **_) -> None:
-    if not assistant_response.strip() or asked_hidden(conversation_history):
+    if not assistant_response.strip() or asked_hidden(conversation_history) or asked_by_bot(conversation_history):
         return
     said = plain(assistant_response)
     if platform in _CHAT_PLATFORMS:

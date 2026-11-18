@@ -10,6 +10,8 @@ when it's gone from the history, as after compression.
 
 from __future__ import annotations
 
+from .turns import bot_sender  # noqa: F401  (the hook reads it from here)
+
 # Finds the text in the history. Changing it adds the new text once to every chat.
 MARKER = "<usual-bot-context>"
 
@@ -30,6 +32,20 @@ and don't set your own. The frame's height follows the page. In this chat, data-
 something the user taps, or window.hermes.send("prompt") from a tap, sends that prompt as a hidden \
 message; answer it by changing the widget's file, not with prose.
 </usual-bot-context>"""
+
+
+def bot_turn(name: str, note: bool) -> str:
+    """What a Bot is told on a turn another Bot started. The app folds the exchange away, so a
+    reply written to the user would be read by the other Bot and missed by the user. Its own tag, so
+    it never passes for `TEXT` in `told`."""
+    if note:
+        return (f"<usual-bot-turn>\nThis message is from {name}, another Bot, not from the user. Nothing goes back "
+                f"to {name}: do what it asks and finish quietly. Ask the user only if you can't go on "
+                "without them.\n</usual-bot-turn>")
+    return (f"<usual-bot-turn>\nThis message is from {name}, another Bot, not from the user. Your final reply goes "
+            f"back to {name} by itself, and the user sees this exchange folded away. Write the reply to {name}: "
+            "lead with the result, keep it short, and don't address the user. Ask the user only if you can't "
+            "go on without them.\n</usual-bot-turn>")
 
 
 def _texts(message: dict):

@@ -27,7 +27,7 @@ store = plugin.store
 context = plugin.context
 
 
-class ContextTests(unittest.TestCase):
+class PluginCase(unittest.TestCase):
     def setUp(self):
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
@@ -35,12 +35,14 @@ class ContextTests(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def turn(self, session="s1", history=None, platform="tui", parent=""):
-        history = history if history is not None else [{"role": "user", "content": "hi"}]
+    def turn(self, session="s1", history=None, platform="tui", parent="", message="hi"):
+        history = history if history is not None else [{"role": "user", "content": message}]
         return plugin._before_turn(
             session_id=session, parent_session_id=parent, platform=platform, conversation_history=history,
-            user_message="hi", is_first_turn=True, model="m", task_id="t", turn_id="u", sender_id="")
+            user_message=message, is_first_turn=True, model="m", task_id="t", turn_id="u", sender_id="")
 
+
+class ContextTests(PluginCase):
     def test_a_chat_the_app_opened_is_told(self):
         store.note_chat("s1")
         self.assertEqual(self.turn(), {"context": context.TEXT})
@@ -104,6 +106,50 @@ class ContextTests(unittest.TestCase):
                       "also send it on a MEDIA: line"):
             self.assertIn(words, context.TEXT)
         self.assertLess(len(context.TEXT), 2000)
+
+
+class BotTurnTests(PluginCase):
+    """A turn another Bot started is told, every time, that its reply goes back to that Bot."""
+
+    ASK = "Message from 🤖 CMO (@cmo): Make the Work Analyst a routine on my profile."
+    NOTE = "Message from 🤖 dr eggbot (@dr-eggbot): [no reply needed] The test passed."
+
+    def told_history(self, message):
+        return [{"role": "user", "content": "hi", "api_content": "hi\n\n" + context.TEXT},
+                {"role": "assistant", "content": "Hello."}, {"role": "user", "content": message}]
+
+    def test_an_ask_says_the_reply_goes_back(self):
+        store.note_chat("s1")
+        said = self.turn(history=self.told_history(self.ASK), message=self.ASK)["context"]
+        self.assertNotIn(context.TEXT, said)
+        for words in ("from CMO, another Bot", "goes back to CMO", "Write the reply to CMO", "don't address the user"):
+            self.assertIn(words, said)
+
+    def test_a_note_says_nothing_goes_back(self):
+        store.note_chat("s1")
+        said = self.turn(history=self.told_history(self.NOTE), message=self.NOTE)["context"]
+        self.assertIn("Nothing goes back to dr eggbot", said)
+        self.assertNotIn("Write the reply", said)
+
+    def test_a_chat_not_yet_told_gets_both(self):
+        store.note_chat("s1")
+        said = self.turn(message=self.ASK)["context"]
+        self.assertTrue(said.startswith(context.TEXT))
+        self.assertIn("goes back to CMO", said)
+
+    def test_the_line_never_counts_as_the_context(self):
+        # After compression drops the context, a kept Bot turn's line mustn't stop it coming back.
+        line = context.bot_turn("CMO", False)
+        self.assertFalse(context.told([{"role": "user", "content": self.ASK, "api_content": self.ASK + line}]))
+
+    def test_other_chats_and_your_own_messages_get_no_line(self):
+        store.note_chat("s1")
+        self.assertIsNone(self.turn(session="s2", message=self.ASK))
+        self.assertIsNone(self.turn(history=self.told_history("Message from me: hi"), message="Message from me: hi"))
+
+    def test_a_name_with_brackets_keeps_them(self):
+        self.assertEqual(context.bot_sender("Message from 🤖 Dr. (Egg) Bot (@egg): hi"), ("Dr. (Egg) Bot", False))
+        self.assertIsNone(context.bot_sender("Message from 🤖 nobody"))
 
 
 if __name__ == "__main__":

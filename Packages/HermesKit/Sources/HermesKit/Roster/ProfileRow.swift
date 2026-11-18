@@ -163,7 +163,7 @@ extension Contact {
 
     /// The name an untitled profile shows, matching the official app: the primary profile, literally
     /// called `default`, is "Hermes"; others read as words, so `job-scout` becomes "Job Scout".
-    static func friendlyName(forProfile name: String) -> String {
+    public static func friendlyName(forProfile name: String) -> String {
         if name.lowercased() == "default" { return "Hermes" }
         let words = name.split(whereSeparator: { $0 == "-" || $0 == "_" })
         guard !words.isEmpty else { return name }

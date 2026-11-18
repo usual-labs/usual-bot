@@ -34,5 +34,27 @@ class HiddenTurnTests(unittest.TestCase):
         self.assertFalse(turns.asked_hidden([]))
 
 
+class BotTurnTests(unittest.TestCase):
+    """A reply to another Bot's message goes back to that Bot; the push is the sender's report."""
+
+    ASK = "Message from 🤖 CMO (@cmo): Make the Work Analyst a routine on my profile."
+
+    def test_a_bots_message_is_a_bot_turn(self):
+        history = [{"role": "user", "content": self.ASK, "display_kind": "internal_notification"},
+                   {"role": "tool", "content": "ok"}]
+        self.assertTrue(turns.asked_by_bot(history))
+
+    def test_a_routine_or_your_message_isnt(self):
+        routine = '[Cronjob "brief" output — sent]\n\nHello'
+        self.assertFalse(turns.asked_by_bot([{"role": "user", "content": routine, "display_kind": "internal_notification"}]))
+        self.assertFalse(turns.asked_by_bot([{"role": "user", "content": self.ASK}]))
+        self.assertFalse(turns.asked_by_bot(None))
+
+    def test_only_the_newest_message_counts(self):
+        history = [{"role": "user", "content": self.ASK, "display_kind": "internal_notification"},
+                   {"role": "assistant", "content": "Done."}, {"role": "user", "content": "Thanks"}]
+        self.assertFalse(turns.asked_by_bot(history))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -361,12 +361,29 @@ private struct QuickAnswer: View {
 
     @ViewBuilder private func chatAnswer(_ thread: ChatThread) -> some View {
         let items = thread.state.items
-        ForEach(Array(zip(items.indices, items).dropFirst(min(start, items.count))), id: \.1.id) { index, _ in
-            ItemView(
-                item: TranscriptView.shown(items, at: index), agentName: contact.name,
-                spokenTexts: TranscriptView.spokenTexts(in: items, at: index))
+        // Another Bot's exchange folds here as in the chat, its reply being written inside it.
+        let forABot = thread.state.isRunning && thread.turnIsForABot
+        let rows = TranscriptView.rows(
+            of: items, cardsAt: items.count, from: min(start, items.count), folding: BotExchange.all(in: items))
+        ForEach(rows.filter { $0.items != nil }, id: \.id) { row in
+            switch row {
+            case .item(let index, _):
+                ItemView(
+                    item: TranscriptView.shown(items, at: index), agentName: contact.name,
+                    spokenTexts: TranscriptView.spokenTexts(in: items, at: index))
+            case .exchange(let exchange, _):
+                let running = forABot && exchange.items.upperBound == items.count
+                BotExchangeLine(
+                    exchange: exchange, items: items, agentName: contact.name, running: running,
+                    draft: running && streamsReplies ? thread.state.draft : "")
+            case .live, .cards:
+                EmptyView()
+            }
         }
-        if streamsReplies, !thread.state.draft.isEmpty {
+        .environment(\.waitingAsks, BotAsk.waiting(in: items))
+        if forABot {
+            // Shown in the exchange's line.
+        } else if streamsReplies, !thread.state.draft.isEmpty {
             AgentBubble { MarkdownView(thread.state.draft, isBeingWritten: true) }
         } else if thread.state.isRunning, thread.approvals.isEmpty, thread.questions.isEmpty, thread.secrets.isEmpty,
             thread.vaultPrompts.isEmpty, thread.connection == nil

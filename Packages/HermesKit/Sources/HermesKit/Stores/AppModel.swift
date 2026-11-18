@@ -407,7 +407,16 @@ public final class AppModel {
                 contact.activity = thread.activity
                 contact.unreadCount = thread.unreadCount
                 contact.isMarkedUnread = thread.isMarkedUnread
-                if let newest = Self.newestMessage(in: thread.state.items),
+                // The roster's preview would be this Bot's reply to another Bot.
+                let items = thread.state.items
+                if thread.turnIsForABot, let exchange = BotExchange.last(in: items) {
+                    contact.preview = exchange.summary(running: thread.state.isRunning)
+                    if let date = items[exchange.items].last(where: { $0.date != nil })?.date,
+                        date > contact.lastActive ?? .distantPast
+                    {
+                        contact.lastActive = date
+                    }
+                } else if let newest = Self.newestMessage(in: items),
                     newest.date > contact.lastActive ?? .distantPast
                         || contact.preview.map(thread.state.isHiddenPreview) == true
                 {

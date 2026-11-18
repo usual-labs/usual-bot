@@ -89,8 +89,9 @@ struct GatewayTurnTests {
         let text = "Message from 🤖 Scout (@scout): The build is green."
         #expect(
             contents([HistoryMessage(role: "user", text: text, displayKind: "internal_notification")]) == [
-                .result(title: "Message from Scout", detail: "The build is green.")
+                .botMessage(from: "Scout", text: "The build is green.", isNote: false)
             ])
+        #expect(Contact.plainPreview(text) == "Message from Scout")
     }
 
     @Test func aResumedTurnIsANotice() {

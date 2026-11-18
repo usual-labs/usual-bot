@@ -44,7 +44,8 @@ What it sends:
   answers never reach the plugin.
 
 Helpers, routines and other platforms stay quiet, and so does the reply to a widget's button (its
-answer is the widget changing), and a Bot you've hidden, in Usual Bot or the Hermes app, except in
+answer is the widget changing), a Bot's reply to another Bot's message (it goes back to that Bot,
+whose own report to you notifies you; an approval or question in it still does), and a Bot you've hidden, in Usual Bot or the Hermes app, except in
 rooms. A chat you're reading on any device is quiet on all of them; everything else reaches every
 device that hasn't turned that Bot off. Opening a chat on one device takes down what your other
 devices show about it, with a silent push that names nothing outside its seal. With previews off on
@@ -127,6 +128,10 @@ shows there (Markdown, files with `MEDIA:` lines, and widgets). The text is in
 Hermes keeps the note with that message, so the plugin adds it once per chat, and again only when
 the chat no longer has it, as after compressing the chat. Routines' results and other Bots'
 messages posted in the chat get it too, because they're turns in it. Rooms don't.
+
+A turn another Bot started also gets a short note, every time: the message is from that Bot, not
+you, and the final reply goes back to it, so the Bot writes it to that Bot and keeps it short. For a
+message that wants no reply, the note says to finish quietly. Usual Bot folds these exchanges away.
 
 The app tells the plugin which chats it opened with `PUT /api/plugins/usual-bot/chats/<session ID>`.
 The list is in `~/.hermes/usual-push/chats.json`; a chat nobody has used in 30 days drops off it. A
