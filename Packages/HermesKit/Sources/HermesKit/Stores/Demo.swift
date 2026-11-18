@@ -516,7 +516,7 @@
                         | --- | --- | ---: | --- |
                         | **pgvector** | our Postgres | nothing extra | index builds slow the database our app leans on |
                         | **Qdrant** | a server we run | ~$40 a month | one more server to watch |
-                        | **Turbopuffer** | object storage | ~$6 a month | newer, with a smaller community |
+                        | **Turbopuffer** | object storage | ~$6 a month | newer, with a smaller community: see [their limits](https://docs.example.com/search/limits) |
 
                         I'd start with a two-week trial behind the existing search box. Want me to draft the \
                         plan for Forge?

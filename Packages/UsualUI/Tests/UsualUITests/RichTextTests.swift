@@ -130,5 +130,34 @@
             #expect(long.width <= 560)
             #expect(long.height > short.height * 5)
         }
+
+        @Test func aLinkInATableCellIsALinkInATextView() throws {
+            let markdown = """
+                | Name | Notes |
+                | --- | ---: |
+                | Docs | see [the limits](https://docs.example.com/limits) |
+                """
+            guard case .table(let table) = try #require(MarkdownBlock.parse(markdown).first) else {
+                Issue.record("Expected a table")
+                return
+            }
+            let cell = table.rows[0][1]
+            let view = SelectableTextView()
+            view.show(.cell(cell, size: 15, isHeader: false, alignment: .trailing))
+            // The text view's own links show the hand and open on a click, as in the rest of a reply.
+            #expect(view.string == "see the limits")
+            let at = (view.string as NSString).range(of: "limits").location
+            #expect(
+                (view.textStorage?.attribute(.link, at: at, effectiveRange: nil) as? URL)?.host == "docs.example.com")
+            #expect(view.linkTextAttributes?[.cursor] as? NSCursor == .pointingHand)
+            let style = view.textStorage?.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle
+            #expect(style?.alignment == .right)
+        }
+
+        @Test func aHeaderCellIsBold() throws {
+            let text = RichText.cell(AttributedString("Cost"), size: 15, isHeader: true, alignment: .leading)
+            let font = try #require(text.attribute(.font, at: 0, effectiveRange: nil) as? NSFont)
+            #expect(NSFontManager.shared.weight(of: font) > NSFontManager.shared.weight(of: .systemFont(ofSize: 15)))
+        }
     }
 #endif
