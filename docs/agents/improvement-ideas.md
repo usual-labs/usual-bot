@@ -111,6 +111,10 @@ Child-local ideas stay in their package KBs.
   pausing without stopping the reply; a push when a goal ends with the app closed (Hermes fires no
   hook at the judge's verdict, so the plugin has nothing to send it from); and bars for `/loop`
   and `/heartbeat`, which come in the same `session.control` snapshot.
+- **Paths in a reply that open.** Bots name files in the text (`ops/outreach/notes.md`) that the user
+  can't open; the plugin's chat context only asks them to send such files on a `MEDIA:` line too.
+  The app could make a path in a code span tappable, load it the way `MEDIA:` files load, and
+  resolve a relative one against the Bot's workspace as widgets do. A folder would need a file list.
 - **Widgets in rooms that talk back.** Hermes has no hidden room turn, and a room's message goes to
   members, so `window.hermes.canSend` is false in rooms. It would need a hidden `groups` send and a
   rule for which member answers.

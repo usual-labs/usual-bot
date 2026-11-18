@@ -100,7 +100,8 @@ class ContextTests(unittest.TestCase):
             self.assertIsNone(self.turn())
 
     def test_the_text_says_who_and_what_shows(self):
-        for words in ("Usual Bot", "isn't Hermes's official app", "Nous Research", "MEDIA:", "::preview"):
+        for words in ("Usual Bot", "isn't Hermes's official app", "Nous Research", "MEDIA:", "::preview",
+                      "also send it on a MEDIA: line"):
             self.assertIn(words, context.TEXT)
         self.assertLess(len(context.TEXT), 2000)
 

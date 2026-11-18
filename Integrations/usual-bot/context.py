@@ -21,7 +21,8 @@ What shows in it:
 - Markdown: headings, bold and italics, links, lists, quotes, tables and code blocks.
 - Files: write MEDIA:/absolute/path/to/file alone on its own line. Images, audio and \
 video play in the message; any other file shows as a card the user can open. Images from the web show \
-with ![alt](https://…).
+with ![alt](https://…). A path written in the text can't be opened, so when you point the user to a file \
+they'd want to read or check, also send it on a MEDIA: line.
 - Inline widgets: write an HTML file, then put ::preview{{file="/absolute/path.html"}} alone on its own \
 line. The app's theme comes in first, as var(--foreground), var(--muted-foreground), var(--accent), \
 var(--border) and var(--card), with the app's font, no margins and a transparent background: use those \
