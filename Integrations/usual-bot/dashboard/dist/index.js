@@ -1,4 +1,4 @@
-// Test viewer for the usual-browser feed: /usual-browser in the Hermes dashboard (hidden tab).
+// Test viewer for the browser feed: /usual-bot in the Hermes dashboard (hidden tab).
 (function () {
   const SDK = window.__HERMES_PLUGIN_SDK__;
   const React = SDK.React;
@@ -27,7 +27,7 @@
           const scheme = location.protocol === "https:" ? "wss" : "ws";
           const [format, level] = quality.split("-");
           const extra = format === "png" ? "&format=png" : `&format=jpeg&quality=${level}`;
-          const url = `${scheme}://${location.host}/api/plugins/usual-browser/feed?bot=${encodeURIComponent(bot)}&ticket=${encodeURIComponent(ticket)}${extra}`;
+          const url = `${scheme}://${location.host}/api/plugins/usual-bot/feed?bot=${encodeURIComponent(bot)}&ticket=${encodeURIComponent(ticket)}${extra}`;
           const ws = new WebSocket(url);
           ws.binaryType = "blob";
           socket.current = ws;
@@ -78,5 +78,5 @@
         alignSelf: "flex-start", border: "1px solid rgba(127,127,127,.3)" } }));
   }
 
-  window.__HERMES_PLUGINS__.register("usual-browser", Viewer);
+  window.__HERMES_PLUGINS__.register("usual-bot", Viewer);
 })();

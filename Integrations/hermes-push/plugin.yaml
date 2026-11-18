@@ -1,8 +1,0 @@
-name: usual-push
-version: "0.5.1"
-description: "Sends what your Bots do to Usual Bot on your devices, through Usual's push relay"
-author: "Usual Labs"
-provides_hooks:
-  - post_llm_call
-  - on_human_input_request
-  - on_room_member_activity

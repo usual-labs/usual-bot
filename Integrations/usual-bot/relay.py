@@ -71,13 +71,13 @@ def send(pushes: list[tuple[str, dict]], route: str = "send") -> dict[str, str]:
             try:
                 results = _post(f"{relay}/v1/{route}", {"pushes": batch})["results"]
             except Exception as error:  # Named only: an error can quote the request.
-                logger.warning("usual-push: couldn't reach the relay: %s", type(error).__name__)
+                logger.warning("usual-bot: couldn't reach the relay: %s", type(error).__name__)
                 fates |= {entry["device"]: "failed" for entry in batch}
                 continue
             for result in results:
                 fates[result["device"]] = result["status"]
                 if result["status"] not in ("sent", "gone"):
-                    logger.warning("usual-push: the relay said %s: %s", result["status"], result.get("reason"))
+                    logger.warning("usual-bot: the relay said %s: %s", result["status"], result.get("reason"))
     return fates
 
 
@@ -85,7 +85,7 @@ def _post(url: str, body: dict) -> dict:
     request = urllib.request.Request(
         url,
         data=json.dumps(body).encode(),
-        headers={"Content-Type": "application/json", "User-Agent": "usual-push"},
+        headers={"Content-Type": "application/json", "User-Agent": "usual-bot"},
         method="POST",
     )
     with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:

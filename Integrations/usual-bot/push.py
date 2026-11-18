@@ -1,4 +1,4 @@
-"""Tells your devices what agents do, through Usual's push relay, even when Usual Bot isn't running.
+"""Push: tells your devices what agents do, through Usual's push relay, even when Usual Bot isn't running.
 
 Hooks only watch: anything going wrong here is logged and never touches an agent's turn.
 """
@@ -15,9 +15,6 @@ from .plain import plain
 from .turns import asked_hidden
 
 logger = logging.getLogger(__name__)
-
-# As in plugin.yaml. The app reads it to know this plugin says which gateway sent each notification.
-VERSION = "0.5.1"
 
 # Where a person talks to the agent. Leaves out helpers ("subagent"), routines and other platforms.
 _CHAT_PLATFORMS = {"tui", "desktop", "dashboard"}
@@ -141,7 +138,7 @@ def _safely(action, *args) -> None:
     try:
         action(*args)
     except Exception as error:  # Named only: an error can quote the message.
-        logger.warning("usual-push: couldn't notify: %s", type(error).__name__)
+        logger.warning("usual-bot: couldn't notify: %s", type(error).__name__)
 
 
 def _deliver_room_reply(profile: str, text: str) -> None:
@@ -151,7 +148,7 @@ def _deliver_room_reply(profile: str, text: str) -> None:
         deliver("message", "{name}", text, f"room:{room}", speaker=profile)
 
 
-def _on_reply(assistant_response="", platform="", conversation_history=None, **_) -> None:
+def on_reply(assistant_response="", platform="", conversation_history=None, **_) -> None:
     if not assistant_response.strip() or asked_hidden(conversation_history):
         return
     said = plain(assistant_response)
@@ -171,7 +168,7 @@ def _surface() -> str:
         return "tui"
 
 
-def _on_request(kind="", platform="", prompt="", **_) -> None:
+def on_request(kind="", platform="", prompt="", **_) -> None:
     if platform == _GATEWAY_PLATFORM:
         platform = _surface()
     if platform not in _CHAT_PLATFORMS:
@@ -180,14 +177,8 @@ def _on_request(kind="", platform="", prompt="", **_) -> None:
     _push_unless_hidden("needs_you", "{name} needs you", asks, _profile())
 
 
-def _on_room_activity(room_id="", member_id="", kind="", payload=None, **_) -> None:
+def on_room_activity(room_id="", member_id="", kind="", payload=None, **_) -> None:
     store.note_room(member_id, room_id)
     if kind == "request.opened":
         command = (payload or {}).get("command") or "a command"
         _push("needs_you", "{name} needs you", f"{member_id} wants to run “{command}”", f"room:{room_id}")
-
-
-def register(ctx) -> None:
-    ctx.register_hook("post_llm_call", _on_reply)
-    ctx.register_hook("on_human_input_request", _on_request)
-    ctx.register_hook("on_room_member_activity", _on_room_activity)

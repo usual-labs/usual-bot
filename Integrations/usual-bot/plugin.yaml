@@ -1,0 +1,10 @@
+name: usual-bot
+version: "0.6.0"
+description: "What Usual Bot needs from your gateway: push to your devices, a Bot's browser to watch, and telling Bots in the app's chats where they are"
+author: "Usual Labs"
+provides_hooks:
+  - post_llm_call
+  - on_human_input_request
+  - on_room_member_activity
+  - pre_tool_call
+  - pre_llm_call
