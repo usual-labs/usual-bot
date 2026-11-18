@@ -20,8 +20,11 @@ struct PushSettingsTests {
         func body(_ line: String) -> String? { log.withLock { $0.last { $0.0 == line }?.1 } }
     }
 
-    /// A signed-in model whose gateway answers `settings`, and records every request.
-    private func makeModel(settings: String = #"{"devices":[]}"#, status: Int = 200) async throws -> (
+    /// A signed-in model whose gateway answers `settings`, and records every request. `oldPlugins`:
+    /// the gateway has `usual-push` from before the plugins merged, and no `usual-bot`.
+    private func makeModel(
+        settings: String = #"{"devices":[]}"#, status: Int = 200, oldPlugins: Bool = false
+    ) async throws -> (
         PushSettings, AppModel, Requests
     ) {
         let requests = Requests()
@@ -38,8 +41,11 @@ struct PushSettingsTests {
                 let line = "\(request.httpMethod ?? "") \(request.url?.path() ?? "")"
                 let body = request.httpBody.map { String(decoding: $0, as: UTF8.self) } ?? ""
                 requests.log.withLock { $0.append((line, body)) }
+                if oldPlugins, line.contains("/api/plugins/usual-bot/") { return (404, #"{"detail":"Not Found"}"#) }
                 if request.url?.lastPathComponent == "settings" { return (status, settings) }
-                if line.hasPrefix("PUT /api/plugins/usual-push/devices") { return (200, #"{"id":"dev1","muted":[]}"#) }
+                if line.hasPrefix("PUT /api/plugins/usual-"), line.contains("/devices") {
+                    return (200, #"{"id":"dev1","muted":[]}"#)
+                }
                 return (200, "{}")
             }, defaults: defaults,
             cache: OfflineCache(directory: .temporaryDirectory.appending(path: UUID().uuidString)),
@@ -58,12 +64,31 @@ struct PushSettingsTests {
         #expect(!push.isActive)
     }
 
+    @Test func aGatewayWithThePluginsFromBeforeTheMergeIsUsedAndOfferedTheUpdate() async throws {
+        let (push, _, requests) = try await makeModel(settings: #"{"version":"0.5.1","devices":[]}"#, oldPlugins: true)
+        await push.refresh()
+        #expect(push.isActive)
+        #expect(push.pluginVersion == "0.5.1")
+        #expect(push.needsUpdate)
+        #expect(requests.body("PUT /api/plugins/usual-push/devices/dev1") != nil)
+    }
+
+    @Test func thisBuildsPluginNeedsNoUpdate() async throws {
+        let (push, _, _) = try await makeModel(settings: #"{"version":"\#(UsualPlugin.version)","devices":[]}"#)
+        await push.refresh()
+        #expect(!push.needsUpdate)
+        #expect(UsualPlugin.isOlder("0.5.1"))
+        #expect(UsualPlugin.isOlder(nil))
+        #expect(!UsualPlugin.isOlder("0.10.0"))
+        #expect(!UsualPlugin.isOlder(UsualPlugin.version))
+    }
+
     @Test func aNewDeviceGivesTheGatewayItsKeysAndChoices() async throws {
         let (push, _, requests) = try await makeModel()
         push.currentChoices = { .init(previews: false) }
         await push.refresh()
         #expect(push.isActive)
-        let body = try #require(requests.body("PUT /api/plugins/usual-push/devices/dev1"))
+        let body = try #require(requests.body("PUT /api/plugins/usual-bot/devices/dev1"))
         #expect(body.contains(#""send_key":"send-key""#))
         #expect(body.contains(#""seal_key":"\#(Self.registration.sealKey.base64EncodedString())""#))
         #expect(body.contains(#""relay":"https:\/\/relay.example.com""#))
@@ -84,7 +109,7 @@ struct PushSettingsTests {
             settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com","muted":["forge"]}]}"#)
         await push.refresh()
         try await push.setMuted("atlas", true)
-        let body = try #require(requests.body("PUT /api/plugins/usual-push/devices/dev1"))
+        let body = try #require(requests.body("PUT /api/plugins/usual-bot/devices/dev1"))
         #expect(body.contains(#""muted":["atlas","forge"]"#))
     }
 
@@ -93,7 +118,7 @@ struct PushSettingsTests {
             settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com"}]}"#)
         await push.refresh()
         try await push.sendTest()
-        #expect(requests.body("POST /api/plugins/usual-push/test") == #"{"device":"dev1"}"#)
+        #expect(requests.body("POST /api/plugins/usual-bot/test") == #"{"device":"dev1"}"#)
     }
 
     @Test func aRelayAtANewAddressIsToldToTheGatewayAgain() async throws {
@@ -101,7 +126,7 @@ struct PushSettingsTests {
             settings: #"{"devices":[{"id":"dev1","relay":"https://old.example.com","muted":["forge"]}]}"#)
         await push.refresh()
         #expect(push.isActive)
-        let body = try #require(requests.body("PUT /api/plugins/usual-push/devices/dev1"))
+        let body = try #require(requests.body("PUT /api/plugins/usual-bot/devices/dev1"))
         #expect(body.contains(#""relay":"https:\/\/relay.example.com""#))
     }
 
@@ -112,13 +137,13 @@ struct PushSettingsTests {
         model.signOut()
         #expect(!push.isActive)
         #expect(push.muted.isEmpty)
-        try await waitUntil { requests.lines.contains("DELETE /api/plugins/usual-push/devices/dev1") }
+        try await waitUntil { requests.lines.contains("DELETE /api/plugins/usual-bot/devices/dev1") }
     }
 
     @Test func theGatewayIsToldWhichOfThisDevicesGatewaysItIs() async throws {
         let (push, model, requests) = try await makeModel()
         await push.refresh()
-        let body = try #require(requests.body("PUT /api/plugins/usual-push/devices/dev1"))
+        let body = try #require(requests.body("PUT /api/plugins/usual-bot/devices/dev1"))
         #expect(body.contains(#""gateway":"\#(model.gateways[0].id)""#))
     }
 
@@ -127,7 +152,7 @@ struct PushSettingsTests {
             settings: #"{"version":"0.5.0","devices":[{"id":"dev1","relay":"https://relay.example.com"}]}"#)
         await push.refresh()
         #expect(push.tagsGateway)
-        #expect(requests.body("PUT /api/plugins/usual-push/devices/dev1") != nil)
+        #expect(requests.body("PUT /api/plugins/usual-bot/devices/dev1") != nil)
     }
 
     @Test func anOlderPluginIsntToldAgainEachTime() async throws {
@@ -135,7 +160,7 @@ struct PushSettingsTests {
             settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com"}]}"#)
         await push.refresh()
         #expect(!push.tagsGateway)
-        #expect(requests.body("PUT /api/plugins/usual-push/devices/dev1") == nil)
+        #expect(requests.body("PUT /api/plugins/usual-bot/devices/dev1") == nil)
         // One gateway can't be confused with another; with two, Settings asks for the update.
         #expect(!model.pushPluginNeedsUpdate)
         model.gateways.append(SavedGateway(address: try GatewayAddress(parsing: "https://hermes.example.com")))
@@ -151,8 +176,8 @@ struct PushSettingsTests {
         await model.setNotifications(false)
         #expect(!push.isActive)
         #expect(model.activeGateway?.notifies == false)
-        #expect(requests.lines.contains("DELETE /api/plugins/usual-push/devices/dev1"))
-        #expect(requests.body("PUT /api/plugins/usual-push/devices/dev1") == nil)
+        #expect(requests.lines.contains("DELETE /api/plugins/usual-bot/devices/dev1"))
+        #expect(requests.body("PUT /api/plugins/usual-bot/devices/dev1") == nil)
     }
 
     @Test func leavingAGatewaySaysNoChatIsOpenThere() async throws {

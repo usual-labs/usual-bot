@@ -15,9 +15,10 @@ struct BotBrowserTests {
     }
 
     /// A browser whose gateway answers the plugin's routes from `status` and mints tickets t1, t2, ….
+    /// `oldPlugins`: the gateway has `usual-browser` from before the plugins merged.
     private func make(
         status: (Int, String) = (200, #"{"bot":"scout","available":true,"browser":true}"#),
-        picture: BrowserPicture = BrowserPicture()
+        picture: BrowserPicture = BrowserPicture(), oldPlugins: Bool = false
     ) -> (BotBrowser, ScriptedHTTP, Sockets) {
         let tickets = Mutex(0)
         let http = ScriptedHTTP { request in
@@ -27,6 +28,9 @@ struct BotBrowserTests {
                     return count
                 }
                 return (200, #"{"ticket":"t\#(next)"}"#)
+            }
+            if oldPlugins, request.url?.path().hasPrefix("/api/plugins/usual-bot/") == true {
+                return (404, #"{"detail":"Not Found"}"#)
             }
             return status
         }
@@ -74,7 +78,7 @@ struct BotBrowserTests {
         #expect(browser.isAvailable)
         #expect(
             http.requests.last?.url?.absoluteString
-                == "http://100.101.102.103:9119/api/plugins/usual-browser/status?bot=scout")
+                == "http://100.101.102.103:9119/api/plugins/usual-bot/status?bot=scout")
         #expect(http.requests.last?.value(forHTTPHeaderField: "Authorization") == "Bearer a0")
 
         let (headed, _, _) = make(status: (200, #"{"bot":"scout","available":false,"browser":false}"#))
@@ -82,6 +86,22 @@ struct BotBrowserTests {
         #expect(!headed.isAvailable)
         // The plugin answered, so only the Bot's own setup is missing.
         #expect(headed.hasPlugin == true)
+    }
+
+    @Test func aGatewayWithTheOldPluginIsWatchedThere() async throws {
+        let (browser, http, sockets) = make(oldPlugins: true)
+        await browser.refresh()
+        #expect(browser.isAvailable)
+        #expect(browser.hasPlugin == true)
+        #expect(
+            http.requests.last?.url?.absoluteString
+                == "http://100.101.102.103:9119/api/plugins/usual-browser/status?bot=scout")
+        browser.connect()
+        _ = try await socket(sockets)
+        #expect(
+            sockets.all[0].0.absoluteString
+                == "ws://100.101.102.103:9119/api/plugins/usual-browser/feed?bot=scout&ticket=t1")
+        browser.disconnect()
     }
 
     @Test func aGatewayWithoutThePluginHasNoBrowser() async throws {
@@ -93,7 +113,7 @@ struct BotBrowserTests {
     }
 
     @Test func theFeedAsksForThePictureChosenInSettings() async throws {
-        let base = "ws://100.101.102.103:9119/api/plugins/usual-browser/feed?bot=scout&ticket=t1"
+        let base = "ws://100.101.102.103:9119/api/plugins/usual-bot/feed?bot=scout&ticket=t1"
         for (picture, query) in [
             (BrowserPicture(quality: .dataSaver), "&quality=60"),
             (BrowserPicture(quality: .best, density: 2), "&format=png&density=2"),
@@ -113,7 +133,7 @@ struct BotBrowserTests {
         let socket = try await socket(sockets)
         #expect(
             sockets.all[0].0.absoluteString
-                == "ws://100.101.102.103:9119/api/plugins/usual-browser/feed?bot=scout&ticket=t1")
+                == "ws://100.101.102.103:9119/api/plugins/usual-bot/feed?bot=scout&ticket=t1")
 
         socket.deliver(Self.text(#"{"type": "state", "state": "live"}"#), frame: .max)
         socket.deliver(Self.text(#"{"type": "tab", "url": "https://example.com/", "title": "Example"}"#), frame: .max)

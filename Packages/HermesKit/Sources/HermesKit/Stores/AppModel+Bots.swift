@@ -85,6 +85,8 @@ extension AppModel {
                 }
             }
             canReply = await BotProfiles.canReply(profile: profile, on: channel) ?? true
+            // In the background: Hermes clones the plugin for it, which can take a while.
+            Task { await installPlugin(into: profile, on: channel) }
         }
         if let png, !pictureFailed {
             contact.picture = Contact.Picture(revision: -1, isPhoto: true)

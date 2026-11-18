@@ -153,7 +153,7 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                 .buttonStyle(.clickable(.borderless))
                 .foregroundStyle(Theme.secondaryInk)
                 .zoomedFrame(width: 32, height: 32)
-                .help("Plugins: set up a Bot’s browser and computer")
+                .help("Plugins: the Usual Bot plugin, and a Bot’s browser and computer")
         }
     #endif
 

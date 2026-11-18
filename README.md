@@ -142,7 +142,7 @@ The film and all screenshots come from the built-in demo, with made-up Bots.
 - **Side questions.** `/btw` asks about the conversation without interrupting the Bot.
 - **Background tasks.** `/bg` has the Bot do a task in the background while you keep chatting. You get a
   notification when it's done, even if the app was closed.
-- **Push.** With the `usual-push` plugin on your gateway, your Mac and iPhone hear from your Bots
+- **Push.** With the `usual-bot` plugin on your gateway, your Mac and iPhone hear from your Bots
   even when Usual Bot is closed, sealed so nothing in between can read it.
 - **Rooms.** Group chats with several Bots.
 - **Routines.** Each Bot's scheduled jobs, with a switch to pause and resume them.

@@ -4,7 +4,7 @@ import ImageIO
 import Observation
 
 /// An agent's browser, live: the headless Chrome a Bot runs with your real browser profile on the
-/// gateway host, streamed by the `usual-browser` plugin (`Integrations/hermes-browser`). Watch only.
+/// gateway host, streamed by the `usual-bot` plugin (`UsualPlugin`). Watch only.
 /// The plugin's status route says whether the Bot has one; its feed is a WebSocket opened with a
 /// single-use ticket from `POST /api/auth/ws-ticket`.
 @MainActor
@@ -32,8 +32,8 @@ public final class BotBrowser {
     public let profile: String
     /// The Bot browses with your real profile, headless: there's a browser to watch.
     public private(set) var isAvailable = false
-    /// Whether the gateway has the `usual-browser` plugin, once asked: Settings › Plugins tells a
-    /// missing plugin from a Bot that doesn't browse with your real profile.
+    /// Whether the gateway has the plugin, once asked: Settings › Plugins tells a missing plugin
+    /// from a Bot that doesn't browse with your real profile.
     public private(set) var hasPlugin: Bool?
     public private(set) var connection = Connection.idle
     /// The page as last shown, and its size in pixels.
@@ -49,7 +49,9 @@ public final class BotBrowser {
     @ObservationIgnored private var staleTickets = 0
     @ObservationIgnored var isDemo = false
 
-    nonisolated static let path = "/api/plugins/usual-browser"
+    /// Where the plugin answers: `usual-bot`'s routes, or `usual-browser`'s on a gateway that has
+    /// the plugins from before they merged.
+    @ObservationIgnored private var path = UsualPlugin.path
 
     init(
         profile: String, auth: @escaping @MainActor () -> AuthSession?,
@@ -72,7 +74,15 @@ public final class BotBrowser {
         guard !isDemo, let auth = auth() else { return }
         let query = profile.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? profile
         do {
-            isAvailable = try await auth.json(Status.self, path: "\(Self.path)/status?bot=\(query)").available ?? false
+            let status: Status
+            do {
+                status = try await auth.json(Status.self, path: "\(UsualPlugin.path)/status?bot=\(query)")
+                path = UsualPlugin.path
+            } catch GatewayError.http(status: 404, _) {
+                status = try await auth.json(Status.self, path: "\(UsualPlugin.oldBrowserPath)/status?bot=\(query)")
+                path = UsualPlugin.oldBrowserPath
+            }
+            isAvailable = status.available ?? false
             hasPlugin = true
         } catch GatewayError.http(status: 404, _) {
             isAvailable = false
@@ -109,7 +119,7 @@ public final class BotBrowser {
             guard let auth = auth() else { throw GatewayError.disconnected }
             let ticket = try await auth.webSocketTicket()
             try Task.checkCancellation()
-            let url = auth.gateway.browserFeedURL(profile: profile, ticket: ticket, picture: picture())
+            let url = auth.gateway.browserFeedURL(path: path, profile: profile, ticket: ticket, picture: picture())
             let socket = try await makeSocket(url)
             try Task.checkCancellation()
             self.socket = socket
@@ -252,8 +262,10 @@ public struct BrowserPicture: Equatable, Sendable {
 
 extension GatewayAddress {
     /// The browser feed, authenticated by a single-use ticket in the query, like the app's own socket.
-    func browserFeedURL(profile: String, ticket: String, picture: BrowserPicture = BrowserPicture()) -> URL {
-        var components = URLComponents(url: url("\(BotBrowser.path)/feed"), resolvingAgainstBaseURL: false)!
+    func browserFeedURL(
+        path: String = UsualPlugin.path, profile: String, ticket: String, picture: BrowserPicture = BrowserPicture()
+    ) -> URL {
+        var components = URLComponents(url: url("\(path)/feed"), resolvingAgainstBaseURL: false)!
         components.scheme = baseURL.scheme == "https" ? "wss" : "ws"
         components.queryItems =
             [URLQueryItem(name: "bot", value: profile), URLQueryItem(name: "ticket", value: ticket)]

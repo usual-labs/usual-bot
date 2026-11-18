@@ -25,7 +25,7 @@ public struct AgentAlert: Equatable, Sendable {
     /// ("Sent a widget" when that's all there is). Not for a command
     /// to approve, where a `*` is part of the command.
     ///
-    /// `Integrations/hermes-push/plain.py` does the same to what the gateway pushes.
+    /// `Integrations/usual-bot/plain.py` does the same to what the gateway pushes.
     public static func plain(_ markdown: String) -> String {
         let inline = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
         var inCode = false

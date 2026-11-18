@@ -8,7 +8,7 @@ struct SetupCommandsTests {
         #expect(message.contains("`hermes -p ops config set browser.use_real_profile true`"))
         #expect(message.contains("Docker or SSH sandbox, stop and tell me"))
         let steps = message.components(separatedBy: "\n\n").filter { $0.first?.isNumber == true }
-        #expect(steps.count == 4)
+        #expect(steps.count == 2)
         #expect(steps.last?.contains("`hermes gateway restart`") == true)
     }
 
@@ -17,8 +17,9 @@ struct SetupCommandsTests {
         #expect(SetupCommands.turnOnBrowser(profile: "ops").hasPrefix("hermes -p ops config set"))
     }
 
-    @Test func eachPluginInstallsWithItsOwnScript() {
-        #expect(SetupCommands.install(.push).contains("Integrations/hermes-push/install.sh"))
-        #expect(SetupCommands.askInstall(.browser).contains("Integrations/hermes-browser/install.sh"))
+    @Test func theOnePluginInstallsWithItsScript() {
+        #expect(SetupCommands.install.contains("sh usual-bot/Integrations/install-usual-bot.sh"))
+        #expect(SetupCommands.askInstall.contains("`sh usual-bot/Integrations/install-usual-bot.sh`"))
+        #expect(SetupCommands.askInstall.contains("usual-bot plugin"))
     }
 }

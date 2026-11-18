@@ -20,7 +20,7 @@
 			</array>
 		</dict>
 	</array>
-	<!-- usualbot://chat/<id>: what ntfy and Pushover notifications open (Integrations/hermes-push). -->
+	<!-- usualbot://chat/<id>: what ntfy and Pushover notifications open (Integrations/usual-bot). -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

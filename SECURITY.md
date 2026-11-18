@@ -24,7 +24,7 @@ Problems in this repository's code, for example:
 - the loopback sign-in listener and its `state` and PKCE checks;
 - sending a sign-in or token over plain `http`, or to the wrong host;
 - the offline cache, notifications or logs exposing conversations;
-- the push relay (`Services/push-relay`) or the gateway plugin (`Integrations/hermes-push`)
+- the push relay (`Services/push-relay`) or the gateway plugin (`Integrations/usual-bot`)
   letting anyone read a notification, or push to a device that didn't give them its send key;
 - the update check (`Services/updates`) exposing its App Store Connect key, or making the app open
   anything but TestFlight;

@@ -1,52 +1,30 @@
 import HermesKit
 import SwiftUI
 
-/// The commands that set up Usual's gateway plugins, and the same steps as a request to a Bot.
+/// The commands that set up Usual Bot's gateway plugin, and the same steps as a request to a Bot:
+/// for a gateway whose own installer (`plugins.manage`) refuses, or a Bot's browser.
 enum SetupCommands {
-    enum Plugin {
-        case push, browser
-
-        var folder: String {
-            switch self {
-            case .push: "hermes-push"
-            case .browser: "hermes-browser"
-            }
-        }
-
-        var name: String {
-            switch self {
-            case .push: "usual-push"
-            case .browser: "usual-browser"
-            }
-        }
-    }
-
     static let clone = "git clone https://github.com/usual-labs/usual-bot"
     static let restart = "hermes gateway restart"
+    static let script = "sh usual-bot/Integrations/install-usual-bot.sh"
 
-    static func script(_ plugin: Plugin) -> String { "sh usual-bot/Integrations/\(plugin.folder)/install.sh" }
+    static let install = [clone, script, restart].joined(separator: "\n")
 
-    static func install(_ plugin: Plugin) -> String { [clone, script(plugin), restart].joined(separator: "\n") }
-
-    /// Turns real-profile browsing on for `profile`, adds the plugin to it and restarts. The main
-    /// folder's profile takes no `-p`.
+    /// Turns real-profile browsing on for `profile` and restarts. The plugin, in every Bot, keeps
+    /// its browser's flags from then on. The main folder's profile takes no `-p`.
     static func turnOnBrowser(profile: String) -> String {
-        [configSet(profile: profile), script(.browser), restart].joined(separator: "\n")
+        [configSet(profile: profile), restart].joined(separator: "\n")
     }
 
-    static func askInstall(_ plugin: Plugin) -> String {
-        request(
-            "Please install the \(plugin.name) plugin for Usual Bot on this gateway.",
-            steps: [cloneStep, "Run `\(script(plugin))` and show me what it printed."])
-    }
+    static let askInstall = request(
+        "Please install the usual-bot plugin for Usual Bot on this gateway.",
+        steps: [cloneStep, "Run `\(script)` and show me what it printed."])
 
     static func askTurnOnBrowser(profile: String, name: String) -> String {
         request(
             "Please set up the Usual Bot browser view for \(name) (Hermes profile `\(profile)`) on this gateway.",
             steps: [
-                "Run `\(configSet(profile: profile))`, and check that this profile’s browser runs headless.",
-                cloneStep,
-                "Run `\(script(.browser))` and show me what it printed.",
+                "Run `\(configSet(profile: profile))`, and check that this profile’s browser runs headless."
             ])
     }
 
