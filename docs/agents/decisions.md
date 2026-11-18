@@ -353,6 +353,20 @@ read at Hermes `2bd378ed1b`.
   `subagent.complete` never comes would stay listed.
 - **`reasoning.available` is ignored.** With no reasoning, Hermes sends the reply's own text through
   it. Only `reasoning.delta` counts, and that needs `show_reasoning` on.
+- **A step fails the way the gateway counts it, and only live.** `tool.complete` counts as failed on
+  Hermes's own rule (`_tool_result_needs_user`): an error string, `success` or `ok` false, or a
+  non-zero `exit_code`, which is how `terminal` reports a failed command. History can't say: its tool
+  rows carry no output except for `write_file`, `patch` and `skill_manage`
+  (`tui_gateway/session_history.py`), so a reopened chat shows every step done. Fixing that needs
+  Hermes to send a failed flag in history.
+- **A running line shows its newest three steps.** It opens by itself while its turn runs and folds
+  to its summary when the turn moves on, unless you opened it. Three, so it grows by a few rows and
+  stops: a line that came and went with each tool made the chat jump (UsualUI known issues).
+- **Helpers' and background processes' results are read from Hermes's wording.** Hermes sends them
+  as text for the model (`tools/process_registry_notifications.py`), not as data, so
+  `ProcessReport` and `HelperReport` read its lines (`Command:`, `--- ✓ TASK n/m: …`). Text in
+  another shape shows as it came, as Markdown. A new Hermes that rewords them falls back the same
+  way; check these after a Hermes update.
 - **`thinking.delta` is mostly spinner frames.** Only the explained waits Hermes's own app shows pass
   `LiveActivity.waitText`. `tool.generating` and `tool.output_risk` are ignored.
 

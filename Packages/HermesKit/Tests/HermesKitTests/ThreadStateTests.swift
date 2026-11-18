@@ -75,6 +75,31 @@ struct ThreadStateTests {
             ])
     }
 
+    /// The gateway's own rule for a failed call (`_tool_result_needs_user`): a non-zero exit with
+    /// no error string, or `success`/`ok` false, fails too.
+    @Test func stepFailsTheWayTheGatewayCountsIt() {
+        let results: [(JSONValue, ToolStep.State)] = [
+            (["output": "", "exit_code": 1, "error": .null], .failed),
+            (["success": false], .failed),
+            (["ok": false], .failed),
+            (["error": "No live subagent"], .failed),
+            (["error": "  "], .done),
+            (["output": "ok", "exit_code": 0, "error": .null], .done),
+            (["success": true], .done),
+            ("plain text", .done),
+        ]
+        for (result, expected) in results {
+            var state = ThreadState()
+            state.apply(event("tool.start", ["tool_id": "t1", "name": "terminal"]))
+            state.apply(event("tool.complete", ["tool_id": "t1", "result": result]))
+            guard case .activity(let steps) = state.items.last?.content else {
+                Issue.record("no activity for \(result)")
+                continue
+            }
+            #expect(steps.first?.state == expected, "\(result)")
+        }
+    }
+
     @Test func unstreamedReplyArrivesWithCompletion() {
         var state = ThreadState()
         state.apply(event("message.start"))

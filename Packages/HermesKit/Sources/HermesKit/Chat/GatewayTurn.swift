@@ -33,8 +33,9 @@ enum GatewayTurn {
         if kind == hiddenKind { return nil }
         let body = withoutFooter(text)
         if kind == "process_complete" || body.hasPrefix(processPrefix) {
-            let (headline, detail) = firstLine(of: unwrapped(body))
-            return .result(title: title ?? headline, detail: detail)
+            // The report keeps its first line: how the process ended and its exit code (`ProcessReport`).
+            let report = unwrapped(body)
+            return .result(title: title ?? firstLine(of: report).line, detail: report)
         }
         if kind == "async_delegation_complete" || body.hasPrefix(delegationPrefix) {
             let (_, detail) = firstLine(of: body)

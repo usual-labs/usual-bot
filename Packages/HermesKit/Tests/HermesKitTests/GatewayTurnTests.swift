@@ -18,7 +18,12 @@ struct GatewayTurnTests {
 
         \(footer)
         """
-    private static let report = "Command: ./verify.sh\nOutput:\n[... output truncated — showing last 0 chars]"
+    private static let report = """
+        Background process proc_a completed normally (exit code 0).
+        Command: ./verify.sh
+        Output:
+        [... output truncated — showing last 0 chars]
+        """
 
     private func contents(_ history: [HistoryMessage]) -> [TranscriptItem.Content] {
         ThreadState(history: history, running: false).items.map(\.content)

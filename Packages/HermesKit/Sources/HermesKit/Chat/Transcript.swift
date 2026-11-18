@@ -525,13 +525,23 @@ public struct ThreadState: Equatable, Sendable, Codable {
 
     private mutating func completeStep(_ payload: JSONValue) {
         withStep(payload) { step in
-            let failed = payload["result"]?["error"].map { $0 != .null } ?? false
+            let failed = Self.failed(payload["result"])
             step.state = failed ? .failed : .done
             step.summary = payload["summary"]?.stringValue?.nonBlank
             step.progress = nil
             if case .number(let seconds) = payload["duration_s"] { step.duration = seconds }
             if !failed { step.readSpeech(args: payload["args"], result: payload["result"]) }
         }
+    }
+
+    /// The gateway's rule for a call the user must see failed (`_tool_result_needs_user`):
+    /// `terminal` reports a failed command as a non-zero `exit_code` with no error string.
+    static func failed(_ result: JSONValue?) -> Bool {
+        guard let result else { return false }
+        if result["success"]?.boolValue == false || result["ok"]?.boolValue == false { return true }
+        if result["error"]?.stringValue?.nonBlank != nil { return true }
+        if let code = result["exit_code"]?.intValue, code != 0 { return true }
+        return false
     }
 
     private mutating func withStep(_ payload: JSONValue, _ change: (inout ToolStep) -> Void) {

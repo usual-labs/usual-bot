@@ -471,19 +471,33 @@ private struct ActivityLine: View {
     var working: String? = nil
 
     var body: some View {
-        FoldedRow {
-            if let now = ActivitySummary.current(in: steps) ?? working {
+        let now = ActivitySummary.current(in: steps) ?? working
+        let failed = steps.contains { $0.state == .failed }
+        FoldedRow(
+            symbol: now == nil ? ActivitySummary.symbol(for: steps) : nil,
+            tint: failed ? Theme.danger : Theme.secondaryInk,
+            openByDefault: now != nil
+        ) {
+            if let now {
                 WorkingRow(text: now)
             } else {
                 Text(ActivitySummary.line(for: steps, agent: agentName))
-                    .padding(.leading, 12)
             }
         } rows: {
-            ForEach(steps) { step in
+            // While it runs, only the newest steps, so the line grows by a few rows at most.
+            let shown = now == nil ? steps[...] : steps.suffix(Self.liveSteps)
+            if shown.count < steps.count {
+                Text("\(steps.count - shown.count) earlier steps")
+                    .scaledFont(size: 12.5)
+                    .foregroundStyle(Theme.secondaryInk)
+            }
+            ForEach(shown) { step in
                 StepRow(step: step)
             }
         }
     }
+
+    private static let liveSteps = 3
 }
 
 private struct StepRow: View {
@@ -493,6 +507,7 @@ private struct StepRow: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(ActivitySummary.verb(for: step.name))
                 .foregroundStyle(Theme.secondaryInk)
+                .lineLimit(1)
                 .zoomedFrame(width: 52, alignment: .leading)
             Text(step.context.isEmpty ? step.name : step.context)
                 .foregroundStyle(Theme.ink)
