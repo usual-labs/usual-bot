@@ -62,7 +62,8 @@ public enum Theme {
     public static let needsYouFill = Color(light: 0xFFF1D6, dark: 0x3A2A0A)
     public static let needsYouInk = Color(light: 0x8A5300, dark: 0xF5C36B)
     public static let danger = Color(light: 0xB42318, dark: 0xF97066)
-    /// Code blocks, which sit on a bubble, and the expanded tool-step list.
+    /// Code blocks, which sit on a bubble, and a result's report. A folded line's rows hang off a
+    /// rail instead (`FoldedRow`).
     public static let codeFill = Color(light: 0xFAFAFA, dark: 0x1A1A1A)
     public static let online = Color(hex: 0x1FA971)
     /// Behind a message search jumped to: a pale fill text reads on, ringed by `foundBorder`, which

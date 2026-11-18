@@ -16,9 +16,14 @@ struct DemoTests {
         // Six messages and the lead's pick.
         #expect(model.room(for: room)?.state.items.count == 7)
         let atlas = model.thread(for: try #require(contacts.first { $0.id == "atlas" }))
-        #expect(atlas.state.items.count == 7)
+        #expect(atlas.state.items.count == 8)
+        guard case .result(_, let helpers) = atlas.state.items[2].content else {
+            Issue.record("Atlas's helpers aren't a result")
+            return
+        }
+        #expect(HelperReport.parse(helpers)?.tasks.map(\.succeeded) == [true, true, false])
         #expect(
-            atlas.state.items[5].content
+            atlas.state.items[6].content
                 == .result(
                     title: "From the routine “Competitor pricing watch”",
                     detail: "Northwind cut its Team plan from $12 to $10 a seat. The other two pages haven't changed."))

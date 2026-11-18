@@ -26,7 +26,38 @@ enum ActivitySummary {
         case .run: return String(localized: "run")
         case .search: return String(localized: "search")
         case .web: return String(localized: "web")
-        case .other: return tool.replacingOccurrences(of: "_", with: " ")
+        case .other: return otherVerbs[tool] ?? tool.replacingOccurrences(of: "_", with: " ")
+        }
+    }
+
+    /// Short words for common tools outside the categories, so the step list's verb column holds
+    /// one word: "delegate task" broke over two lines there.
+    private static let otherVerbs: [String: String] = [
+        "delegate_task": String(localized: "helper"),
+        "skill_manage": String(localized: "skill"),
+        "memory": String(localized: "memory"),
+        "hindsight_retain": String(localized: "memory"),
+        "hindsight_recall": String(localized: "memory"),
+        "todo": String(localized: "to-do"),
+        "todo_list": String(localized: "to-do"),
+        "cronjob": String(localized: "routine"),
+        "text_to_speech": String(localized: "speak"),
+        "vision_analyze": String(localized: "look"),
+        "image_generate": String(localized: "image"),
+    ]
+
+    /// The icon before a run of steps: what kind of work it was, or that some of it failed.
+    static func symbol(for steps: [ToolStep]) -> String {
+        if steps.contains(where: { $0.state == .failed }) { return "xmark.circle" }
+        let kinds = Set(steps.map { category(of: $0.name) })
+        guard kinds.count == 1, let kind = kinds.first else { return "wrench.and.screwdriver" }
+        switch kind {
+        case .read: return "doc.text"
+        case .edit: return "pencil"
+        case .run: return "terminal"
+        case .search: return "magnifyingglass"
+        case .web: return "globe"
+        case .other: return "wrench.and.screwdriver"
         }
     }
 
@@ -55,12 +86,25 @@ enum ActivitySummary {
             guard let count = counts[category] else { return nil }
             return phrase(category, count: count, mixed: counts.count > 1)
         }
-        var line = "\(agent) \(joined(pieces))"
+        var line = "\(agent) \((steps.count == 1 ? steps.first.flatMap(named) : nil) ?? joined(pieces))"
         let seconds = steps.compactMap(\.duration).reduce(0, +)
         if seconds >= 1 { line += " · " + duration(seconds) }
         let failed = steps.filter { $0.state == .failed }.count
         if failed > 0 { line += " · " + String(localized: "\(failed) failed") }
         return line
+    }
+
+    /// One step names what it worked on, "edited work/disk.html", rather than "edited 1 file".
+    private static func named(_ step: ToolStep) -> String? {
+        let context = step.context.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !context.isEmpty else { return nil }
+        switch category(of: step.name) {
+        case .read: return String(localized: "read \(context)")
+        case .edit: return String(localized: "edited \(context)")
+        case .run: return String(localized: "ran \(context)")
+        case .search: return String(localized: "searched for \(context)")
+        case .web, .other: return nil
+        }
     }
 
     private static func phrase(_ category: Category, count: Int, mixed: Bool) -> String {

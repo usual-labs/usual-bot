@@ -222,6 +222,47 @@ struct ActivitySummaryTests {
             ActivitySummary.line(for: [step("terminal", .failed, duration: 75)], agent: "Hermes")
                 == "Hermes ran 1 command · 1m 15s · 1 failed")
     }
+
+    @Test func oneStepNamesWhatItWorkedOn() {
+        let edit = ToolStep(id: "1", name: "patch", context: "work/disk.html", state: .done)
+        #expect(ActivitySummary.line(for: [edit], agent: "Ops") == "Ops edited work/disk.html")
+        let run = ToolStep(id: "2", name: "terminal", context: "npm test", duration: 3, state: .failed)
+        #expect(ActivitySummary.line(for: [run], agent: "Ops") == "Ops ran npm test · 3s · 1 failed")
+        // Browsing names no page, and two steps are counted.
+        let web = ToolStep(id: "3", name: "web_search", context: "pgvector pricing", state: .done)
+        #expect(ActivitySummary.line(for: [web], agent: "Ops") == "Ops browsed the web")
+        #expect(ActivitySummary.line(for: [edit, edit], agent: "Ops") == "Ops edited 2 files")
+    }
+
+    @Test func stepVerbsAreOneWord() {
+        #expect(ActivitySummary.verb(for: "delegate_task") == "helper")
+        #expect(ActivitySummary.verb(for: "skill_manage") == "skill")
+        #expect(ActivitySummary.verb(for: "terminal") == "run")
+        #expect(ActivitySummary.verb(for: "send_message") == "send message")
+    }
+
+    @Test func iconSaysTheKindOfWorkOrAFailure() {
+        #expect(ActivitySummary.symbol(for: [step("terminal"), step("execute_code")]) == "terminal")
+        #expect(ActivitySummary.symbol(for: [step("terminal"), step("patch")]) == "wrench.and.screwdriver")
+        #expect(ActivitySummary.symbol(for: [step("read_file"), step("terminal", .failed)]) == "xmark.circle")
+    }
+}
+
+struct ReportPeekTests {
+    @Test func longReportsShowTheirFirstLines() {
+        let report = (1...20).map { "line \($0)" }.joined(separator: "\n")
+        #expect(ReportPeek.lineCount(report) == 20)
+        #expect(ReportPeek.peek(report) == (1...8).map { "line \($0)" }.joined(separator: "\n"))
+        #expect(ReportPeek.lineCount("one line") == 1)
+        #expect(ReportPeek.peek("short\nreport") == "short\nreport")
+    }
+
+    @Test func aLongParagraphIsCutAtAWord() {
+        let paragraph = Array(repeating: "word", count: 300).joined(separator: " ")
+        let peek = ReportPeek.peek(paragraph)
+        #expect(peek.count <= ReportPeek.peekCharacters + 1)
+        #expect(peek.hasSuffix("word…"))
+    }
 }
 
 struct RoutineStatusTests {

@@ -78,11 +78,13 @@
     }
 
     extension ChatThread {
-        /// A turn from a pretend gateway: thinking, two tool calls, then a reply as it streams.
+        /// A turn from a pretend gateway: thinking, three tool calls (one fails, as a command that exits
+        /// non-zero does), then a reply as it streams.
         func playDemoReply() {
             let chunks = [
                 "I read the notes and ran the checks. ", "Everything you asked about still holds, ",
-                "and nothing else needs your attention.\n\n", "- The tests pass.\n", "- The logs are quiet.",
+                "and nothing else needs your attention.\n\n", "- The tests pass on a second run.\n",
+                "- The logs are quiet.",
             ]
             func todos(_ read: String, _ check: String) -> JSONValue {
                 let list: JSONValue = [
@@ -94,11 +96,13 @@
             let helper: JSONValue = ["subagent_id": "demo-helper", "goal": "Look through the logs"]
             var script: [(pause: Double, type: String, payload: JSONValue)] = [
                 (0.5, "todo.updated", todos("in_progress", "pending")),
-                (0.4, "tool.start", ["tool_id": "demo-1", "name": "read_file"]),
+                (0.4, "tool.start", ["tool_id": "demo-1", "name": "read_file", "context": "notes.md"]),
                 (1.2, "tool.complete", ["tool_id": "demo-1"]),
+                (0.1, "tool.start", ["tool_id": "demo-0", "name": "terminal", "context": "npm test"]),
+                (0.9, "tool.complete", ["tool_id": "demo-0", "result": ["output": "1 failing", "exit_code": 1]]),
                 (0.1, "todo.updated", todos("completed", "in_progress")),
                 (0.1, "subagent.start", helper),
-                (0.1, "tool.start", ["tool_id": "demo-2", "name": "terminal"]),
+                (0.1, "tool.start", ["tool_id": "demo-2", "name": "terminal", "context": "npm test"]),
                 (
                     0.5, "subagent.tool",
                     ["subagent_id": "demo-helper", "tool_name": "read_file", "tool_preview": "app.log"]
@@ -497,6 +501,11 @@
                 HistoryMessage(role: "tool", name: "web_search", context: "pgvector vs Qdrant vs Turbopuffer pricing"),
                 HistoryMessage(role: "tool", name: "read_file", context: "docs/search/requirements.md"),
                 HistoryMessage(role: "tool", name: "web_search", context: "Turbopuffer namespace limits"),
+                HistoryMessage(role: "tool", name: "delegate_task", context: "3 helpers"),
+                // Helpers' results, as Hermes stores them: one notice for the batch, one block a task.
+                HistoryMessage(
+                    role: "user", text: Self.atlasHelpers, displayKind: "async_delegation_complete",
+                    displayText: "Subagent Tasks Completed: Price pgvector on our Postgres (3 tasks)"),
                 HistoryMessage(
                     role: "assistant",
                     text: """
@@ -550,6 +559,28 @@
                 ),
             ]
         }
+
+        private static let atlasHelpers = """
+            [ASYNC DELEGATION BATCH COMPLETE — deleg_demo]
+            A background fan-out unit you dispatched earlier — 3 subagent(s) — has finished; its consolidated \
+            results are below.
+
+            Dispatched: 2026-11-17 10:02:11 (2m40s ago)
+            Role: leaf   Model: claude-sonnet-5-5   Total duration: 158.2s
+
+            --- ✓ TASK 1/3: Price pgvector on our Postgres  (status=completed, api_calls=9, 96.4s) ---
+            **Nothing extra** to pay: it runs in the database we have.
+            - Index builds took **11 minutes** for 40k pages on a copy of production.
+            - The app's p95 went from 80 ms to 210 ms while they ran.
+
+            --- ✓ TASK 2/3: Price Qdrant on a server we run  (status=completed, api_calls=7, 81.0s) ---
+            About **$40 a month** for the smallest server that holds our index, plus one more thing to patch.
+
+            --- ✗ TASK 3/3: Load-test Turbopuffer with our queries  (status=failed, 158.2s) ---
+            (failed: the trial key ran out of requests)
+            Partial output:
+            The first 2,000 queries came back in **under 40 ms** at p95.
+            """
 
         private var forgeChat: [HistoryMessage] {
             [
