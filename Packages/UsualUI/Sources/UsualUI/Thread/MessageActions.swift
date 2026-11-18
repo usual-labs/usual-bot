@@ -157,6 +157,13 @@ struct MessageRow<Content: View>: View {
         if canReact(actions) { Button("React") { picking = true } }
         Button("Reply") { actions.reply(item) }
         Button("Copy", action: copy)
+        ForEach(links, id: \.self) { url in
+            Button {
+                copyLink(url)
+            } label: {
+                copyLinkTitle(url)
+            }
+        }
         if canRead { Button(readLabel, action: readAloud) }
         if actions.markUnread != nil { Button("Mark as Unread") { markUnread(actions) } }
         // VoiceOver can't grey an action out, so they're offered only while they'd run.
@@ -367,6 +374,11 @@ struct MessageRow<Content: View>: View {
             var words: [MessageMenuItem] = [
                 MessageMenuItem(title: Text("Copy"), systemImage: "doc.on.doc", action: copy)
             ]
+            // A touch and hold can't say which link it was on, so each link has its own row.
+            for url in links {
+                words.append(
+                    MessageMenuItem(title: copyLinkTitle(url), systemImage: "link") { copyLink(url) })
+            }
             // The Mac selects within the message itself; iPhone shows its words in a sheet.
             if let selectText, !text.isEmpty {
                 words.append(
@@ -462,12 +474,39 @@ struct MessageRow<Content: View>: View {
     }
 
     private func copy() {
+        copy(text)
+    }
+
+    private func copy(_ string: String) {
         #if canImport(AppKit)
             NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(text, forType: .string)
+            NSPasteboard.general.setString(string, forType: .string)
         #else
-            UIPasteboard.general.string = text
+            UIPasteboard.general.string = string
         #endif
+    }
+
+    /// The links in the message, for Copy Link where a touch or VoiceOver can't point at one. A
+    /// right-click on the Mac lands on the link itself (`SelectableTextView`). The first few: Select
+    /// Text reaches the rest.
+    private var links: [URL] {
+        let all: [URL]
+        switch item.content {
+        case .user: all = Links.urls(inPlain: text)
+        case .assistant, .member, .background: all = Links.urls(in: MarkdownBlock.blocks(of: text))
+        default: all = []
+        }
+        return Array(all.prefix(5))
+    }
+
+    /// "Copy Link", or with several in the message, which one.
+    private func copyLinkTitle(_ url: URL) -> Text {
+        links.count == 1 ? Text("Copy Link") : Text("Copy Link \(Links.shortName(url))")
+    }
+
+    private func copyLink(_ url: URL) {
+        copy(url.absoluteString)
+        AccessibilityNotification.Announcement(String(localized: "Link copied")).post()
     }
 }
 

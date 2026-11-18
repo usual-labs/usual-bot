@@ -78,6 +78,14 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   selection when it gives up first responder, so clicking another message or the box lets go of it
   as a web page would, and a right-click outside the selection returns no menu so the message's own
   React/Reply/Copy menu shows.
+- **Copy Link has two shapes because only the Mac can tell which link was meant.** A right-click
+  on a link in a `SelectableTextView` (not inside a selection) returns Open Link and Copy Link
+  instead of the message's menu, so React and Reply aren't offered on a link; elsewhere in the text
+  `menu(for:)` still returns `nil` and SwiftUI's menu shows, whose Copy takes the whole message. A
+  touch on iPhone can't say which link it hit (a `Text` doesn't report that), so the sheet and the
+  VoiceOver actions list the message's first five links (`Links.urls`). Checked by tests only: the
+  Mac menu wasn't opened in the running app, and the iPhone sheet's rows weren't seen on a device
+  or in the Simulator.
 - **A text view owns the pointer over all of itself,** whatever SwiftUI draws on top: it lays an
   I-beam cursor rectangle over its visible part and sets the I-beam again on each move, so a
   `pointerStyle` on an overlay shows only until the pointer moves. `SelectableTextView` is told

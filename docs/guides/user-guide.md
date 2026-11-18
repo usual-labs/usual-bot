@@ -237,6 +237,9 @@ sending also puts the keyboard away; tap the message box to write again.
   also swipe a message to the right to reply to it. To copy part of a
   message, drag across its text on the Mac, across paragraphs, headings and list items alike; on
   iPhone, long-press it, choose **Select Text**, and select what you want in the sheet that opens.
+  To copy a link, right-click it on the Mac and choose **Copy Link**, which copies the address it
+  goes to, not its words or the whole message (**Open Link** opens it). On iPhone, long-press the
+  message and choose **Copy Link**; with several links in it, each has its own row.
   With VoiceOver, each message starts with who wrote it, and these are in its actions.
 - **Read aloud.** A Bot's message has **Read Aloud** in the same places: **…** beside it or a
   right-click on the Mac, a long-press on iPhone, and its VoiceOver actions. The app reads the

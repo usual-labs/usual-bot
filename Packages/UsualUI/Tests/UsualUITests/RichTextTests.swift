@@ -130,5 +130,47 @@
             #expect(long.width <= 560)
             #expect(long.height > short.height * 5)
         }
+
+        @Test func rightClickingALinkOffersToOpenAndCopyIt() throws {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 400, height: 200), styleMask: [.titled], backing: .buffered,
+                defer: false)
+            let view = SelectableTextView()
+            view.frame = NSRect(x: 0, y: 0, width: 400, height: 200)
+            window.contentView?.addSubview(view)
+            view.show(
+                .reply(MarkdownBlock.parse("Read [the guide](https://hermes.example.com/guide) first."), size: 15))
+            func rightClick(at point: NSPoint) throws -> NSEvent {
+                try #require(
+                    NSEvent.mouseEvent(
+                        with: .rightMouseDown, location: view.convert(point, to: nil), modifierFlags: [],
+                        timestamp: 0, windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1,
+                        pressure: 1))
+            }
+            let layout = try #require(view.layoutManager)
+            let container = try #require(view.textContainer)
+            layout.ensureLayout(for: container)
+            let words = (view.string as NSString).range(of: "the guide")
+            let glyphs = layout.glyphRange(forCharacterRange: words, actualCharacterRange: nil)
+            let over = layout.boundingRect(forGlyphRange: glyphs, in: container)
+
+            let menu = try #require(view.menu(for: try rightClick(at: NSPoint(x: over.midX, y: over.midY))))
+            #expect(menu.items.map(\.title) == ["Open Link", "Copy Link"])
+            // The address the link goes to, not "the guide" and not the whole message.
+            #expect(
+                menu.items.map { $0.representedObject as? URL }
+                    == Array(repeating: URL(string: "https://hermes.example.com/guide"), count: 2))
+
+            // Past the end of the line, nearest the last word but not on it, and on other words:
+            // the message's own menu.
+            #expect(view.menu(for: try rightClick(at: NSPoint(x: 390, y: over.midY))) == nil)
+            #expect(view.menu(for: try rightClick(at: NSPoint(x: 2, y: over.midY))) == nil)
+        }
+
+        @Test func aLinkToAFileOnTheGatewayCanOnlyBeCopied() throws {
+            let view = SelectableTextView()
+            let url = try #require(URL(string: "/home/agent/report.pdf"))
+            #expect(view.linkMenu(for: url).items.map(\.title) == ["Copy Link"])
+        }
     }
 #endif
