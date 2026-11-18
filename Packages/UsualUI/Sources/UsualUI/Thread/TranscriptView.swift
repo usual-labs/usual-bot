@@ -41,14 +41,16 @@ struct TranscriptView: View {
             // One ForEach, so an item or card keeps its view (and what you typed in a card) as the
             // cards move.
             let start = window.start(in: items, including: target)
-            ForEach(Self.rows(of: items, cardsAt: cardsIndex, from: start), id: \.id) { row in
+            ForEach(Self.rows(of: items, cardsAt: cardsIndex, from: start, folding: exchanges), id: \.id) { row in
                 switch row {
                 case .item(let index, _): self.row(items[index], at: index, in: items, dates: dates)
+                case .exchange(let exchange, _): self.row(exchange, in: items, dates: dates)
                 case .live: live
                 case .cards: cards
                 }
             }
         }
+        .environment(\.waitingAsks, BotAsk.waiting(in: items))
         .onAppear {
             window.hold(items)
             // Opening the chat reads it, unless a search is taking you somewhere already.
@@ -72,35 +74,76 @@ struct TranscriptView: View {
     }
 
     private var items: [TranscriptItem] { thread.state.items }
+    private var exchanges: [BotExchange] { BotExchange.all(in: items) }
+    /// The turn running now is one for another Bot: what it does shows inside its folded line.
+    private var runsForABot: Bool { thread.state.isRunning && thread.turnIsForABot }
     /// The reply being written, as far as the chat shows it.
     private var draft: String { streamsReplies ? thread.state.draft : "" }
     private var cardsIndex: Int { Self.cardsIndex(in: items, after: cardsAfter) }
 
-    /// A part of the transcript: an item, the reply being written with what the turn is doing, or
-    /// the cards waiting for you.
+    /// A part of the transcript: an item, an exchange with another Bot folded into one line, the
+    /// reply being written with what the turn is doing, or the cards waiting for you.
     enum Row: Equatable {
         case item(index: Int, id: Int)
+        case exchange(BotExchange, id: Int)
         case live
         case cards
 
         /// An item's ID, not its index, which shifts when one is inserted earlier. Item IDs start at 0.
+        /// An exchange goes by its first item's.
         var id: Int {
             switch self {
-            case .item(_, let id): id
+            case .item(_, let id), .exchange(_, let id): id
             case .live: -1
             case .cards: -2
             }
         }
+
+        /// The items it shows.
+        var items: Range<Int>? {
+            switch self {
+            case .item(let index, _): index..<(index + 1)
+            case .exchange(let exchange, _): exchange.items
+            case .live, .cards: nil
+            }
+        }
     }
 
-    /// The items from `start` in order with the cards at `split`. What's live follows the newest
-    /// message, so it sits above cards nothing has followed yet. The cards show wherever they sit.
-    nonisolated static func rows(of items: [TranscriptItem], cardsAt split: Int, from start: Int = 0) -> [Row] {
-        let rows = items.indices.map { Row.item(index: $0, id: items[$0].id) }
-        let tail: [Row] = split < items.count ? [.cards] + rows[split...] + [.live] : [.live, .cards]
-        return (Array(rows[..<split]) + tail).filter {
-            if case .item(let index, _) = $0 { index >= start } else { true }
+    /// The items from `start` in order with the cards at `split`, each of `exchanges` as one row.
+    /// What's live follows the newest message, so it sits above cards nothing has followed yet. The
+    /// cards show wherever they sit, after the whole of an exchange they came in.
+    nonisolated static func rows(
+        of items: [TranscriptItem], cardsAt split: Int, from start: Int = 0, folding exchanges: [BotExchange] = []
+    ) -> [Row] {
+        var rows: [Row] = []
+        var index = 0
+        while index < items.count {
+            if let exchange = exchanges.first(where: { $0.items.lowerBound == index && !$0.items.isEmpty }) {
+                rows.append(.exchange(exchange, id: items[index].id))
+                index = exchange.items.upperBound
+            } else {
+                rows.append(.item(index: index, id: items[index].id))
+                index += 1
+            }
         }
+        let cut = rows.firstIndex { ($0.items?.lowerBound ?? 0) >= split } ?? rows.count
+        let tail: [Row] = cut < rows.count ? [.cards] + rows[cut...] + [.live] : [.live, .cards]
+        return (Array(rows[..<cut]) + tail).filter { ($0.items?.upperBound ?? .max) > start }
+    }
+
+    @ViewBuilder private func row(_ exchange: BotExchange, in items: [TranscriptItem], dates: [Int: String])
+        -> some View
+    {
+        let first = items[exchange.items.lowerBound]
+        if let date = dates[first.id] { DateLabel(text: date) }
+        let running = runsForABot && exchange.items.upperBound == items.count
+        BotExchangeLine(
+            exchange: exchange, items: items, agentName: agentName, running: running,
+            draft: running ? draft : "",
+            reveals: target.map { id in items[exchange.items].contains { $0.id == id } } == true
+        )
+        .transition(.settle)
+        .accessibilityElement(children: .contain)
     }
 
     @ViewBuilder private func row(
@@ -126,7 +169,9 @@ struct TranscriptView: View {
 
     /// The reply being written and what the turn is doing, after the newest message.
     @ViewBuilder private var live: some View {
-        if !draft.isEmpty {
+        if runsForABot {
+            // Shown in the exchange's line.
+        } else if !draft.isEmpty {
             // Becomes a transcript item when it ends, so it leaves without a fade.
             AgentBubble(joinsAbove: items.last?.isReply == true) {
                 MarkdownView(draft, isBeingWritten: true)
@@ -134,9 +179,11 @@ struct TranscriptView: View {
             .joined(items.last?.isReply == true)
             .transition(.asymmetric(insertion: .settle, removal: .identity))
         }
-        LiveCards(live: thread.state.live)
-        if let working, !lastItemIsActivity {
-            WorkingRow(text: working).transition(.settle)
+        if !runsForABot {
+            LiveCards(live: thread.state.live)
+            if let working, !lastItemIsActivity {
+                WorkingRow(text: working).transition(.settle)
+            }
         }
     }
 
@@ -283,6 +330,7 @@ struct ItemView: View {
     var author: (String) -> MemberAuthor? = { _ in nil }
     @Environment(\.highlightedItem) private var highlighted
     @Environment(\.editingFrom) private var editingFrom
+    @Environment(\.waitingAsks) private var waitingAsks
 
     var body: some View {
         content
@@ -352,6 +400,12 @@ struct ItemView: View {
             NoticeLine(text: text)
         case .result(let title, let detail):
             ResultLine(title: title, detail: detail)
+        case .botMessage(let from, let text, _):
+            BotMessageLine(from: from, text: text)
+        case .botAsk(let ask):
+            BotAskLine(ask: ask, waiting: waitingAsks.contains(ask.id))
+        case .botAnswer(let answers):
+            BotAnswerLine(answers: answers)
         case .output(let text):
             MessageRow(item: item, text: text, author: agentName, agentName: agentName, isMine: false) {
                 CommandOutput(text: text)

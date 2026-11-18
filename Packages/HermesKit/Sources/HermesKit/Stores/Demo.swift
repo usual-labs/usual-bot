@@ -407,7 +407,38 @@
                         db-1: disk at 78%, up from 74% yesterday.
                         MEDIA:\(Demo.chartPath)
                         """),
+                HistoryMessage(role: "user", text: "What did db-1's bigger disk cost us in October?"),
+                HistoryMessage(
+                    role: "tool", name: "message_agent", context: "ledger", toolCallId: "demo-ask-ledger",
+                    args: ["target": "ledger", "message": "What did db-1's extra 200 GB of disk cost in October?"]),
+                HistoryMessage(role: "assistant", text: "I've asked Ledger, who keeps the invoices."),
+                // A long answer Hermes cut to nothing on the way back (hermes-agent#152075).
+                HistoryMessage(
+                    role: "user",
+                    text: Self.delivery(to: "ledger", output: "[… output truncated — showing last 0 chars]"),
+                    displayKind: "process_complete"),
+                HistoryMessage(
+                    role: "assistant",
+                    text: "Ledger finished, but its answer didn't reach me. It's in Ledger's chat."),
             ]
+        }
+
+        /// What Atlas asked Forge for.
+        static let forgeTask = """
+            Index the docs nightly into Turbopuffer and query it first, with the current search as the \
+            fallback. The plan is in docs/search/turbopuffer-trial.md.
+            """
+
+        /// What Hermes tells a Bot when another Bot's answer comes back (`bot_mode_dm.py --run-delivery`).
+        static func delivery(to profile: String, output: String) -> String {
+            """
+            [IMPORTANT: Background process proc_demo_\(profile) completed normally (exit code 0).
+            Command: python3 ~/.hermes/hermes-agent/tools/bot_mode_dm.py --run-delivery --profile-home \
+            ~/.hermes/profiles/\(profile) hermes -p \(profile)
+            Output:
+            \(output)
+            ]
+            """
         }
 
         /// The demo's CPU chart: hourly bars over twelve hours, drawn here so the demo needs no files.
@@ -526,10 +557,22 @@
                     text:
                         "Yes, and keep the old search as a fallback. Our limits are on https://docs.example.com/search",
                     reactions: [Reaction(emoji: "👍", byAgent: true)]),
+                HistoryMessage(role: "tool", name: "write_file", context: "docs/search/turbopuffer-trial.md"),
+                // Atlas messages other Bots, as Hermes stores the calls.
+                HistoryMessage(
+                    role: "tool", name: "message_agent", context: "forge", toolCallId: "demo-ask-forge",
+                    args: ["target": "forge", "message": .string(Self.forgeTask)]),
+                HistoryMessage(
+                    role: "tool", name: "message_agent", context: "scribe", toolCallId: "demo-tell-scribe",
+                    args: [
+                        "target": "scribe", "expects_reply": false,
+                        "message":
+                            "FYI for the release notes: docs search starts a two-week Turbopuffer trial this week.",
+                    ]),
                 HistoryMessage(
                     role: "assistant",
                     text: """
-                        Done. The plan is in `docs/search/turbopuffer-trial.md` and I've sent Forge the first task.
+                        Done. The plan is in `docs/search/turbopuffer-trial.md` and I've asked Forge to start on it.
 
                         ## Trial plan
                         - Index the docs nightly into Turbopuffer.
@@ -542,6 +585,20 @@
                         That stays as you asked, so nobody notices if the trial misbehaves.
                         """,
                     reactions: [Reaction(emoji: "🎉", byAgent: false)]),
+                // Forge's answer, as the background process that waited for it reports it.
+                HistoryMessage(
+                    role: "user",
+                    text: Self.delivery(
+                        to: "forge",
+                        output:
+                            #"{"outcome": "@forge answered.", "reply": "Started: the nightly job is in `jobs/index-docs.ts`, and the fallback has a test. The search index migration needs a database migration on staging, which I've asked for.", "status": "settled", "delivery_id": "demo"}"#
+                    ),
+                    displayKind: "process_complete"),
+                HistoryMessage(
+                    role: "assistant",
+                    text:
+                        "Forge has started: the nightly job is written and the fallback is tested. It needs your OK in its chat to run the migration on staging."
+                ),
                 // What a routine set to post in the chat leaves there, as Hermes stores it.
                 HistoryMessage(
                     role: "user",
@@ -588,10 +645,19 @@
                 HistoryMessage(
                     role: "user",
                     text: """
-                        Message from 🤖 Atlas (@atlas): Index the docs nightly into Turbopuffer and query it \
-                        first, with the current search as the fallback.
+                        Message from 🤖 Atlas (@atlas): \(Self.forgeTask)
                         """,
                     displayKind: "internal_notification"),
+                HistoryMessage(role: "tool", name: "read_file", context: "docs/search/turbopuffer-trial.md"),
+                HistoryMessage(role: "tool", name: "write_file", context: "jobs/index-docs.ts"),
+                HistoryMessage(role: "tool", name: "write_file", context: "search/fallback.test.ts"),
+                HistoryMessage(role: "tool", name: "terminal", context: "npm test -- search"),
+                HistoryMessage(
+                    role: "assistant",
+                    text: """
+                        Started: the nightly job is in `jobs/index-docs.ts`, and the fallback has a test. The \
+                        search index migration needs a database migration on staging, which I've asked for.
+                        """),
                 HistoryMessage(
                     role: "user",
                     text: "Add the search index migration and run it on staging.\n\n@file:attachments/search-spec.md"),

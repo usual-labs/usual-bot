@@ -271,8 +271,8 @@ sending also puts the keyboard away; tap the message box to write again.
     once you send the edit or stop editing. Text and file references come back; a picture doesn't,
     so send it again in a new message.
   - **Try Again**, on the Bot's last reply, asks your last message again for a different answer.
-    It isn't offered on a reply to something Hermes delivered itself, such as a routine's result,
-    or when your message had a picture.
+    It isn't offered on a reply to something Hermes delivered itself, such as a routine's result
+    or another Bot's message or answer, or when your message had a picture.
   - **Undo**, on your last message, takes the last exchange back.
 
   What's removed can't be brought back, so the app asks first when more than the last exchange
@@ -281,6 +281,24 @@ sending also puts the keyboard away; tap the message box to write again.
   are, and the Bot may do them again. All three wait for a reply to end and need the gateway, and
   are greyed out with the reason otherwise. Rooms don't have them: there, **Try Again** on a reply
   that stopped partway is the way to ask again.
+
+### When Bots talk to each other
+
+A Bot can message another Bot on your gateway, for example to hand it a task. In the asking Bot's
+chat you see **Asked Forge · waiting**, and then **Forge answered** where the answer arrives, just
+before the Bot tells you what came of it. Click either line to read the message or the answer. A
+message that wants no answer says **Told Forge**. If the answer got lost on the way, which a long one
+can with Hermes 0.23, the line says so and **Open Forge's Chat** shows it there.
+
+In the other Bot's chat, everything it did for that request folds into one line, such as **Talked
+with Atlas · 4 steps**, or **Working for Atlas…** while it runs. Its reply went back to Atlas, so it
+isn't a message to you: it doesn't notify or count as unread, and the sidebar says "Talked with
+Atlas". Click the line to see Atlas's message, each step and the reply. You can still stop it, and
+anything you type waits until it's done. If it needs your OK or has a question, the card shows and
+notifies you as usual.
+
+With the Usual Bot plugin installed, a Bot answering another Bot is also told that its reply goes
+back to that Bot, so it writes to it rather than to you.
 
 ## Approvals and questions
 

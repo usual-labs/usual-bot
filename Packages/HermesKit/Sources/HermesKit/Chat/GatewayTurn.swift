@@ -12,6 +12,8 @@ enum GatewayTurn {
     private static let routinePrefix = "[Cronjob \""
     /// Another Bot's message: `Message from 🤖 <name> (@<handle>): <body>` (`tools/bot_mode_dm.py`).
     private static let botPrefix = "Message from 🤖 "
+    /// What a message wanting no reply starts with (`NO_REPLY_MARKER`).
+    private static let noReplyMarker = "[no reply needed]"
 
     /// What Hermes sends the Bot to carry a goal on, after a reply that didn't finish it
     /// (`CONTINUATION_PROMPT_*` in `hermes_cli/goals.py`; a failed quality gate's ends differently).
@@ -35,6 +37,9 @@ enum GatewayTurn {
         if kind == "process_complete" || body.hasPrefix(processPrefix) {
             // The report keeps its first line: how the process ended and its exit code (`ProcessReport`).
             let report = unwrapped(body)
+            if let process = ProcessReport.parse(report), let answers = BotAnswer.parse(process) {
+                return .botAnswer(answers)
+            }
             return .result(title: title ?? firstLine(of: report).line, detail: report)
         }
         if kind == "async_delegation_complete" || body.hasPrefix(delegationPrefix) {
@@ -49,7 +54,9 @@ enum GatewayTurn {
                 return .result(title: title ?? fromRoutine(routine), detail: output)
             }
             if let (bot, message) = botMessage(body) {
-                return .result(title: title ?? String(localized: "Message from \(bot)"), detail: message)
+                let note = message.hasPrefix(noReplyMarker)
+                let text = note ? String(message.dropFirst(noReplyMarker.count)) : message
+                return .botMessage(from: bot, text: text.trimmingCharacters(in: .whitespacesAndNewlines), isNote: note)
             }
             return .result(title: title ?? String(localized: "Message from Hermes"), detail: body)
         case "auto_continue":
@@ -59,12 +66,27 @@ enum GatewayTurn {
         }
     }
 
+    /// The Bot's messages in `history` that answer you, leaving out its replies to other Bots'
+    /// messages: those go back to that Bot, and the chat folds them away.
+    static func repliesToYou(in history: [HistoryMessage]) -> [HistoryMessage] {
+        var forABot = false
+        return history.filter { message in
+            if message.role == "user" {
+                forABot =
+                    message.displayKind == "internal_notification"
+                    && message.text.map { botMessage(withoutFooter($0)) != nil } == true
+            }
+            return message.role == "assistant" && !forABot
+        }
+    }
+
     /// What the sidebar says when one of these is the chat's newest message. The gateway's preview
     /// comes without its kind, and cut short.
     static func preview(of text: String) -> String? {
         if text.hasPrefix(processPrefix) { return String(localized: "Background process finished") }
         if text.hasPrefix(delegationPrefix) { return agentWorkFinished }
         if let (routine, _) = routineResult(text) { return fromRoutine(routine) }
+        if let (bot, _) = botMessage(text) { return String(localized: "Message from \(bot)") }
         if text.hasPrefix(goalPrefix) { return goalStep }
         return nil
     }

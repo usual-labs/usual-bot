@@ -17,7 +17,7 @@ from . import context, flags, push, store
 log = logging.getLogger(__name__)
 
 # As in plugin.yaml. The app reads it to offer an update.
-VERSION = "0.6.0"
+VERSION = "0.7.0"
 
 # Where a person talks to the agent. Leaves out helpers ("subagent"), routines ("cron") and rooms
 # ("bot_room"), whose sessions continue no chat of the app's. A gateway's own chats can say "local".
@@ -36,15 +36,21 @@ def _before_tool(tool_name: str = "", **_) -> None:
     return None
 
 
-def _before_turn(session_id="", parent_session_id="", platform="", conversation_history=None, **_):
+def _before_turn(
+    session_id="", parent_session_id="", platform="", conversation_history=None, user_message="", **_
+):
     """The chat context, in a chat the app opened that doesn't have it yet. Routines' results and
-    other Bots' messages posted into that chat get it too: they're turns in it."""
+    other Bots' messages posted into that chat get it too: they're turns in it. A turn another Bot
+    started also gets a line saying who its reply goes to, every time."""
     try:
-        if platform not in _CHAT_PLATFORMS or context.told(conversation_history):
+        if platform not in _CHAT_PLATFORMS:
             return None
-        if not store.is_app_chat(str(session_id or ""), str(parent_session_id or "")):
+        sender = context.bot_sender(user_message)
+        told = context.told(conversation_history)
+        if (told and sender is None) or not store.is_app_chat(str(session_id or ""), str(parent_session_id or "")):
             return None
-        return {"context": context.TEXT}
+        parts = ([] if told else [context.TEXT]) + ([context.bot_turn(*sender)] if sender else [])
+        return {"context": "\n\n".join(parts)}
     except Exception as exc:  # noqa: BLE001 - the turn goes on without it
         log.warning("usual-bot: couldn't add the chat context: %s", type(exc).__name__)
         return None

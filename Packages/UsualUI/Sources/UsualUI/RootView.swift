@@ -292,6 +292,10 @@ struct ContactsSplitView<Footer: View>: View {
             .environment(\.roomEditing, roomEditing)
             .environment(\.readMarking, readMarking)
             .environment(
+                \.botDirectory,
+                BotDirectory(contacts: (contacts + hiddenBots).filter { $0.kind == .agent }) { selection = $0 }
+            )
+            .environment(
                 \.botEditing,
                 // Hiding or deleting the open Bot closes its chat.
                 botEditing?.afterRemoving { if selection == $0.id { selection = nil } }

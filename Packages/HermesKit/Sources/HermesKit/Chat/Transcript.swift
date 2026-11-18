@@ -18,6 +18,13 @@ public struct TranscriptItem: Identifiable, Equatable, Sendable, Codable {
         /// Work Hermes finished on its own, such as a background process: a title, and what it
         /// reported for anyone who wants to look.
         case result(title: String, detail: String)
+        /// Another Bot's message, which started a turn here (`GatewayTurn`). `from` is its name;
+        /// a note wants no reply.
+        case botMessage(from: String, text: String, isNote: Bool)
+        /// A message this chat's Bot sent other Bots.
+        case botAsk(BotAsk)
+        /// What came back from them, which starts a turn here.
+        case botAnswer([BotAnswer])
         /// A finished turn's to-do list and the helpers it used. They stay where they were shown
         /// while it ran, so the end of a turn doesn't pull the conversation down.
         case progress(todos: [LiveActivity.Todo], helpers: [LiveActivity.Helper])
@@ -230,7 +237,8 @@ public struct ThreadState: Equatable, Sendable, Codable {
                     id: message.toolCallId ?? "history-\(nextID)", name: message.name ?? "tool",
                     context: message.context ?? "", state: .done)
                 step.readSpeech(args: message.args)
-                addStep(step, date: message.date)
+                // History keeps no tool's result, so a message's receipt isn't known.
+                addStep(step, args: message.args, state: .done, date: message.date)
             default:
                 break
             }
@@ -384,7 +392,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
                 context: payload["context"]?.stringValue ?? "",
                 state: .running)
             step.readSpeech(args: payload["args"])
-            addStep(step)
+            addStep(step, args: payload["args"])
         case "tool.progress":
             updateStep(payload)
         case "tool.complete":
@@ -507,8 +515,16 @@ public struct ThreadState: Equatable, Sendable, Codable {
 
     // MARK: - Tool steps
 
-    /// Consecutive tool calls join the activity item right before them.
-    private mutating func addStep(_ step: ToolStep, date: Date? = .now) {
+    /// Consecutive tool calls join the activity item right before them. A message to other Bots is
+    /// a line of its own.
+    private mutating func addStep(
+        _ step: ToolStep, args: JSONValue? = nil, state: ToolStep.State = .running, date: Date? = .now
+    ) {
+        if step.name == BotAsk.toolName, var ask = BotAsk(id: step.id, args: args) {
+            ask.state = state
+            append(.botAsk(ask), date: date)
+            return
+        }
         if case .activity(var steps) = items.last?.content {
             steps.append(step)
             items[items.count - 1].content = .activity(steps)
@@ -524,6 +540,15 @@ public struct ThreadState: Equatable, Sendable, Codable {
     }
 
     private mutating func completeStep(_ payload: JSONValue) {
+        if let id = payload["tool_id"]?.stringValue,
+            let index = items.lastIndex(where: { if case .botAsk(let ask) = $0.content { ask.id == id } else { false } }
+            ),
+            case .botAsk(var ask) = items[index].content
+        {
+            ask.read(result: payload["result"])
+            items[index].content = .botAsk(ask)
+            return
+        }
         withStep(payload) { step in
             let failed = Self.failed(payload["result"])
             step.state = failed ? .failed : .done
@@ -559,6 +584,11 @@ public struct ThreadState: Equatable, Sendable, Codable {
     /// When a turn ends, no step can still be running.
     private mutating func finishSteps(as state: ToolStep.State) {
         for index in items.indices {
+            if case .botAsk(var ask) = items[index].content, ask.state == .running {
+                ask.state = state
+                items[index].content = .botAsk(ask)
+                continue
+            }
             guard case .activity(var steps) = items[index].content, steps.contains(where: { $0.state == .running })
             else { continue }
             for step in steps.indices where steps[step].state == .running {

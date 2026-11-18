@@ -30,4 +30,17 @@ struct CardPlacementTests {
         #expect(TranscriptView.cardsIndex(in: items([4, 5]), after: 1) == 0)
         #expect(TranscriptView.cardsIndex(in: items([0, 1]), after: -1) == 0)
     }
+
+    /// Another Bot's message and what this Bot did for it fold into one row, and a card that came
+    /// in during it shows after the whole exchange.
+    @Test func anExchangeWithAnotherBotIsOneRowWithCardsAfterIt() {
+        var items = items([0, 1, 2, 3, 4])
+        items[1].content = .botMessage(from: "CMO", text: "Move the routines.", isNote: false)
+        let exchanges = BotExchange.all(in: items)
+        #expect(exchanges.map(\.items) == [1..<5])
+        #expect(TranscriptView.rows(of: items, cardsAt: 5, folding: exchanges).map(\.id) == [0, 1, -1, -2])
+        #expect(TranscriptView.rows(of: items, cardsAt: 3, folding: exchanges).map(\.id) == [0, 1, -1, -2])
+        // A window starting inside it still shows it.
+        #expect(TranscriptView.rows(of: items, cardsAt: 5, from: 3, folding: exchanges).map(\.id) == [1, -1, -2])
+    }
 }

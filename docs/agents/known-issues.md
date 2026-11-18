@@ -97,6 +97,21 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   calls that fan out over every Bot on connect. Still open: a chat whose own open times out shows
   the error instead of its saved copy.
 
+- **Bot-to-Bot messages are recognised by Hermes's wording.** The incoming message is an
+  `internal_notification` starting `Message from 🤖 <name> (@<handle>): `, a note's body starts
+  `[no reply needed]`, and the answer is a background process running `bot_mode_dm.py
+  --run-delivery` (or `--fan-out`) whose last `{` line is JSON. If Hermes changes any of it, those
+  turns fall back to how other notices look: nothing breaks, the fold and the push skip just stop.
+  The app and the plugin (`turns.bot_sender`) each parse it; change both.
+- **A long Bot answer can arrive empty** (Hermes 0.23.x, NousResearch/hermes-agent#152075 and
+  #156513, fixes open). Hermes keeps a process's last 2000 characters and cuts back to a newline,
+  and the runner prints the reply as one line, so nothing is left. The asking Bot's chat says the
+  reply didn't come through and offers the other Bot's chat, where it is.
+- **History keeps no `message_agent` receipt,** only the call's arguments. So an answer is matched to
+  the earliest message waiting on that Bot (or on anyone), and a message stops "waiting" 32 minutes
+  after it was sent, when Hermes stops waiting too. A call Hermes refused shows as sent after a
+  reload.
+
 - **A Bot renamed outside the app refuses its chat for up to 5 minutes** ("This chat is open in
   another Hermes window/terminal"). A chat's lease is filed in the profile folder, and the session
   that took it releases it at the path it had, which the rename moved. The dashboard's 5-minute sweep

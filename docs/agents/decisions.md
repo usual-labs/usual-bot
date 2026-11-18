@@ -261,6 +261,18 @@ read at Hermes `2bd378ed1b`.
   as user rows so the model reads them. `GatewayTurn` shows them by `display_kind`, and by wording
   for untyped rows. An unknown kind stays a message, so nothing you wrote can disappear. A live card
   on `message.start` is handled but hasn't been seen on a real gateway.
+- **A Bot's work for another Bot folds into one line in its chat.** Hermes runs another Bot's
+  message (`message_agent`, `tools/bot_mode_dm.py`) as a turn in the recipient's one Bot Chat, and
+  that turn's final reply goes back to the sender. Shown as messages, it read as the recipient
+  writing to you. So `BotExchange` folds the message and everything up to the next turn into
+  "Talked with CMO · 14 steps", collapsed even while it runs ("Working for CMO…"). Its reply
+  doesn't count as unread or alert, and the sidebar says "Talked with CMO". Cards it raises
+  still show after it, and still notify. In the asking Bot's chat, a `message_agent` call is its own
+  line ("Asked Forge · waiting", "Told Scribe" for a note) and the background process that brings
+  the answer is "Forge answered", read from the runner's JSON line. Hermes has no hidden channel
+  for Bots and gives the message no author field, so both sides go by its wording. The developer
+  chose folding over upstream changes (November 2026). Rooms are untouched: Hermes delivers these
+  only into Bot Chats.
 - **A turn started on another device gets its message when it ends.** `message.start` doesn't carry
   the prompt, so a watching device has only the reply until then. Hermes's Desktop also reads it back
   (`owner_forward.py`), and the turn is stored before `message.complete`. Only the message is put in,
@@ -389,6 +401,10 @@ read at Hermes `2bd378ed1b`.
 - **No Firebase.** Its messaging is free, but it needs Google's SDK in the app, which breaks
   "no third-party packages", and it adds Google as another party that sees every push. A deployed
   Worker reaches APNs over HTTP/2 itself. Local `wrangler dev` can't, so test on a deployed Worker.
+- **A Bot's reply to another Bot's message doesn't notify.** It goes back to that Bot, whose own
+  report to you does. The plugin skips `post_llm_call` when the turn's newest user row is an
+  `internal_notification` starting `Message from 🤖`; approvals and questions in that turn come
+  through `on_human_input_request` and still notify.
 - **Every device hears every message, unless that chat is open on one of them.** An open chat means
   a window in front with that chat selected, or the quick panel. It quiets every device, so reading
   on the Mac keeps the iPhone still. Another chat's message still notifies, even inside the app; this
@@ -745,6 +761,11 @@ read at Hermes `2bd378ed1b`.
   turns in the chat, so they get it. Rooms don't: a member's room session is nothing the app knows,
   and `on_room_member_activity`, which says the room, runs on a queue of its own with no order
   against the turn.
+- **A turn another Bot started is told who its reply goes to, every time.** The same hook adds a
+  short `<usual-bot-turn>` note to that turn alone: the message is from that Bot, the final reply goes
+  back to it, so write to it, lead with the result and don't address the user (for a note: finish
+  quietly). It's per turn, not in the chat context, so existing chats' context and its prompt cache
+  stay as they were. Its own tag keeps `told` from mistaking it for the context after compression.
 - **The app installs our plugin, and only ours, with Hermes's installer.** The developer chose
   one-tap install (November 2026) as the exception to "gateway administration stays in the
   official app". `plugins.manage install` takes `usual-labs/usual-bot#Integrations/usual-bot` per
@@ -869,6 +890,11 @@ read at Hermes `2bd378ed1b`.
   that gateway's plugin and also silences the app's own alerts from it.
 
 ## Not verified
+
+- Bot-to-Bot folding ran against Hermes 0.23.0's stored rows and runner output, copied into tests,
+  and in the demo. Not run: a live `message_agent` on a real gateway with the app watching both
+  chats (that `tool.start` carries `args`, and the answer arriving live), a fan-out's answer, a peer
+  gateway's Bot, and whether Bots follow the plugin's reply note.
 
 - Two gateways ran only in the demo (two made-up gateways, Mac and iPhone Simulator) and against
   fakes: switching, Sign Out going on to the other gateway, Add Gateway and Cancel, renaming, and

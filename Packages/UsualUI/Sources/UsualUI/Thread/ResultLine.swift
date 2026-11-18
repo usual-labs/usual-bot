@@ -144,7 +144,7 @@ private struct HelperTaskRow: View {
     }
 }
 
-private struct Caption: View {
+struct Caption: View {
     let text: String
 
     var body: some View {
