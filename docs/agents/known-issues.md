@@ -135,6 +135,10 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 - **A catalog install that fetches code reports nothing back.** `needs_install` entries run as a
   background `hermes mcp install` and answer `{background: true}`. The app reloads the list for about
   three minutes and says so if the server never appears; the install's log is on the gateway.
+- **A secret is out of the chat, not out of the Bot's reach.** `request_secret` and skills save to
+  the profile's `.env`, which Hermes publishes to its own environment. Hermes strips names that look
+  like credentials from `execute_code` sandboxes (`is_secret_env_name`), but whether a terminal
+  command can still print one hasn't been checked, so the app doesn't promise the Bot can't see it.
 - **Removing an app keeps its secrets.** `_remove_mcp_server` deletes only the config entry: a key in
   the profile's `.env` and an OAuth token stay, and adding it again reuses them.
 - **Run Now answers only when the run ends.** `POST /api/cron/jobs/{id}/trigger` runs the job inside

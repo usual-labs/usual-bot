@@ -4,8 +4,9 @@ import Foundation
 /// needs, or the sudo password for a command. The answer goes straight back; the app keeps no copy.
 public struct SecretPrompt: Identifiable, Equatable, Sendable {
     public enum Kind: Equatable, Sendable {
-        /// A value the gateway saves as the environment variable `name`. `message` is its own wording.
-        case secret(name: String, message: String)
+        /// A value the gateway saves as the environment variable `name`. `message` is its own wording,
+        /// and `help` what the skill, or the Bot through the plugin's `request_secret`, says it is.
+        case secret(name: String, message: String, help: String = "")
         /// Redacted by the gateway before it is sent.
         case sudo(command: String)
     }
@@ -29,7 +30,10 @@ public struct SecretPrompt: Identifiable, Equatable, Sendable {
         switch request.method {
         case "secret":
             guard let name = request.params["env_var"]?.stringValue else { return nil }
-            kind = .secret(name: name, message: request.params["prompt"]?.stringValue ?? "")
+            let help = request.params["metadata"]?["help"]?.stringValue ?? ""
+            kind = .secret(
+                name: name, message: request.params["prompt"]?.stringValue ?? "",
+                help: help.trimmingCharacters(in: .whitespacesAndNewlines))
         case "sudo":
             kind = .sudo(command: request.params["command"]?.stringValue ?? "")
         default:
