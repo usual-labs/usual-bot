@@ -157,4 +157,38 @@ struct AuthSessionTests {
             try await RefreshLock(url: file).acquire(timeout: .milliseconds(200))
         }
     }
+
+    /// iOS ends an app suspended with a lock in the App Group held (0xdead10cc, seen in 0.5.0),
+    /// so the lock asks to stay awake and, once iOS won't wait, lets go.
+    @Test func theLockIsLetGoWhenTheSystemWontWait() async throws {
+        let file = FileManager.default.temporaryDirectory.appending(path: "signin-\(UUID().uuidString).lock")
+        defer { try? FileManager.default.removeItem(at: file) }
+        let system = FakeSystem()
+        let held = try await RefreshLock(url: file, stayAwake: system.stayAwake).acquire()
+        #expect(system.awake)
+
+        system.expire()
+        #expect(!system.awake)
+        let next = try await RefreshLock(url: file).acquire(timeout: .milliseconds(200))
+        next.release()
+        held.release()  // the renewal finishing later is harmless
+    }
+}
+
+/// Keeps the process awake until told it won't any more.
+private final class FakeSystem: Sendable {
+    private let state = Mutex<(awake: Bool, expired: (@Sendable () -> Void)?)>((false, nil))
+
+    var awake: Bool { state.withLock { $0.awake } }
+
+    func expire() {
+        state.withLock { $0.expired }?()
+    }
+
+    var stayAwake: RefreshLock.StayAwake {
+        { [self] expired in
+            state.withLock { $0 = (true, expired) }
+            return { self.state.withLock { $0.awake = false } }
+        }
+    }
 }
