@@ -148,13 +148,29 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
     }
 
     #if os(macOS)
+        /// A yellow dot when the gateway's plugin is older than this build's, where the sheet
+        /// offers Update.
         private var pluginsButton: some View {
-            Button("Plugins", systemImage: "puzzlepiece.extension") { showsPlugins = true }
+            let needsUpdate = model.push.needsUpdate
+            return Button("Plugins", systemImage: "puzzlepiece.extension") { showsPlugins = true }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.clickable(.borderless))
                 .foregroundStyle(Theme.secondaryInk)
                 .zoomedFrame(width: 32, height: 32)
-                .help("Plugins: the Usual Bot plugin, and a Bot’s browser and computer")
+                .overlay(alignment: .topTrailing) {
+                    if needsUpdate {
+                        Circle()
+                            .fill(Theme.updateDot)
+                            .zoomedFrame(width: 8, height: 8)
+                            .offset(x: -5, y: 5)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .accessibilityValue(needsUpdate ? Text("Update available") : Text(verbatim: ""))
+                .help(
+                    needsUpdate
+                        ? "Plugins: an update to the Usual Bot plugin is available"
+                        : "Plugins: the Usual Bot plugin, and a Bot’s browser and computer")
         }
     #endif
 
