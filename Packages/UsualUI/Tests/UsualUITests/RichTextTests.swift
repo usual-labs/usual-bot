@@ -37,7 +37,7 @@
             #expect(view.selectedWords == "best: see https://hermes.example.com.\n• Index nightly")
         }
 
-        @Test func rightClickingTheSelectionOffersAddToChat() throws {
+        @Test func rightClickingTheSelectionOffersReply() throws {
             let window = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 400, height: 200), styleMask: [.titled], backing: .buffered,
                 defer: false)
@@ -45,8 +45,8 @@
             view.frame = NSRect(x: 0, y: 0, width: 400, height: 200)
             window.contentView?.addSubview(view)
             view.show(.mine("Index the docs nightly", size: 15))
-            var quoted: String?
-            view.quote = { quoted = $0 }
+            var replying: SelectedWords?
+            view.reply = { replying = $0 }
             func rightClick() throws -> NSEvent {
                 try #require(
                     NSEvent.mouseEvent(
@@ -59,18 +59,26 @@
 
             view.setSelectedRange(NSRange(location: 0, length: 5))
             let menu = try #require(view.menu(for: try rightClick()))
-            #expect(menu.items.first?.title == "Add to Chat")
+            #expect(menu.items.first?.title == "Reply")
             #expect(menu.items.contains { $0.action == #selector(NSText.copy(_:)) })
             #expect(
                 !menu.items.contains {
                     $0.action == #selector(NSText.paste(_:)) || $0.submenu != nil && $0.title == "Font"
                 })
-            view.addToChat(nil)
-            #expect(quoted == "Index")
+            view.replyToSelection(nil)
+            let words = try #require(replying)
+            #expect(words.text == "Index")
+            // The words stay selected while you type your reply, even as the field takes focus.
+            view.holdsSelection = true
+            #expect(window.makeFirstResponder(view))
+            #expect(window.makeFirstResponder(nil))
+            #expect(view.selectedRange().length == 5)
+            // Then they're let go of.
+            words.release()
             #expect(view.selectedRange().length == 0)
         }
 
-        @Test func thePointerIsAHandOverAddToChatAndAnIBeamAroundIt() throws {
+        @Test func thePointerIsAHandOverReplyAndAnIBeamAroundIt() throws {
             let view = SelectableTextView()
             view.frame = NSRect(x: 0, y: 0, width: 400, height: 200)
             // In a window, as in a conversation: on its own its visible part has no edges.

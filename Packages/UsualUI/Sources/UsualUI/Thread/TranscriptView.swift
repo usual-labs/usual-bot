@@ -461,7 +461,8 @@ struct UserBubble: View {
     }
 }
 
-/// Your message as wide as its text: attachments above the bubble, a quoted reply inside it.
+/// Your message as wide as its text: attachments above the bubble, and inside it what it quotes,
+/// each quote with what you said to it.
 struct UserBubbleContent: View {
     let text: String
     @Environment(\.sentImages) private var sentImages
@@ -470,7 +471,7 @@ struct UserBubbleContent: View {
     var body: some View {
         // Attachments travel as `@image:`/`@file:` lines after the text; they show above it.
         let (withQuote, attachments) = AttachmentRef.split(text)
-        let (quotes, body) = QuotedMessage.split(withQuote)
+        let parts = QuotedMessage.parts(withQuote)
         // Audio and video you sent get a player; the rest show as tiles.
         let (playable, tiles) = (
             attachments.filter { $0.kind == .file && MediaLoading.kind(of: $0.path).isPlayable },
@@ -491,29 +492,32 @@ struct UserBubbleContent: View {
                     }
                 }
             }
-            if !body.isEmpty || !quotes.isEmpty {
+            if !parts.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
-                    // What this one replies to.
-                    ForEach(Array(quotes.enumerated()), id: \.offset) { _, quote in
-                        Text(quote)
-                            .scaledFont(size: 13)
-                            .foregroundStyle(Theme.userBubbleInk.opacity(0.7))
-                            .lineLimit(2)
-                            .padding(.leading, 9)
-                            .overlay(alignment: .leading) {
-                                Capsule().fill(Theme.userBubbleInk.opacity(0.35)).frame(width: 2)
-                            }
-                    }
-                    if !body.isEmpty {
-                        #if os(macOS)
-                            MessageText(content: .mine(body, size: messageSize))
-                        #else
-                            // Links underlined in the bubble's own ink: the link colour wouldn't
-                            // read on the bubble.
-                            Text(Links.detect(in: body).underliningLinks())
-                                .messageFont()
-                                .tint(Theme.userBubbleInk)
-                        #endif
+                    ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
+                        switch part {
+                        case .quote(let quote):
+                            Text(quote)
+                                .scaledFont(size: 13)
+                                .foregroundStyle(Theme.userBubbleInk.opacity(0.7))
+                                .lineLimit(2)
+                                .padding(.leading, 9)
+                                .overlay(alignment: .leading) {
+                                    Capsule().fill(Theme.userBubbleInk.opacity(0.35)).frame(width: 2)
+                                }
+                                // A little more room above a quote that follows your words.
+                                .padding(.top, index > 0 && !parts[index - 1].isQuote ? 4 : 0)
+                        case .text(let words):
+                            #if os(macOS)
+                                MessageText(content: .mine(words, size: messageSize))
+                            #else
+                                // Links underlined in the bubble's own ink: the link colour wouldn't
+                                // read on the bubble.
+                                Text(Links.detect(in: words).underliningLinks())
+                                    .messageFont()
+                                    .tint(Theme.userBubbleInk)
+                            #endif
+                        }
                     }
                 }
                 .foregroundStyle(Theme.userBubbleInk)

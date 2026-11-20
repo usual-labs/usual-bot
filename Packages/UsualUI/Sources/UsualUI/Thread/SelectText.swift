@@ -36,33 +36,40 @@ enum SelectableText {
 }
 
 extension EnvironmentValues {
-    /// Shows a message's words to select from, and what Add to Chat does with a selection; `nil`
-    /// where there's nowhere to show them.
-    @Entry var selectText: ((String, @escaping (String) -> Void) -> Void)?
+    /// Shows a message's words to select from, and what Reply does with a selection and what you
+    /// said to it; `nil` where there's nowhere to show them.
+    @Entry var selectText: ((String, @escaping (_ words: String, _ reply: String) -> Void) -> Void)?
 }
 
 #if os(iOS)
     struct SelectingText: Identifiable {
         let id = UUID()
         let text: String
-        /// Quotes the selected words in your next message.
-        let quote: (String) -> Void
+        /// Quotes the selected words in your next message, with your reply under them.
+        let quote: (String, String) -> Void
     }
 
-    /// A message's words in a sheet, to select any part of and copy, look up, share or add to the
-    /// chat as a quote.
+    /// A message's words in a sheet, to select any part of and copy, look up, share or reply to.
+    /// It stays open for the next part; the quotes reach the message box as it closes, so the
+    /// keyboard comes up there and not under the sheet.
     struct SelectTextSheet: View {
         let text: String
-        let quote: (String) -> Void
+        let quote: (String, String) -> Void
         @Environment(\.dismiss) private var dismiss
         @Environment(\.messageTextSize) private var messageSize
+        /// The words whose Reply field is open.
+        @State private var replying: String?
+        @State private var reply = ""
+        /// Kept so far, with what you said to each.
+        @State private var kept: [(words: String, reply: String)] = []
 
         var body: some View {
             NavigationStack {
                 SelectableTextView(text: text, size: messageSize) { words in
-                    dismiss()
-                    quote(words)
+                    reply = ""
+                    replying = words
                 }
+                .safeAreaInset(edge: .bottom) { bottomBar }
                 .navigationTitle("Select Text")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -71,6 +78,29 @@ extension EnvironmentValues {
             }
             .tint(Theme.ink)
             .presentationDetents([.medium, .large])
+            .onDisappear {
+                for quote in kept { self.quote(quote.words, quote.reply) }
+            }
+        }
+
+        @ViewBuilder private var bottomBar: some View {
+            if let replying {
+                ReplyField(excerpt: ReplyField.excerpt(of: replying), note: $reply, width: nil) {
+                    kept.append((replying, reply))
+                    self.replying = nil
+                } cancel: {
+                    self.replying = nil
+                }
+                .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+            } else if !kept.isEmpty {
+                Text("^[\(kept.count) quote](inflect: true) will go in your message.")
+                    .scaledFont(size: 13)
+                    .foregroundStyle(Theme.secondaryInk)
+                    .frame(maxWidth: .infinity)
+                    .padding(.bottom, 8)
+            }
         }
     }
 
@@ -78,7 +108,8 @@ extension EnvironmentValues {
     private struct SelectableTextView: UIViewRepresentable {
         let text: String
         let size: CGFloat
-        let quote: (String) -> Void
+        /// Opens the Reply field for the selected words.
+        let reply: (String) -> Void
 
         func makeUIView(context: Context) -> UITextView {
             let view = UITextView()
@@ -92,7 +123,7 @@ extension EnvironmentValues {
         }
 
         func updateUIView(_ view: UITextView, context: Context) {
-            context.coordinator.quote = quote
+            context.coordinator.reply = reply
             guard view.text != text else { return }
             let font = UIFontMetrics(forTextStyle: .body).scaledFont(for: .systemFont(ofSize: size))
             let words = NSMutableAttributedString(
@@ -108,22 +139,26 @@ extension EnvironmentValues {
             ]
         }
 
-        func makeCoordinator() -> Coordinator { Coordinator(quote: quote) }
+        func makeCoordinator() -> Coordinator { Coordinator(reply: reply) }
 
         final class Coordinator: NSObject, UITextViewDelegate {
-            var quote: (String) -> Void
+            var reply: (String) -> Void
 
-            init(quote: @escaping (String) -> Void) { self.quote = quote }
+            init(reply: @escaping (String) -> Void) { self.reply = reply }
 
-            /// Add to Chat first in the selection's menu, ahead of Copy, Look Up and Share.
+            /// Reply first in the selection's menu, ahead of Copy, Look Up and Share. It lets go of
+            /// the selection: the field shows the words, and the next part can be picked.
             func textView(
                 _ textView: UITextView, editMenuForTextIn range: NSRange, suggestedActions: [UIMenuElement]
             ) -> UIMenu? {
                 guard range.length > 0, let words = (textView.text as NSString?)?.substring(with: range) else {
                     return UIMenu(children: suggestedActions)
                 }
-                let add = UIAction(title: String(localized: "Add to Chat"), image: UIImage(systemName: "text.quote")) {
-                    [quote] _ in quote(words)
+                let add = UIAction(
+                    title: String(localized: "Reply"), image: UIImage(systemName: "arrowshape.turn.up.left")
+                ) { [reply, weak textView] _ in
+                    textView?.selectedTextRange = nil
+                    reply(words)
                 }
                 return UIMenu(children: [add] + suggestedActions)
             }

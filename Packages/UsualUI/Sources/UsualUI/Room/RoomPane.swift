@@ -253,15 +253,16 @@ struct RoomPane: View {
                 }
             },
             // As a reply: words from a member's message address that member.
-            quote: { item, selection in
+            quote: { item, selection, reply in
                 switch item.content {
                 case .member(let id, _):
                     let handle = room.state.member(id)?.handle
                     quotes.add(
                         QuotedMessage(
-                            author: author(id)?.name ?? handle ?? id, selection: selection, mention: handle))
+                            author: author(id)?.name ?? handle ?? id, selection: selection, mention: handle,
+                            note: reply))
                 default:
-                    quotes.add(QuotedMessage(author: String(localized: "You"), selection: selection))
+                    quotes.add(QuotedMessage(author: String(localized: "You"), selection: selection, note: reply))
                 }
             })
     }

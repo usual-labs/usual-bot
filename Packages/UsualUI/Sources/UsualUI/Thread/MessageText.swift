@@ -3,49 +3,75 @@
     import SwiftUI
 
     /// A message's words on the Mac, in one AppKit text view: a drag selects across paragraphs,
-    /// headings, list items and quotes, as in a web page. With words selected, Add to Chat (its
-    /// button, the right-click menu or ⌘L) quotes them in your next message.
+    /// headings, list items and quotes, as in a web page. With words selected, Reply (its button,
+    /// the right-click menu or ⌘L) opens a field under them for what you say to them; Return quotes
+    /// them in your next message with your reply under the quote.
     struct MessageText: View {
         let content: MessageTextContent
         @Environment(\.quoteSelection) private var quoteSelection
         @State private var selection: SelectedWords?
+        /// The words whose Reply field is open.
+        @State private var replying: SelectedWords?
+        @State private var reply = ""
         /// The button's size once it's laid out: its words and their size vary.
-        @State private var buttonSize = CGSize(width: 130, height: AddToChatButton.height)
+        @State private var buttonSize = CGSize(width: 90, height: ReplyButton.height)
 
         var body: some View {
-            let anchor = quoteSelection == nil ? nil : selection?.anchor
-            let button = anchor.map { AddToChatButton.frame(over: $0, size: buttonSize) }
-            MessageTextView(content: content, quote: quoteSelection, button: button) { selection = $0 }
-                .overlay {
-                    if let selection, let button {
-                        AddToChatButton(action: selection.add)
-                            .onGeometryChange(for: CGSize.self) {
-                                $0.size
-                            } action: {
-                                buttonSize = $0
-                            }
-                            .position(x: button.midX, y: button.midY)
-                            .transition(.opacity)
-                    }
+            let anchor = quoteSelection == nil || replying != nil ? nil : selection?.anchor
+            let button = anchor.map { ReplyButton.frame(over: $0, size: buttonSize) }
+            MessageTextView(
+                content: content, reply: quoteSelection == nil ? nil : { replying = $0 }, holding: replying != nil,
+                button: button
+            ) { selection = $0 }
+            .overlay {
+                if let selection, let button {
+                    ReplyButton { replying = selection }
+                        .onGeometryChange(for: CGSize.self) {
+                            $0.size
+                        } action: {
+                            buttonSize = $0
+                        }
+                        .position(x: button.midX, y: button.midY)
+                        .transition(.opacity)
                 }
-                .animation(.easeOut(duration: 0.12), value: selection)
+            }
+            .animation(.easeOut(duration: 0.12), value: selection)
+            .popover(item: $replying, attachmentAnchor: .rect(.rect(replying?.bounds ?? .zero)), arrowEdge: .bottom) {
+                words in
+                ReplyField(excerpt: ReplyField.excerpt(of: words.text), note: $reply) {
+                    quoteSelection?(words.text, reply)
+                    replying = nil
+                }
+            }
+            // Kept or not, the words are let go of, and the next Reply starts empty.
+            .onChange(of: replying) { old, new in
+                guard new == nil, let old else { return }
+                old.release()
+                reply = ""
+            }
         }
     }
 
-    /// Words selected in a message, and where to show Add to Chat: the selection's top, in the text
+    /// Words selected in a message, and where to show Reply: the selection's top, in the text
     /// view's coordinates.
-    struct SelectedWords: Equatable {
+    struct SelectedWords: Equatable, Identifiable {
         let text: String
         let anchor: CGPoint
-        /// Adds them to the chat and clears the selection.
-        let add: () -> Void
+        /// Around the selected lines, for the Reply field to open under.
+        let bounds: CGRect
+        /// Clears the selection.
+        let release: () -> Void
 
-        static func == (lhs: Self, rhs: Self) -> Bool { lhs.text == rhs.text && lhs.anchor == rhs.anchor }
+        var id: String { text }
+
+        static func == (lhs: Self, rhs: Self) -> Bool {
+            lhs.text == rhs.text && lhs.anchor == rhs.anchor && lhs.bounds == rhs.bounds
+        }
     }
 
     /// A small pill over a selection, as in a coding agent's chat. Solid, with a hairline and a
     /// soft shadow: as glass, the words under it showed through its own.
-    private struct AddToChatButton: View {
+    private struct ReplyButton: View {
         let action: () -> Void
         static let height: CGFloat = 30
 
@@ -60,7 +86,7 @@
         var body: some View {
             Button(action: action) {
                 HStack(spacing: 6) {
-                    Text("Add to Chat")
+                    Text("Reply")
                     Text("⌘L")
                         .foregroundStyle(Theme.secondaryInk)
                         .padding(.horizontal, 5)
@@ -79,15 +105,17 @@
             .buttonStyle(.clickable)
             .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
             .fixedSize()
-            .help("Quote the selected words in your next message")
-            .accessibilityLabel(Text("Add to Chat"))
+            .help("Reply to the selected words")
+            .accessibilityLabel(Text("Reply"))
         }
     }
 
     private struct MessageTextView: NSViewRepresentable {
         let content: MessageTextContent
-        let quote: ((String) -> Void)?
-        /// Where Add to Chat is drawn over the text.
+        let reply: ((SelectedWords) -> Void)?
+        /// The Reply field is open: the selection stays while you type in it.
+        let holding: Bool
+        /// Where Reply is drawn over the text.
         let button: CGRect?
         let selected: (SelectedWords?) -> Void
 
@@ -96,7 +124,8 @@
         }
 
         func updateNSView(_ view: SelectableTextView, context: Context) {
-            view.quote = quote
+            view.reply = reply
+            view.holdsSelection = holding
             view.selected = selected
             view.button = button
             view.show(content)
@@ -111,9 +140,12 @@
     /// Selectable, never editable. Measures itself with a second layout manager on the same text,
     /// so sizing for SwiftUI doesn't disturb what's shown.
     final class SelectableTextView: NSTextView {
-        var quote: ((String) -> Void)?
+        /// Opens the Reply field for the selected words; `nil` where messages can't be replied to.
+        var reply: ((SelectedWords) -> Void)?
+        /// While the Reply field is open, the selection stays as focus moves into it.
+        var holdsSelection = false
         var selected: (SelectedWords?) -> Void = { _ in }
-        /// Where Add to Chat is drawn over this text, in its coordinates. The pointer there is the
+        /// Where Reply is drawn over this text, in its coordinates. The pointer there is the
         /// button's.
         var button: CGRect? {
             didSet { if button != oldValue { window?.invalidateCursorRects(for: self) } }
@@ -194,10 +226,10 @@
         }
 
         /// One selection in the conversation at a time: clicking elsewhere, or into the message
-        /// box, lets go of it.
+        /// box, lets go of it. Typing a reply to it doesn't.
         override func resignFirstResponder() -> Bool {
             let resigned = super.resignFirstResponder()
-            if resigned { setSelectedRange(NSRange(location: selectedRange().location, length: 0)) }
+            if resigned, !holdsSelection { setSelectedRange(NSRange(location: selectedRange().location, length: 0)) }
             return resigned
         }
 
@@ -215,47 +247,52 @@
         }
 
         private func reportSelection() {
-            let range = selectedRange()
-            var words: SelectedWords?
-            if range.length > 0, let layoutManager, let textContainer {
-                let glyphs = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
-                let bounds = layoutManager.boundingRect(forGlyphRange: glyphs, in: textContainer)
-                // Over where the drag ended; from the keyboard, over the selection's middle.
-                var x = bounds.midX
-                if let event = NSApp?.currentEvent, event.window === window,
-                    [.leftMouseUp, .leftMouseDragged, .leftMouseDown].contains(event.type)
-                {
-                    x = convert(event.locationInWindow, from: nil).x
-                }
-                words = SelectedWords(
-                    text: selectedWords, anchor: CGPoint(x: min(max(x, 0), self.bounds.width), y: bounds.minY),
-                    add: { [weak self] in self?.addToChat(nil) })
-            }
+            let words = currentWords()
             // Later: this can run while SwiftUI updates the view, which mustn't change its state.
             let selected = selected
             Task { @MainActor in selected(words) }
         }
 
-        /// Quotes the selection, then lets go of it: it's in the message box now.
-        @objc func addToChat(_ sender: Any?) {
+        /// The selection, where Reply sits over it and the lines it covers.
+        private func currentWords() -> SelectedWords? {
             let range = selectedRange()
-            guard range.length > 0, let quote else { return }
-            quote(selectedWords)
-            setSelectedRange(NSRange(location: NSMaxRange(range), length: 0))
+            guard range.length > 0, let layoutManager, let textContainer else { return nil }
+            let glyphs = layoutManager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+            let bounds = layoutManager.boundingRect(forGlyphRange: glyphs, in: textContainer)
+            // Over where the drag ended; from the keyboard, over the selection's middle.
+            var x = bounds.midX
+            if let event = NSApp?.currentEvent, event.window === window,
+                [.leftMouseUp, .leftMouseDragged, .leftMouseDown].contains(event.type)
+            {
+                x = convert(event.locationInWindow, from: nil).x
+            }
+            return SelectedWords(
+                text: selectedWords, anchor: CGPoint(x: min(max(x, 0), self.bounds.width), y: bounds.minY),
+                bounds: bounds,
+                release: { [weak self] in
+                    guard let self else { return }
+                    setSelectedRange(NSRange(location: NSMaxRange(selectedRange()), length: 0))
+                })
+        }
+
+        /// Opens the Reply field under the selection.
+        @objc func replyToSelection(_ sender: Any?) {
+            guard let reply, let words = currentWords() else { return }
+            reply(words)
         }
 
         override func performKeyEquivalent(with event: NSEvent) -> Bool {
             if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
-                event.charactersIgnoringModifiers?.lowercased() == "l", quote != nil,
+                event.charactersIgnoringModifiers?.lowercased() == "l", reply != nil,
                 window?.firstResponder === self, selectedRange().length > 0
             {
-                addToChat(nil)
+                replyToSelection(nil)
                 return true
             }
             return super.performKeyEquivalent(with: event)
         }
 
-        /// Right-clicking the selection offers Add to Chat and the text's own commands; anywhere
+        /// Right-clicking the selection offers Reply and the text's own commands; anywhere
         /// else, the message's menu (React, Reply, Copy).
         override func menu(for event: NSEvent) -> NSMenu? {
             let range = selectedRange()
@@ -264,11 +301,11 @@
                 let menu = super.menu(for: event)
             else { return nil }
             Self.dropEditing(from: menu)
-            if quote != nil {
+            if reply != nil {
                 let item = NSMenuItem(
-                    title: String(localized: "Add to Chat"), action: #selector(addToChat(_:)), keyEquivalent: "l")
+                    title: String(localized: "Reply"), action: #selector(replyToSelection(_:)), keyEquivalent: "l")
                 item.keyEquivalentModifierMask = .command
-                item.image = NSImage(systemSymbolName: "text.quote", accessibilityDescription: nil)
+                item.image = NSImage(systemSymbolName: "arrowshape.turn.up.left", accessibilityDescription: nil)
                 item.target = self
                 menu.insertItem(item, at: 0)
                 menu.insertItem(.separator(), at: 1)
@@ -309,11 +346,11 @@
         // MARK: Pointer
 
         // A text view shows the I-beam all over itself, by a cursor rectangle and again each time
-        // the pointer moves. SwiftUI draws Add to Chat and Jump to Latest over it and sets the
+        // the pointer moves. SwiftUI draws Reply and Jump to Latest over it and sets the
         // pointing hand only as the pointer arrives, so the I-beam came back while it moved across
         // them, or as the text scrolled under them.
 
-        /// With Add to Chat or a `HandArea` over the text, the pointing hand there and the I-beam
+        /// With Reply or a `HandArea` over the text, the pointing hand there and the I-beam
         /// around it; `nil` without, when the text view's own I-beam is right.
         func pointerRects() -> [(rect: NSRect, cursor: NSCursor)]? {
             let text = visibleRect
@@ -323,7 +360,7 @@
             return hands.map { ($0, .pointingHand) } + beams.map { ($0, .iBeam) }
         }
 
-        /// Add to Chat, and every `HandArea` in this window, in this view's coordinates.
+        /// Reply, and every `HandArea` in this window, in this view's coordinates.
         private func handRects() -> [NSRect] {
             let floating = HandArea.all.allObjects.filter { $0.window === window && window != nil }
             return (button.map { [$0] } ?? []) + floating.map { convert($0.bounds, from: $0) }
@@ -354,7 +391,7 @@
             if isUnderHand(event) { NSCursor.pointingHand.set() } else { super.cursorUpdate(with: event) }
         }
 
-        /// Add to Chat belongs to the text with the selection, and can reach over the text above
+        /// Reply belongs to the text with the selection, and can reach over the text above
         /// it; a `HandArea` can be over any text.
         private func isUnderHand(_ event: NSEvent) -> Bool {
             let owner = button == nil ? window?.firstResponder as? SelectableTextView : self

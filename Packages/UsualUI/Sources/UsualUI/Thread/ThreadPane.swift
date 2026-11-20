@@ -179,12 +179,10 @@ struct ThreadPane: View {
                 default: break
                 }
             },
-            quote: { item, selection in
+            quote: { item, selection, reply in
                 editing = nil
-                switch item.content {
-                case .user: quotes.add(QuotedMessage(author: String(localized: "You"), selection: selection))
-                default: quotes.add(QuotedMessage(author: contact.name, selection: selection))
-                }
+                let author = item.isYours ? String(localized: "You") : contact.name
+                quotes.add(QuotedMessage(author: author, selection: selection, note: reply))
             },
             canEdit: \.isYours,
             canRetry: { item in item.id == thread.retryReply?.id },
