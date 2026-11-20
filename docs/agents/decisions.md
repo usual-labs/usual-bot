@@ -425,8 +425,14 @@ read at Hermes `2bd378ed1b`.
   device reports that chat open it sends each of those devices one silent push through the relay's
   `/v1/clear`. Presence, not Hermes's read time, is the trigger, so rooms clear too, and only the
   first report after a notification sends anything. iOS rations silent pushes and drops them for an
-  app swiped away in the app switcher; those notifications stay until the app next runs there.
-  Apple has no reliable way to remove a delivered notification from the server.
+  app swiped away in the app switcher, so the plugin also remembers each clear it sent
+  (`cleared.json`) and seals the chats into that device's next notification (`read`), whose
+  extension removes theirs before showing it. That extension always runs, so a missed clear lasts
+  at most until the next notification, or until the app next runs there. A clear isn't owed for a
+  chat once the device is notified about it again, or the new notification would go too. Apple has
+  no reliable way to remove a delivered notification from the server; a push the extension hides
+  would need Apple's filtering entitlement. Unverified: Apple doesn't document
+  `removeDeliveredNotifications` from a notification service extension.
 - **The icon's badge is the app's own unread count, kept going by the extension.** The app sets it
   from the chats and rooms of the gateway in use, less muted ones, and saves it in the push keychain
   group (`AppBadge`); the extension adds one for each pushed `message` while the app is closed,

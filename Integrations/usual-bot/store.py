@@ -80,9 +80,10 @@ def remove_device(device_id: str) -> None:
         if values["devices"].pop(device_id, None) is not None:
             _write("settings.json", values)
     with _shared():
-        told = _read("told.json")
-        if told.pop(device_id, None) is not None:
-            _write("told.json", told)
+        for name in ("told.json", "cleared.json"):
+            entries = _read(name)
+            if entries.pop(device_id, None) is not None:
+                _write(name, entries)
 
 
 def set_names(names: dict[str, str]) -> None:
@@ -149,7 +150,8 @@ def _shared(name: str = "told"):
 
 
 def note_told(device_ids: list[str], chat: str) -> None:
-    """These devices now show a notification about this chat."""
+    """These devices now show a notification about this chat. The push carried this chat's clear
+    first, so none is owed for it any more: a later one would take down this notification."""
     if not device_ids:
         return
     with _shared():
@@ -158,14 +160,18 @@ def note_told(device_ids: list[str], chat: str) -> None:
             chats = [known for known in told.get(device_id, []) if known != chat] + [chat]
             told[device_id] = chats[-TOLD_LIMIT:]
         _write("told.json", told)
+        _drop_cleared(device_ids, [chat])
 
 
 def take_told(chat: str, reader: str) -> list[str]:
     """You're reading `chat` on `reader`: the other devices that still show a notification about it.
 
-    Forgets them, so each is cleared once, and `reader`'s own, which it clears itself.
+    Forgets them, so each is cleared once, and `reader`'s own, which it clears itself. Each of the
+    others is also owed the clear in its next notification (`owed_clears`), as iOS can drop the
+    silent push.
     """
     with _shared():
+        _drop_cleared([reader], [chat])
         told = _read("told.json")
         showing = [device_id for device_id, chats in told.items() if chat in chats]
         if not showing:
@@ -175,7 +181,43 @@ def take_told(chat: str, reader: str) -> list[str]:
             if not told[device_id]:
                 del told[device_id]
         _write("told.json", told)
-    return [device_id for device_id in showing if device_id != reader]
+        others = [device_id for device_id in showing if device_id != reader]
+        cleared = _read("cleared.json")
+        for device_id in others:
+            chats = [known for known in cleared.get(device_id, []) if known != chat] + [chat]
+            cleared[device_id] = chats[-TOLD_LIMIT:]
+        if others:
+            _write("cleared.json", cleared)
+    return others
+
+
+def owed_clears(device_id: str) -> list[str]:
+    """Chats read elsewhere since this device was last notified, newest first. Its next
+    notification carries them, so its extension takes those down even when the app can't run."""
+    with _shared():
+        return list(reversed(_read("cleared.json").get(device_id, [])))
+
+
+def paid_clears(device_id: str, chats: list[str]) -> None:
+    """A notification carrying these clears reached the relay."""
+    with _shared():
+        _drop_cleared([device_id], chats)
+
+
+def _drop_cleared(device_ids: list[str], chats: list[str]) -> None:
+    """Under `_shared()`."""
+    cleared = _read("cleared.json")
+    changed = False
+    for device_id in device_ids:
+        kept = [known for known in cleared.get(device_id, []) if known not in chats]
+        if kept != cleared.get(device_id, []):
+            changed = True
+            if kept:
+                cleared[device_id] = kept
+            else:
+                del cleared[device_id]
+    if changed:
+        _write("cleared.json", cleared)
 
 
 def _fresh_chats(now: float) -> dict[str, float]:
