@@ -58,3 +58,17 @@ class BotTurnTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SilentReplyTests(unittest.TestCase):
+    """A Bot answering `[SILENT]` chose not to reply: nothing to notify."""
+
+    def test_a_bare_marker_says_nothing(self):
+        for marker in ("[SILENT]", "NO_REPLY", " no_reply. ", "*NO_REPLY*"):
+            self.assertEqual(turns.said(marker), "", marker)
+
+    def test_prose_is_kept(self):
+        self.assertEqual(turns.said("The status is NO_REPLY needed."), "The status is NO_REPLY needed.")
+
+    def test_a_closing_marker_goes(self):
+        self.assertEqual(turns.said("Done.\n\nNO_REPLY"), "Done.")

@@ -186,7 +186,8 @@ struct InflightTurn: Equatable, Sendable {
 public struct ThreadState: Equatable, Sendable, Codable {
     public private(set) var items: [TranscriptItem] = []
     /// The reply streaming in right now. It becomes an assistant item when the turn moves on or ends.
-    public private(set) var draft = ""
+    public var draft: String { Silence.shownWhileStreaming(streamed) }
+    private var streamed = ""
     public private(set) var isRunning = false
     private var nextID = 0
     /// `items.count` when the current turn started, to tell whether the turn has replied yet.
@@ -199,7 +200,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
     /// The hidden prompts in this chat (`GatewayTurn.hiddenKind`), newest last. Not cached.
     private(set) var hiddenPrompts: [String] = []
 
-    private enum CodingKeys: String, CodingKey { case items, draft, isRunning, nextID, turnStart }
+    private enum CodingKeys: String, CodingKey { case items, streamed = "draft", isRunning, nextID, turnStart }
 
     public init() {}
 
@@ -256,7 +257,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
                     turnStart = items.count
                 }
             }
-            draft = inflight.assistant
+            streamed = inflight.assistant
         }
         if running, let todoState { live.restoreTodos(todoState) }
     }
@@ -281,7 +282,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
     func trimmed(to limit: Int) -> ThreadState {
         var copy = self
         copy.items = Array(items.suffix(limit))
-        copy.draft = ""
+        copy.streamed = ""
         copy.isRunning = false
         copy.turnStart = copy.items.count
         copy.live = LiveActivity()
@@ -329,7 +330,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
     mutating func rewind(from itemID: Int) {
         guard let index = items.firstIndex(where: { $0.id == itemID }) else { return }
         items.removeSubrange(index...)
-        draft = ""
+        streamed = ""
         isRunning = false
         live.endTurn()
         turnStart = items.count
@@ -376,7 +377,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
             if !isRunning { turnStart = items.count }
             isRunning = true
         case "message.delta":
-            if let text = payload["text"]?.stringValue { draft += text }
+            if let text = payload["text"]?.stringValue { streamed += text }
             live.moveOn()
         case "message.interim":
             sealDraft()
@@ -455,9 +456,9 @@ public struct ThreadState: Equatable, Sendable, Codable {
         let text = payload["text"]?.stringValue?.nonBlank
         let failed = status == "error" || status == "failed"
         if failed {
-            draft = ""
+            streamed = ""
             append(.notice(text ?? String(localized: "The reply failed.")))
-        } else if !draft.isEmpty {
+        } else if !streamed.isEmpty {
             sealDraft()
         } else if let text, !turnHasReply {
             // Providers that don't stream send the whole reply here.
@@ -494,14 +495,20 @@ public struct ThreadState: Equatable, Sendable, Codable {
     }
 
     private mutating func sealDraft() {
-        if let text = draft.nonBlank { append(.assistant(text)) }
-        draft = ""
+        if let text = streamed.nonBlank { append(.assistant(text)) }
+        streamed = ""
     }
 
     /// Anything that isn't from history is happening now.
     private mutating func append(
         _ content: TranscriptItem.Content, rowID: Int? = nil, reactions: [Reaction] = [], date: Date? = .now
     ) {
+        var content = content
+        if case .assistant(let text) = content {
+            // A Bot choosing not to reply leaves no bubble, live or from history.
+            if Silence.isMarker(text) { return }
+            content = .assistant(Silence.withoutClosingMarker(text))
+        }
         items.append(TranscriptItem(id: nextID, content: content, rowID: rowID, reactions: reactions, date: date))
         nextID += 1
     }

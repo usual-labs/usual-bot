@@ -7,7 +7,7 @@ import Foundation
 public enum UsualPlugin {
     public static let name = "usual-bot"
     /// The version this build was made with. An older one is offered as an update.
-    public static let version = "0.7.0"
+    public static let version = "0.7.1"
 
     static let path = "/api/plugins/usual-bot"
     static let oldPushPath = "/api/plugins/usual-push"
