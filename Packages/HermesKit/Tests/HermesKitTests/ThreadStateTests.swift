@@ -69,7 +69,10 @@ struct ThreadStateTests {
                 .assistant("On it."),
                 .activity([
                     ToolStep(id: "t1", name: "read_file", context: "a.swift", duration: 1.5, state: .done),
-                    ToolStep(id: "t2", name: "terminal", context: "swift test", summary: "7 passed", state: .failed),
+                    // A command's error is what the terminal drawer shows it printed.
+                    ToolStep(
+                        id: "t2", name: "terminal", context: "swift test", summary: "7 passed", state: .failed,
+                        output: "exit 1"),
                 ]),
                 .assistant("Done."),
             ])

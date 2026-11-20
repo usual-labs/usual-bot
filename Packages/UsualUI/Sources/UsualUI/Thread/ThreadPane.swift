@@ -44,6 +44,10 @@ struct ThreadPane: View {
     @State private var isDropTarget = false
     @State private var showsComputer = false
     @State private var showsBrowser = false
+    #if os(macOS)
+        /// The terminal drawer (⌘J): open for every Bot's chat until you hide it.
+        @AppStorage("showsTerminal") private var showsTerminal = false
+    #endif
     @Environment(\.screens) private var screens
     @Environment(\.readMarking) private var readMarking
     @Environment(\.gatewayOnline) private var isOnline
@@ -83,6 +87,9 @@ struct ThreadPane: View {
             } actions: {
                 browserButton
                 computerButton
+                #if os(macOS)
+                    terminalButton
+                #endif
                 #if os(iOS)
                     moreMenu
                 #endif
@@ -133,6 +140,9 @@ struct ThreadPane: View {
             .task(id: "\(contact.id) \(isOnline)") {
                 await screen?.refresh()
                 await browser?.refresh()
+                #if os(macOS)
+                    await terminal?.refresh()
+                #endif
             }
             .onChange(of: contact.id) {
                 attachments = []
@@ -145,6 +155,14 @@ struct ThreadPane: View {
             .onChange(of: thread?.phase == .ready) { _, ready in
                 if !ready { editing = nil }
             }
+            #if os(macOS)
+                .terminalDrawer(
+                    isPresented: showsTerminal && terminal != nil, contact: contact, terminal: terminal, thread: thread
+                ) { showsTerminal = false }
+                .focusedSceneValue(
+                    \.terminal,
+                    terminal.map { _ in TerminalCommand(isShown: showsTerminal) { showsTerminal.toggle() } })
+            #endif
             .paneChrome()
     }
 
@@ -226,6 +244,27 @@ struct ThreadPane: View {
     }
 
     /// The agent's browser, for agents only.
+    #if os(macOS)
+        /// The agent's shell and the commands it ran, for agents only.
+        private var terminal: BotTerminal? {
+            contact.kind == .agent ? screens?.terminal(for: contact) : nil
+        }
+
+        /// Opens the terminal drawer. A dot shows while the agent is running a command.
+        @ViewBuilder private var terminalButton: some View {
+            if terminal != nil {
+                let working = thread?.state.isRunningCommand == true
+                LiveButton("Terminal", systemImage: "apple.terminal", working: working, isOn: showsTerminal) {
+                    showsTerminal.toggle()
+                }
+                .help(
+                    working ? "\(contact.name) is running a command" : showsTerminal ? "Hide Terminal" : "Show Terminal"
+                )
+                .accessibilityLabel(Text("\(contact.name)'s Terminal"))
+            }
+        }
+    #endif
+
     private var browser: BotBrowser? {
         contact.kind == .agent ? screens?.browser(for: contact) : nil
     }
@@ -235,7 +274,7 @@ struct ThreadPane: View {
     @ViewBuilder private var computerButton: some View {
         if let screen, screen.hasScreen {
             let working = thread?.state.isUsingComputer == true
-            liveButton("Computer", systemImage: "display", working: working) {
+            LiveButton("Computer", systemImage: "display", working: working) {
                 #if os(macOS)
                     openWindow(id: "bot-screen", value: contact.id)
                 #else
@@ -252,7 +291,7 @@ struct ThreadPane: View {
     @ViewBuilder private var browserButton: some View {
         if let browser, browser.isAvailable {
             let working = thread?.state.isUsingBrowser == true
-            liveButton("Browser", systemImage: "globe", working: working) {
+            LiveButton("Browser", systemImage: "globe", working: working) {
                 #if os(macOS)
                     openWindow(id: "bot-browser", value: contact.id)
                 #else
@@ -262,40 +301,6 @@ struct ThreadPane: View {
             .help(working ? "\(contact.name) is browsing" : "\(contact.name)'s browser")
             .accessibilityLabel(Text("\(contact.name)'s Browser"))
         }
-    }
-
-    /// A round button in the chat's bar for something of the agent's you can watch live.
-    private func liveButton(
-        _ title: LocalizedStringKey, systemImage: String, working: Bool, action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: systemImage)
-                .labelStyle(.iconOnly)
-                #if os(macOS)
-                    // The name capsule's glass, level with it and as tall: the system's glass
-                    // button drew a pale disc in the window you're at, unlike the capsule beside it.
-                    .zoomedFont(size: 15, weight: .medium)
-                    .foregroundStyle(Theme.ink)
-                    .zoomedFrame(width: ThreadPane.barItemHeight, height: ThreadPane.barItemHeight)
-                    .contentShape(Circle())
-                    .glassEffect(.regular.interactive(), in: Circle())
-                #endif
-                .overlay(alignment: .topTrailing) {
-                    if working {
-                        Circle().fill(Theme.online).zoomedFrame(width: 9, height: 9)
-                            #if os(macOS)
-                                .offset(x: -1, y: 1)
-                            #else
-                                .offset(x: 3, y: -3)
-                            #endif
-                            .accessibilityHidden(true)
-                    }
-                }
-        }
-        #if os(macOS)
-            .buttonStyle(.clickable)
-        #endif
-        .accessibilityValue(working ? Text("In use") : Text(""))
     }
 
     @ViewBuilder private var content: some View {

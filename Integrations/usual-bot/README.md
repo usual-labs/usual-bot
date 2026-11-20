@@ -5,6 +5,7 @@ A Hermes plugin with what Usual Bot needs from your gateway:
 - **Push.** Tells your devices when a Bot replies, messages you or needs you, even when Usual Bot is
   closed.
 - **A Bot's browser.** Lets you watch a Bot's browser live, while it runs headless on your gateway.
+- **A shell.** Opens a shell on your gateway's computer in a Bot's terminal drawer on the Mac.
 - **Where the Bot is.** Tells a Bot, in the chats Usual Bot opened, that it's talking through
   Usual Bot and what shows there.
 - **Secrets.** Lets a Bot ask you for an API key or a token in a masked field, in the chats Usual
@@ -118,6 +119,33 @@ has Full Disk Access. Hermes then reuses the copy it made last time, and the plu
 layout from that copy. The feed checks sign-in with the dashboard's own WebSocket check, the same
 one Hermes' bundled Kanban plugin uses. It isn't a public Hermes API, so a Hermes update could
 change it.
+
+## A shell
+
+Usual Bot's terminal drawer on the Mac (⌘J) opens a shell here, on the gateway's computer:
+
+- It runs as the gateway's user, as a login shell (`$SHELL -l`), in the folder the Bot runs its
+  commands in (`terminal.cwd`, or the gateway's own folder when that's `.`), with `HERMES_HOME` set
+  to the Bot's profile. The gateway's environment stays out of it, its API keys included: only
+  `PATH`, the locale and the time zone carry over, and your login profile sets up the rest.
+- Only for a Bot whose commands run on this computer (`terminal.backend: local`, Hermes's default). A
+  Bot sandboxed in Docker, SSH, Modal or anywhere else runs its commands where a shell here can't
+  reach, so it gets none.
+- Closing the drawer's connection hangs up the shell (SIGHUP to its process group), as closing a
+  Terminal window does.
+
+Anyone signed in to your gateway can open one. They could already have a Bot run any command, so it
+adds no access, but it's a direct way in: keep your gateway on Tailscale or behind HTTPS.
+
+Routes, behind the dashboard's sign-in:
+
+- `GET /api/plugins/usual-bot/terminal/status?bot=<profile>` answers
+  `{"available", "backend", "user", "host", "cwd"}`.
+- `WS /api/plugins/usual-bot/terminal?bot=<profile>&ticket=<from POST /api/auth/ws-ticket>`, with
+  optional `cols` and `rows`. Every message is binary and starts with a tag byte: `0` and bytes are
+  the shell's output, or what you typed; `1` and JSON is `{"type":"ready","user","host","cwd"}` and
+  `{"type":"exit","code"}` from the plugin, or `{"type":"resize","cols","rows"}` from the app. Close
+  codes: 4401 not signed in, 4404 no such Bot, 4409 the Bot is sandboxed.
 
 ## Where the Bot is
 

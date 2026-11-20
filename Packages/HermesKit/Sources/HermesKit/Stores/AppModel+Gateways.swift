@@ -195,6 +195,8 @@ extension AppModel {
         screens = [:]
         for browser in browsers.values { browser.disconnect() }
         browsers = [:]
+        for terminal in terminals.values { terminal.stop() }
+        terminals = [:]
         gatewayDetails = nil
         lastSaved = nil
         visibleContactID = nil

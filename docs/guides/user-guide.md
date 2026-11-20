@@ -428,7 +428,7 @@ Bot's name above the chat):
 ## The Usual Bot plugin
 
 Usual Bot's plugin runs on your gateway. It sends notifications to your devices, lets you watch a
-Bot's browser, and tells your Bots, in the chats you open in Usual Bot, that you're talking through
+Bot's browser, opens a shell for a Bot's terminal, and tells your Bots, in the chats you open in Usual Bot, that you're talking through
 Usual Bot and what shows there: Markdown, files and widgets. It tells them nothing about you or your
 device, and does nothing for chats in your other apps. Rooms don't get that note.
 
@@ -493,6 +493,31 @@ moment.
   Bot: **Picture quality** (Data Saver, Standard or Best, which is lossless) and **Pixel density**
   (2× is sharper on Retina screens and uses about four times the data). Neither changes the Bot's
   browser or the screenshots it takes.
+
+## A Bot's terminal (Mac)
+
+Every Bot's chat on the Mac has a **Terminal** button (a terminal window) at the top right, beside
+**Browser** and **Computer**, with a green dot while the Bot is running a command. It and ⌘J
+(**View › Show Terminal**) open a drawer along the bottom of the chat, under the message box, so
+you can keep chatting. ⌘J, the button or **Hide** puts it away. Drag its top edge to make it
+taller. It stays open as you move between Bots, and remembers its height and tab.
+
+- **Shell** opens a shell on your gateway's computer, as the gateway's user, in the folder the Bot
+  runs its commands in, with `HERMES_HOME` set to the Bot's profile. Click it and type: Control
+  keys, arrows and Tab work as in Terminal, ⌘V pastes, and ⌘ shortcuts stay Usual Bot's.
+  Right-click to copy everything shown. It's a shell for typing commands; full-screen programs such
+  as `vim`, `top` and `less` don't draw properly in it. Hiding the drawer or opening another chat
+  leaves the shell running. Typing `exit` ends it, and **New Shell** starts another. If the
+  connection drops, the gateway stops what ran in it. Commands you type here don't go to the Bot
+  and cost nothing.
+- **The Bot's Commands** lists the commands the Bot ran in this chat, with what they printed and how
+  they ended. A chat opened again later shows the commands without their output, because Hermes
+  doesn't keep it.
+
+The shell needs the [Usual Bot plugin](../../Integrations/usual-bot/README.md) 0.10.0 or later on
+your gateway. A Bot whose commands run in a Docker, SSH or other sandbox has no shell here, because
+its commands run somewhere else; its Commands tab still works. Rooms have no terminal: open the
+Bot's own chat.
 
 ## Rooms
 
@@ -737,6 +762,7 @@ On the Mac these are also in the menu bar (File, View and Go), and **Help › Ke
 | ⌃⌘S | Mac | Collapse or expand the sidebar |
 | ⌘, | Mac | Open Settings |
 | ⌘I | Chat or room | Show the profile or room details |
+| ⌘J | Mac chat | Show or hide the terminal |
 | ⌘[ / ⌘] | Mac | Back / forward through the chats you opened |
 | ⌘+ / ⌘− / ⌘0 | Mac | Zoom the window in, out, or back to actual size |
 | ⌘/ | Mac | Show the keyboard shortcuts |

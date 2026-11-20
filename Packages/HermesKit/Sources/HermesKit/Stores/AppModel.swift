@@ -100,6 +100,8 @@ public final class AppModel {
     @ObservationIgnored var screens: [Contact.ID: BotScreen] = [:]
     /// Agents' browsers (`usual-bot` plugin), once a chat asked about one.
     @ObservationIgnored var browsers: [Contact.ID: BotBrowser] = [:]
+    /// Agents' shells (`usual-bot` plugin), once a chat's terminal drawer asked about one.
+    @ObservationIgnored var terminals: [Contact.ID: BotTerminal] = [:]
     let makeScreenSocket: ScreenSocketFactory
     /// Chats' messages ready to search (`searchMessages`).
     @ObservationIgnored let messageIndex = MessageIndex()

@@ -834,6 +834,31 @@ read at Hermes `2bd378ed1b`.
 - **The Browser button shows only for a Bot whose status says `available`**: real profile on and
   headless. A gateway without the plugin answers 404, so the button stays hidden.
 
+## A Bot's terminal
+
+- **A drawer under the chat, Mac only, for agents only (November 2026).** ⌘J or a Terminal button
+  beside Browser and Computer opens it below the message box, so the chat stays usable. One
+  `showsTerminal` for every Bot, and one height and tab. iPhone, the ⌥Space panel and rooms have
+  none: a room would have to pick a member, and the developer chose the Bot's own chat for it.
+- **Two tabs: a shell, and the commands the Bot ran.** The commands come from the chat's own
+  `terminal` tool steps, which now keep the full command (`args.command`), output (the last 8,000
+  characters) and exit code live. History rows carry no result, so a reloaded chat lists commands
+  alone.
+- **The shell is the plugin's, not Hermes's.** Hermes has no shell route. `terminal_api.py` forks a
+  login shell on a pty (`pty.fork`: the child must get the pty as its controlling terminal for ⌃C
+  and job control, which `subprocess` doesn't do). The developer accepted that anyone signed in to
+  the gateway gets a shell: they could already have a Bot run any command.
+- **Only where the Bot's commands run.** A Bot with any `terminal.backend` but `local` gets no shell
+  (`sandboxed`), rather than a host shell that looks like its terminal and isn't.
+- **A clean environment, not the gateway's.** The gateway process holds provider keys from `.env`;
+  only `PATH`, locale and time zone carry over, plus `HERMES_HOME` for the Bot.
+- **Every message is tagged by its first byte** (0 bytes, 1 JSON) both ways. A shell prints `{`
+  freely, so the browser feed's "JSON starts with `{`" rule can't work here.
+- **A line shell, not a full terminal emulator** (the developer's pick: no third-party package, so
+  no SwiftTerm). `TerminalScreen` handles colours, cursor moves on the screen, erasing, wrapping and
+  `clear`; it ignores the alternate screen and scroll regions, so `vim`, `top` and `less` don't draw.
+  It's dark in light mode too, because shells colour for a dark background.
+
 ## Sharing from other apps
 
 - **On iPhone the extension sends itself when it can; otherwise the app does.** Every item is
@@ -962,6 +987,11 @@ read at Hermes `2bd378ed1b`.
   "caution", then installed with `force`). Not run: `plugins.manage` over the Webapp with the app's
   sign-in, a running gateway reloading it, a model's turn reading the context, compression moving
   a Bot Chat to a new session, and the app's Install button against a gateway.
+- The terminal drawer ran in the demo on the Mac (shell, commands, a running command's dot, light
+  and dark), and the plugin's shell ran as a real `/bin/sh` on a pty in `test_terminal.py`. Not run:
+  the shell route under Hermes's dashboard or Webapp (`_ws_auth_ok`, the router mounting), the app
+  against a gateway, typing in the app (the demo was driven without taking the keyboard), whether
+  live `tool.start` carries `args.command`, a Linux gateway, and VoiceOver reading the shell.
 - The Browser view hasn't run in the app against a real gateway: the plugin's feed and `BotBrowser`
   were each tested on their own (`BotBrowserTests`, and a script client on the developer's gateway).
 
