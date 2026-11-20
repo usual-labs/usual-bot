@@ -14,7 +14,7 @@ public final class BotTerminal {
     public enum Availability: Equatable, Sendable {
         case unknown
         case available
-        /// The gateway's plugin has no shell: missing, or older than 0.9.0.
+        /// The gateway's plugin has no shell: missing, or older than 0.10.0.
         case noPlugin
         /// The agent runs its commands in a sandbox (`docker`, `ssh`, `modal` …), not on the host.
         case sandboxed(backend: String)

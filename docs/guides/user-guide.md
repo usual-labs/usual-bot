@@ -433,7 +433,8 @@ Usual Bot and what shows there: Markdown, files and widgets. It tells them nothi
 device, and does nothing for chats in your other apps. Rooms don't get that note.
 
 On the Mac, **Plugins** (the puzzle piece at the foot of the sidebar) says whether your gateway has
-it: Installed, Update available or Not installed. **Install in Every Bot…** asks Hermes to install
+it: Installed, Update available or Not installed. When an update is available, the puzzle piece
+has a yellow dot until you update. **Install in Every Bot…** asks Hermes to install
 it into each of your Bots, hidden ones included, from Usual Bot's GitHub. Hermes checks plugins
 first and marks this one "caution", because it reads your browser's version and its notifications
 mention sudo; Usual Bot says so and installs only once you agree. A Bot you make in Usual Bot gets
@@ -513,7 +514,7 @@ taller. It stays open as you move between Bots, and remembers its height and tab
   they ended. A chat opened again later shows the commands without their output, because Hermes
   doesn't keep it.
 
-The shell needs the [Usual Bot plugin](../../Integrations/usual-bot/README.md) 0.9.0 or later on
+The shell needs the [Usual Bot plugin](../../Integrations/usual-bot/README.md) 0.10.0 or later on
 your gateway. A Bot whose commands run in a Docker, SSH or other sandbox has no shell here, because
 its commands run somewhere else; its Commands tab still works. Rooms have no terminal: open the
 Bot's own chat.

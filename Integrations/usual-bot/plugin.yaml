@@ -1,5 +1,5 @@
 name: usual-bot
-version: "0.9.0"
+version: "0.10.0"
 description: "What Usual Bot needs from your gateway: push to your devices, a Bot's browser to watch, a shell for its terminal, telling Bots in the app's chats where they are, and a masked field for the secrets they need"
 provides_tools:
   - request_secret
