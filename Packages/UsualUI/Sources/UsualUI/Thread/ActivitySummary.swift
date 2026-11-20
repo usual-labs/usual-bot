@@ -86,7 +86,7 @@ enum ActivitySummary {
             guard let count = counts[category] else { return nil }
             return phrase(category, count: count, mixed: counts.count > 1)
         }
-        var line = "\(agent) \((steps.count == 1 ? steps.first.flatMap(named) : nil) ?? joined(pieces))"
+        var line = "\(agent) \(joined(pieces))"
         let seconds = steps.compactMap(\.duration).reduce(0, +)
         if seconds >= 1 { line += " · " + duration(seconds) }
         let failed = steps.filter { $0.state == .failed }.count
@@ -94,29 +94,18 @@ enum ActivitySummary {
         return line
     }
 
-    /// One step names what it worked on, "edited work/disk.html", rather than "edited 1 file".
-    private static func named(_ step: ToolStep) -> String? {
-        let context = step.context.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !context.isEmpty else { return nil }
-        switch category(of: step.name) {
-        case .read: return String(localized: "read \(context)")
-        case .edit: return String(localized: "edited \(context)")
-        case .run: return String(localized: "ran \(context)")
-        case .search: return String(localized: "searched for \(context)")
-        case .web, .other: return nil
-        }
-    }
-
+    /// The line stays generic, "edited a file" rather than a path or a command line: the
+    /// expanded steps show what each one worked on.
     private static func phrase(_ category: Category, count: Int, mixed: Bool) -> String {
         switch category {
-        case .read: return count == 1 ? "read 1 file" : "read \(count) files"
-        case .edit: return count == 1 ? "edited 1 file" : "edited \(count) files"
-        case .run: return count == 1 ? "ran 1 command" : "ran \(count) commands"
+        case .read: return count == 1 ? "read a file" : "read \(count) files"
+        case .edit: return count == 1 ? "edited a file" : "edited \(count) files"
+        case .run: return count == 1 ? "ran a command" : "ran \(count) commands"
         case .search: return count == 1 ? "searched once" : "searched \(count) times"
         case .web: return "browsed the web"
         case .other:
-            let noun = count == 1 ? "tool" : "tools"
-            return mixed ? "used \(count) other \(noun)" : "used \(count) \(noun)"
+            if count == 1 { return mixed ? "used another tool" : "used a tool" }
+            return mixed ? "used \(count) other tools" : "used \(count) tools"
         }
     }
 
