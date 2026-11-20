@@ -292,7 +292,9 @@
             threads["ledger"]?.receive(
                 SecretPrompt(
                     id: "demo-secret", sessionID: "sample",
-                    kind: .secret(name: "STRIPE_API_KEY", message: "The invoicing skill needs a Stripe API key.")))
+                    kind: .secret(
+                        name: "STRIPE_API_KEY", message: "Stripe API key for invoicing",
+                        help: "A restricted key from Stripe's dashboard, under Developers › API keys.")))
             for prompt in Demo.vaultPrompts { threads["ledger"]?.receive(prompt) }
             // Shows the warning a gateway on plain http gets.
             threads["ledger"]?.gateway = { try? GatewayAddress(parsing: "http://192.168.1.20:9119") }

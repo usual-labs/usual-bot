@@ -3,6 +3,7 @@
   push.py                   tells your devices what Bots do, through Usual's push relay
   flags.py                  the Chrome flags a Bot's headless real-profile browser launches with
   context.py                tells a Bot, in the app's chats only, that it's talking through Usual Bot
+  secret_prompt.py          request_secret: a Bot asks for a credential and Hermes saves it, unseen
   dashboard/                the routes the app calls: devices, the chats it opened, the browser feed
 
 Hooks never stop a turn: anything going wrong here is logged and the turn goes on without it.
@@ -12,12 +13,12 @@ from __future__ import annotations
 
 import logging
 
-from . import context, flags, push, store
+from . import context, flags, push, secret_prompt, store
 
 log = logging.getLogger(__name__)
 
 # As in plugin.yaml. The app reads it to offer an update.
-VERSION = "0.7.1"
+VERSION = "0.8.0"
 
 # Where a person talks to the agent. Leaves out helpers ("subagent"), routines ("cron") and rooms
 # ("bot_room"), whose sessions continue no chat of the app's. A gateway's own chats can say "local".
@@ -62,3 +63,7 @@ def register(ctx) -> None:
     ctx.register_hook("on_room_member_activity", push.on_room_activity)
     ctx.register_hook("pre_tool_call", _before_tool)
     ctx.register_hook("pre_llm_call", _before_turn)
+    ctx.register_tool(
+        name=secret_prompt.NAME, toolset="usual_bot", schema=secret_prompt.SCHEMA,
+        handler=secret_prompt.request, description="Ask for a secret in a masked field", emoji="🔑",
+    )

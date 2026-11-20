@@ -323,9 +323,12 @@ Approvals also wait in the ⌥Space panel on the Mac, so you can answer
 without opening the chat. A card stays where it appeared: a message you send while it waits, and
 the reply, come after it.
 
-When a skill needs a secret, such as an API key, or a command needs your sudo password, a card asks
-for it in a masked field. **Send** gives it to your gateway, and **Skip** lets the Bot carry on
-without it. A secret is saved on the gateway under the name the card shows; Usual Bot keeps no copy.
+When a Bot needs a secret, such as an API key or a bot token, or a command needs your sudo password,
+a card asks for it in a masked field. **Send** gives it to your gateway, and **Skip** lets the Bot
+carry on without it. A secret is saved in the Bot's `.env` on the gateway under the name the card
+shows; the Bot never sees it, and Usual Bot keeps no copy. A skill asks when it needs a key you
+haven't set. With [Usual Bot's plugin](../../Integrations/usual-bot/README.md) on your gateway, a
+Bot can also ask whenever you tell it about a key, so you never paste one into the chat.
 If your gateway uses plain `http` away from this device and outside Tailscale, others on your
 network could read what you send, so the card warns you and the button says **Send Unencrypted**.
 

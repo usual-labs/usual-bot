@@ -46,6 +46,16 @@ struct SecretPromptTests {
                     id: "srq-1", method: "secret",
                     params: ["session_id": "s", "env_var": "TENOR_API_KEY", "prompt": "Enter it"])))
         #expect(secret.kind == .secret(name: "TENOR_API_KEY", message: "Enter it"))
+        // A skill's `help`, or what a Bot wrote for the plugin's `request_secret`.
+        let helped = try #require(
+            SecretPrompt(
+                ServerRequest(
+                    id: "srq-3", method: "secret",
+                    params: [
+                        "session_id": "s", "env_var": "BOT_TOKEN", "prompt": "Token for @Bot",
+                        "metadata": ["help": "  From BotFather. ", "skill_name": "telegram"],
+                    ])))
+        #expect(helped.kind == .secret(name: "BOT_TOKEN", message: "Token for @Bot", help: "From BotFather."))
         let sudo = try #require(SecretPrompt(ServerRequest(id: "srq-2", method: "sudo", params: ["session_id": "s"])))
         #expect(sudo.kind == .sudo(command: ""))
         #expect(SecretPrompt(ServerRequest(id: "x", method: "secret", params: ["session_id": "s"])) == nil)

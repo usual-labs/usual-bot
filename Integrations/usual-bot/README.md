@@ -7,6 +7,8 @@ A Hermes plugin with what Usual Bot needs from your gateway:
 - **A Bot's browser.** Lets you watch a Bot's browser live, while it runs headless on your gateway.
 - **Where the Bot is.** Tells a Bot, in the chats Usual Bot opened, that it's talking through
   Usual Bot and what shows there.
+- **Secrets.** Lets a Bot ask you for an API key or a token in a masked field, in the chats Usual
+  Bot opened, instead of in a message.
 
 It does nothing for chats you have in a terminal, the Hermes app or anywhere else.
 
@@ -137,3 +139,19 @@ The app tells the plugin which chats it opened with `PUT /api/plugins/usual-bot/
 The list is in `~/.hermes/usual-push/chats.json`; a chat nobody has used in 30 days drops off it. A
 Bot Chat you also open in the Hermes app is the same chat, so its Bot hears about Usual Bot there
 too.
+
+## Secrets
+
+The plugin gives Bots a `request_secret` tool. A Bot calls it with the variable's name (such as
+`TRADINGHUB_BOT_TOKEN`), a short heading and an optional line on where to get it. Usual Bot shows a
+masked card; what you type goes to Hermes, which saves it in the profile's `.env` the way it saves a
+key a skill asks for. The Bot hears only whether it was saved or skipped, never the value. Saving
+to a name that's already set replaces it.
+
+Hermes lists a plugin's tools in every app, so other apps' Bots see the tool too. It works only in
+the chats Usual Bot opened, and anywhere else tells the Bot to have you add the key yourself.
+While it waits, a closed Usual Bot gets a "needs you" notification, which says only that the Bot
+asks for a secret.
+
+The tool hands the request to the prompt Hermes's skills use. That isn't a public Hermes API, so a
+Hermes update could change it; the tool then tells the Bot it can't ask, rather than failing.

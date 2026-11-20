@@ -16,7 +16,7 @@ extension ChatThread {
         else { return }
         secrets.remove(at: index)
         switch prompt.kind {
-        case .secret(let name, _): state.addNotice(String(localized: "You sent \(name)"))
+        case .secret(let name, _, _): state.addNotice(String(localized: "You sent \(name)"))
         case .sudo: state.addNotice(String(localized: "You sent the sudo password"))
         }
         Task { await channel.respond(to: prompt.id, result: ["value": .string(value)]) }
@@ -27,7 +27,7 @@ extension ChatThread {
         guard let index = secrets.firstIndex(where: { $0.id == prompt.id }), let channel = channel() else { return }
         secrets.remove(at: index)
         switch prompt.kind {
-        case .secret(let name, _): state.addNotice(String(localized: "You skipped \(name)"))
+        case .secret(let name, _, _): state.addNotice(String(localized: "You skipped \(name)"))
         case .sudo: state.addNotice(String(localized: "You skipped the sudo password"))
         }
         Task { await channel.respond(to: prompt.id, result: ["value": ""]) }
@@ -39,7 +39,8 @@ extension ChatThread {
         let prompt = secrets.remove(at: index)
         guard timedOut else { return true }
         switch prompt.kind {
-        case .secret(let name, _): state.addNotice(String(localized: "Nobody answered in time, so \(name) wasn't set."))
+        case .secret(let name, _, _):
+            state.addNotice(String(localized: "Nobody answered in time, so \(name) wasn't set."))
         case .sudo: state.addNotice(String(localized: "Nobody answered in time, so the sudo password wasn't sent."))
         }
         return true

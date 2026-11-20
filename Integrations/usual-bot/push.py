@@ -175,7 +175,7 @@ def on_request(kind="", platform="", prompt="", **_) -> None:
         platform = _surface()
     if platform not in _CHAT_PLATFORMS:
         return
-    asks = {"approval": f"Wants to run “{prompt}”", "sudo": "Asks for the sudo password"}.get(kind) or plain(prompt)
+    asks = {"approval": f"Wants to run “{prompt}”", "sudo": "Asks for the sudo password", "secret": "Asks for a secret"}.get(kind) or plain(prompt)
     _push_unless_hidden("needs_you", "{name} needs you", asks, _profile())
 
 

@@ -747,10 +747,20 @@ read at Hermes `2bd378ed1b`.
 
 - **One plugin, `usual-bot`, in every profile.** Push and the browser view were two plugins
   (`usual-push`, `usual-browser`); the developer merged them (November 2026) with a third part that
-  tells Bots about the app. It adds no agent tools: Hermes shows a plugin's tools in every app, not
-  just ours. The browser part acts only for Bots with `browser.use_real_profile`, so being in every
+  tells Bots about the app. Its one agent tool is `request_secret` (below): Hermes shows a plugin's
+  tools in every app, not just ours, so any other tool needs the same case made. The browser part acts only for Bots with `browser.use_real_profile`, so being in every
   profile changes nothing for the rest. Data stays in the old folders (`~/.hermes/usual-push/`,
   `<profile>/usual-browser/flags.json`) so devices and written flags survive the move.
+- **`request_secret` lets a Bot ask for a credential whenever it needs one** (the developer,
+  November 2026). Hermes sends `secret` only while a skill loads with a missing variable
+  (`_skill_readiness`), and has no tool for it: asked in chat, a Bot can only have the key pasted
+  in a message. The tool calls the callback skills use (`tools.skills_tool._turn_secret_capture`,
+  then `_secret_capture_callback`), so Hermes still shows the prompt, saves to `.env` and answers
+  only saved or skipped. It's listed in every app but works only in `store.is_app_chat` chats: a
+  `check_fn` can't narrow it, since Hermes caches those per profile, not per chat. It wraps the
+  wait in `human_input_request("secret")`, which skills' prompts don't fire, so push reaches a
+  closed app, and in `human_wait_window` so typing doesn't eat the tool's deadline. MCP
+  elicitation was ruled out: Hermes takes only a consent answer and returns empty content.
 - **Bots are told where they are with a `pre_llm_call` hook, in the app's chats only.** The app's
   chats use `source: "tui"`, so Hermes tells the agent it's in the terminal UI, where `MEDIA:`
   prints as text. `source: "gui"` would give the desktop hint, but also the desktop app's own
