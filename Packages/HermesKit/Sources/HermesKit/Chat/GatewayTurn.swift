@@ -67,7 +67,8 @@ enum GatewayTurn {
     }
 
     /// The Bot's messages in `history` that answer you, leaving out its replies to other Bots'
-    /// messages: those go back to that Bot, and the chat folds them away.
+    /// messages: those go back to that Bot, and the chat folds them away. A choice not to reply
+    /// (`Silence`) isn't one either.
     static func repliesToYou(in history: [HistoryMessage]) -> [HistoryMessage] {
         var forABot = false
         return history.filter { message in
@@ -76,7 +77,7 @@ enum GatewayTurn {
                     message.displayKind == "internal_notification"
                     && message.text.map { botMessage(withoutFooter($0)) != nil } == true
             }
-            return message.role == "assistant" && !forABot
+            return message.role == "assistant" && !forABot && !Silence.isMarker(message.text ?? "")
         }
     }
 

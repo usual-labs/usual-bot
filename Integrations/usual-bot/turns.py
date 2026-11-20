@@ -40,3 +40,32 @@ def asked_by_bot(conversation_history) -> bool:
             content = message.get("content")
             return message.get("display_kind") == "internal_notification" and bot_sender(content) is not None
     return False
+
+
+# A Bot's word for "nothing to say" (`LIVE_GATEWAY_SILENT_MARKERS` in `gateway/response_filters.py`).
+_SILENT = {"[SILENT]", "SILENT", "NO_REPLY", "NO REPLY", "[静默]", "静默", "[沉默]", "沉默"}
+
+
+def _is_silent(text: str) -> bool:
+    stripped = text.strip()
+    if not 0 < len(stripped) <= 64:
+        return False
+    # Stray punctuation round it (".NO_REPLY", "*NO_REPLY*"), but brackets stay: "[SILENT" isn't one.
+    bare = stripped.strip(".,;:!?*_`'\"~-").strip()
+    return any(" ".join(form.upper().split()) in _SILENT for form in (stripped, bare))
+
+
+def said(response) -> str:
+    """What a reply says to you: ``""`` when the Bot chose not to reply (``[SILENT]``, ``NO_REPLY``),
+    and without a marker that closes a real reply on its own line. Hermes keeps the marker in the
+    history; only its own chats drop it before you see it."""
+    try:
+        from gateway.response_filters import is_intentional_silence_response, strip_trailing_silence_marker
+
+        return "" if is_intentional_silence_response(response) else strip_trailing_silence_marker(response)
+    except Exception:  # A Hermes without it: the same rule, by hand.
+        pass
+    if not isinstance(response, str) or _is_silent(response):
+        return ""
+    head, _, tail = response.rstrip().rpartition("\n")
+    return head.rstrip() if head.strip() and _is_silent(tail) else response

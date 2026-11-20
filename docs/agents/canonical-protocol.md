@@ -113,6 +113,12 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   snapshot holds the text twice, as the stored row with its `display_kind` and as the running
   admission's `text`, with no submission id linking them. `legacySnapshot` matches the newest user
   row with a display kind by text; otherwise the message shows again as yours.
+- **A Bot that chooses not to reply answers `[SILENT]` or `NO_REPLY`**, which Hermes asks for after
+  a routine with nothing new, another Bot's note or a finished background process. Hermes drops it
+  only from what it delivers live in a "Bot Chat" session (`tui_gateway/prompt_turn.py`): the
+  history keeps it as written, routines' sessions aren't Bot Chats, and the push plugin's reply hook
+  sees the raw reply. The app (`Silence`) and the plugin's push (`turns.said`) drop it themselves;
+  keep their marker lists in step with `gateway/response_filters.py`.
 
 ## Not verified
 

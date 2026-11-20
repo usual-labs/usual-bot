@@ -1,5 +1,5 @@
 name: usual-bot
-version: "0.7.0"
+version: "0.7.1"
 description: "What Usual Bot needs from your gateway: push to your devices, a Bot's browser to watch, and telling Bots in the app's chats where they are"
 author: "Usual Labs"
 provides_hooks:

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from . import relay, store
 from .plain import plain
-from .turns import asked_by_bot, asked_hidden
+from .turns import asked_by_bot, asked_hidden, said
 
 logger = logging.getLogger(__name__)
 
@@ -149,13 +149,15 @@ def _deliver_room_reply(profile: str, text: str) -> None:
 
 
 def on_reply(assistant_response="", platform="", conversation_history=None, **_) -> None:
-    if not assistant_response.strip() or asked_hidden(conversation_history) or asked_by_bot(conversation_history):
+    # A Bot that chose not to reply (`[SILENT]`, often a routine or a finished process) has no news.
+    words = said(assistant_response)
+    if not words.strip() or asked_hidden(conversation_history) or asked_by_bot(conversation_history):
         return
-    said = plain(assistant_response)
+    text = plain(words)
     if platform in _CHAT_PLATFORMS:
-        _push_unless_hidden("message", "{name}", said, _profile())
+        _push_unless_hidden("message", "{name}", text, _profile())
     elif platform == _ROOM_PLATFORM:
-        threading.Thread(target=_safely, args=(_deliver_room_reply, _profile(), said), daemon=True).start()
+        threading.Thread(target=_safely, args=(_deliver_room_reply, _profile(), text), daemon=True).start()
 
 
 def _surface() -> str:
