@@ -453,7 +453,18 @@
                         db-1: disk at 78%, up from 74% yesterday.
                         MEDIA:\(Demo.chartPath)
                         """),
-                HistoryMessage(role: "user", text: "What did db-1's bigger disk cost us in October?"),
+                // A reply to two lines of the report, each answered under its quote.
+                HistoryMessage(
+                    role: "user",
+                    text: """
+                        > Ops: web-1: CPU peaked at 61% during the 03:00 backup.
+
+                        Fine, leave the backup where it is.
+
+                        > Ops: db-1: disk at 78%, up from 74% yesterday.
+
+                        What did its bigger disk cost us in October?
+                        """),
                 HistoryMessage(
                     role: "tool", name: "message_agent", context: "ledger", toolCallId: "demo-ask-ledger",
                     args: ["target": "ledger", "message": "What did db-1's extra 200 GB of disk cost in October?"]),
