@@ -29,6 +29,7 @@ struct UsageSettings: View {
     }
 
     @ViewBuilder private func overview(_ usage: UsageOverview) -> some View {
+        PlanLimitSections(limits: model.planLimits)
         PeriodSection(usage: usage)
         switch usage.phase {
         case .loading:
@@ -145,8 +146,13 @@ private struct UsagePage: ViewModifier {
             .task(id: RefreshKey(period: usage.period, online: online)) {
                 if online, usage.isStale { await usage.refresh() }
             }
+            .task(id: online) { if online { await model.planLimits.refresh() } }
             #if os(iOS)
-                .refreshable { await usage.refresh() }
+                .refreshable {
+                    async let limits: Void = model.planLimits.refresh()
+                    await usage.refresh()
+                    await limits
+                }
             #endif
     }
 

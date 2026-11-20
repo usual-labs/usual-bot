@@ -47,6 +47,8 @@ public final class ChatThread {
     public internal(set) var model: ChatModel?
     /// The models this chat can switch to; loaded by `loadModels()`.
     public internal(set) var modelProviders: [ModelProvider] = []
+    /// When `modelProviders` last came from the gateway.
+    @ObservationIgnored var modelsLoadedAt: Date?
     /// Your last message is being taken back (`undo()`, `edit(_:)`).
     public internal(set) var isRewinding = false
     /// Questions asked on the side (`/btw`), oldest first, until you dismiss them.

@@ -187,6 +187,7 @@ extension AppModel {
         }
         push.clear()
         usage.clear()
+        planLimits.clear()
         rooms = [:]
         messageIndex.keep(only: [])
         gatewaySearch.reset()

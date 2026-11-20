@@ -135,6 +135,10 @@ public final class AppModel {
     @ObservationIgnored public internal(set) lazy var usage = UsageOverview(
         auth: { [weak self] in self?.auth },
         agents: { [weak self] in self?.contacts.filter { $0.kind == .agent } ?? [] })
+    /// Each Bot's subscription limits, for Settings › Usage and rooms.
+    @ObservationIgnored public internal(set) lazy var planLimits = PlanLimitOverview(
+        channel: { [weak self] in self?.channel },
+        agents: { [weak self] in self?.contacts.filter { $0.kind == .agent } ?? [] })
     /// Agents' own pictures from the official app; agents without one keep the app's characters.
     @ObservationIgnored public let pictures = BotPictures()
     /// How the sidebar is grouped.

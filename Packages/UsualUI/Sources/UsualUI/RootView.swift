@@ -101,7 +101,8 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                         gatewayDetails: model.gatewayDetails, loadGatewayDetails: { await model.loadGatewayDetails() },
                         thread: model.thread(for: contact), close: close)
                 },
-                update: model.update, shared: model.shared, isOffline: model.link.isOffline
+                update: model.update, shared: model.shared, planLimits: model.planLimits,
+                isOffline: model.link.isOffline
             ) { compact in
                 #if os(macOS)
                     // The connection in a capsule, then Plugins and Settings in circles. The rail
@@ -245,6 +246,8 @@ struct ContactsSplitView<Footer: View>: View {
     var update: AppUpdate?
     /// What was shared from other apps and hasn't been sent, below the list; not in the rail.
     var shared: SharedOutbox?
+    /// Each Bot's subscription limits, for rooms' warnings.
+    var planLimits: PlanLimitOverview?
     var isOffline = false
     /// Below the list; told whether the sidebar is the narrow window's rail.
     @ViewBuilder let footer: (_ compact: Bool) -> Footer
@@ -639,7 +642,7 @@ struct ContactsSplitView<Footer: View>: View {
                 agents: Dictionary(
                     (contacts + hiddenBots).filter { $0.kind == .agent }.map { ($0.id, $0) },
                     uniquingKeysWith: { first, _ in first }),
-                skills: skills, jump: jump(in: contact), jumped: { jump = nil })
+                skills: skills, planLimits: planLimits, jump: jump(in: contact), jumped: { jump = nil })
         } else if let contact = contacts.first(where: { $0.id == selection }) {
             let panel = profile(contact) { showsProfile = false }
             ThreadPane(

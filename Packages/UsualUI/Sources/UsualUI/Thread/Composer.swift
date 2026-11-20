@@ -27,6 +27,9 @@ struct Composer: View {
     var body: some View {
         // Background tasks and side answers float above the box.
         VStack(alignment: .trailing, spacing: 0) {
+            if let warning = thread.planLimitWarning {
+                PlanLimitNotice(warning: warning, text: warning.chatText(agentName: agentName)).padding(.bottom, 6)
+            }
             if let goal = thread.goal, let phase = thread.goalPhase {
                 GoalBar(thread: thread, goal: goal, phase: phase, agentName: agentName).padding(.bottom, 6)
             }
@@ -43,6 +46,10 @@ struct Composer: View {
             box
         }
         .task(id: thread.isAttached) { await thread.loadModelsAndUsage() }
+        // A reply uses up some of the subscription: read its limits again once it ends.
+        .onChange(of: thread.state.isRunning) { _, running in
+            if !running { Task { await thread.refreshPlanLimits() } }
+        }
         .onChange(of: editing) { if editing == nil { edit = "" } }
         // Item IDs start over with each copy of the chat, so an edit can't outlast one.
         .onChange(of: thread.transcriptLoad) { editing = nil }
@@ -51,6 +58,7 @@ struct Composer: View {
         .animation(.smooth(duration: 0.2), value: thread.backgroundTasks)
         .animation(.smooth(duration: 0.2), value: thread.queue)
         .animation(.smooth(duration: 0.2), value: thread.goal == nil)
+        .animation(.smooth(duration: 0.2), value: thread.planLimitWarning)
     }
 
     private var box: some View {
