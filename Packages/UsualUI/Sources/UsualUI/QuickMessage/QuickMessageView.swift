@@ -340,6 +340,7 @@ private struct QuickAnswer: View {
     let start: Int
     let agents: [Contact.ID: Contact]
     @AppStorage(AppPreferences.streamRepliesKey) private var streamsReplies = true
+    @AppStorage(AppPreferences.showToolActivityKey) private var showsTools = true
 
     var body: some View {
         ScrollView {
@@ -364,7 +365,8 @@ private struct QuickAnswer: View {
         // Another Bot's exchange folds here as in the chat, its reply being written inside it.
         let forABot = thread.state.isRunning && thread.turnIsForABot
         let rows = TranscriptView.rows(
-            of: items, cardsAt: items.count, from: min(start, items.count), folding: BotExchange.all(in: items))
+            of: items, cardsAt: items.count, from: min(start, items.count), folding: BotExchange.all(in: items),
+            showingTools: showsTools)
         ForEach(rows.filter { $0.items != nil }, id: \.id) { row in
             switch row {
             case .item(let index, _):
@@ -409,7 +411,9 @@ private struct QuickAnswer: View {
     }
 
     @ViewBuilder private func roomAnswer(_ room: RoomThread) -> some View {
-        ForEach(room.state.items.dropFirst(min(start, room.state.items.count))) { item in
+        ForEach(
+            room.state.items.dropFirst(min(start, room.state.items.count)).filter { showsTools || !$0.isToolActivity }
+        ) { item in
             ItemView(item: item, agentName: contact.name) { author(in: room, $0) }
         }
         ForEach(room.pending) { message in

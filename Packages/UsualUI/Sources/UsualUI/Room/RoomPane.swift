@@ -27,6 +27,7 @@ struct RoomPane: View {
     @State private var jumpedTo: MessageJump?
     @Environment(\.drafts) private var drafts
     @Environment(\.roomEditing) private var roomEditing
+    @AppStorage(AppPreferences.showToolActivityKey) private var showsTools = true
 
     var body: some View {
         content
@@ -143,9 +144,10 @@ struct RoomPane: View {
                 NoticeLine(text: String(localized: "Say hello to everyone, or use @ to talk to one Bot."))
                     .padding(.top, 40)
             }
-            let dates = DateLabels.labels(for: room.state.items)
+            let dates = DateLabels.labels(
+                for: showsTools ? room.state.items : room.state.items.filter { !$0.isToolActivity })
             let start = window.start(in: room.state.items, including: target)
-            ForEach(room.state.items[start...]) { item in
+            ForEach(room.state.items[start...].filter { showsTools || !$0.isToolActivity }) { item in
                 if let date = dates[item.id] { DateLabel(text: date) }
                 ItemView(item: item, agentName: contact.name, author: author)
                     .transition(.settle)

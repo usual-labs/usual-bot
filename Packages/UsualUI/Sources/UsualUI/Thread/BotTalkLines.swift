@@ -155,6 +155,7 @@ struct BotExchangeLine: View {
     var draft = ""
     /// Opens the line: a search found something in it.
     var reveals = false
+    @AppStorage(AppPreferences.showToolActivityKey) private var showsTools = true
 
     var body: some View {
         FoldedRow(symbol: running ? nil : symbol, openByDefault: reveals) {
@@ -168,7 +169,7 @@ struct BotExchangeLine: View {
                 Caption(text: String(localized: "\(exchange.from) wrote"))
                 ReportPeek(text: text, style: .markdown)
             }
-            ForEach(items[exchange.items].dropFirst()) { item in
+            ForEach(items[exchange.items].dropFirst().filter { showsTools || !$0.isToolActivity }) { item in
                 ItemView(item: item, agentName: agentName)
             }
             if running, !draft.isEmpty {
@@ -182,7 +183,7 @@ struct BotExchangeLine: View {
     private var title: String {
         let steps = exchange.steps(in: items)
         let summary = exchange.summary(running: false)
-        guard steps > 0 else { return summary }
+        guard steps > 0, showsTools else { return summary }
         return summary + " · " + (steps == 1 ? String(localized: "1 step") : String(localized: "\(steps) steps"))
     }
 }

@@ -147,7 +147,9 @@ into the message box. On Mac, Settings can change sending to ⌘Return, leaving 
 as the Bot writes them (turn off **Show replies as they're written** in Settings › General to see
 each message only once it's finished, with "Writing…" meanwhile), with Markdown, code blocks you can copy, and tables. While the Bot uses
 tools, one line such as "Forge edited 1 file and ran 1 command" sums them up; click it to see each
-step.
+step. Turn off **Show what Bots do with tools** in Settings › General for a plainer chat: those
+lines, to-do lists, helpers and finished background commands go, and only messages, Bots talking
+to each other and routine results stay.
 
 A date such as "Yesterday 12:27 PM" sits above the first message and again after a new day starts
 or an hour passes. Hover a message on the Mac to see its time. On iPhone, drag the conversation

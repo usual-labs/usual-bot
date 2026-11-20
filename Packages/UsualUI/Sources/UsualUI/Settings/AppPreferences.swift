@@ -13,6 +13,8 @@ public enum AppPreferences {
     public static let notificationPreviewsKey = "notificationPreviews"
     /// Off: an agent's message appears once it's written, not word by word.
     public static let streamRepliesKey = "streamReplies"
+    /// Off: chats leave out the lines for tools a Bot used (`TranscriptItem.isToolActivity`).
+    public static let showToolActivityKey = "showToolActivity"
 }
 
 extension EnvironmentValues {

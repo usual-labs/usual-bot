@@ -16,6 +16,7 @@ struct TranscriptView: View {
     /// The message the chat was marked unread from on this device, gone back to on opening it.
     @State private var returnJump: MessageJump?
     @AppStorage(AppPreferences.streamRepliesKey) private var streamsReplies = true
+    @AppStorage(AppPreferences.showToolActivityKey) private var showsTools = true
 
     var body: some View {
         // A reloaded transcript numbers its items afresh, so a position kept by item would now
@@ -37,11 +38,15 @@ struct TranscriptView: View {
                     .padding(.top, 40)
             }
             let items = thread.state.items
-            let dates = DateLabels.labels(for: items)
+            // A hidden line's date goes to the next line shown.
+            let dates = DateLabels.labels(for: showsTools ? items : items.filter { !$0.isToolActivity })
             // One ForEach, so an item or card keeps its view (and what you typed in a card) as the
             // cards move.
             let start = window.start(in: items, including: target)
-            ForEach(Self.rows(of: items, cardsAt: cardsIndex, from: start, folding: exchanges), id: \.id) { row in
+            ForEach(
+                Self.rows(of: items, cardsAt: cardsIndex, from: start, folding: exchanges, showingTools: showsTools),
+                id: \.id
+            ) { row in
                 switch row {
                 case .item(let index, _): self.row(items[index], at: index, in: items, dates: dates)
                 case .exchange(let exchange, _): self.row(exchange, in: items, dates: dates)
@@ -111,9 +116,11 @@ struct TranscriptView: View {
 
     /// The items from `start` in order with the cards at `split`, each of `exchanges` as one row.
     /// What's live follows the newest message, so it sits above cards nothing has followed yet. The
-    /// cards show wherever they sit, after the whole of an exchange they came in.
+    /// cards show wherever they sit, after the whole of an exchange they came in. Without
+    /// `showingTools`, tool activity outside an exchange gets no row.
     nonisolated static func rows(
-        of items: [TranscriptItem], cardsAt split: Int, from start: Int = 0, folding exchanges: [BotExchange] = []
+        of items: [TranscriptItem], cardsAt split: Int, from start: Int = 0, folding exchanges: [BotExchange] = [],
+        showingTools: Bool = true
     ) -> [Row] {
         var rows: [Row] = []
         var index = 0
@@ -122,7 +129,9 @@ struct TranscriptView: View {
                 rows.append(.exchange(exchange, id: items[index].id))
                 index = exchange.items.upperBound
             } else {
-                rows.append(.item(index: index, id: items[index].id))
+                if showingTools || !items[index].isToolActivity {
+                    rows.append(.item(index: index, id: items[index].id))
+                }
                 index += 1
             }
         }
@@ -150,21 +159,31 @@ struct TranscriptView: View {
         _ item: TranscriptItem, at index: Int, in items: [TranscriptItem], dates: [Int: String]
     ) -> some View {
         if let date = dates[item.id] { DateLabel(text: date) }
-        // A date between two replies parts them.
         let isLast = index + 1 == items.count
         let shown = Self.shown(items, at: index)
+        let joins = Self.joins(items, at: index, dates: dates, showingTools: showsTools, draftBelow: !draft.isEmpty)
         ItemView(
-            item: shown, agentName: agentName,
-            joinsAbove: item.isReply && index > 0 && items[index - 1].isReply && dates[item.id] == nil,
-            joinsBelow: item.isReply
-                && (isLast
-                    ? !draft.isEmpty
-                    : items[index + 1].isReply && dates[items[index + 1].id] == nil),
+            item: shown, agentName: agentName, joinsAbove: joins.above, joinsBelow: joins.below,
             spokenTexts: Self.spokenTexts(of: shown, in: items, at: index),
             working: isLast ? working : nil
         )
         .transition(item.arrival(streamed: streamsReplies))
         .accessibilityElement(children: .contain)
+    }
+
+    /// Whether a reply joins the replies shown either side of it: a date between them parts them,
+    /// and a hidden tool line doesn't. The last one shown joins the reply being written.
+    nonisolated static func joins(
+        _ items: [TranscriptItem], at index: Int, dates: [Int: String], showingTools: Bool, draftBelow: Bool
+    ) -> (above: Bool, below: Bool) {
+        guard items[index].isReply else { return (false, false) }
+        func shown(_ item: TranscriptItem) -> Bool { showingTools || !item.isToolActivity }
+        let above = items[..<index].last(where: shown)
+        let below = items[(index + 1)...].first(where: shown)
+        return (
+            above?.isReply == true && dates[items[index].id] == nil,
+            below.map { $0.isReply && dates[$0.id] == nil } ?? draftBelow
+        )
     }
 
     /// The reply being written and what the turn is doing, after the newest message.
@@ -180,8 +199,9 @@ struct TranscriptView: View {
             .transition(.asymmetric(insertion: .settle, removal: .identity))
         }
         if !runsForABot {
-            LiveCards(live: thread.state.live)
-            if let working, !lastItemIsActivity {
+            if showsTools { LiveCards(live: thread.state.live) }
+            // With tools hidden, the activity line that would say what's happening isn't shown.
+            if let working, !lastItemIsActivity || !showsTools {
                 WorkingRow(text: working).transition(.settle)
             }
         }
