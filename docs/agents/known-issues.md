@@ -82,6 +82,13 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   I-beam by cursor rectangle and on every mouse move, which beats SwiftUI's `pointerStyle`, so
   `.clickable` alone shows the hand only for a moment. A button that floats over the conversation
   also needs `.handOverText()`, which the text views leave alone.
+- **A window being freed takes its views out of it.** An `NSView` that keeps `window` in a `weak`
+  property from `viewWillMove(toWindow:)` then aborts the app ("Cannot form weak reference"), as
+  `HandArea` did in 0.5.0 when a window closed. Keep only a window that `isVisible`.
+- **iOS ends an app suspended with a file lock in the App Group** (`0xdead10cc`). `RefreshLock`
+  is held across a renewal request, so it stays awake with `performExpiringActivity` and lets go
+  when that expires; 0.5.0 didn't, and was killed going to the background. Any new lock or
+  SQLite file in the group needs the same.
 - **AppKit fills menus when they open.** `NSApp.mainMenu` read at launch shows neither the tab items nor
   Enter Full Screen, so open the menu before checking its items.
 

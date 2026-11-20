@@ -120,6 +120,21 @@
             #expect(view.pointerRects() == nil)
         }
 
+        /// A closed window takes its views with it as it's freed: 0.5.0 crashed here.
+        @Test func aHandAreaGoesWithItsWindow() {
+            weak var gone: NSWindow?
+            autoreleasepool {
+                let window = NSWindow(
+                    contentRect: NSRect(x: 0, y: 0, width: 200, height: 200), styleMask: [.borderless],
+                    backing: .buffered, defer: false)
+                window.isReleasedWhenClosed = false
+                window.contentView?.addSubview(HandArea(frame: NSRect(x: 0, y: 0, width: 32, height: 32)))
+                window.close()
+                gone = window
+            }
+            #expect(gone == nil)
+        }
+
         @Test func aShortMessageIsAsWideAsItsWords() {
             let view = SelectableTextView()
             view.show(.mine("Hi", size: 15))
