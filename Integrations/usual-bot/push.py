@@ -5,6 +5,7 @@ Hooks only watch: anything going wrong here is logged and never touches an agent
 
 from __future__ import annotations
 
+import json
 import logging
 import threading
 import time
@@ -26,6 +27,9 @@ _ROOM_PLATFORM = "bot_room"
 _ROOM_ACTIVITY_DELAY = 1.5
 _PREVIEW_LIMIT = 240
 _HIDDEN = {"message": "New message. Open Usual Bot to read it.", "needs_you": "Open Usual Bot to answer."}
+# The relay refuses a sealed text over 3000 characters: 2222 bytes of JSON once its base64, nonce
+# and tag are taken off. Less the gateway's tag, which `relay` adds.
+_READ_ROOM = 2100
 TEST = {"title": "Usual Bot", "body": "Notifications from your gateway are working."}
 
 
@@ -73,17 +77,38 @@ def deliver(kind: str, title: str, preview: str, chat: str, speaker: str | None 
         preview = f"{names.get(speaker, speaker)}: {preview}"
     title = title.format(name=names.get(chat, chat))
     pushes = []
+    carried: dict[str, list[str]] = {}
     for device_id, device in settings["devices"].items():
         if not device.get(kind, True) or chat in device.get("muted", []):
             continue
         body = _shorten(preview) if device.get("previews", True) else _HIDDEN[kind]
         payload = {"title": title, "body": body, "chat": chat, "kind": kind, "sound": device.get("sound", True)}
+        if read := _fitting(payload, chat, store.owed_clears(device_id)):
+            payload["read"] = carried[device_id] = read
         pushes.append((device["relay"], relay.push(device_id, device, kind, payload, chat)))
     if not pushes:
         return
     fates = relay.send(pushes)
     _forget_gone(fates)
-    store.note_told([device_id for device_id, fate in fates.items() if fate == "sent"], chat)
+    sent = [device_id for device_id, fate in fates.items() if fate == "sent"]
+    for device_id in sent:
+        if device_id in carried:
+            store.paid_clears(device_id, carried[device_id])
+    store.note_told(sent, chat)
+
+
+def _fitting(payload: dict, chat: str, owed: list[str]) -> list[str]:
+    """The owed clears that fit beside the notification, this chat's first, so the read ones about
+    it go before the new one shows. The rest wait for the next notification."""
+    owed = sorted(owed, key=lambda known: known != chat)
+    room = _READ_ROOM - len(json.dumps(payload))
+    read: list[str] = []
+    for known in owed:
+        room -= len(json.dumps(known)) + 2
+        if room < 0:
+            break
+        read.append(known)
+    return read
 
 
 def read_on(reader: str, chat: str) -> None:
