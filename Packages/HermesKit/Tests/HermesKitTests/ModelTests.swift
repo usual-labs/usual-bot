@@ -120,6 +120,31 @@ struct ModelSwitchTests {
         #expect(thread.modelProviders.map(\.slug) == ["openai"])
     }
 
+    @Test func theChatWarnsAboutItsOwnProvidersLimit() async throws {
+        let (thread, gateway) = try await openThread()
+        async let loaded: Void = thread.loadModels()
+        _ = try await gateway.answer(
+            1, method: "model.options",
+            result: [
+                "providers": [
+                    [
+                        "slug": "openai", "name": "OpenAI", "models": ["gpt-5.5"],
+                        "usage": ["windows": [["label": "Weekly", "used_percent": 99.0, "scope": "account"]]],
+                    ],
+                    [
+                        "slug": "anthropic", "name": "Anthropic", "models": ["claude-opus-5-5"],
+                        "usage": ["windows": [["label": "Current week", "used_percent": 93.0, "scope": "account"]]],
+                    ],
+                ]
+            ])
+        await loaded
+        #expect(thread.hasPlanLimits)
+        #expect(thread.planLimitWarning?.provider == "Anthropic")
+        #expect(thread.planLimitWarning?.limit.usedPercent == 93)
+        // Just loaded: a reply ending now doesn't ask again.
+        await thread.refreshPlanLimits()
+    }
+
     @Test func makingTheModelDefaultSavesItToTheAgent() async throws {
         let (thread, gateway) = try await openThread()
         async let first = thread.makeModelDefault()

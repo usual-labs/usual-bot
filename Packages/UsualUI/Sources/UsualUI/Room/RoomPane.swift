@@ -12,6 +12,8 @@ struct RoomPane: View {
     let agents: [Contact.ID: Contact]
     /// A member's skills, for the `/` menu; `nil` where there are none to show.
     var skills: (Contact) -> SkillList? = { _ in nil }
+    /// The members' subscription limits, to warn when one is nearly used up.
+    var planLimits: PlanLimitOverview?
     /// A message search chose in this room, to scroll to.
     var jump: MessageJump? = nil
     var jumped: () -> Void = {}
@@ -35,18 +37,31 @@ struct RoomPane: View {
                     .accessibilityHint(Text("Shows the room's members"))
             } bottom: {
                 if room.phase == .ready {
-                    MessageBox(
-                        conversation: contact.id,
-                        text: Binding(get: { drafts?[contact.id] ?? "" }, set: { drafts?[contact.id] = $0 }),
-                        placeholder: placeholder, isRunning: !room.working.isEmpty, canSend: room.canSend,
-                        stopLabel: String(localized: "Stop everyone in \(contact.name)"), mentions: mentions,
-                        quotes: $quotes, commands: roomSkills,
-                        unsent: Binding(get: { room.unsent }, set: { room.unsent = $0 }), send: room.send,
-                        stop: room.stop
-                    )
+                    VStack(spacing: 6) {
+                        if let limit = planLimits?.warning(for: members) {
+                            PlanLimitNotice(
+                                warning: limit.warning,
+                                text: limit.warning.roomText(members: limit.members.map(\.name)))
+                        }
+                        MessageBox(
+                            conversation: contact.id,
+                            text: Binding(get: { drafts?[contact.id] ?? "" }, set: { drafts?[contact.id] = $0 }),
+                            placeholder: placeholder, isRunning: !room.working.isEmpty, canSend: room.canSend,
+                            stopLabel: String(localized: "Stop everyone in \(contact.name)"), mentions: mentions,
+                            quotes: $quotes, commands: roomSkills,
+                            unsent: Binding(get: { room.unsent }, set: { room.unsent = $0 }), send: room.send,
+                            stop: room.stop
+                        )
+                    }
+                    .animation(.smooth(duration: 0.2), value: planLimits?.warning(for: members))
                     .zoomedFrame(maxWidth: Theme.columnWidth)
                     .padding(.horizontal, ThreadPane.composerMargin)
                 }
+            }
+            .task(id: room.roomID) { await planLimits?.refresh(members) }
+            // Replies use up some of the subscription: read its limits again once they end.
+            .onChange(of: room.working.isEmpty) { _, idle in
+                if idle { Task { await planLimits?.refresh(members) } }
             }
             .onChange(of: room.roomID) {
                 quotes = []

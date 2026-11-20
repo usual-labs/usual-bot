@@ -38,6 +38,12 @@
             model.showWorkDemo(now: now, longConversations: longConversations)
             model.usage = .demo(
                 agents: { [weak model] in model?.contacts.filter { $0.kind == .agent } ?? [] }, now: now)
+            model.planLimits = PlanLimitOverview(
+                agents: { [weak model] in model?.contacts.filter { $0.kind == .agent } ?? [] }, now: { now }
+            ) { _ in
+                let anthropic = Demo.models(now: now)[0]
+                return .init(provider: anthropic, model: "claude-sonnet-5-5")
+            }
             model.gatewaySearch.fetch = { profile, query in
                 // sleep-ok: a gateway takes a moment, so "Searching older messages" shows.
                 try await Task.sleep(for: .milliseconds(900))
@@ -250,7 +256,7 @@
                     // Switched for this chat only, so its menu offers Make Default.
                     thread.model?.name = "claude-opus-5-5"
                 }
-                thread.modelProviders = Demo.models
+                thread.modelProviders = Demo.models(now: now)
                 thread.usage =
                     thread.usage
                     ?? ChatUsage(
@@ -367,14 +373,23 @@
             SlashCommand(name: "/compress", description: "Summarise the conversation to free context", kind: .command),
         ]
 
-        static let models = [
-            ModelProvider(
-                slug: "anthropic", name: "Anthropic",
-                models: ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"]),
-            ModelProvider(
-                slug: "openrouter", name: "OpenRouter", models: ["x-ai/grok-5", "deepseek/deepseek-v4"],
-                withoutReasoning: ["deepseek/deepseek-v4"]),
-        ]
+        /// The demo's catalog. The Claude login is near its weekly limit, so chats and rooms warn.
+        static func models(now: Date) -> [ModelProvider] {
+            [
+                ModelProvider(
+                    slug: "anthropic", name: "Anthropic",
+                    models: ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"],
+                    limits: [
+                        PlanLimit(label: "Current session", usedPercent: 34, resetsAt: now + 2 * 3600 + 10 * 60),
+                        PlanLimit(label: "Current week", usedPercent: 91, resetsAt: now + 3 * 86_400 + 5 * 3600),
+                        PlanLimit(
+                            label: "Opus week", usedPercent: 62, resetsAt: now + 4 * 86_400 + 5 * 3600, scope: .model),
+                    ]),
+                ModelProvider(
+                    slug: "openrouter", name: "OpenRouter", models: ["x-ai/grok-5", "deepseek/deepseek-v4"],
+                    withoutReasoning: ["deepseek/deepseek-v4"]),
+            ]
+        }
 
         static let chartPath = "/home/hermes/.hermes/profiles/ops/cache/cpu-overnight.png"
         /// What Ops is working on when the demo opens.
