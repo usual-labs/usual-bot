@@ -40,8 +40,15 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   newest page and adds a page when the reader nears the top; `ConversationScrollState` then moves
   the offset by the growth, even mid-gesture, so the same message stays put. A search jump keeps
   its target in the window. The offscreen harness that measured this hosted `TranscriptView` in an
-  `NSHostingView` and timed `layoutSubtreeIfNeeded()`; the continuity of a reveal during a real
-  trackpad scroll was seen once, not frame by frame.
+  `NSHostingView` and timed `layoutSubtreeIfNeeded()`.
+- **Geometry after a move can still carry the old offset.** `position.scrollTo` lands a layout
+  later, so the next `onScrollGeometryChange` may report the new height with the offset from
+  before the move. A page added on that stale offset still looked near the top, so the next page
+  came at once and its move, measured from the stale offset, replaced the first: scrolling up from
+  the newest messages jumped about 6,800 pt in the long demo and loaded all of history in one
+  400 ms stall. The next page now waits until the move is reported (`movingAbove`).
+  `USUALBOT_SCROLL_BENCH` follows a piece of text on screen and reports jumps, so check a change
+  to the paging there; it can't see a jump on iPhone, which shares the policy.
 - **Nothing that changes every frame of a scroll may reach a view's body.** `ConversationScroll`
   kept its whole `ConversationScrollState`, offset included, in `@State`, so its body ran once a
   frame (1,884 times in a 30 s trace) and redid the jump button, toolbar preferences and command
