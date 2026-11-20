@@ -270,6 +270,7 @@ extension AppModel {
         // Its computer belongs to the old profile; closing it hands control back if you had it.
         screens.removeValue(forKey: id)?.disconnect()
         browsers.removeValue(forKey: id)?.disconnect()
+        terminals.removeValue(forKey: id)?.stop()
     }
 
     #if DEBUG

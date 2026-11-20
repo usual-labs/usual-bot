@@ -111,6 +111,11 @@ public struct ToolStep: Identifiable, Equatable, Sendable, Codable {
     /// The audio files that call made, when the gateway said (`result.file_paths` live, the
     /// requested `output_path` in history).
     public var audioFiles: [String]? = nil
+    /// A `terminal` call's full command, and what it printed and exited with once it ends live
+    /// (`BotCommand`). History keeps no result, so a reloaded chat has the command alone.
+    public var command: String? = nil
+    public var output: String? = nil
+    public var exitCode: Int? = nil
 }
 
 /// A message from `session.resume`: the gateway's display projection of the stored history.
@@ -238,6 +243,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
                     id: message.toolCallId ?? "history-\(nextID)", name: message.name ?? "tool",
                     context: message.context ?? "", state: .done)
                 step.readSpeech(args: message.args)
+                step.readCommand(args: message.args)
                 // History keeps no tool's result, so a message's receipt isn't known.
                 addStep(step, args: message.args, state: .done, date: message.date)
             default:
@@ -393,6 +399,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
                 context: payload["context"]?.stringValue ?? "",
                 state: .running)
             step.readSpeech(args: payload["args"])
+            step.readCommand(args: payload["args"])
             addStep(step, args: payload["args"])
         case "tool.progress":
             updateStep(payload)
@@ -563,6 +570,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
             step.progress = nil
             if case .number(let seconds) = payload["duration_s"] { step.duration = seconds }
             if !failed { step.readSpeech(args: payload["args"], result: payload["result"]) }
+            step.readCommand(args: payload["args"], result: payload["result"])
         }
     }
 

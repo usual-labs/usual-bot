@@ -104,18 +104,47 @@
                 (0.5, "todo.updated", todos("in_progress", "pending")),
                 (0.4, "tool.start", ["tool_id": "demo-1", "name": "read_file", "context": "notes.md"]),
                 (1.2, "tool.complete", ["tool_id": "demo-1"]),
-                (0.1, "tool.start", ["tool_id": "demo-0", "name": "terminal", "context": "npm test"]),
-                (0.9, "tool.complete", ["tool_id": "demo-0", "result": ["output": "1 failing", "exit_code": 1]]),
+                (
+                    0.1, "tool.start",
+                    ["tool_id": "demo-0", "name": "terminal", "context": "npm test", "args": ["command": "npm test"]]
+                ),
+                (
+                    0.9, "tool.complete",
+                    [
+                        "tool_id": "demo-0", "duration_s": 0.9,
+                        "result": [
+                            "output":
+                                "  search\n    ✓ falls back when Turbopuffer errors\n    1) answers within 300 ms\n\n  1 failing",
+                            "exit_code": 1,
+                        ],
+                    ]
+                ),
                 (0.1, "todo.updated", todos("completed", "in_progress")),
                 (0.1, "subagent.start", helper),
-                (0.1, "tool.start", ["tool_id": "demo-2", "name": "terminal", "context": "npm test"]),
+                (
+                    0.1, "tool.start",
+                    [
+                        "tool_id": "demo-2", "name": "terminal", "context": "npm test",
+                        "args": ["command": "npm test -- --timeout 500"],
+                    ]
+                ),
                 (
                     0.5, "subagent.tool",
                     ["subagent_id": "demo-helper", "tool_name": "read_file", "tool_preview": "app.log"]
                 ),
                 (0.6, "tool.progress", ["tool_id": "demo-2", "percent": 60]),
                 (0.8, "subagent.complete", ["subagent_id": "demo-helper", "status": "completed"]),
-                (0.4, "tool.complete", ["tool_id": "demo-2"]),
+                (
+                    0.4, "tool.complete",
+                    [
+                        "tool_id": "demo-2", "duration_s": 1.8,
+                        "result": [
+                            "output":
+                                "  search\n    ✓ falls back when Turbopuffer errors\n    ✓ answers within 300 ms\n\n  2 passing",
+                            "exit_code": 0,
+                        ],
+                    ]
+                ),
                 (0.1, "todo.updated", todos("completed", "completed")),
                 (0.1, "status.update", ["kind": "compacting"]),
                 (1.2, "status.update", ["kind": "compacted"]),

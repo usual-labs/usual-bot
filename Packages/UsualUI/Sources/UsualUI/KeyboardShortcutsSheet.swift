@@ -27,6 +27,7 @@
                         row("Send when the reply ends", keys: ["⌥↵"])
                         row("Stop the reply", keys: ["⌘."])
                         row("Profile or room details", keys: ["⌘I"])
+                        row("Show or hide the terminal", keys: ["⌘J"])
                     }
                     Section("Navigation") {
                         row("Back / forward", keys: ["⌘[", "⌘]"])
