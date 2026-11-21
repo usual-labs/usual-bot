@@ -260,10 +260,13 @@ public final class ChatThread {
         } else if let lastViewed {
             let since = lastViewed.timeIntervalSince1970
             let unreadBefore = unreadCount
-            let replies = GatewayTurn.repliesToYou(in: opened.history)
-            unreadCount = replies.filter { ($0.timestamp ?? 0) > since }.count
-            // A running turn alerts when it ends; its rows so far may not be the reply.
-            if unreadCount > unreadBefore, !opened.running { announceReply(in: replies) }
+            let news = GatewayTurn.news(in: opened.history)
+            unreadCount = news.filter { ($0.timestamp ?? 0) > since }.count
+            // A running turn alerts when it ends; its rows so far may not be the reply. A routine
+            // the Bot didn't answer counts, without an alert: routines stay quiet.
+            if unreadCount > unreadBefore, !opened.running, news.last?.role == "assistant" {
+                announceReply(in: news)
+            }
         } else {
             // First time this device sees the chat: nothing is new yet.
             markViewed()

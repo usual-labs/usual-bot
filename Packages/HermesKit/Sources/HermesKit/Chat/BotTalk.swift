@@ -192,7 +192,7 @@ extension TranscriptItem {
     /// Whether this item begins a turn, rather than being part of the one before.
     public var startsTurn: Bool {
         switch content {
-        case .user, .botMessage, .botAnswer, .result, .background: true
+        case .user, .botMessage, .botAnswer, .result, .routine, .background: true
         // A goal's own turn; other notices belong to the turn they're in.
         case .notice(let text): text == GatewayTurn.goalStep
         default: false

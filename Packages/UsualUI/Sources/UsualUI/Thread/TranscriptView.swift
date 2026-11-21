@@ -420,6 +420,8 @@ struct ItemView: View {
             NoticeLine(text: text)
         case .result(let title, let detail):
             ResultLine(title: title, detail: detail)
+        case .routine(let name, let output):
+            RoutineLine(item: item, name: name, output: output, agentName: agentName)
         case .botMessage(let from, let text, _):
             BotMessageLine(from: from, text: text)
         case .botAsk(let ask):

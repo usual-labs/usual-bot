@@ -60,6 +60,19 @@ struct SilenceTests {
             HistoryMessage(role: "assistant", text: "[SILENT]"),
         ]
         #expect(GatewayTurn.repliesToYou(in: history).isEmpty)
+        // The routine's output is the news instead.
+        #expect(GatewayTurn.news(in: history) == [history[0]])
+    }
+
+    @Test func aRoutineTheBotAnsweredIsNewsOnlyThroughTheReply() {
+        let history = [
+            HistoryMessage(
+                role: "user", text: "[Cronjob \"ping\" output — x]\n\nNew leads", displayKind: "internal_notification"),
+            HistoryMessage(role: "assistant", text: "Two new leads; I drafted replies."),
+            HistoryMessage(role: "user", text: "Thanks"),
+            HistoryMessage(role: "assistant", text: "[SILENT]"),
+        ]
+        #expect(GatewayTurn.news(in: history) == [history[1]])
     }
 
     @Test func theSidebarDoesntShowIt() {

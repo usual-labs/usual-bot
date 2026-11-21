@@ -34,7 +34,7 @@ extension ChatThread {
         let after = state.items[(index + 1)...]
         if after.contains(where: {
             switch $0.content {
-            case .result, .botMessage, .botAnswer: true
+            case .result, .routine, .botMessage, .botAnswer: true
             default: false
             }
         }) {
@@ -81,7 +81,7 @@ extension ChatThread {
             case .user:
                 cost.messages += 1
                 cost.reachesBack = true
-            case .result, .botMessage, .botAnswer:
+            case .result, .routine, .botMessage, .botAnswer:
                 cost.messages += 1
                 cost.fromHermes += 1
                 cost.reachesBack = true
@@ -256,7 +256,7 @@ extension TranscriptItem {
     /// Something said, rather than a step, a notice or a list.
     fileprivate var isMessage: Bool {
         switch content {
-        case .user, .assistant, .member, .background, .output, .result, .botMessage, .botAnswer: true
+        case .user, .assistant, .member, .background, .output, .result, .routine, .botMessage, .botAnswer: true
         case .activity, .notice, .progress, .botAsk: false
         }
     }

@@ -36,12 +36,15 @@ extension ChatThread {
                 let history = try? result?["messages"]?.decode([HistoryMessage].self),
                 // Before the reply: you may already have sent the next message from here.
                 let reply = history.lastIndex(where: { $0.role == "assistant" }),
-                let prompt = history[..<reply].last(where: { $0.role == "user" }),
+                let promptIndex = history[..<reply].lastIndex(where: { $0.role == "user" }),
                 // A widget's turn that only rewrote its file has no reply of its own: the one found
                 // is the turn before's, whose prompt is already on screen.
                 !history[reply...].contains(where: { $0.role == "user" && $0.displayKind == GatewayTurn.hiddenKind })
             else { return }
+            let prompt = history[promptIndex]
             state.insertPrompt(prompt, at: index)
+            // A routine the Bot chose not to answer brings no reply to count, so it counts itself.
+            if !isVisible, GatewayTurn.news(in: Array(history[promptIndex...])).first == prompt { unreadCount += 1 }
         }
     }
 

@@ -34,9 +34,9 @@ struct DemoTests {
         }
         #expect(
             atlas.state.items[11].content
-                == .result(
-                    title: "From the routine “Competitor pricing watch”",
-                    detail: "Northwind cut its Team plan from $12 to $10 a seat. The other two pages haven't changed."))
+                == .routine(
+                    name: "Competitor pricing watch",
+                    output: "Northwind cut its Team plan from $12 to $10 a seat. The other two pages haven't changed."))
 
         let ops = model.thread(for: try #require(contacts.first { $0.id == "ops" }))
         #expect(!ops.isLinkUnencrypted)

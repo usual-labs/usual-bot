@@ -50,9 +50,7 @@ enum GatewayTurn {
         if body.hasPrefix(goalPrefix) { return .notice(goalStep) }
         switch kind {
         case "internal_notification":
-            if let (routine, output) = routineResult(body) {
-                return .result(title: title ?? fromRoutine(routine), detail: output)
-            }
+            if let (routine, output) = routineResult(body) { return .routine(name: routine, output: output) }
             if let (bot, message) = botMessage(body) {
                 let note = message.hasPrefix(noReplyMarker)
                 let text = note ? String(message.dropFirst(noReplyMarker.count)) : message
@@ -70,15 +68,30 @@ enum GatewayTurn {
     /// messages: those go back to that Bot, and the chat folds them away. A choice not to reply
     /// (`Silence`) isn't one either.
     static func repliesToYou(in history: [HistoryMessage]) -> [HistoryMessage] {
+        news(in: history).filter { $0.role == "assistant" }
+    }
+
+    /// What counts as unread in `history`: the replies to you, and a routine's output the Bot
+    /// didn't answer (it chose silence), which would otherwise come in without a sign.
+    static func news(in history: [HistoryMessage]) -> [HistoryMessage] {
+        var news: [HistoryMessage] = []
         var forABot = false
-        return history.filter { message in
+        // A routine's output, until the Bot replies to it.
+        var unanswered: HistoryMessage?
+        for message in history {
             if message.role == "user" {
-                forABot =
-                    message.displayKind == "internal_notification"
-                    && message.text.map { botMessage(withoutFooter($0)) != nil } == true
+                if let routine = unanswered { news.append(routine) }
+                let body = withoutFooter(message.text ?? "")
+                let delivered = message.displayKind == "internal_notification"
+                forABot = delivered && botMessage(body) != nil
+                unanswered = delivered && routineResult(body) != nil ? message : nil
+            } else if message.role == "assistant", !forABot, !Silence.isMarker(message.text ?? "") {
+                news.append(message)
+                unanswered = nil
             }
-            return message.role == "assistant" && !forABot && !Silence.isMarker(message.text ?? "")
         }
+        if let routine = unanswered { news.append(routine) }
+        return news
     }
 
     /// What the sidebar says when one of these is the chat's newest message. The gateway's preview
@@ -92,7 +105,7 @@ enum GatewayTurn {
         return nil
     }
 
-    private static func fromRoutine(_ name: String) -> String { String(localized: "From the routine “\(name)”") }
+    static func fromRoutine(_ name: String) -> String { String(localized: "From the routine “\(name)”") }
 
     private static func routineResult(_ text: String) -> (name: String, output: String)? {
         guard text.hasPrefix(routinePrefix) else { return nil }
