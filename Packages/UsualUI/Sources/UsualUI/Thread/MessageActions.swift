@@ -342,23 +342,47 @@ struct MessageRow<Content: View>: View {
 
     // MARK: The right-click menu (Mac) and the touch-and-hold sheet (iPhone)
 
-    @ViewBuilder private func menu(_ actions: MessageActions) -> some View {
-        if canReact(actions) {
-            // A Mac menu's palette leaves out buttons without an image, so emoji go in a submenu.
-            Menu("React", systemImage: reactSymbol) {
-                ForEach(quickReactions, id: \.self) { emoji in
-                    Button(emoji) { actions.react(emoji, item) }
+    #if os(macOS)
+        @ViewBuilder private func menu(_ actions: MessageActions) -> some View {
+            if canReact(actions) {
+                // A row of emoji across the top, as in Grok Bot. A Mac menu's palette leaves out
+                // buttons without an image, so each emoji is drawn into one.
+                ControlGroup {
+                    ForEach(quickReactions, id: \.self) { emoji in
+                        Button {
+                            actions.react(emoji, item)
+                        } label: {
+                            Label {
+                                Text("React \(emoji)")
+                            } icon: {
+                                emojiImage(emoji)
+                            }
+                        }
+                    }
+                    Button("More Reactions…", systemImage: "face.smiling") { picking = true }
                 }
+                .controlGroupStyle(.palette)
                 Divider()
-                Button("More Reactions…") { picking = true }
             }
+            Button("Reply", systemImage: "arrowshape.turn.up.left") { actions.reply(item) }
+            Button("Copy", systemImage: "doc.on.doc", action: copy)
+            readButton
+            markUnreadButton(actions)
+            rewindButtons(actions)
         }
-        Button("Reply", systemImage: "arrowshape.turn.up.left") { actions.reply(item) }
-        Button("Copy", systemImage: "doc.on.doc", action: copy)
-        readButton
-        markUnreadButton(actions)
-        rewindButtons(actions)
-    }
+
+        /// An emoji as an image, for a menu palette.
+        private func emojiImage(_ emoji: String) -> Image {
+            let font = NSFont.systemFont(ofSize: 17)
+            let string = NSAttributedString(string: emoji, attributes: [.font: font])
+            let size = string.size()
+            let image = NSImage(size: size, flipped: false) { rect in
+                string.draw(in: rect)
+                return true
+            }
+            return Image(nsImage: image)
+        }
+    #endif
 
     #if os(iOS)
         /// The touch-and-hold menu: reactions, then Reply and Mark as Unread, as Grok groups them;
