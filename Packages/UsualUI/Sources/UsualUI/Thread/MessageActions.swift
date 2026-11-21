@@ -95,8 +95,11 @@ struct MessageRow<Content: View>: View {
             // The slot grows with the zoom, as the bar does: at a fixed width a zoomed-in bar
             // spilled over the bubble.
             let slot: CGFloat = actions == nil ? 0 : barWidth + 6
+            // The whole rectangle answers a right-click, from a background: a content shape on the
+            // message itself would also stop clicks on what reaches past it, as Reply over a
+            // selection's first line does.
             message
-                .contentShape(Rectangle())
+                .background { Color.clear.contentShape(Rectangle()) }
                 .contextMenu { if let actions { menu(actions) } }
                 .padding(isMine ? .leading : .trailing, slot)
                 .overlay(alignment: isMine ? .leading : .trailing) { barSlot }
