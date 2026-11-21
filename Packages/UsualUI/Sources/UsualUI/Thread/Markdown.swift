@@ -1,3 +1,4 @@
+import CoreText
 import Foundation
 import HermesKit
 import SwiftUI
@@ -237,7 +238,7 @@ struct MarkdownView: View {
 
     var body: some View {
         // As wide as its text, for a bubble around it.
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: Theme.messageBlockSpacing) {
             ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
                 switch part {
                 case .text(let text, let headed):
@@ -294,33 +295,40 @@ struct MarkdownView: View {
         var parts: [Part] = []
         for block in blocks {
             let piece: AttributedString
-            // A blank line in a tiny font: Text ignores paragraph spacing. With the message font's
-            // 4 pt line spacing on both line breaks, 2 pt makes the 10 pt the stack puts between
-            // blocks, and 5 pt the extra room above a heading.
-            let gap: CGFloat
+            let headed: Bool
             switch block {
             case .paragraph(let text):
                 piece = styled(text)
-                gap = 2
+                headed = false
             case .heading(let level, let text):
                 let size = headingSize(level)
                 var heading = text
                 heading.font = .system(size: size, weight: .semibold)
                 piece = styled(heading, size: size, weight: .semibold)
-                gap = 5
+                headed = true
             default:
                 parts.append(.block(block))
                 continue
             }
-            if case .text(let previous, let headed) = parts.last {
+            if case .text(let previous, let startsHeaded) = parts.last {
                 var blank = AttributedString("\n\n")
-                blank.font = .system(size: gap)
-                parts[parts.count - 1] = .text(previous + blank + piece, headed: headed)
+                blank.font = .system(size: Self.blankLineSize(gap: Theme.messageBlockSpacing + (headed ? 4 : 0)))
+                parts[parts.count - 1] = .text(previous + blank + piece, headed: startsHeaded)
             } else {
-                parts.append(.text(piece, headed: gap == 5))
+                parts.append(.text(piece, headed: headed))
             }
         }
         return parts
+    }
+
+    /// Text ignores paragraph spacing, so blocks in one `Text` are parted by a blank line in a
+    /// small font. With the line spacing under the line before it and under itself, a blank line
+    /// this size leaves `gap` between them, as the stack leaves between the rest. Worked out, not
+    /// fixed: a fixed size drifts from the stack's gap whenever the line spacing changes.
+    static func blankLineSize(gap: CGFloat) -> CGFloat {
+        let font = CTFontCreateUIFontForLanguage(.system, 100, nil)
+        let lineHeight = font.map { (CTFontGetAscent($0) + CTFontGetDescent($0) + CTFontGetLeading($0)) / 100 } ?? 1.2
+        return max(gap - 2 * Theme.messageLineSpacing, 1) / lineHeight
     }
 
     private func headingSize(_ level: Int) -> CGFloat {
