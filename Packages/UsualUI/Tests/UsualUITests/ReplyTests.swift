@@ -96,6 +96,14 @@ struct ReplyTests {
             [QuotedMessage(author: "Atlas", selection: "fast", note: "Why?")].message("") == "> Atlas: fast\n\nWhy?")
     }
 
+    @Test func repliesUnderQuotesAreEnoughToSend() {
+        // Your answers to the quotes are a message, with nothing typed in the box.
+        #expect([QuotedMessage(author: "Atlas", selection: "fast", note: "yes")].hasReplies)
+        // A quote alone isn't: there's nothing of yours to send yet.
+        #expect(![QuotedMessage(author: "Atlas", selection: "fast", note: "  ")].hasReplies)
+        #expect(![QuotedMessage]().hasReplies)
+    }
+
     @Test func quotingTheSameWordsAgainKeepsTheNewerReply() {
         var quotes = [QuotedMessage(author: "Atlas", selection: "fast", note: "Why?")]
         quotes.add(QuotedMessage(author: "Atlas", selection: "fast"))
