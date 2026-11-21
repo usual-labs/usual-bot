@@ -45,6 +45,7 @@ struct MarkdownTableView: View {
     let table: MarkdownTable
     /// Gives a cell's bold, italic and code their fonts, as the rest of the reply.
     let styled: (AttributedString, Font.Weight) -> AttributedString
+    @Environment(\.messageTextSize) private var messageSize
     @State private var moreToTheRight = false
 
     var body: some View {
@@ -82,14 +83,38 @@ struct MarkdownTableView: View {
         }
     }
 
+    /// A cell's words. One with a link is a text view on the Mac, so the link gets the pointing
+    /// hand, opens and has the menu a link has elsewhere in the reply; `Text` shows the I-beam over
+    /// its links.
+    @ViewBuilder private func words(_ text: AttributedString, isHeader: Bool, alignment: MarkdownTable.Alignment)
+        -> some View
+    {
+        #if os(macOS)
+            if text.runs[\.link].contains(where: { $0.0 != nil }) {
+                MessageText(
+                    content: .cell(text, size: messageSize, isHeader: isHeader, alignment: alignment))
+            } else {
+                plainWords(text, isHeader: isHeader, alignment: alignment)
+            }
+        #else
+            plainWords(text, isHeader: isHeader, alignment: alignment)
+        #endif
+    }
+
+    private func plainWords(_ text: AttributedString, isHeader: Bool, alignment: MarkdownTable.Alignment)
+        -> some View
+    {
+        Text(styled(text, isHeader ? .semibold : .regular))
+            .fontWeight(isHeader ? .semibold : nil)
+            .multilineTextAlignment(alignment.text)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
     private func cell(_ text: AttributedString, row: Int, column: Int, isLastRow: Bool) -> some View {
         let isHeader = row == 0
         let alignment = table.alignments[column]
         let header = String(table.header[column].characters)
-        return Text(styled(text, isHeader ? .semibold : .regular))
-            .fontWeight(isHeader ? .semibold : nil)
-            .multilineTextAlignment(alignment.text)
-            .fixedSize(horizontal: false, vertical: true)
+        return words(text, isHeader: isHeader, alignment: alignment)
             .padding(.vertical, 6)
             // The gap between columns is inside each cell, so the lines under a row don't break.
             .padding(.trailing, column == table.alignments.count - 1 ? 0 : TableLayout.gap)

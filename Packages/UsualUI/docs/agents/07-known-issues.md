@@ -92,6 +92,13 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   text view with the selection is first responder, which is how the text view above it, which the
   button can reach over, finds it. The cursor rectangles have a test; the pointer itself wasn't
   watched in the running app.
+- **A link in a SwiftUI `Text` on the Mac shows the I-beam, not the pointing hand,** because
+  `messageTextSelection()` makes the `Text` a selectable text view and `pointerStyle` can't be set
+  on part of it. Paragraphs, lists and quotes avoid it by being `MessageText`; a table cell with a
+  link is one too (`RichText.cell`), and cells without links stay `Text`. Any new reply block that
+  can hold a link needs the same. The pointing hand itself wasn't watched in the running app (the
+  tests check the text view's cursor attribute, click handling and layout; the layout was also
+  rendered off-screen in light and dark).
 - **Anything that asks a scroll view its size measures every message in it.** `safeAreaBar`
   asks for the conversation's minimum on each update, and so does the window for its minimum size:
   about a fifth of switching chats. `ConversationScroll` sits in `TakesOfferedSize`, which answers
