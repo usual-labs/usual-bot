@@ -17,15 +17,35 @@ struct PinnedTiles<Actions: View>: View {
     #endif
     /// A tile's context menu.
     @ViewBuilder let actions: (Contact) -> Actions
+    #if os(iOS)
+        /// The tile last touched, whose menu the row opens.
+        @State private var pressed: Contact.ID?
+    #endif
 
     var body: some View {
-        TileRows(minWidth: PinnedTile.minWidth, maxWidth: PinnedTile.maxWidth, spacing: PinnedTile.spacing) {
+        let rows = TileRows(minWidth: PinnedTile.minWidth, maxWidth: PinnedTile.maxWidth, spacing: PinnedTile.spacing) {
             ForEach(contacts) { contact in
                 tile(contact)
             }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Pinned"))
+        #if os(iOS)
+            // A List cell opens one context menu, the first it finds, so a menu on each tile gave
+            // every tile the first one's and lifted the whole row. The row's one menu is the
+            // pressed tile's, and its preview is that tile alone.
+            rows.contextMenu {
+                if let contact = contacts.first(where: { $0.id == pressed }) { actions(contact) }
+            } preview: {
+                if let contact = contacts.first(where: { $0.id == pressed }) {
+                    let members = ContactList.members(of: contact, in: byID)
+                    PinnedTile(contact: contact, members: members, isSelected: false) {}
+                        .frame(width: PinnedTile.maxWidth)
+                }
+            }
+        #else
+            rows
+        #endif
     }
 
     @ViewBuilder private func tile(_ contact: Contact) -> some View {
@@ -40,9 +60,9 @@ struct PinnedTiles<Actions: View>: View {
         ) {
             selection = contact.id
         }
-        .contextMenu { actions(contact) }
         #if os(macOS)
             tile
+                .contextMenu { actions(contact) }
                 .overlay {
                     SidebarDragSource(id: contact.id) {
                         AgentOrRoomAvatar(contact: contact, members: members, size: 32)
@@ -54,7 +74,7 @@ struct PinnedTiles<Actions: View>: View {
                     geometry?.pins[contact.id] = $0
                 }
         #else
-            tile
+            tile.gesture(TouchDown { pressed = contact.id })
         #endif
     }
 }
@@ -141,6 +161,34 @@ private struct PinnedTile: View {
         static let spacing: CGFloat = 4
     #endif
 }
+
+#if os(iOS)
+    /// Says when a finger comes down, and fails straight away, so the tile's button still gets
+    /// the tap and the list the swipe. A SwiftUI gesture that watched the press kept a swipe that
+    /// started on a tile from scrolling the list.
+    private struct TouchDown: UIGestureRecognizerRepresentable {
+        let action: () -> Void
+
+        func makeUIGestureRecognizer(context: Context) -> Recognizer {
+            let recognizer = Recognizer()
+            recognizer.cancelsTouchesInView = false
+            return recognizer
+        }
+
+        func updateUIGestureRecognizer(_ recognizer: Recognizer, context: Context) {
+            recognizer.action = action
+        }
+
+        final class Recognizer: UIGestureRecognizer {
+            var action: () -> Void = {}
+
+            override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+                action()
+                state = .failed
+            }
+        }
+    }
+#endif
 
 /// Equal tiles in rows, each row centred. A row takes as many as fit at `minWidth`, and its tiles
 /// then widen to share it, up to `maxWidth`.

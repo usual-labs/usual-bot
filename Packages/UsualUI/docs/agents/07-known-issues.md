@@ -182,6 +182,13 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **Unverified: where the pointing hand starts over a Form row.** `pointerStyle` can't be probed from automation: events sent to a window move neither the cursor nor `onHover`. Pickers and switches in grouped Forms carry `.clickable()` on the whole control, which may take in its label.
 - **`ImageRenderer` draws `SecureField` and `Toggle` as yellow blocks,** because it can't draw controls backed by AppKit. Sizes are right, but those controls need a run of the app to be seen.
 - **On iPhone, don't use `.inspector`.** A compact inspector's content lives in the presenting chat's navigation stack: its toolbar items show in the chat's bar even while closed, `.toolbarVisibility(.hidden)` hides the chat's bar, and a `NavigationStack` inside it never pushes. Emptying its content to stop that leaves a blank sheet that can't be closed. Even a panel with no toolbar breaks the chat: with the room panel as an inspector, the room's `.principal` name pill never showed, so there was no way into the panel. On iOS the profile and the room panel are pushed instead, with `navigationDestination(isPresented:)`, which needs the split view's detail wrapped in its own `NavigationStack`: the detail column alone ignores it. The Mac doesn't use inspectors either (see the side panels above).
+- **An iPhone `List` cell opens one context menu, the first in the cell.** With a menu on each
+  pinned tile, touch and hold on any tile lifted the whole row with the first tile's menu.
+  `PinnedTiles` puts one menu on the row, filled for the tile last touched and previewed as that
+  tile alone. A `UIGestureRecognizer` that notes the touch and fails at once finds the tile: a
+  SwiftUI `LongPressGesture` stopped a swipe that started on a tile from scrolling, a custom
+  `ButtonStyle` made touch and hold open the chat instead of the menu, and hosting the tiles in
+  their own `UIHostingController` showed no menu at all and hid them from accessibility.
 - **An iPhone `List` section header can't use `.contextMenu`:** touch and hold triggers the header's button instead. `SectionHeader` uses `Menu(content:label:primaryAction:)`, so a tap folds and touch and hold opens the menu.
 - **That `Menu` shows VoiceOver its parts:** a pop-up button, an unlabelled button and the label's image ("Go Down" for `chevron.down`). `accessibilityHidden` and `accessibilityElement(children: .ignore)` inside the label didn't change that (iOS 27 Simulator); `accessibilityRepresentation` on the menu, with its items as `accessibilityActions`, made one heading button. VoiceOver itself wasn't run, only the accessibility tree.
 
