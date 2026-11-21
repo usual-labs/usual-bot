@@ -1,4 +1,5 @@
-"""A Bot is told about Usual Bot once per chat the app opened, and nowhere else."""
+"""A Bot is told about Usual Bot once per chat the app opened, and nowhere else, and how to write
+there on every turn after."""
 
 import importlib.util
 import sys
@@ -51,7 +52,7 @@ class ContextTests(PluginCase):
         store.note_chat("s1")
         self.assertIsNone(self.turn(session="s2"))
 
-    def test_only_once_while_the_history_has_it(self):
+    def test_only_once_while_the_history_has_it_then_the_voice_line(self):
         store.note_chat("s1")
         # Hermes keeps what it sent as the message's `api_content` and gives it back on later turns.
         told = [
@@ -59,7 +60,16 @@ class ContextTests(PluginCase):
             {"role": "assistant", "content": "Hello."},
             {"role": "user", "content": "and now?"},
         ]
-        self.assertIsNone(self.turn(history=told))
+        self.assertEqual(self.turn(history=told), {"context": context.VOICE})
+
+    def test_a_chat_told_the_earlier_text_gets_this_one(self):
+        store.note_chat("s1")
+        old = [{"role": "user", "content": "hi", "api_content": "hi\n\n<usual-bot-context>\nThis chat is in Usual Bot"},
+               {"role": "user", "content": "and now?"}]
+        self.assertEqual(self.turn(history=old), {"context": context.TEXT})
+
+    def test_the_voice_line_never_counts_as_the_context(self):
+        self.assertFalse(context.told([{"role": "user", "content": "hi", "api_content": "hi\n\n" + context.VOICE}]))
 
     def test_again_once_compression_drops_it(self):
         store.note_chat("s1")
@@ -69,7 +79,7 @@ class ContextTests(PluginCase):
     def test_a_message_with_images_carries_it_as_a_part(self):
         store.note_chat("s1")
         told = [{"role": "user", "content": [{"type": "image_url"}, {"type": "text", "text": context.TEXT}]}]
-        self.assertIsNone(self.turn(history=told))
+        self.assertEqual(self.turn(history=told), {"context": context.VOICE})
 
     def test_a_chat_compression_moved_to_a_new_session_is_still_the_apps(self):
         store.note_chat("old")
@@ -77,11 +87,16 @@ class ContextTests(PluginCase):
         # Remembered under its new ID, so it stays the app's once the old one is forgotten.
         self.assertIn("new", store._read("chats.json"))
 
-    def test_helpers_routines_and_rooms_arent_told(self):
+    def test_helpers_and_routines_arent_told(self):
         store.note_chat("s1")
-        for platform in ("subagent", "cron", "bot_room"):
+        for platform in ("subagent", "cron"):
             self.assertIsNone(self.turn(session="child", parent="s1", platform=platform), platform)
         self.assertNotIn("child", store._read("chats.json"))
+
+    def test_a_room_turn_gets_only_the_voice_line(self):
+        # The app shows every room on the gateway, and rooms aren't told about widgets this way.
+        self.assertEqual(self.turn(session="member", platform="bot_room"), {"context": context.VOICE})
+        self.assertNotIn("member", store._read("chats.json"))
 
     def test_a_chat_unused_for_30_days_is_forgotten(self):
         store.note_chat("s1")
@@ -105,7 +120,21 @@ class ContextTests(PluginCase):
         for words in ("Usual Bot", "isn't Hermes's official app", "Nous Research", "MEDIA:", "::preview",
                       "also send it on a MEDIA: line"):
             self.assertIn(words, context.TEXT)
-        self.assertLess(len(context.TEXT), 2000)
+        # Once per chat, so it can say more than the line sent every turn.
+        self.assertLess(len(context.TEXT), 3000)
+
+    def test_the_text_says_how_to_write_before_what_renders(self):
+        for words in ("texts", "one to four sentences", "first send one short line", "Say what happened, not how",
+                      "If your own instructions set a different voice, theirs wins", "For example"):
+            self.assertIn(words, context.TEXT)
+        self.assertLess(context.TEXT.index("Write to the user"), context.TEXT.index("What shows here"))
+        # Written as prose: a list of what renders reads as an invitation to use all of it.
+        self.assertNotRegex(context.TEXT, r"(?m)^\s*[-*] ")
+        self.assertNotIn("tables and code blocks", context.TEXT)
+
+    def test_the_voice_line_is_short_and_defers_to_the_bots_own(self):
+        self.assertIn("your own instructions", context.VOICE)
+        self.assertLess(len(context.VOICE), 220)
 
 
 class BotTurnTests(PluginCase):
@@ -122,6 +151,7 @@ class BotTurnTests(PluginCase):
         store.note_chat("s1")
         said = self.turn(history=self.told_history(self.ASK), message=self.ASK)["context"]
         self.assertNotIn(context.TEXT, said)
+        self.assertNotIn(context.VOICE, said)
         for words in ("from CMO, another Bot", "goes back to CMO", "Write the reply to CMO", "don't address the user"):
             self.assertIn(words, said)
 
@@ -142,10 +172,11 @@ class BotTurnTests(PluginCase):
         line = context.bot_turn("CMO", False)
         self.assertFalse(context.told([{"role": "user", "content": self.ASK, "api_content": self.ASK + line}]))
 
-    def test_other_chats_and_your_own_messages_get_no_line(self):
+    def test_other_chats_get_no_line_and_your_own_messages_get_the_voice(self):
         store.note_chat("s1")
         self.assertIsNone(self.turn(session="s2", message=self.ASK))
-        self.assertIsNone(self.turn(history=self.told_history("Message from me: hi"), message="Message from me: hi"))
+        mine = "Message from me: hi"
+        self.assertEqual(self.turn(history=self.told_history(mine), message=mine), {"context": context.VOICE})
 
     def test_a_name_with_brackets_keeps_them(self):
         self.assertEqual(context.bot_sender("Message from 🤖 Dr. (Egg) Bot (@egg): hi"), ("Dr. (Egg) Bot", False))
