@@ -151,13 +151,19 @@ Routes, behind the dashboard's sign-in:
 
 Usual Bot's chats reach Hermes the way its terminal UI's do, so a Bot is told it's in a terminal,
 where files it sends print as text. In a chat Usual Bot opened, the plugin adds a note to the first
-message: that the Bot is talking through Usual Bot, which isn't Hermes's official app, and what
-shows there (Markdown, files with `MEDIA:` lines, and widgets). The text is in
-[`context.py`](context.py). It says nothing about you or your device.
+message: that the Bot is talking through Usual Bot, which isn't Hermes's official app; how to write
+in a messenger (a few short sentences with the answer first, a short line before long work, no
+report sections, unless the Bot's own instructions set another voice); and what shows there
+(Markdown, files with `MEDIA:` lines, and widgets). The text is in [`context.py`](context.py). It
+says nothing about you or your device.
+
+Every later turn you start gets one line at its end, reminding the Bot to reply like a text: in a
+long chat, a note far back counts for less than the replies written since. Room turns get that
+line too.
 
 Hermes keeps the note with that message, so the plugin adds it once per chat, and again only when
 the chat no longer has it, as after compressing the chat. Routines' results and other Bots'
-messages posted in the chat get it too, because they're turns in it. Rooms don't.
+messages posted in the chat get it too, because they're turns in it. Rooms don't get the note.
 
 A turn another Bot started also gets a short note, every time: the message is from that Bot, not
 you, and the final reply goes back to it, so the Bot writes it to that Bot and keeps it short. For a

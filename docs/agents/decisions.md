@@ -783,22 +783,41 @@ read at Hermes `2bd378ed1b`.
   to the user message and keeps it in `api_content`, which later turns replay and the hook's
   `conversation_history` carries, so the plugin adds it when no user message has its marker: once
   per chat, and again after compression drops it. The text (`context.py`) says who the app is (not
-  official, not Nous) and what renders; nothing about the user or their device, no feature list,
-  no off switch. Whether to add what doesn't render (math) was left open.
+  official, not Nous), how to write in a messenger, and what renders; nothing about the user or
+  their device, no feature list, no off switch. Whether to add what doesn't render (math) was left
+  open.
 - **The app names its chats; the plugin can't tell otherwise.** No client identity reaches a hook
   (`client.capabilities` takes only `server_requests` and `desktop_local`). The app sends each Bot
   Chat's stored session ID (`PUT /chats/<id>`) when it attaches; the plugin keeps it while it's
   used within 30 days, and follows compression to a child session through `parent_session_id`, for
   chat platforms only, so helpers (`subagent`) never get it. The accepted catch: the official app's
   turns in the same Bot Chat get the context too. Routines' results and other Bots' messages are
-  turns in the chat, so they get it. Rooms don't: a member's room session is nothing the app knows,
-  and `on_room_member_activity`, which says the room, runs on a queue of its own with no order
-  against the turn.
+  turns in the chat, so they get it. Rooms don't (they get only the voice line, below): a member's
+  room session is nothing the app knows, and `on_room_member_activity`, which says the room, runs
+  on a queue of its own with no order against the turn.
 - **A turn another Bot started is told who its reply goes to, every time.** The same hook adds a
   short `<usual-bot-turn>` note to that turn alone: the message is from that Bot, the final reply goes
   back to it, so write to it, lead with the result and don't address the user (for a note: finish
   quietly). It's per turn, not in the chat context, so existing chats' context and its prompt cache
   stay as they were. Its own tag keeps `told` from mistaking it for the context after compression.
+- **Bots write like texting, set by the plugin (November 2026).** Bots in the app replied like
+  reports (headings, bold, tables, "What I did") where Grok Bot's read like texts, at the same
+  length per turn. Three causes: the `tui` source makes Hermes say "terminal UI" and nothing about
+  register; our context listed "headings, … lists, … tables" as a bulleted list, which models take
+  as an invitation (they copy a prompt's shape); and rules that only ban things ("no bold headers"
+  in a SOUL) lose to habit. So the context leads with how to write, in prose with two example
+  replies: a few short sentences, the answer first, one short line before long work, what happened
+  rather than how, no report sections, and a Bot's own SOUL voice wins. One note far back in a long
+  chat loses to the replies written since, so every other turn in the app's chats gets a one-line
+  `<usual-bot-voice>` reminder (a turn another Bot started gets its own line instead, since that
+  reply goes to the Bot). It stays in the history, so it costs about 40 tokens a turn until
+  compression. Rooms get the line every turn, without the context: push already treats every room
+  on the gateway as the app's. Splitting one reply into several bubbles was left out; a prompt
+  can't time messages, and Hermes already shows text sent before a tool call as its own message.
+  Checked offline only (Opus 5.5, a made-up SOUL with the `tui` hint and a report-style earlier
+  reply, 3 prompts twice each): the median reply fell from 220 to 145 words, headings and report
+  sections went from most replies to none, and bullets nearly so; a cost breakdown can still come
+  as a table. Not yet seen on a real gateway, or with other models.
 - **The app installs our plugin, and only ours, with Hermes's installer.** The developer chose
   one-tap install (November 2026) as the exception to "gateway administration stays in the
   official app". `plugins.manage install` takes `usual-labs/usual-bot#Integrations/usual-bot` per

@@ -13,8 +13,8 @@ struct MessageActions {
     var canReact: (TranscriptItem) -> Bool = { _ in false }
     var react: (String?, TranscriptItem) -> Void = { _, _ in }
     var reply: (TranscriptItem) -> Void = { _ in }
-    /// Quotes the words you selected in a message in your next one.
-    var quote: (TranscriptItem, String) -> Void = { _, _ in }
+    /// Quotes the words you selected in a message in your next one, with what you said to them.
+    var quote: (TranscriptItem, String, String) -> Void = { _, _, _ in }
     /// Chats only: a message of yours, which can be edited.
     var canEdit: (TranscriptItem) -> Bool = { _ in false }
     /// Chats only: the Bot's last reply, which can be asked again.
@@ -33,9 +33,9 @@ struct MessageActions {
 
 extension EnvironmentValues {
     @Entry var messageActions: MessageActions?
-    /// Quotes words selected in the message around it in the next message; `nil` where a message
-    /// can't be replied to.
-    @Entry var quoteSelection: ((String) -> Void)?
+    /// Quotes words selected in the message around it in the next message, with your reply to
+    /// them; `nil` where a message can't be replied to.
+    @Entry var quoteSelection: ((_ words: String, _ reply: String) -> Void)?
 }
 
 /// The quick reactions, as in Messages and Grok Bot, and the rest behind + (or More Reactions).
@@ -144,7 +144,7 @@ struct MessageRow<Content: View>: View {
     private var message: some View {
         VStack(alignment: isMine ? .trailing : .leading, spacing: 4) {
             content
-                .environment(\.quoteSelection, actions.map { actions in { actions.quote(item, $0) } })
+                .environment(\.quoteSelection, actions.map { actions in { actions.quote(item, $0, $1) } })
             if isReading { stopReadingPill.padding(.leading, bubbleInset) }
             if !item.reactions.isEmpty { reactionPills }
         }
@@ -371,7 +371,7 @@ struct MessageRow<Content: View>: View {
             if let selectText, !text.isEmpty {
                 words.append(
                     MessageMenuItem(title: Text("Select Text"), systemImage: "selection.pin.in.out") {
-                        selectText(SelectableText.plain(text)) { actions.quote(item, $0) }
+                        selectText(SelectableText.plain(text)) { actions.quote(item, $0, $1) }
                     })
             }
             if canRead {

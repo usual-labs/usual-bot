@@ -70,12 +70,14 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   every pointer move: about half that work in a long chat. On the Mac, `MarkdownView` puts a
   reply's paragraphs, headings, list items and quotes in a row into one `NSTextView`
   (`MessageText`, built by `RichText`), which is also what lets a drag select across them and
-  Add to Chat read the selection; SwiftUI's `Text` exposes neither. Code, tables and media stay
+  Reply read the selection; SwiftUI's `Text` exposes neither. Code, tables and media stay
   separate views. TextKit puts the line spacing under a paragraph's last line too, so paragraph
-  spacing is 10 pt minus `Theme.messageLineSpacing`; its line height for 15 pt SF is 18 pt against
+  spacing is the block (or list item) spacing minus `Theme.messageLineSpacing`; its line height for 15 pt SF is 18 pt against
   SwiftUI's 19, so Mac lines sit 1 pt closer than iPhone's. On iPhone the paragraphs and headings
-  are still one `Text`, whose gaps are blank lines in a 2 pt (5 pt before a heading) font because
-  `Text` ignores `NSParagraphStyle`: change the spacing and compare a reply before and after.
+  are still one `Text`, whose gaps are blank lines in a small font because `Text` ignores
+  `NSParagraphStyle`. `MarkdownView.blankLineSize` works the font out from the line spacing; a
+  fixed 2 pt one, sized for 4 pt line spacing, left iPhone paragraphs 5 pt apart against 8 pt for
+  everything else. Change the spacing and compare a reply before and after.
 - **`MessageText` sizes itself with a second layout manager on the same text storage.** Measuring
   with the shown one would rewrap the view SwiftUI is drawing. Widths are cached until the text
   changes; a streaming reply measures again on each change. It compares `MessageTextContent`, not
@@ -83,12 +85,12 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   text, and the selection with it, on every update.
 - **A text view's selection is the conversation's selection.** `SelectableTextView` clears its
   selection when it gives up first responder, so clicking another message or the box lets go of it
-  as a web page would, and a right-click outside the selection returns no menu so the message's own
+  as a web page would (except while its Reply field is open, `holdsSelection`), and a right-click outside the selection returns no menu so the message's own
   React/Reply/Copy menu shows.
 - **A text view owns the pointer over all of itself,** whatever SwiftUI draws on top: it lays an
   I-beam cursor rectangle over its visible part and sets the I-beam again on each move, so a
   `pointerStyle` on an overlay shows only until the pointer moves. `SelectableTextView` is told
-  where Add to Chat sits (`button`) and gives that area the pointing hand in both places; the
+  where Reply sits (`button`) and gives that area the pointing hand in both places; the
   text view with the selection is first responder, which is how the text view above it, which the
   button can reach over, finds it. The cursor rectangles have a test; the pointer itself wasn't
   watched in the running app.

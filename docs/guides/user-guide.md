@@ -257,12 +257,15 @@ sending also puts the keyboard away; tap the message box to write again.
   desktop app too, and their Mark as Unread shows here. Opening the chat on the device where you
   marked it goes back to that message; the others open at the end, as Hermes keeps no message.
   Rooms have no read state in Hermes, so they don't offer it.
-- **Quote part of a message.** Select some words and choose **Add to Chat**: on the Mac from the
+- **Reply to part of a message.** Select some words and choose **Reply**: on the Mac from the
   button over the selection, by right-clicking it, or with ⌘L; on iPhone from the selection's menu
-  in **Select Text**. The words wait above the message box and go in front of what you write. Add
-  as many as you like, from any messages, and Reply adds to them too; the ✕ beside each drops it,
-  and on the Mac Escape drops the newest. In a room, quoting a Bot's words addresses that Bot, and
-  quoting several Bots addresses each of them.
+  in **Select Text**, which stays open so you can pick more. Type what you want to say to those
+  words and press Return, or press Return straight away to quote them without a reply. Each quote
+  waits above the message box with your reply under it; click or tap one to change what you said.
+  Add as many as you like, from any messages, and Reply on a whole message adds to them too. They
+  go as one message: each quote with your reply under it, then whatever you type in the box. The ✕
+  beside each drops it, and on the Mac Escape drops the newest. In a room, quoting a Bot's words
+  addresses that Bot, and quoting several Bots addresses each of them.
 - **Links.** Web and email addresses in messages, yours included, are links: underlined, and blue in
   the Bot's replies.
 - **Edit, Try Again and Undo.** These take the chat back to an earlier point; there's still one
@@ -431,8 +434,10 @@ Bot's name above the chat):
 
 Usual Bot's plugin runs on your gateway. It sends notifications to your devices, lets you watch a
 Bot's browser, opens a shell for a Bot's terminal, and tells your Bots, in the chats you open in Usual Bot, that you're talking through
-Usual Bot and what shows there: Markdown, files and widgets. It tells them nothing about you or your
-device, and does nothing for chats in your other apps. Rooms don't get that note.
+Usual Bot, how to write in a chat (short messages with the answer first, unless a Bot's own
+instructions say otherwise) and what shows there: Markdown, files and widgets. It tells them
+nothing about you or your device, and does nothing for chats in your other apps. Rooms get only
+the reminder to write like a chat.
 
 On the Mac, **Plugins** (the puzzle piece at the foot of the sidebar) says whether your gateway has
 it: Installed, Update available or Not installed. When an update is available, the puzzle piece
@@ -775,7 +780,7 @@ On the Mac these are also in the menu bar (File, View and Go), and **Help › Ke
 | ⌘Return | Mac message box | Send when chosen in Settings |
 | Shift-Return | Message box | New line |
 | ⌘. | Chat or room, while a reply runs | Stop the reply |
-| ⌘L | Mac, words selected in a message | Add them to the chat as a quote |
+| ⌘L | Mac, words selected in a message | Reply to them |
 | ↑ / ↓, Tab | `/` or `@` menu | Move, pick |
 | Esc | `/` or `@` menu, reply, edit | Close the menu or cancel |
 | ⇧⌘H | Voice call | End the call |

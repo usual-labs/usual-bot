@@ -23,7 +23,7 @@
                     }
                     Section("Chat") {
                         row("Dictate", hint: "Hold to talk", keys: ["⌘D"])
-                        row("Add selection to chat", keys: ["⌘L"])
+                        row("Reply to selection", keys: ["⌘L"])
                         row("Send when the reply ends", keys: ["⌥↵"])
                         row("Stop the reply", keys: ["⌘."])
                         row("Profile or room details", keys: ["⌘I"])
