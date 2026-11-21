@@ -10,6 +10,8 @@
 
     extension FocusedValues {
         @Entry var terminal: TerminalCommand?
+        /// True while the shell has focus: the message box leaves typing and pasting to it.
+        @Entry var shellHasFocus: Bool?
     }
 
     enum TerminalTab: String {
