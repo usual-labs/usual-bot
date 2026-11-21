@@ -18,11 +18,12 @@ from . import context, flags, push, secret_prompt, store
 log = logging.getLogger(__name__)
 
 # As in plugin.yaml. The app reads it to offer an update.
-VERSION = "0.10.0"
+VERSION = "0.11.0"
 
 # Where a person talks to the agent. Leaves out helpers ("subagent"), routines ("cron") and rooms
 # ("bot_room"), whose sessions continue no chat of the app's. A gateway's own chats can say "local".
 _CHAT_PLATFORMS = {"tui", "desktop", "dashboard", "local"}
+_ROOM_PLATFORM = "bot_room"
 
 
 def _before_tool(tool_name: str = "", **_) -> None:
@@ -42,16 +43,21 @@ def _before_turn(
 ):
     """The chat context, in a chat the app opened that doesn't have it yet. Routines' results and
     other Bots' messages posted into that chat get it too: they're turns in it. A turn another Bot
-    started also gets a line saying who its reply goes to, every time."""
+    started also gets a line saying who its reply goes to, every time; any other turn gets the voice
+    line. A room turn gets only the voice line: its members aren't told about widgets this way, and
+    the app shows every room on the gateway."""
     try:
+        if platform == _ROOM_PLATFORM:
+            return {"context": context.VOICE}
         if platform not in _CHAT_PLATFORMS:
+            return None
+        if not store.is_app_chat(str(session_id or ""), str(parent_session_id or "")):
             return None
         sender = context.bot_sender(user_message)
         told = context.told(conversation_history)
-        if (told and sender is None) or not store.is_app_chat(str(session_id or ""), str(parent_session_id or "")):
-            return None
-        parts = ([] if told else [context.TEXT]) + ([context.bot_turn(*sender)] if sender else [])
-        return {"context": "\n\n".join(parts)}
+        # The reply to a Bot goes back to that Bot, so it gets that Bot's line, not the user's voice.
+        last = context.bot_turn(*sender) if sender else context.VOICE
+        return {"context": last if told else context.TEXT + ("\n\n" + last if sender else "")}
     except Exception as exc:  # noqa: BLE001 - the turn goes on without it
         log.warning("usual-bot: couldn't add the chat context: %s", type(exc).__name__)
         return None

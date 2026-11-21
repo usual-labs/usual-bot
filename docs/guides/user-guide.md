@@ -434,8 +434,10 @@ Bot's name above the chat):
 
 Usual Bot's plugin runs on your gateway. It sends notifications to your devices, lets you watch a
 Bot's browser, opens a shell for a Bot's terminal, and tells your Bots, in the chats you open in Usual Bot, that you're talking through
-Usual Bot and what shows there: Markdown, files and widgets. It tells them nothing about you or your
-device, and does nothing for chats in your other apps. Rooms don't get that note.
+Usual Bot, how to write in a chat (short messages with the answer first, unless a Bot's own
+instructions say otherwise) and what shows there: Markdown, files and widgets. It tells them
+nothing about you or your device, and does nothing for chats in your other apps. Rooms get only
+the reminder to write like a chat.
 
 On the Mac, **Plugins** (the puzzle piece at the foot of the sidebar) says whether your gateway has
 it: Installed, Update available or Not installed. When an update is available, the puzzle piece
