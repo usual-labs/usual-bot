@@ -46,6 +46,7 @@
             .onTapGesture { focus.wrappedValue = true }
             .focusable()
             .focused(focus)
+            .focusedValue(\.shellHasFocus, true)
             .focusEffectDisabled()
             .onKeyPress(phases: [.down, .repeat]) { press in
                 guard let bytes = TerminalKeys.bytes(for: press) else { return .ignored }

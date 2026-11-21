@@ -47,7 +47,10 @@ struct MessageBox: View {
 
     #if os(macOS)
         @AppStorage(AppPreferences.commandReturnKey) private var commandReturn = false
-        @Environment(\.messageBoxTakesTyping) private var takesTyping
+        @Environment(\.messageBoxTakesTyping) private var takesTypingHere
+        /// The terminal drawer's shell, when focused, takes the keys it's typed and pasted itself.
+        @FocusedValue(\.shellHasFocus) private var shellHasFocus
+        private var takesTyping: Bool { takesTypingHere && shellHasFocus != true }
     #endif
     /// The menu row Return picks.
     @State private var highlighted = 0
