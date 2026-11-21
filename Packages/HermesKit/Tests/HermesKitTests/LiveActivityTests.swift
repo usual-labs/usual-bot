@@ -33,7 +33,7 @@ struct LiveActivityTests {
         #expect(state.live.status == nil)
     }
 
-    @Test func providerWaitsShowAndSpinnerFramesDoNot() {
+    @Test func providerWaitsShowAsTheStatusAndMoodsDoNot() {
         var state = running()
         state.apply(event("thinking.delta", ["text": "(◕‿◕) contemplating"]))
         #expect(state.live.status == nil)
@@ -41,6 +41,33 @@ struct LiveActivityTests {
         #expect(state.live.status == "Still waiting on the provider (30s)")
         state.apply(event("message.delta", ["text": "Hi"]))
         #expect(state.live.status == nil)
+    }
+
+    @Test func hermesMoodShowsUntilTheTurnMovesOn() {
+        var state = running()
+        state.apply(event("thinking.delta", ["text": "( •_•)>⌐■-■ pondering..."]))
+        #expect(state.live.mood?.face == "( •_•)>⌐■-■")
+        #expect(state.live.mood?.verb == "pondering")
+        // A wait shows over it, and the next model call brings a new one.
+        state.apply(event("thinking.delta", ["text": "⏳ Still waiting on the provider (30s)"]))
+        #expect(state.live.status == "Still waiting on the provider (30s)")
+        state.apply(event("thinking.delta", ["text": "(◔_◔) генерирую идеи..."]))
+        #expect(state.live.status == nil)
+        #expect(state.live.mood?.verb == "генерирую идеи")
+        state.apply(event("tool.start", ["tool_id": "1", "name": "read_file"]))
+        #expect(state.live.mood == nil)
+        state.apply(event("thinking.delta", ["text": "(°ロ°) 思案中..."]))
+        #expect(state.live.mood?.verb == "思案中")
+        state.apply(event("thinking.delta", ["text": ""]))
+        #expect(state.live.mood == nil)
+    }
+
+    @Test func onlyAFaceAndVerbCountAsAMood() {
+        var state = running()
+        state.apply(event("thinking.delta", ["text": "Something went wrong (see logs)"]))
+        #expect(state.live.mood == nil)
+        state.apply(event("thinking.delta", ["text": "( ͡° ͜ʖ ͡°)..."]))
+        #expect(state.live.mood == nil)
     }
 
     @Test func reasoningShowsItsLatestLineUntilTheReplyStarts() {

@@ -298,4 +298,25 @@ struct WorkingRowTests {
         state.apply(GatewayEvent(type: "message.delta", sessionID: "s1", seq: nil, payload: ["text": "Hel"]))
         #expect(WorkingRow.text(for: state) == "Writing…")
     }
+
+    private func event(_ type: String, _ payload: JSONValue) -> GatewayEvent {
+        GatewayEvent(type: type, sessionID: "s1", seq: nil, payload: payload)
+    }
+
+    @Test func saysWhatKindOfToolRunsAndHermesMoodBetweenTools() {
+        var state = ThreadState()
+        state.sendLocally("Hi")
+        state.apply(event("thinking.delta", ["text": "(¬‿¬) pondering..."]))
+        // VoiceOver hears the verb without the face.
+        #expect(WorkingRow.words(for: state) == .init(text: "(¬‿¬) pondering…", spoken: "pondering…"))
+        state.apply(event("tool.start", ["tool_id": "1", "name": "read_file", "context": "notes.md"]))
+        #expect(WorkingRow.text(for: state) == "Reading…")
+        state.apply(event("tool.complete", ["tool_id": "1"]))
+        #expect(WorkingRow.text(for: state) == "Thinking…")
+        state.apply(event("thinking.delta", ["text": "(◔_◔) mulling..."]))
+        state.apply(event("reasoning.delta", ["text": "Check the logs next."]))
+        #expect(WorkingRow.text(for: state) == "Check the logs next.")
+        state.apply(event("thinking.delta", ["text": "⏳ Still waiting on the provider (30s)"]))
+        #expect(WorkingRow.text(for: state) == "Still waiting on the provider (30s)")
+    }
 }

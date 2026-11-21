@@ -388,8 +388,13 @@ read at Hermes `2bd378ed1b`.
   `ProcessReport` and `HelperReport` read its lines (`Command:`, `--- ✓ TASK n/m: …`). Text in
   another shape shows as it came, as Markdown. A new Hermes that rewords them falls back the same
   way; check these after a Hermes update.
-- **`thinking.delta` is mostly spinner frames.** Only the explained waits Hermes's own app shows pass
-  `LiveActivity.waitText`. `tool.generating` and `tool.output_risk` are ignored.
+- **`thinking.delta` is Hermes's mood line, one per model call.** Hermes sends `"{face} {verb}..."`
+  with both picked at random (`agent/turn_iteration_prep.py`), in the gateway's language, or a skin's
+  lists; an explained wait instead; or `""` to clear. The working row shows the mood after a wait,
+  reasoning and the running tool's kind, so it never hides what's happening; VoiceOver hears only the
+  verb. Only that shape counts as a mood (`LiveActivity.Mood`), so other text on the event isn't
+  shown. Rooms keep "X is replying…": their events don't carry a member's mood.
+  `tool.generating` and `tool.output_risk` are ignored.
 
 ## Notifications
 

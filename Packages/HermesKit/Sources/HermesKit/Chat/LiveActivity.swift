@@ -41,6 +41,8 @@ public struct LiveActivity: Equatable, Sendable {
     public private(set) var helpers: [Helper] = []
     /// A provider wait in Hermes's words.
     private var wait: String?
+    /// The face and verb Hermes picks at random for each model call, such as "(¬‿¬) pondering".
+    public private(set) var mood: Mood?
     private var compressing = false
     private var reasoning = ""
     /// Newest to-do snapshot seen; it outlives the turn, as an older one could still arrive.
@@ -69,8 +71,10 @@ public struct LiveActivity: Equatable, Sendable {
             default: break
             }
         case "thinking.delta":
-            // Most of these are spinner frames; only explained waits say anything.
-            wait = Self.waitText(payload["text"]?.stringValue ?? "")
+            // One per model call: a face and verb, or an explained wait. An empty one ends both.
+            let text = payload["text"]?.stringValue ?? ""
+            wait = Self.waitText(text)
+            if wait == nil { mood = Mood(text) }
         case "reasoning.delta":
             reasoning = String((reasoning + (payload["text"]?.stringValue ?? "")).suffix(600))
         case "todo.updated":
@@ -86,6 +90,7 @@ public struct LiveActivity: Equatable, Sendable {
     /// The turn moved on to its reply or a tool: whatever it was waiting on is over.
     mutating func moveOn() {
         wait = nil
+        mood = nil
         reasoning = ""
     }
 
@@ -142,6 +147,31 @@ public struct LiveActivity: Equatable, Sendable {
             #"^[⏳⚠↻⚙]\S*\s*((still\s+)?waiting on|loading|processing prompt|no (output|response)|model returned|rate limited|provider (overloaded|temporarily unavailable))"#
         guard value.range(of: wait, options: [.regularExpression, .caseInsensitive]) != nil else { return nil }
         return String(value.drop { !$0.isLetter })
+    }
+
+    /// Hermes's "{face} {verb}..." line, from its own CLI. The verb is in the gateway's language,
+    /// and a Hermes skin can change both lists.
+    public struct Mood: Equatable, Sendable {
+        /// Kaomoji such as "( •_•)>⌐■-■": shown, but not read aloud.
+        public let face: String?
+        public let verb: String
+
+        /// Takes only that shape, so another message on this event isn't shown as a mood.
+        init?(_ text: String) {
+            var value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard value.hasSuffix("...") || value.hasSuffix("…") else { return nil }
+            value = String(value.reversed().drop { $0 == "." || $0 == "…" }.reversed())
+            // The verb is the last words made of letters alone; faces always hold a symbol.
+            var words = value.split(separator: " ").map(String.init)
+            var verb: [String] = []
+            while let last = words.last, last.unicodeScalars.allSatisfy({ CharacterSet.letters.contains($0) }) {
+                verb.insert(last, at: 0)
+                words.removeLast()
+            }
+            guard !verb.isEmpty else { return nil }
+            self.verb = verb.joined(separator: " ")
+            face = words.isEmpty ? nil : words.joined(separator: " ")
+        }
     }
 
     /// Whether a status line says the chat left its model for a fallback.

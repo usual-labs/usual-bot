@@ -202,7 +202,7 @@ struct TranscriptView: View {
             if showsTools { LiveCards(live: thread.state.live) }
             // With tools hidden, the activity line that would say what's happening isn't shown.
             if let working, !lastItemIsActivity || !showsTools {
-                WorkingRow(text: working).transition(.settle)
+                WorkingRow(working).transition(.settle)
             }
         }
     }
@@ -210,11 +210,11 @@ struct TranscriptView: View {
     /// What the agent is doing, shown in one row: the newest tool line, or a row of its own after
     /// the rest. One row that changes its words, so the chat doesn't grow a row and lose it again
     /// with each tool. `nil` while a reply is shown being written, or while the agent waits for you.
-    private var working: String? {
+    private var working: WorkingRow.Words? {
         // A card with nothing after it is what the agent waits for, so it isn't thinking. Once you
         // write after the card, the agent is working on that.
         guard draft.isEmpty, thread.state.isRunning, !hasCards || cardsIndex < items.count else { return nil }
-        return WorkingRow.text(for: thread.state)
+        return WorkingRow.words(for: thread.state)
     }
 
     /// What the agent waits on you for.
@@ -345,7 +345,7 @@ struct ItemView: View {
     /// Transcripts for a reply's voice memos, by path.
     var spokenTexts: [String: String] = [:]
     /// What the agent is doing now, for the newest tool line to say.
-    var working: String? = nil
+    var working: WorkingRow.Words? = nil
     /// Rooms only: resolves a member ID to its author.
     var author: (String) -> MemberAuthor? = { _ in nil }
     @Environment(\.highlightedItem) private var highlighted
@@ -548,10 +548,10 @@ struct NoticeLine: View {
 private struct ActivityLine: View {
     let steps: [ToolStep]
     let agentName: String
-    var working: String? = nil
+    var working: WorkingRow.Words? = nil
 
     var body: some View {
-        let now = ActivitySummary.current(in: steps) ?? working
+        let now = ActivitySummary.current(in: steps).map { WorkingRow.Words(text: $0) } ?? working
         let failed = steps.contains { $0.state == .failed }
         FoldedRow(
             symbol: now == nil ? ActivitySummary.symbol(for: steps) : nil,
@@ -559,7 +559,7 @@ private struct ActivityLine: View {
             openByDefault: now != nil
         ) {
             if let now {
-                WorkingRow(text: now)
+                WorkingRow(now)
             } else {
                 Text(ActivitySummary.line(for: steps, agent: agentName))
             }

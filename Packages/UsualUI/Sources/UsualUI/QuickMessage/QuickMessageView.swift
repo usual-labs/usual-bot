@@ -390,7 +390,7 @@ private struct QuickAnswer: View {
         } else if thread.state.isRunning, thread.approvals.isEmpty, thread.questions.isEmpty, thread.secrets.isEmpty,
             thread.vaultPrompts.isEmpty, thread.connection == nil
         {
-            WorkingRow(text: thread.state.draft.isEmpty ? String(localized: "Thinking…") : WorkingRow.writing)
+            WorkingRow(WorkingRow.words(for: thread.state))
         }
         VaultCards(thread: thread, agentName: contact.name)
         if let card = thread.connection { ConnectCard(thread: thread, card: card, agentName: contact.name) }
