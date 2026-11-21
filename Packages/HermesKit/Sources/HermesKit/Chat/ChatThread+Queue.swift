@@ -4,6 +4,7 @@ import Foundation
 public struct QueuedMessage: Identifiable, Equatable, Sendable, Codable {
     /// The ID it was submitted under, which the gateway lists it by (`input_id`).
     public let id: String
+    /// What you typed, without its files.
     public let text: String
     /// On this device only, and not sent until you say so: Stop took it back from the gateway, or
     /// the gateway couldn't be given it.
@@ -12,21 +13,56 @@ public struct QueuedMessage: Identifiable, Equatable, Sendable, Codable {
     var admissionID: String?
     /// Optional, so held messages cached before it was added still load.
     private var widget: Bool?
+    /// Files already on the gateway that go with it. Optional for older caches.
+    private var uploaded: [AttachmentRef]?
+    /// The files as you picked them, so Edit can put them back in the box. In memory only: they
+    /// can be large, and the gateway already has them.
+    var originals: [Attachment] = []
+
+    private enum CodingKeys: String, CodingKey {
+        case id, text, isHeld, admissionID, widget, uploaded
+    }
 
     /// A widget's prompt (`ChatThread+Widgets.swift`): sent hidden, shown as "From a widget", and
     /// only removable. Never held: it's dropped instead.
     public var isFromWidget: Bool { widget == true }
 
-    init(id: String, text: String, isHeld: Bool = false, admissionID: String? = nil, isFromWidget: Bool = false) {
+    public var files: [AttachmentRef] { uploaded ?? [] }
+
+    /// Edit puts the files back in the box, so it needs them; after a relaunch only Remove and
+    /// Send Now are left for a message with files.
+    public var canEdit: Bool { !isFromWidget && (files.isEmpty || !originals.isEmpty) }
+
+    init(
+        id: String, text: String, isHeld: Bool = false, admissionID: String? = nil, isFromWidget: Bool = false,
+        files: [AttachmentRef] = [], originals: [Attachment] = []
+    ) {
         self.id = id
         self.text = text
         self.isHeld = isHeld
         self.admissionID = admissionID
         widget = isFromWidget ? true : nil
+        uploaded = files.isEmpty ? nil : files
+        self.originals = originals
     }
 
     /// On its way to the gateway: there's nothing to take back yet.
     public var isSending: Bool { !isHeld && admissionID == nil }
+
+    /// How it shows once sent: the text, then a line for each file, as a message sent between
+    /// turns shows.
+    var shown: String {
+        ([text] + [files.map(\.line).joined(separator: "\n")]).filter { !$0.isEmpty }.joined(separator: "\n\n")
+    }
+
+    /// What `prompt.submit` takes: images by path in `attachments`, always given so the message
+    /// doesn't take images staged for another, and files named in the text.
+    var submitParams: [String: JSONValue] {
+        [
+            "text": .string(ChatThread.message(text, with: files)),
+            "attachments": .array(files.filter { $0.kind == .image }.map(\.submitted)),
+        ]
+    }
 }
 
 /// The queue is the gateway's own (Hermes keeps one per chat and the official app shows the same
@@ -55,27 +91,48 @@ extension ChatThread {
     public func enqueue(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard canQueue, !text.isEmpty, !text.hasPrefix("/") else { return send(text) }
-        let item = QueuedMessage(id: UUID().uuidString, text: text, admissionID: isDemo ? "demo" : nil)
+        enqueue(QueuedMessage(id: UUID().uuidString, text: text))
+    }
+
+    /// Queues a message whose files are already on the gateway (`send(_:attachments:)`). Its text
+    /// isn't read for commands: one sent between turns with files isn't either.
+    func enqueue(_ text: String, files: [AttachmentRef], originals: [Attachment]) {
+        enqueue(QueuedMessage(id: UUID().uuidString, text: text, files: files, originals: originals))
+    }
+
+    private func enqueue(_ item: QueuedMessage) {
+        var item = item
+        if isDemo { item.admissionID = "demo" }
         queue.append(item)
         if !isDemo { Task { await admit(item) } }
+    }
+
+    /// Whether Send Now can take `item` at the moment: files can't join a running reply, which
+    /// takes only text.
+    public func canSendNow(_ item: QueuedMessage) -> Bool {
+        canSend && !item.isFromWidget && (item.files.isEmpty || !state.isRunning)
     }
 
     /// Sends a queued message at once: into the running reply as a steer, or as the next message
     /// when nothing runs.
     public func sendNow(_ item: QueuedMessage) {
-        guard canSend, queue.contains(item), !item.isFromWidget else { return }
+        guard canSendNow(item), queue.contains(item) else { return }
         Task {
             guard await takeBack(item) else { return }
-            send(item.text)
+            guard !item.files.isEmpty, !isDemo else { return send(isDemo ? item.shown : item.text) }
+            guard let sessionID, let channel = channel() else { return }
+            state.sendLocally(item.shown)
+            await submit(item.text, sessionID: sessionID, channel: channel, extra: item.submitParams)
         }
     }
 
-    /// Takes a queued message out of the queue and puts its text in the message box.
+    /// Takes a queued message out of the queue and puts its text and files in the message box.
     public func edit(_ item: QueuedMessage) {
-        guard queue.contains(item), !item.isFromWidget else { return }
+        guard queue.contains(item), item.canEdit else { return }
         Task {
             guard await takeBack(item) else { return }
-            prefill = item.text
+            if !item.text.isEmpty { prefill = item.text }
+            returnedAttachments += item.originals
         }
     }
 
@@ -113,9 +170,9 @@ extension ChatThread {
     func admit(_ item: QueuedMessage) async -> (any Error)? {
         do {
             guard let sessionID = liveSessionID, let channel = channel() else { throw GatewayError.disconnected }
-            var params: [String: JSONValue] = [
-                "session_id": .string(sessionID), "text": .string(item.text), "submission_id": .string(item.id),
-            ]
+            var params = item.submitParams
+            params["session_id"] = .string(sessionID)
+            params["submission_id"] = .string(item.id)
             if item.isFromWidget { params["display_kind"] = .string(GatewayTurn.hiddenKind) }
             let receipt = try await channel.call("prompt.submit", params: .object(params))
             guard let index = queue.firstIndex(where: { $0.id == item.id }) else { return nil }
@@ -181,7 +238,10 @@ extension ChatThread {
             } else if await takeBack(item, quiet: true), !item.isFromWidget {
                 // A new ID: the gateway knows the old one as cancelled. A widget's prompt isn't
                 // kept: sent after you resume, it would answer a click from long before.
-                queue.append(QueuedMessage(id: UUID().uuidString, text: item.text, isHeld: true))
+                queue.append(
+                    QueuedMessage(
+                        id: UUID().uuidString, text: item.text, isHeld: true, files: item.files,
+                        originals: item.originals))
             }
         }
     }
@@ -205,7 +265,11 @@ extension ChatThread {
                 // not a routine's result), and only behind a reply. Anything sent to an idle chat
                 // is listed as queued for a moment before it starts.
                 guard mine || (running && !CanonicalProtocol.rows(row["controls"]).isEmpty) else { continue }
-                waiting.append(QueuedMessage(id: id, text: text, admissionID: row["admission_id"]?.stringValue))
+                // Yours keeps what only this device knows: the text without file lines, the files.
+                var item = queue.first { $0.id == id } ?? QueuedMessage(id: id, text: text)
+                item.isHeld = false
+                item.admissionID = row["admission_id"]?.stringValue
+                waiting.append(item)
             case "started" where mine:
                 if attaching { queue.removeAll { $0.id == id } } else { began(id) }
             default:
@@ -233,7 +297,7 @@ extension ChatThread {
             if !state.isRunning { state.beginTurn() }
             return
         }
-        let text = item.text
+        let text = item.shown
         if let start = elsewhereTurnStart {
             // `message.start` came first and marked where the turn begins.
             elsewhereTurnStart = nil
@@ -253,7 +317,7 @@ extension ChatThread {
             if item.isFromWidget {
                 playDemoWidgetTurn(item.text)
             } else {
-                state.sendLocally(item.text)
+                state.sendLocally(item.shown)
                 playDemoReply()
             }
         }

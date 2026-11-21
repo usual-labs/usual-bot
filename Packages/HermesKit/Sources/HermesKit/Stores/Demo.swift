@@ -263,12 +263,17 @@
                 GatewayEvent(
                     type: "tool.start", sessionID: "sample", seq: nil,
                     payload: ["tool_id": "demo-du", "name": "terminal", "context": "ssh db-1 du -sh /var/* | sort -h"]))
-            // Two messages wait for Ops to finish, so the queue above the message box shows.
+            // Two messages wait for Ops to finish, so the queue above the message box shows. The
+            // second has a file, which a running reply can't take.
+            let retention = Attachment(
+                name: "retention-policy.md", data: Data("# Retention\n\nKeep 30 days of backups.\n".utf8))
             threads["ops"]?.queue = [
                 QueuedMessage(id: "demo-queued-1", text: "Then check the same on db-2.", admissionID: "demo"),
                 QueuedMessage(
                     id: "demo-queued-2", text: "When both are done, write up what to delete and what to keep.",
-                    admissionID: "demo"),
+                    admissionID: "demo",
+                    files: [AttachmentRef(kind: .file, path: "/home/hermes/shared/" + retention.name)],
+                    originals: [retention]),
             ]
             // And Ops is three turns into a goal, which shows above the queue.
             threads["ops"]?.goal = Goal(

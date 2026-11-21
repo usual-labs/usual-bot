@@ -271,6 +271,40 @@ struct CanonicalCallTests {
         _ = try await next
     }
 
+    /// A queued message names its images: it takes only those, with the gateway's type for them,
+    /// and leaves an image staged for another message where it was.
+    @Test func aMessageNamingItsImagesTakesOnlyThose() async throws {
+        let (channel, gateway) = try await attach()
+        for (index, name) in ["a.png", "b.png"].enumerated() {
+            async let staged = channel.call(
+                "image.attach_bytes",
+                params: ["session_id": "local-1", "content_base64": "AA==", "filename": .string(name)])
+            _ = try await gateway.answer(
+                index + 1, method: "image.attach_bytes",
+                result: ["attached": true, "path": .string("/cache/images/" + name), "mime": "image/webp"])
+            _ = try await staged
+        }
+        async let queued = channel.call(
+            "prompt.submit",
+            params: [
+                "session_id": "local-1", "text": "Queued",
+                "attachments": [["path": "/cache/images/b.png", "mime": "image/png"]],
+            ])
+        let submitted = try await gateway.answer(3, method: "prompt.submit", result: ["status": "queued"])
+        _ = try await queued
+        #expect(submitted["attachments"] == [["path": "/cache/images/b.png", "mime": "image/webp"]])
+
+        // None named: none sent, and the staged one still waits.
+        async let plain = channel.call(
+            "prompt.submit", params: ["session_id": "local-1", "text": "Text only", "attachments": []])
+        #expect(try await gateway.answer(4, method: "prompt.submit", result: [:])["attachments"] == nil)
+        _ = try await plain
+        async let next = channel.call("prompt.submit", params: ["session_id": "local-1", "text": "Next"])
+        let nextParams = try await gateway.answer(5, method: "prompt.submit", result: [:])
+        _ = try await next
+        #expect(nextParams["attachments"] == [["path": "/cache/images/a.png", "mime": "image/webp"]])
+    }
+
     @Test func steeringAnEndedTurnSaysRejectedSoTheAppSendsIt() async throws {
         let (channel, gateway) = try await attach()
         async let steered = channel.call("session.steer", params: ["session_id": "local-1", "text": "Also cats"])
