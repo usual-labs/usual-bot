@@ -120,7 +120,7 @@ struct MessageBox: View {
                 .background { stopShortcut }
             #endif
             .environment(\.composerButtonSize, buttonSize)
-            .animation(.snappy(duration: 0.16), value: isEmpty)
+            .animation(.snappy(duration: 0.16), value: hasNothingToSay)
             #if os(macOS)
                 .animation(.smooth(duration: 0.25), value: expanded)
                 .onAppear { focused = true }
@@ -425,9 +425,9 @@ struct MessageBox: View {
                 .controlSize(.small)
                 .frame(width: buttonSize, height: buttonSize)
                 .accessibilityLabel(Text("Uploading"))
-        } else if isRunning, isEmpty, !hasAttachments, !dictation.isActive {
+        } else if isRunning, hasNothingToSay, !hasAttachments, !dictation.isActive {
             RoundButton(systemImage: "stop.fill", label: stopLabel, prominent: false, action: stop)
-        } else if !inCall, isEmpty, !hasAttachments {
+        } else if !inCall, hasNothingToSay, !hasAttachments {
             // In a chat, the call button holds the spot Send takes over once there's something to send.
             if let startCall, !dictation.isActive, !isRunning {
                 CallStartButton(action: startCall)
@@ -473,6 +473,9 @@ struct MessageBox: View {
 
     private var isEmpty: Bool { text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
+    /// No words of yours, in the box or under a quote: answers to quotes send on their own.
+    private var hasNothingToSay: Bool { isEmpty && quotes?.wrappedValue.hasReplies != true }
+
     /// New text for the box with the cursor after it, so you type on where the pick or prefill
     /// ended (the field would otherwise keep the old cursor, mid-word).
     private func replaceText(with new: String) {
@@ -493,7 +496,7 @@ struct MessageBox: View {
         // Gateway words are still to come; sending now would leave them for the next message.
         if dictation.holdsSending { return false }
         if let attaching, !attaching.attachments.isEmpty { return attaching.canSend }
-        return canSend && !isEmpty
+        return canSend && !hasNothingToSay
     }
 
     /// `queueing`: the message waits for the running reply to end, where there's a queue.

@@ -126,6 +126,9 @@ extension [QuotedMessage] {
         }
     }
 
+    /// You answered at least one quote, so there's a message even with the box empty.
+    var hasReplies: Bool { contains { !$0.reply.isEmpty } }
+
     /// Your message with the quotes in front, a blank line between them so each stays its own. In
     /// a room it addresses each quoted member once.
     func message(_ text: String) -> String {
