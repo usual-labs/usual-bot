@@ -112,15 +112,25 @@ extension AnyTransition {
 
 /// What the agent is doing, under the last message: its avatar at work, and the words shimmering.
 struct WorkingRow: View {
-    let text: String
+    /// The words, and what VoiceOver reads when that differs: it leaves Hermes's faces out.
+    struct Words: Equatable {
+        let text: String
+        var spoken: String?
+    }
+
+    let words: Words
     @Environment(\.chatContact) private var contact
+
+    init(text: String) { words = Words(text: text) }
+    init(_ words: Words) { self.words = words }
 
     var body: some View {
         HStack(spacing: 8) {
             if let contact {
                 AgentAvatar(contact: contact.with(activity: .working), size: 24)
             }
-            ShimmerText(text: text)
+            ShimmerText(text: words.text)
+                .accessibilityLabel(words.spoken ?? words.text)
         }
         .padding(.leading, 8)
         .zoomedFrame(minHeight: 28)
@@ -129,10 +139,24 @@ struct WorkingRow: View {
     /// Shown while a reply is written out of sight, with streaming turned off in Settings.
     nonisolated static var writing: String { String(localized: "Writing…") }
 
-    /// What the turn is doing, for a chat that shows no reply being written.
-    nonisolated static func text(for state: ThreadState) -> String {
-        if !state.draft.isEmpty { return writing }
-        return state.live.status ?? state.live.thought ?? String(localized: "Thinking…")
+    nonisolated static func text(for state: ThreadState) -> String { words(for: state).text }
+
+    /// What the turn is doing, for a chat that shows no reply being written: a wait or the
+    /// agent's reasoning first, then the kind of tool running, then the face and verb Hermes
+    /// picked for this model call.
+    nonisolated static func words(for state: ThreadState) -> Words {
+        if !state.draft.isEmpty { return Words(text: writing) }
+        if let said = state.live.status ?? state.live.thought { return Words(text: said) }
+        if case .activity(let steps) = state.items.last?.content,
+            let step = steps.last(where: { $0.state == .running })
+        {
+            return Words(text: String(localized: "\(ActivitySummary.doing(step.name))…"))
+        }
+        if let mood = state.live.mood {
+            let verb = String(localized: "\(mood.verb)…")
+            return Words(text: [mood.face, verb].compactMap(\.self).joined(separator: " "), spoken: verb)
+        }
+        return Words(text: String(localized: "Thinking…"))
     }
 }
 

@@ -149,7 +149,10 @@ each message only once it's finished, with "Writing…" meanwhile), with Markdow
 tools, one line such as "Forge edited 1 file and ran 1 command" sums them up; click it to see each
 step. Turn off **Show what Bots do with tools** in Settings › General for a plainer chat: those
 lines, to-do lists, helpers and finished background commands go, and only messages, Bots talking
-to each other and routines' results stay.
+to each other and routines' results stay. While a Bot works, the line under the last message says
+what kind of tool it's using ("Reading…", "Running a command…") or, between steps, the face and
+word Hermes picked, such as "(¬‿¬) pondering…". A wait on the provider or the Bot's own reasoning
+shows first.
 
 A date such as "Yesterday 12:27 PM" sits above the first message and again after a new day starts
 or an hour passes. Hover a message on the Mac to see its time. On iPhone, drag the conversation

@@ -101,8 +101,9 @@
             }
             let helper: JSONValue = ["subagent_id": "demo-helper", "goal": "Look through the logs"]
             var script: [(pause: Double, type: String, payload: JSONValue)] = [
+                (0.3, "thinking.delta", ["text": "(¬‿¬) pondering..."]),
                 (0.5, "todo.updated", todos("in_progress", "pending")),
-                (0.4, "tool.start", ["tool_id": "demo-1", "name": "read_file", "context": "notes.md"]),
+                (1.0, "tool.start", ["tool_id": "demo-1", "name": "read_file", "context": "notes.md"]),
                 (1.2, "tool.complete", ["tool_id": "demo-1"]),
                 (
                     0.1, "tool.start",
@@ -119,6 +120,7 @@
                         ],
                     ]
                 ),
+                (0.1, "thinking.delta", ["text": "(◔_◔) mulling..."]),
                 (0.1, "todo.updated", todos("completed", "in_progress")),
                 (0.1, "subagent.start", helper),
                 (
@@ -148,8 +150,10 @@
                 (0.1, "todo.updated", todos("completed", "completed")),
                 (0.1, "status.update", ["kind": "compacting"]),
                 (1.2, "status.update", ["kind": "compacted"]),
+                (0.1, "thinking.delta", ["text": "٩(๑❛ᴗ❛๑)۶ formulating..."]),
             ]
-            script += chunks.map { (0.35, "message.delta", ["text": .string($0)]) }
+            // The first words wait a moment, so the last mood shows.
+            script += chunks.enumerated().map { ($0 == 0 ? 1.2 : 0.35, "message.delta", ["text": .string($1)]) }
             script.append((0.3, "message.complete", [:]))
             Task {
                 for step in script {
