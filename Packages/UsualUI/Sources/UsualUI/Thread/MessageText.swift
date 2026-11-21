@@ -292,12 +292,15 @@
             return super.performKeyEquivalent(with: event)
         }
 
-        /// Right-clicking the selection offers Reply and the text's own commands; anywhere
-        /// else, the message's menu (React, Reply, Copy).
+        /// Right-clicking the selection offers Reply and the text's own commands; a link, Open Link
+        /// and Copy Link; anywhere else, the message's menu (React, Reply, Copy).
         override func menu(for event: NSEvent) -> NSMenu? {
             let range = selectedRange()
-            let index = characterIndexForInsertion(at: convert(event.locationInWindow, from: nil))
-            guard range.length > 0, index >= range.location, index <= NSMaxRange(range),
+            let point = convert(event.locationInWindow, from: nil)
+            let index = characterIndexForInsertion(at: point)
+            let inSelection = range.length > 0 && index >= range.location && index <= NSMaxRange(range)
+            if !inSelection, let url = link(at: point) { return Self.linkMenu(for: url) }
+            guard inSelection,
                 let menu = super.menu(for: event)
             else { return nil }
             Self.dropEditing(from: menu)
@@ -309,6 +312,45 @@
                 item.target = self
                 menu.insertItem(item, at: 0)
                 menu.insertItem(.separator(), at: 1)
+            }
+            return menu
+        }
+
+        /// The web or mail link under the pointer. A link to a path names a file on the gateway,
+        /// which this Mac can't open, so it gets the message's menu.
+        private func link(at point: NSPoint) -> URL? {
+            guard let layoutManager, let textContainer, textStorage?.length ?? 0 > 0 else { return nil }
+            let inContainer = NSPoint(x: point.x - textContainerOrigin.x, y: point.y - textContainerOrigin.y)
+            var fraction: CGFloat = 0
+            let glyph = layoutManager.glyphIndex(
+                for: inContainer, in: textContainer, fractionOfDistanceThroughGlyph: &fraction)
+            // Past the end of a line, the nearest glyph isn't under the pointer.
+            let glyphRect = layoutManager.boundingRect(
+                forGlyphRange: NSRange(location: glyph, length: 1), in: textContainer)
+            guard glyphRect.contains(inContainer) else { return nil }
+            let index = layoutManager.characterIndexForGlyph(at: glyph)
+            guard let storage = textStorage, index < storage.length else { return nil }
+            let value = storage.attribute(.link, at: index, effectiveRange: nil)
+            let url = (value as? URL) ?? (value as? String).flatMap(URL.init(string:))
+            guard let url, let scheme = url.scheme, scheme != "file" else { return nil }
+            return url
+        }
+
+        /// As in a browser: open the link or copy its address, rather than the whole message.
+        private static func linkMenu(for url: URL) -> NSMenu {
+            let menu = NSMenu()
+            let open = NSMenuItem(
+                title: String(localized: "Open Link"), action: #selector(LinkAction.open), keyEquivalent: "")
+            open.image = NSImage(systemSymbolName: "safari", accessibilityDescription: nil)
+            let copy = NSMenuItem(
+                title: String(localized: "Copy Link"), action: #selector(LinkAction.copyAddress), keyEquivalent: "")
+            copy.image = NSImage(systemSymbolName: "link", accessibilityDescription: nil)
+            let target = LinkAction(url: url)
+            for item in [open, copy] {
+                item.target = target
+                // A menu item holds its target weakly; the object keeps it for the menu's life.
+                item.representedObject = target
+                menu.addItem(item)
             }
             return menu
         }
@@ -426,6 +468,20 @@
                 }
             }
             super.draw(dirtyRect)
+        }
+    }
+
+    /// What the link menu's items do.
+    private final class LinkAction: NSObject {
+        let url: URL
+        init(url: URL) { self.url = url }
+        @objc func open() { NSWorkspace.shared.open(url) }
+        @objc func copyAddress() {
+            NSPasteboard.general.clearContents()
+            // A mail link copies as the address, as Safari's Copy Email Address does.
+            let text =
+                url.scheme == "mailto" ? String(url.absoluteString.dropFirst("mailto:".count)) : url.absoluteString
+            NSPasteboard.general.setString(text, forType: .string)
         }
     }
 
