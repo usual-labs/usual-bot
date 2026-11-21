@@ -363,10 +363,14 @@ public final class AppModel {
                 link = .online(ready.dialect)
                 readSync.reconnected()
                 for screen in screens.values { screen.linkChanged() }
-                await push.refresh()
                 let events = Task { for await event in channel.events { route(event) } }
                 let requests = Task { for await request in channel.requests { await handle(request, on: channel) } }
+                // The chat on screen is what you're waiting for: it doesn't wait for push settings or
+                // the roster, the slowest read.
+                let pushRefresh = Task { await push.refresh() }
+                attachVisibleChat()
                 defer {
+                    pushRefresh.cancel()
                     events.cancel()
                     requests.cancel()
                     self.channel = nil
@@ -511,6 +515,14 @@ public final class AppModel {
     /// The chat on screen opens at once and the rest `backgroundOpens` at a time: the gateway
     /// answers a socket's requests one by one and each open builds an agent, so opening every
     /// chat together left the last ones, and the roster read behind them, past their timeout.
+    /// Opens the chat on screen from what the last roster said, before this link reads it again.
+    private func attachVisibleChat() {
+        guard let visible = contacts.first(where: { $0.id == visibleContactID }),
+            visible.kind == .agent, visible.chatID != nil
+        else { return }
+        openThread(for: visible)
+    }
+
     func attachChats() {
         guard case .online = link else { return }
         let chats = contacts.filter { $0.kind == .agent && ($0.chatID != nil || threads[$0.id] != nil) }

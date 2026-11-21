@@ -4,9 +4,10 @@
     import SwiftUI
     import UIKit
 
-    /// Keeps iPhone notifications going for as long as iOS allows. A reply running when you leave
-    /// keeps the socket open for iOS's short grace period; after that the app can only ask to be
-    /// woken, and iOS picks when.
+    /// Keeps iPhone notifications going for as long as iOS allows. Leaving keeps the socket open for
+    /// iOS's short grace period, so a quick look at another app comes back without reconnecting; a
+    /// reply running holds it until it ends. After that the app can only ask to be woken, and iOS
+    /// picks when.
     @MainActor
     @Observable
     final class BackgroundLink {
@@ -17,6 +18,9 @@
         private static let checkInterval: TimeInterval = 15 * 60
         /// iOS gives about 30 s, and ends the app if it overruns.
         private static let graceLimit: Duration = .seconds(25)
+        /// How long the socket outlives leaving with nothing running: long enough for a quick
+        /// trip to another app, short enough not to keep the radio up for nothing.
+        private static let returnWindow: Duration = .seconds(20)
 
         private let model: AppModel
         /// Stops what a suspended app can't keep, once the app has let go of the gateway.
@@ -38,10 +42,7 @@
             // Now, not once a running reply lets the app go: a locked iPhone stops the write.
             model.drafts.save()
             scheduleCheckIn()
-            guard model.isWorking else {
-                letGo()
-                return
-            }
+            guard hold == nil else { return }
             grace = UIApplication.shared.beginBackgroundTask { [weak self] in
                 MainActor.assumeIsolated {
                     self?.endHold()
@@ -49,7 +50,10 @@
                 }
             }
             hold = Task { [weak self, model] in
-                await model.finishWork(within: Self.graceLimit)
+                let deadline = ContinuousClock.now + Self.graceLimit
+                if !model.isWorking { try? await Task.sleep(for: Self.returnWindow) }
+                // A reply that started meanwhile, a routine's say, gets what's left.
+                await model.finishWork(within: deadline - .now)
                 guard !Task.isCancelled else { return }
                 self?.letGo()
                 self?.endHold()
