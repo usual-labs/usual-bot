@@ -28,6 +28,20 @@
             #expect((link as? URL)?.host == "hermes.example.com")
         }
 
+        @Test func aListsItemsSitCloserThanParagraphs() throws {
+            let text = RichText.reply(MarkdownBlock.parse(reply), size: 15)
+            func spacing(under words: String) throws -> CGFloat {
+                let at = (text.string as NSString).range(of: words).location
+                let style = try #require(
+                    text.attribute(.paragraphStyle, at: at, effectiveRange: nil) as? NSParagraphStyle)
+                return style.paragraphSpacing + style.lineSpacing
+            }
+            #expect(try spacing(under: "fits best") == Theme.messageBlockSpacing)
+            #expect(try spacing(under: "Index nightly") == Theme.messageItemSpacing)
+            #expect(try spacing(under: "Fall back") == Theme.messageBlockSpacing)
+            #expect(Theme.messageItemSpacing < Theme.messageBlockSpacing)
+        }
+
         @Test func selectingAcrossBlocksCopiesTheWordsAsTheyRead() {
             let view = SelectableTextView()
             view.show(.reply(MarkdownBlock.parse(reply), size: 15))

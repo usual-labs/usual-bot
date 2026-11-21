@@ -20,13 +20,19 @@ public enum Theme {
     /// What floats over a message's own words and has to hide them: a step lighter than `bubble`.
     static let floating = Color(light: 0xFFFFFF, dark: 0x2C2C2C)
     /// Chat text: 15 pt on the Mac, and 18 pt with a 24 pt line on iPhone, as in Grok's phone app,
-    /// since a phone is held further from the eye.
+    /// since a phone is held further from the eye. On the Mac, the spacing is as measured in Grok's
+    /// Mac app: lines 1.5 times the size, paragraphs 14 pt apart, a list's items closer than that, and
+    /// letters a little looser than the system font's own, so a long reply reads less dense.
     #if os(macOS)
         static let messageSize: CGFloat = 15
-        static let messageLineSpacing: CGFloat = 4
+        static let messageLineSpacing: CGFloat = 5
+        static let messageBlockSpacing: CGFloat = 14
+        static let messageItemSpacing: CGFloat = 8
+        static let messageTracking: CGFloat = 0.2
     #else
         static let messageSize: CGFloat = 18
         static let messageLineSpacing: CGFloat = 2.5
+        static let messageBlockSpacing: CGFloat = 10
     #endif
     /// The widest a message or card grows, so lines stay readable in a wide window.
     static let bubbleWidth: CGFloat = 560
