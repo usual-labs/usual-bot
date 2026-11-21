@@ -362,6 +362,88 @@ struct QueueTests {
         #expect(thread.state.items.filter { $0.content == .user("One more thing") }.count == 1)
     }
 
+    // MARK: - Files
+
+    private let screenshot = Attachment(name: "shot.png", data: Data([1, 2, 3]))
+    private let notes = Attachment(name: "notes.txt", data: Data([4]))
+
+    /// Uploads a screenshot and a text file while a reply runs; the message queues once both are up.
+    private func queueWithFiles(_ thread: ChatThread, _ gateway: ScriptedGateway) async throws -> JSONValue {
+        async let sent = thread.send("Look at this", attachments: [screenshot, notes])
+        _ = try await gateway.answer(
+            1, method: "image.attach_bytes",
+            result: ["attached": true, "path": "/cache/images/shot.png", "mime": "image/png"])
+        _ = try await gateway.answer(2, method: "file.attach", result: ["ref_text": "@file:uploads/notes.txt"])
+        let submitted = try await gateway.answer(
+            3, method: "prompt.submit", result: ["admission_id": "adm-files", "status": "queued"])
+        #expect(try await sent)
+        return submitted
+    }
+
+    @Test func filesSentDuringAReplyWaitInTheQueueWithTheirMessage() async throws {
+        let (thread, gateway, routing) = try await open(resume: runningSnapshot([]))
+        defer { routing.cancel() }
+        #expect(!thread.canSendAttachments)
+        #expect(thread.takesAttachments)
+        let submitted = try await queueWithFiles(thread, gateway)
+        #expect(submitted["text"] == "Look at this\n\n@file:uploads/notes.txt")
+        #expect(submitted["attachments"] == [["path": "/cache/images/shot.png", "mime": "image/png"]])
+        // No steer: a running turn takes only text.
+        #expect(!gateway.socket.sent.contains { $0["method"] == "session.steer" })
+        let queued = try #require(thread.queue.first)
+        #expect(queued.text == "Look at this")
+        #expect(queued.files.map(\.path) == ["/cache/images/shot.png", "uploads/notes.txt"])
+        #expect(thread.sentImages["/cache/images/shot.png"] == screenshot.data)
+
+        // The gateway's list has the full message; the queue keeps your text and files apart.
+        let id = try #require(submitted["submission_id"]?.stringValue)
+        try gateway.socket.deliver(
+            info([row(id, "Look at this\n\n@file:uploads/notes.txt", "queued")], running: true, seq: 40))
+        try await waitUntilOnMain { thread.queue.first?.admissionID == "adm-\(id)" }
+        #expect(thread.queue.first?.files.count == 2)
+        // Its turn starts: it shows as sent, with its files.
+        try gateway.socket.deliver(info([row(id, "", "started", controls: false)], running: true, seq: 41))
+        try await waitUntilOnMain { thread.queue.isEmpty }
+        #expect(
+            thread.state.items.last?.content
+                == .user("Look at this\n\n@image:/cache/images/shot.png\n@file:uploads/notes.txt"))
+    }
+
+    @Test func editPutsAQueuedMessagesFilesBackInTheBox() async throws {
+        let (thread, gateway, routing) = try await open(resume: runningSnapshot([]))
+        defer { routing.cancel() }
+        _ = try await queueWithFiles(thread, gateway)
+        try await waitUntilOnMain { thread.queue.first?.isSending == false }
+        let queued = try #require(thread.queue.first)
+        #expect(!thread.canSendNow(queued))
+        thread.edit(queued)
+        _ = try await gateway.answer(
+            4, method: "prompt.cancel", result: ["status": "terminal", "outcome": "cancelled"])
+        try await waitUntilOnMain { thread.prefill == "Look at this" }
+        #expect(thread.returnedAttachments == [screenshot, notes])
+    }
+
+    @Test func aHeldMessageWithFilesSendsThemOnceNothingRuns() async throws {
+        var cached = CachedThread(state: ThreadState(), lastViewed: nil, unreadCount: 0)
+        cached.heldMessages = [
+            QueuedMessage(
+                id: "held-1", text: "Look", isHeld: true,
+                files: [AttachmentRef(kind: .image, path: "/cache/images/shot.jpg")])
+        ]
+        let restored = try JSONDecoder().decode(CachedThread.self, from: JSONEncoder().encode(cached))
+        let (thread, gateway, routing) = try await open(resume: idle, cached: restored)
+        defer { routing.cancel() }
+        let held = try #require(thread.queue.first)
+        // The picked files are gone after a relaunch, so it can't go back into the box.
+        #expect(!held.canEdit)
+        #expect(thread.canSendNow(held))
+        thread.sendNow(held)
+        let sent = try await gateway.answer(1, method: "prompt.submit", result: ["status": "queued"])
+        #expect(sent["text"] == "Look")
+        #expect(sent["attachments"] == [["path": "/cache/images/shot.jpg", "mime": "image/jpeg"]])
+        #expect(thread.state.items.map(\.content) == [.user("Look\n\n@image:/cache/images/shot.jpg")])
+    }
+
     @Test func aCommandIsNotQueued() async throws {
         let (thread, gateway, routing) = try await open(resume: runningSnapshot([]))
         defer { routing.cancel() }
@@ -387,8 +469,17 @@ struct QueueTests {
             #expect(thread.queue.count == 2)
             #expect(thread.canQueue)
 
+            // The second waits with a file, so it can't steer the reply.
+            #expect(!thread.canSendNow(thread.queue[1]))
+            #expect(thread.queue[1].canEdit)
             thread.enqueue("And db-3 after that.")
             #expect(thread.queue.map(\.text).last == "And db-3 after that.")
+            // Files sent while the demo's reply runs queue too.
+            #expect(thread.takesAttachments)
+            #expect(await thread.send("And this.", attachments: [Attachment(name: "plan.txt", data: Data([1]))]))
+            #expect(thread.queue.last?.files.map(\.name) == ["plan.txt"])
+            thread.remove(try #require(thread.queue.last))
+            try await waitUntilOnMain { thread.queue.count == 3 }
             thread.sendNow(thread.queue[0])
             try await waitUntilOnMain { thread.queue.count == 2 }
             #expect(thread.state.items.last?.content == .user("Then check the same on db-2."))

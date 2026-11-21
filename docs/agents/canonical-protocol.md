@@ -44,7 +44,10 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   large), and asking from further back returns none, only `truncated`: so the read starts 511 frames
   back, then 127. A turn longer than that shows its reply so far from partway.
 - **Images ride with the message.** `image.attach_bytes` only stages a file; the paths go as
-  `prompt.submit`'s `attachments`. Taking one back is local.
+  `prompt.submit`'s `attachments`. Taking one back is local. A queued message names its own
+  `attachments` (empty for none), uploaded while the reply ran, so it never takes images staged for
+  another and a held one can be sent again later with the same paths. `session.steer` takes text
+  only, so files never steer. A message queued with images wasn't run against a real gateway.
 - **Undo rewinds to your last message.** There's no `session.undo`: the app reads `session.history`
   and rewinds to the newest row `GatewayTurn` reads as yours, skipping routine results and other
   rows Hermes starts itself.

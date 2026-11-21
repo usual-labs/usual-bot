@@ -229,10 +229,16 @@ struct MessageBox: View {
                 if let attaching, !attaching.attachments.isEmpty {
                     AttachmentChips(attachments: attaching.$attachments)
                     if isRunning {
-                        Text("You can send these when the reply ends.")
-                            .scaledFont(size: 12)
-                            .foregroundStyle(Theme.secondaryInk)
-                            .padding(.horizontal, 8)
+                        // Files can't join a running reply: they wait in the queue with the
+                        // message, or, with no queue, for the reply to end.
+                        Text(
+                            queue != nil
+                                ? "These wait in the queue with your message, and go when the reply ends."
+                                : "Files go once the reply ends. Stop it to send them now."
+                        )
+                        .scaledFont(size: 12)
+                        .foregroundStyle(Theme.secondaryInk)
+                        .padding(.horizontal, 8)
                     }
                 }
                 // At accessibility text sizes the text always gets the whole width.
@@ -424,18 +430,22 @@ struct MessageBox: View {
                 CallStartButton(action: startCall)
             }
         } else {
+            // With files during a reply there's no steering: Queue is the one way they go.
+            let queuesOnly = queue != nil && isRunning && hasAttachments
             HStack(spacing: 6) {
-                if queue != nil, !hasAttachments {
+                if queue != nil {
                     RoundButton(
                         systemImage: "text.line.last.and.arrowtriangle.forward",
-                        label: String(localized: "Queue"), prominent: false
+                        label: String(localized: "Queue"), prominent: queuesOnly
                     ) { submit(queueing: true) }
                     .disabled(!canSubmit)
                     .help(Text("Send when this reply ends (⌥Return)"))
                     .accessibilityHint(Text("Sends your message when this reply ends"))
                 }
-                RoundButton(systemImage: "arrow.up", label: String(localized: "Send")) { submit() }
-                    .disabled(!canSubmit)
+                if !queuesOnly {
+                    RoundButton(systemImage: "arrow.up", label: String(localized: "Send")) { submit() }
+                        .disabled(!canSubmit)
+                }
             }
         }
     }

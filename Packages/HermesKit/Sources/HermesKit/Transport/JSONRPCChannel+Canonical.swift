@@ -202,6 +202,18 @@ extension JSONRPCChannel {
         }
         // Lets the gateway tell a retry from a second message.
         fields["submission_id"] = fields["submission_id"] ?? .string(UUID().uuidString)
+        // A queued message names its own images, uploaded while a reply ran: they leave the
+        // staged ones, and any others stay staged for the next message.
+        // The gateway's own word on an image's type wins while it's still staged here.
+        if case .array(let named) = fields["attachments"] {
+            let staged = canonical.session(session)?.stagedImages ?? []
+            let paths = named.map { $0["path"] }
+            fields["attachments"] =
+                named.isEmpty
+                ? nil : .array(named.map { image in staged.first { $0["path"] == image["path"] } ?? image })
+            canonical.update(session) { $0.stagedImages.removeAll { paths.contains($0["path"]) } }
+            return try await routedSend("prompt.submit", .object(fields), timeout: timeout)
+        }
         let staged = canonical.session(session)?.stagedImages ?? []
         if !staged.isEmpty { fields["attachments"] = .array(staged) }
         let result = try await routedSend("prompt.submit", .object(fields), timeout: timeout)

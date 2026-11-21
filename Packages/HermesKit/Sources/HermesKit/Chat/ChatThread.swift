@@ -43,6 +43,8 @@ public final class ChatThread {
     public internal(set) var commands: [SlashCommand] = []
     /// Text a command put back for you to edit and send (`/retry`); the message box takes it.
     public var prefill: String?
+    /// Files a queued message you're editing put back; the message box takes them.
+    public var returnedAttachments: [Attachment] = []
     /// The model this chat runs on; `nil` until the gateway says.
     public internal(set) var model: ChatModel?
     /// The models this chat can switch to; loaded by `loadModels()`.
@@ -472,9 +474,10 @@ public final class ChatThread {
 
     /// Uploads `attachments` to the chat, then sends them with `text`. Returns whether the message
     /// went out. On a failed upload nothing is sent, a notice says which file and why, and the
-    /// caller keeps the draft. Attachments wait for the agent to finish: a running turn can't
-    /// take them. `submissionID`, for something shared from another app, goes as the message's
-    /// own ID, so the gateway takes it once though the share extension may have sent it already.
+    /// caller keeps the draft. While a reply runs, the message and its files wait in the queue: a
+    /// running turn takes only text. `submissionID`, for something shared from another app, goes
+    /// as the message's own ID, so the gateway takes it once though the share extension may have
+    /// sent it already; a share waits for the reply to end instead.
     public func send(_ text: String, attachments: [Attachment], submissionID: String? = nil) async -> Bool {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !attachments.isEmpty || submissionID != nil else {
@@ -482,7 +485,24 @@ public final class ChatThread {
             send(text)
             return true
         }
-        guard canSendAttachments, let sessionID, let channel = channel() else { return false }
+        let queueing = submissionID == nil && state.isRunning
+        guard queueing ? takesAttachments : canSendAttachments else { return false }
+        #if DEBUG
+            // No gateway to upload to: the files show by name, and queued ones wait as on one.
+            if isDemo {
+                guard queueing else {
+                    sendDemo(text, attachments: attachments)
+                    return true
+                }
+                let refs = attachments.map { AttachmentRef(kind: $0.kind, path: "/home/hermes/shared/" + $0.name) }
+                for (ref, attachment) in zip(refs, attachments) where ref.kind == .image {
+                    sentImages[ref.path] = attachment.data
+                }
+                enqueue(text, files: refs, originals: attachments)
+                return true
+            }
+        #endif
+        guard let sessionID, let channel = channel() else { return false }
         isUploading = true
         defer { isUploading = false }
         var sent: [AttachmentRef] = []
@@ -502,6 +522,12 @@ public final class ChatThread {
         for (ref, attachment) in zip(sent, attachments) where ref.kind == .image {
             sentImages[ref.path] = attachment.data
         }
+        // Still running once the files are up: they wait with the message. Ended meanwhile: they
+        // go now, as between turns.
+        if queueing, canQueue {
+            enqueue(text, files: sent, originals: attachments)
+            return true
+        }
         state.sendLocally(
             ([text] + [sent.map(\.line).joined(separator: "\n")]).filter { !$0.isEmpty }
                 .joined(separator: "\n\n"))
@@ -513,7 +539,7 @@ public final class ChatThread {
 
     /// What goes to the agent: queued images reach it with the turn, files only through their
     /// references.
-    static func message(_ text: String, with sent: [AttachmentRef]) -> String {
+    nonisolated static func message(_ text: String, with sent: [AttachmentRef]) -> String {
         let files = sent.filter { $0.kind == .file }.map(\.line)
         return ([text] + files).filter { !$0.isEmpty }.joined(separator: "\n\n")
     }
@@ -560,6 +586,9 @@ public final class ChatThread {
 
     /// Attachments go out only between turns, one message at a time.
     public var canSendAttachments: Bool { canSend && !state.isRunning && !isUploading }
+
+    /// The message box can take files now: between turns, or into the queue behind a reply.
+    public var takesAttachments: Bool { canSendAttachments || (canQueue && !isUploading) }
 
     /// Sends one file to the gateway: an image into the next turn's queue, anything else into the
     /// chat's workspace. Larger files get longer, at roughly 100 KB/s at worst.

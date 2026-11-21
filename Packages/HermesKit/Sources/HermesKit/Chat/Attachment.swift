@@ -3,7 +3,7 @@ import Foundation
 /// A file to send with a message: an image the agent looks at, or any other file it can open
 /// with its tools.
 public struct Attachment: Identifiable, Equatable, Sendable {
-    public enum Kind: Equatable, Sendable {
+    public enum Kind: String, Equatable, Sendable, Codable {
         /// Queued for the agent's next turn, which sees it.
         case image
         /// Saved in the chat's workspace and named in the message, so the agent's tools can read it.
@@ -42,12 +42,18 @@ public struct Attachment: Identifiable, Equatable, Sendable {
 
 /// An attachment as a sent message names it: an `@image:` or `@file:` line after the text, which
 /// is also how the gateway's history shows them.
-public struct AttachmentRef: Equatable, Sendable {
+public struct AttachmentRef: Equatable, Sendable, Codable {
     public let kind: Attachment.Kind
     /// The file's path on the gateway, absolute or relative to the chat's workspace.
     public let path: String
 
     public var name: String { (path as NSString).lastPathComponent }
+
+    /// An image as `prompt.submit`'s `attachments` names it: only the gateway's image types get here.
+    var submitted: JSONValue {
+        let ext = (path as NSString).pathExtension.lowercased()
+        return ["path": .string(path), "mime": .string("image/" + (ext == "jpg" ? "jpeg" : ext))]
+    }
 
     /// The line naming it, quoted the way Hermes reads references back (`format_reference_value`).
     var line: String {

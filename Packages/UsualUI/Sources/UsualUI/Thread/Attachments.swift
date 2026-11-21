@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 /// What a message box needs to send files with a message. Rooms have none: they take text only.
 struct AttachmentSending {
     @Binding var attachments: [Attachment]
-    /// Between turns and not already uploading.
+    /// Between turns, or into the queue behind a reply, and not already uploading.
     let canSend: Bool
     let isUploading: Bool
     let send: (String, [Attachment]) async -> Bool

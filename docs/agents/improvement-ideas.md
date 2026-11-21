@@ -118,6 +118,5 @@ Child-local ideas stay in their package KBs.
 - **Widgets in rooms that talk back.** Hermes has no hidden room turn, and a room's message goes to
   members, so `window.hermes.canSend` is false in rooms. It would need a hidden `groups` send and a
   rule for which member answers.
-- **Queue: files, and a choice of what Send does.** A queued message can't carry attachments (the
-  gateway takes them on `prompt.submit`, but uploads are staged for the next message). Someone who
-  always queues has to press Queue each time; a setting would follow Hermes's `busy_input_mode`.
+- **Queue: a choice of what Send does.** Someone who always queues has to press Queue each time; a
+  setting would follow Hermes's `busy_input_mode`.

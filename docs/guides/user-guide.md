@@ -209,9 +209,11 @@ sending also puts the keyboard away; tap the message box to write again.
   **Stop** stops the reply and holds what's queued, so the next message doesn't start by itself:
   held messages stay on this device, through a relaunch too, until you choose **Resume** (they go
   in order again), send one now or remove it. A message your gateway couldn't take is held the
-  same way. Commands run when you send them, and files can't be queued. The queue needs the
-  gateway's Webapp; on the older dashboard there's no Queue button and a message steers. Rooms and
-  the ⌥Space panel don't queue.
+  same way. Commands run when you send them. A message with files can't steer a reply, so while
+  one runs it can only be queued: its files upload, then wait with it. **Send Now** works for it
+  once nothing runs, and **Edit** puts the files back in the box until you quit the app. The queue
+  needs the gateway's Webapp; on the older dashboard there's no Queue button, a message steers, and
+  files wait for the reply to end. Rooms and the ⌥Space panel don't queue.
 - **Give a Bot a goal.** Send `/goal` and what you want, such as `/goal Free 20 GB on db-1 without
   touching the backups`, and the Bot keeps working on it by itself: after each reply Hermes checks
   whether the goal is done, and if not sends the Bot on to the next step. The goal shows in one
