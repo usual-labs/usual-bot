@@ -149,7 +149,7 @@ each message only once it's finished, with "Writing…" meanwhile), with Markdow
 tools, one line such as "Forge edited 1 file and ran 1 command" sums them up; click it to see each
 step. Turn off **Show what Bots do with tools** in Settings › General for a plainer chat: those
 lines, to-do lists, helpers and finished background commands go, and only messages, Bots talking
-to each other and routine results stay.
+to each other and routines' results stay.
 
 A date such as "Yesterday 12:27 PM" sits above the first message and again after a new day starts
 or an hour passes. Hover a message on the Mac to see its time. On iPhone, drag the conversation
@@ -589,7 +589,9 @@ button (or Esc, or ⌘[) returns to the profile.
     **Skills**, or the routine runs without it. An older gateway without templates goes straight to
     the blank form.
   - **Results:** **Post in this chat** sends each result to the Bot here, and it replies, which
-    uses a turn. **Keep in past runs only** posts nothing. A routine set up to send elsewhere, such
+    uses a turn. The result shows in the chat as a message under "From the routine" and its name,
+    with Show All under a long one; your notification comes from the Bot's reply. If the Bot
+    chooses not to reply, the result itself counts as unread. **Keep in past runs only** posts nothing. A routine set up to send elsewhere, such
     as Telegram, keeps going there unless you change it.
   - Open a routine to **Edit** it, **Run Now**, **Delete** it, or read its **Past Runs**. Run Now can
     take a few minutes; you can close the sheet and keep going, and the routine shows when it's done.

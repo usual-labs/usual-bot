@@ -18,6 +18,9 @@ public struct TranscriptItem: Identifiable, Equatable, Sendable, Codable {
         /// Work Hermes finished on its own, such as a background process: a title, and what it
         /// reported for anyone who wants to look.
         case result(title: String, detail: String)
+        /// A routine's output delivered into its Bot Chat (`GatewayTurn`), shown in full: it's often
+        /// the main thing the Bot sends you, and folded away it went unread. `output` can be empty.
+        case routine(name: String, output: String)
         /// Another Bot's message, which started a turn here (`GatewayTurn`). `from` is its name;
         /// a note wants no reply.
         case botMessage(from: String, text: String, isNote: Bool)
@@ -620,4 +623,9 @@ extension String {
     var nonBlank: String? {
         trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : self
     }
+}
+
+extension TranscriptItem.Content {
+    /// The line over a routine's output: "From the routine “Morning brief”".
+    public static func routineLabel(_ name: String) -> String { GatewayTurn.fromRoutine(name) }
 }

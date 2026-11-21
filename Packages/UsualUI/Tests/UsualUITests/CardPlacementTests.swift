@@ -50,7 +50,7 @@ struct CardPlacementTests {
         var items = items([0, 1, 2, 3, 4, 5, 6])
         items[1].content = .activity([])
         items[2].content = .progress(todos: [], helpers: [])
-        items[3].content = .result(title: "From the routine “Inbox”", detail: "Nothing new.")
+        items[3].content = .routine(name: "Inbox", output: "Nothing new.")
         items[5].content = .botMessage(from: "CMO", text: "Move the routines.", isNote: false)
         items[6].content = .activity([])
         let exchanges = BotExchange.all(in: items)

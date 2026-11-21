@@ -163,11 +163,11 @@ struct CanonicalGatewayTests {
         #expect(history["profile"] == "scout")
         try await waitUntilOnMain { thread.state.items.count == before + 2 }
 
-        guard case .result(let title, let output) = thread.state.items[before].content else {
+        guard case .routine(let name, let output) = thread.state.items[before].content else {
             Issue.record("Expected the routine's result, got \(thread.state.items[before].content)")
             return
         }
-        #expect(title == "From the routine “probe routine”")
+        #expect(name == "probe routine")
         #expect(output.hasSuffix("routine says hi"))
         guard case .assistant(let reply) = thread.state.items[before + 1].content else {
             Issue.record("Expected the reply")

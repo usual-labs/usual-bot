@@ -655,6 +655,14 @@ read at Hermes `2bd378ed1b`.
   an inbound turn in that profile's Bot Chat, the chat Usual Bot shows, so the agent replies to it and
   that costs a turn. If the profile's gateway isn't running, the gateway queues it. Verified in the
   source only.
+- **A posted result shows in full, as a message from the Bot under the routine's name**
+  (`RoutineLine`), with the first lines and Show All when it's long. It was a folded line like a
+  background command's, and a user missed days of briefs behind it: for many Bots the routine's
+  output is the main thing they send. A setting to fold them again waits until someone asks.
+- **A result the Bot answered with silence counts as unread, with no alert** (`GatewayTurn.news`).
+  Otherwise it arrives with no sign at all. A result the Bot did answer is news only through that
+  reply, which notifies as any reply does; the plugin stays quiet for routines, so one run never
+  notifies twice.
 - **Presets write cron expressions** ("0 9 * * 1-5"), and the list reads them back in plain words.
   Custom text goes to the gateway as typed, and its 400 message is shown as is: it lists the forms
   it accepts.

@@ -163,6 +163,8 @@ struct ReportPeek: View {
 
     let text: String
     let style: Style
+    /// From the line's edge; none inside a bubble, which has its own.
+    var inset: CGFloat = 4
     @State private var showsAll = false
 
     nonisolated static let peekLines = 8
@@ -183,7 +185,7 @@ struct ReportPeek: View {
                 .buttonStyle(.clickable)
                 .scaledFont(size: 12.5, weight: .medium)
                 .foregroundStyle(Theme.secondaryInk)
-                .padding(.leading, 4)
+                .padding(.leading, inset)
             }
         }
     }
@@ -204,7 +206,7 @@ struct ReportPeek: View {
             MarkdownView(shown)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fadesOut(faded)
-                .padding(.leading, 4)
+                .padding(.leading, inset)
         }
     }
 

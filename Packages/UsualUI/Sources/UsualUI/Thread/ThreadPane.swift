@@ -176,12 +176,19 @@ struct ThreadPane: View {
                 switch item.content {
                 case .user(let text): quotes.add(QuotedMessage(author: String(localized: "You"), text: text))
                 case .assistant(let text): quotes.add(QuotedMessage(author: contact.name, text: text))
+                case .routine(let name, let output):
+                    quotes.add(QuotedMessage(author: TranscriptItem.Content.routineLabel(name), text: output))
                 default: break
                 }
             },
             quote: { item, selection, reply in
                 editing = nil
-                let author = item.isYours ? String(localized: "You") : contact.name
+                let author =
+                    switch item.content {
+                    case .user: String(localized: "You")
+                    case .routine(let name, _): TranscriptItem.Content.routineLabel(name)
+                    default: contact.name
+                    }
                 quotes.add(QuotedMessage(author: author, selection: selection, note: reply))
             },
             canEdit: \.isYours,

@@ -92,7 +92,7 @@ extension ChatThread {
         lastViewed = date
         let newer = state.items.filter { item in
             switch item.content {
-            case .assistant, .background: return (item.date ?? .distantPast) > date
+            case .assistant, .background, .routine: return (item.date ?? .distantPast) > date
             default: return false
             }
         }

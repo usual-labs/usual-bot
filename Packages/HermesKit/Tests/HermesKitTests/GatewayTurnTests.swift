@@ -79,7 +79,7 @@ struct GatewayTurnTests {
             """
         #expect(
             contents([HistoryMessage(role: "user", text: text, displayKind: "internal_notification")]) == [
-                .result(title: "From the routine “Morning brief”", detail: "Three meetings today.")
+                .routine(name: "Morning brief", output: "Three meetings today.")
             ])
         #expect(Contact.plainPreview(text) == "From the routine “Morning brief”")
     }
