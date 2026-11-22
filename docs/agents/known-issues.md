@@ -114,6 +114,13 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   #156513, fixes open). Hermes keeps a process's last 2000 characters and cuts back to a newline,
   and the runner prints the reply as one line, so nothing is left. The asking Bot's chat says the
   reply didn't come through and offers the other Bot's chat, where it is.
+- **A turn with an image stores what was added for the model in its text** (Hermes #71998,
+  seen on 0.23.x). A text-only turn keeps `pre_llm_call` context and recalled memory in the row's
+  `api_content`; an image turn carries it as a text part, and the row flattens it into `content`
+  after the `[Image attached at: …]` line, so history shows our `<usual-bot-voice>` line and hides
+  the image. `InjectedContext` cuts those blocks off user rows as history is read; a new tag the
+  plugin adds needs adding there too. An image sent without words is stored as "What do you see in
+  this image?"; `AttachmentRef.split` hides that caption as Hermes's own history does.
 - **History keeps no `message_agent` receipt,** only the call's arguments. So an answer is matched to
   the earliest message waiting on that Bot (or on anyone), and a message stops "waiting" 32 minutes
   after it was sent, when Hermes stops waiting too. A call Hermes refused shows as sent after a

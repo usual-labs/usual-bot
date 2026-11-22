@@ -163,7 +163,8 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         role = try container.decode(String.self, forKey: .role)
-        text = try? container.decodeIfPresent(String.self, forKey: .text)
+        let text = try? container.decodeIfPresent(String.self, forKey: .text)
+        self.text = role == "user" ? text.map(InjectedContext.strip) : text
         name = try? container.decodeIfPresent(String.self, forKey: .name)
         context = try? container.decodeIfPresent(String.self, forKey: .context)
         toolCallId = try? container.decodeIfPresent(String.self, forKey: .toolCallId)
