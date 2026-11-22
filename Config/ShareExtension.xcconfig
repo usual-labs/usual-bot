@@ -1,5 +1,5 @@
 // The share extension: Usual Bot in the share sheet and the Mac's Share menu. It leaves what you
-// share in the App Group folder for the app to send.
+// share in the App Group folder and opens the app, which asks which chat it goes to.
 // The project's Debug or Release config (and so Shared.xcconfig) still applies underneath.
 
 PRODUCT_NAME = UsualBotShare

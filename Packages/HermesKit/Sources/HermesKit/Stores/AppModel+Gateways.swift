@@ -179,11 +179,10 @@ extension AppModel {
         if forgetting {
             sections.clear()
             drafts.clear()
-            if let gateway = activeGateway?.address { shared.clear(gateway: gateway.fileName) }
+            shared.clear()
         } else {
             sections.unload()
             drafts.unload()
-            shared.unload()
         }
         push.clear()
         usage.clear()

@@ -1,21 +1,16 @@
 import Foundation
 import Security
 
-/// Something shared to a Bot or room from another app, waiting for the app to send it.
+/// Something shared from another app, waiting in the app for you to choose a chat for it.
 public struct SharedItem: Codable, Identifiable, Equatable, Sendable {
     public let id: UUID
-    /// The gateway it was shared for (`GatewayAddress.fileName`), so another sign-in leaves it alone.
-    public let gateway: String
-    public let contactID: Contact.ID
-    /// The Bot's or room's name when it was shared, for saying where it's going.
-    public let contactName: String
-    /// Your note, then the shared text and links.
+    /// The shared text and links.
     public let text: String
     /// The names of its files, kept beside it.
     public let files: [String]
+    /// What the share extension left out, and why, one sentence each.
+    public let problems: [String]?
     public let created: Date
-    /// Why the last try didn't send it; `nil` while it waits.
-    public var failure: String?
 
     /// What it is in a few words: its first file, or the start of its text.
     public var title: String {
@@ -25,53 +20,17 @@ public struct SharedItem: Codable, Identifiable, Equatable, Sendable {
         let line = RoomThread.readable(text)
         return line.count > 60 ? String(line.prefix(60)) + "…" : line
     }
-}
 
-/// The Bots and rooms the share extension offers, as the app last saw them.
-public struct ShareRoster: Codable, Equatable, Sendable {
-    public var gateway: String
-    /// In sidebar order, without hidden Bots.
-    public var contacts: [Contact]
-    /// Hidden Bots, which still show in their rooms' pictures.
-    public var hidden: [Contact]
-    /// Bots' own pictures, by contact ID.
-    public var pictures: [Contact.ID: Data]
-    /// Where the gateway is, so the extension can send to it itself (`ShareSender`). `nil` in a
-    /// roster an older version of the app wrote.
-    public var address: GatewayAddress?
-    /// The app reaches the gateway through its built-in Tailscale, which the extension can't use.
-    public var usesBuiltInTailscale: Bool?
-
-    public init(
-        gateway: String, contacts: [Contact], hidden: [Contact] = [], pictures: [Contact.ID: Data] = [:],
-        address: GatewayAddress? = nil, usesBuiltInTailscale: Bool = false
-    ) {
-        self.gateway = gateway
-        self.contacts = contacts
-        self.hidden = hidden
-        self.pictures = pictures
-        self.address = address
-        self.usesBuiltInTailscale = usesBuiltInTailscale
-    }
-
-    /// The Bots in a room, for its picture.
-    public func members(of contact: Contact) -> [Contact] {
-        guard case .room(let ids) = contact.kind else { return [] }
-        return ids.compactMap { id in (contacts + hidden).first { $0.id == id } }
+    /// Rooms take text only.
+    public func problem(sendingTo contact: Contact) -> String? {
+        guard contact.kind != .agent, !files.isEmpty else { return nil }
+        return String(localized: "Rooms take text and links only. Pick a Bot to send files.")
     }
 }
 
-extension Contact {
-    /// What the share extension needs to list a contact and open its chat: no preview, activity or
-    /// profile details, so conversations stay out of the shared folder.
-    var forSharing: Contact {
-        Contact(id: id, name: name, kind: kind, tint: tint, isPinned: isPinned, chatID: chatID, picture: picture)
-    }
-}
-
-/// The folder the app and its share extension both reach, in their App Group. The extension reads
-/// the roster from it and leaves what you shared; the app sends that and deletes it. Left out of
-/// backups, and emptied on sign-out.
+/// The folder the app and its share extension both reach, in their App Group. The extension leaves
+/// what you shared there and opens the app, which puts it in the chat you choose and deletes it.
+/// Left out of backups, and emptied on sign-out.
 public struct ShareContainer: Sendable {
     let directory: URL
 
@@ -118,25 +77,9 @@ public struct ShareContainer: Sendable {
         #endif
     }
 
-    // MARK: - Roster
-
-    public func roster() -> ShareRoster? {
-        (try? Data(contentsOf: rosterURL)).flatMap { try? JSONDecoder().decode(ShareRoster.self, from: $0) }
-    }
-
-    func write(_ roster: ShareRoster) throws {
-        try prepare(directory)
-        try JSONEncoder().encode(roster).write(to: rosterURL, options: Self.writing)
-    }
-
-    /// Who you last shared to; the picker starts there.
-    public var lastContactID: Contact.ID? {
-        (try? String(contentsOf: directory.appending(path: "last"), encoding: .utf8))?.nonBlank
-    }
-
     // MARK: - Items
 
-    /// Everything waiting or failed, oldest first. An item still being written isn't listed.
+    /// Everything waiting, oldest first. An item still being written isn't listed.
     public func items() -> [SharedItem] {
         let folders =
             (try? FileManager.default.contentsOfDirectory(at: itemsURL, includingPropertiesForKeys: nil)) ?? []
@@ -148,11 +91,9 @@ public struct ShareContainer: Sendable {
         .sorted { ($0.created, $0.id.uuidString) < ($1.created, $1.id.uuidString) }
     }
 
-    /// Saves what was shared for `contact`, moving its files in. The item appears once it's whole.
+    /// Saves what was shared, moving its files in. The item appears once it's whole.
     @discardableResult
-    public func add(
-        _ content: SharedContent, note: String, to contact: Contact, gateway: String, now: Date = .now
-    ) throws -> SharedItem {
+    public func add(_ content: SharedContent, now: Date = .now) throws -> SharedItem {
         let id = UUID()
         let folder = folder(of: id)
         try prepare(folder)
@@ -167,20 +108,14 @@ public struct ShareContainer: Sendable {
                 names.append(name)
             }
             let item = SharedItem(
-                id: id, gateway: gateway, contactID: contact.id, contactName: contact.name,
-                text: content.message(note: note), files: names, created: now)
-            try save(item)
-            try? Data(contact.id.utf8).write(to: directory.appending(path: "last"), options: Self.writing)
+                id: id, text: content.message, files: names,
+                problems: content.problems.isEmpty ? nil : content.problems, created: now)
+            try JSONEncoder().encode(item).write(to: folder.appending(path: Self.itemFile), options: Self.writing)
             return item
         } catch {
             try? FileManager.default.removeItem(at: folder)
             throw error
         }
-    }
-
-    func save(_ item: SharedItem) throws {
-        try JSONEncoder().encode(item).write(
-            to: folder(of: item.id).appending(path: Self.itemFile), options: Self.writing)
     }
 
     func remove(_ id: UUID) {
@@ -191,13 +126,17 @@ public struct ShareContainer: Sendable {
         folder(of: item.id).appending(path: name)
     }
 
-    /// Signing out of `gateway`: its roster and what waits for it go. Another gateway's items stay.
-    func clear(gateway: String) {
-        if roster()?.gateway == gateway {
-            try? FileManager.default.removeItem(at: rosterURL)
-            try? FileManager.default.removeItem(at: directory.appending(path: "last"))
+    /// Signing out: everything that waits goes.
+    func clear() {
+        try? FileManager.default.removeItem(at: directory)
+    }
+
+    /// Earlier versions kept a list of your Bots here, with their pictures, for the share sheet's
+    /// picker. Nothing reads it now.
+    func removeLegacyFiles() {
+        for name in ["roster.json", "last"] {
+            try? FileManager.default.removeItem(at: directory.appending(path: name))
         }
-        for item in items() where item.gateway == gateway { remove(item.id) }
     }
 
     // MARK: - Files
@@ -206,7 +145,6 @@ public struct ShareContainer: Sendable {
     /// Locked with the device, like the offline cache: both sides write and read only while it's in use.
     private static let writing: Data.WritingOptions = [.atomic, .completeFileProtection]
 
-    private var rosterURL: URL { directory.appending(path: "roster.json") }
     private var itemsURL: URL { directory.appending(path: "Items", directoryHint: .isDirectory) }
     private func folder(of id: UUID) -> URL { itemsURL.appending(path: id.uuidString, directoryHint: .isDirectory) }
 

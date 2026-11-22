@@ -33,11 +33,19 @@ extension AppModel {
     /// Whether what you type into Settings would cross the network unencrypted.
     public var gatewayIsUnencrypted: Bool { auth?.gateway.isUnencrypted ?? false }
 
-    /// Opens the chat a `usualbot://chat/<id>` link names: what a push notification carries.
+    /// Opens the chat a `usualbot://chat/<id>` link names: what a push notification carries. A
+    /// `share` link is the share extension's, which left something in the shared folder. It comes
+    /// under the build's own scheme as well (`UsualAppScheme`), so a development build's extension
+    /// opens that build and not the released app.
     public func open(_ url: URL) {
+        guard let scheme = url.scheme?.lowercased(), scheme == "usualbot" || scheme == Self.ownScheme else { return }
+        if url.host() == "share" { return lookForSharedItems() }
         guard url.scheme == "usualbot", url.host() == "chat", url.pathComponents.count == 2 else { return }
         requestedContactID = url.pathComponents[1]
     }
+
+    /// The link scheme only this build answers to: its bundle identifier.
+    static var ownScheme: String? { Bundle.main.bundleIdentifier?.lowercased() }
 
     /// Whether a chat or room is mid-reply, so closing the link now would lose the end of it.
     public var isWorking: Bool {

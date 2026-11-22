@@ -475,17 +475,15 @@ public final class ChatThread {
     /// Uploads `attachments` to the chat, then sends them with `text`. Returns whether the message
     /// went out. On a failed upload nothing is sent, a notice says which file and why, and the
     /// caller keeps the draft. While a reply runs, the message and its files wait in the queue: a
-    /// running turn takes only text. `submissionID`, for something shared from another app, goes
-    /// as the message's own ID, so the gateway takes it once though the share extension may have
-    /// sent it already; a share waits for the reply to end instead.
-    public func send(_ text: String, attachments: [Attachment], submissionID: String? = nil) async -> Bool {
+    /// running turn takes only text.
+    public func send(_ text: String, attachments: [Attachment]) async -> Bool {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !attachments.isEmpty || submissionID != nil else {
+        guard !attachments.isEmpty else {
             guard canSend, !text.isEmpty else { return false }
             send(text)
             return true
         }
-        let queueing = submissionID == nil && state.isRunning
+        let queueing = state.isRunning
         guard queueing ? takesAttachments : canSendAttachments else { return false }
         #if DEBUG
             // No gateway to upload to: the files show by name, and queued ones wait as on one.
@@ -531,9 +529,7 @@ public final class ChatThread {
         state.sendLocally(
             ([text] + [sent.map(\.line).joined(separator: "\n")]).filter { !$0.isEmpty }
                 .joined(separator: "\n\n"))
-        await submit(
-            Self.message(text, with: sent), sessionID: sessionID, channel: channel,
-            extra: submissionID.map { ["submission_id": .string($0)] } ?? [:])
+        await submit(Self.message(text, with: sent), sessionID: sessionID, channel: channel)
         return true
     }
 

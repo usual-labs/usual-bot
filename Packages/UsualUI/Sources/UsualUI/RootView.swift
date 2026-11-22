@@ -101,8 +101,7 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                         gatewayDetails: model.gatewayDetails, loadGatewayDetails: { await model.loadGatewayDetails() },
                         thread: model.thread(for: contact), close: close)
                 },
-                update: model.update, shared: model.shared, planLimits: model.planLimits,
-                isOffline: model.link.isOffline
+                update: model.update, planLimits: model.planLimits
             ) { compact in
                 #if os(macOS)
                     // The connection in a capsule, then Plugins and Settings in circles. The rail
@@ -134,6 +133,18 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
             .environment(\.screens, model)
             .environment(\.drafts, model.drafts)
             .environment(\.gatewayOnline, model.isOnline)
+            .sheet(
+                item: Binding(
+                    get: { model.sharedItem },
+                    set: { if $0 == nil { model.putOffShared() } })
+            ) { item in
+                SharedItemSheet(
+                    item: item, contacts: model.shareTargets, hiddenBots: model.hiddenBots,
+                    put: { model.putShared(item, in: $0) }, discard: { model.discardShared(item) },
+                    close: { model.putOffShared() }
+                )
+                .environment(\.botPictures, model.pictures)
+            }
             // Another gateway's chats start afresh: its own selection, search and panels.
             .id(model.activeGateway?.id)
         }
@@ -260,11 +271,8 @@ struct ContactsSplitView<Footer: View>: View {
     var profile: (Contact, @escaping () -> Void) -> ProfilePanel? = { _, _ in nil }
     /// Offers a newer TestFlight build below the list; not in the rail.
     var update: AppUpdate?
-    /// What was shared from other apps and hasn't been sent, below the list; not in the rail.
-    var shared: SharedOutbox?
     /// Each Bot's subscription limits, for rooms' warnings.
     var planLimits: PlanLimitOverview?
-    var isOffline = false
     /// Below the list; told whether the sidebar is the narrow window's rail.
     @ViewBuilder let footer: (_ compact: Bool) -> Footer
 
@@ -465,14 +473,7 @@ struct ContactsSplitView<Footer: View>: View {
             .background(Theme.window)
         #else
             .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 0) {
-                    if let shared, !shared.items.isEmpty {
-                        SharedItemsBanner(outbox: shared, offline: isOffline)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 8)
-                    }
-                    if let update { UpdateBanner(update: update).padding(.horizontal, 16).padding(.bottom, 8) }
-                }
+                if let update { UpdateBanner(update: update).padding(.horizontal, 16).padding(.bottom, 8) }
             }
         #endif
     }
@@ -490,7 +491,6 @@ struct ContactsSplitView<Footer: View>: View {
                         .zoomedFrame(width: 32, height: 32)
                         .roundGlass()
                 }
-                if !compact, let shared { SharedItemsBanner(outbox: shared, offline: isOffline) }
                 if !compact, let update { UpdateBanner(update: update) }
                 footer(compact)
             }
