@@ -100,6 +100,37 @@ struct PlanLimitTests {
         #expect(overview.accounts.map { $0.bots.map(\.id) } == [["forge", "atlas"], ["ops"]])
     }
 
+    /// Hermes reads each profile's numbers at its own moment, so Bots on one login can report
+    /// 10.2% and 10.4%, or reset times seconds apart. They're still one login.
+    @Test func botsOnOneLoginShareAnAccountWhenTheirNumbersWereReadApart() async {
+        let reset = Date(timeIntervalSince1970: 1_795_503_599)
+        func reading(_ percent: Double, resetsIn offset: TimeInterval, slug: String = "anthropic")
+            -> PlanLimitOverview.BotPlan
+        {
+            PlanLimitOverview.BotPlan(
+                provider: ModelProvider(
+                    slug: slug, name: slug.capitalized, models: ["m"],
+                    limits: [
+                        PlanLimit(label: "Current session", usedPercent: percent / 2),
+                        PlanLimit(label: "Current week", usedPercent: percent, resetsAt: reset + offset),
+                    ]),
+                model: "m")
+        }
+        let bots = ["forge", "atlas", "ops", "other"].map(contact)
+        let plans = [
+            "forge": reading(10.2, resetsIn: 0), "atlas": reading(10.4, resetsIn: 3),
+            "ops": reading(10.2, resetsIn: 0, slug: "openai"),
+            // Another login's week ends at another hour.
+            "other": reading(10.2, resetsIn: 6 * 3600),
+        ]
+        let overview = PlanLimitOverview(agents: { bots }, retryAfter: .zero) { plans[$0] }
+        await overview.refresh()
+        let accounts = overview.accounts
+        #expect(accounts.map { $0.bots.map(\.id) } == [["forge", "atlas"], ["ops"], ["other"]])
+        // The higher reading is the newer one: use only grows until the limit resets.
+        #expect(accounts.first?.provider.limits.map(\.usedPercent) == [5.2, 10.4])
+    }
+
     @Test func aRoomWarnsForTheMembersItStops() async {
         let bots = ["forge", "atlas", "ops"].map(contact)
         let plans = ["forge": plan(96), "atlas": plan(96), "ops": plan(10, slug: "openai")]
