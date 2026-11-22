@@ -20,7 +20,8 @@
 			</array>
 		</dict>
 	</array>
-	<!-- usualbot://chat/<id>: what ntfy and Pushover notifications open (Integrations/usual-bot). -->
+	<!-- usualbot://chat/<id>: what ntfy and Pushover notifications open (Integrations/usual-bot).
+	     <bundle ID>://share: what the share extension opens, so each build opens its own app. -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -29,6 +30,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>usualbot</string>
+				<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 			</array>
 		</dict>
 	</array>

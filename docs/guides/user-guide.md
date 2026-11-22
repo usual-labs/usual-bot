@@ -58,8 +58,7 @@ list. Pinned chats come first, in the order you put them, then the rest by their
 Usual Bot signs in to two gateways and uses one at a time: the sidebar, search, Quick Message and
 sharing show only the one in use. Switch from the gateway's menu at the bottom of the Mac sidebar,
 or from the top of Settings (on the Mac, its Connection tab). The gateway you leave disconnects; a
-reply still running there carries on, and anything you shared to one of its Bots waits until you
-come back. Each gateway reopens the chat you left open in it.
+reply still running there carries on. Each gateway reopens the chat you left open in it.
 
 The other gateway still notifies you, with its name under the Bot's, and tapping a notification
 switches to it. A dot by the gateway's name says it has notifications waiting. In its Connection
@@ -660,27 +659,19 @@ in the share sheet on iPhone, or in the **Share** menu on the Mac. If it isn't l
 scroll the row of apps to **More** and turn it on; on the Mac, turn it on in System Settings ›
 General › Login Items & Extensions › Sharing.
 
-- Pick a Bot or room and add a note if you like, then **Send**. The list is the sidebar's: pinned
-  first, hidden Bots left out. It starts on the one you last shared to.
-- On iPhone it goes straight away: the sheet says **Sent** and closes, and the reply comes like any
-  other. If it can't go from the share sheet, the sheet says **Waiting to send** and why, and Usual
-  Bot sends it the next time it's open. That happens when your gateway is reached through Usual
-  Bot's built-in Tailscale, which runs only inside the app; when it's for a room, or files over 10
-  MB; when the gateway can't be reached; and when the Bot is in the middle of answering.
-- On the Mac, Usual Bot sends it: within a few seconds if it's running, as it usually is, and
-  otherwise when you next open it.
-- If the share sheet couldn't tell whether files reached the chat, it says so. Check the chat
-  before you use **Try Again** below the chat list, so they don't arrive twice.
-- Until it's sent, the item shows below the chat list, saying where it's going. It waits while
-  you're offline or while that Bot is still answering, then goes by itself and appears in the chat
-  as your message. **Don't Send** deletes it.
-- If it can't be sent, it stays below the chat list with the reason, **Try Again** and **Delete**.
+- Usual Bot opens on **Send to**, with what you shared at the top. Pick a Bot or room: its chat
+  opens with the text in the message box, after anything you'd already typed there, and the files
+  attached. Add a note if you like, then send it as usual.
+- **Don't Send** deletes it. Closing **Send to** keeps it, and Usual Bot asks again the next time
+  you come back to it.
+- If Usual Bot doesn't open, the share sheet says so. Open Usual Bot yourself and **Send to**
+  appears.
 - Text, web links, images up to 25 MB and other files up to 50 MB, ten at a time. Anything larger,
-  or a kind Usual Bot can't take, is left out, and the share sheet says so before you send.
+  or a kind Usual Bot can't take, is left out, and **Send to** says so.
 - Rooms take text and links only, so a room is greyed out when you're sharing a file.
-- What you share waits on this device only. It's deleted once sent, and signing out deletes
-  anything still waiting.
-- You need to be signed in: until then the share sheet asks you to open Usual Bot and sign in.
+- What you share waits on this device only, until you put it in a chat or delete it. Signing out
+  deletes it.
+- You need to be signed in: **Send to** appears once you are.
 
 ## Offline and reconnecting
 

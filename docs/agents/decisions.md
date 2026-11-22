@@ -893,63 +893,48 @@ read at Hermes `2bd378ed1b`.
 
 ## Sharing from other apps
 
-- **On iPhone the extension sends itself when it can; otherwise the app does.** Every item is
-  first written to the App Group folder (`ShareContainer`). `ShareSender` then sends it from the
-  extension and deletes it, and the sheet says Sent and closes itself; the reply arrives like any
-  other. It leaves the item for the app (`AppModel.sendShared`), saying why, when:
-  - the app reaches a tailnet address through its built-in Tailscale. That device lives in the app
-    (state in its Application Support, one node per state folder, a Go runtime in a process iOS
-    holds to about 120 MB), so only the Tailscale app's VPN or a non-tailnet address works here;
-  - it's a room (`groups.send` goes through the room service the app drives), or files over 10 MB
-    in all: a file goes as base64 in a JSON frame, and an extension gets about 120 MB;
-  - the gateway is the dashboard socket, which can't tell a retry from a second message;
-  - the gateway doesn't answer within 15 s, or the Bot is answering or asking something, where a
-    message would steer the reply or answer the question.
-- **Sent twice is ruled out by the item's ID.** Both the extension and the app send an item with
-  its UUID as `submission_id`, and the gateway answers a repeat with the first receipt. Text the
-  extension didn't hear back about simply waits for the app. Files can't be retried that way (an
-  image is staged before the message, and a staged image would ride along with the next one), so
-  before uploading the extension marks the item failed with "may be in the chat already"; it
-  clears only when the send is confirmed. The app then shows it with Try Again and Delete.
-- **The sign-in is shared through the App Group's keychain access group, on iPhone only.**
-  `KeychainTokenStore.forApp()` moves the app's existing item there the first time it reads it.
-  Refresh tokens rotate and a replayed one revokes the sign-in, so every renewal, in either
-  process, holds `RefreshLock` (`flock` on a file in the group) and first adopts a newer pair the
-  other process stored (`AuthSession.performRefresh`). The Mac's sign-in is in the file-based
-  keychain, whose items trust only the app that made them, so the extension would ask for the login
-  password: on the Mac the app always sends, which it does within seconds when it's running.
-- **Nothing opens the app.** iOS gives a share extension no supported way to open its app, so an
-  item left for the app goes the next time the app is open and online: after each roster read
-  (every 5 s) and when the app comes to the front. Only in the foreground: a background check-in is
-  cut off after two roster reads, which would turn a slow upload into a failure.
-- **An item is deleted only once it's in the chat.** It's shown below the chat list until then
-  (`SharedItemsBanner`). It waits, without failing, while offline, while the chat loads, while a
-  reply runs (a message then would steer the turn) and while a question is open that the message
-  box would answer. It fails, and stays with the reason, when the Bot is gone, an upload is
-  refused or the room service is down. A room gets it through `RoomThread.send`, whose own failure
-  puts the text back in the room's message box.
+- **The extension opens the app; the app does the rest** (the developer's call, after T3 Code's
+  iPhone app). The extension has no picker: it copies what you shared into the App Group folder
+  (`ShareContainer`) and opens `<bundle ID>://share`. The app shows **Send to**
+  (`SharedItemSheet`), and the chat you pick gets the text in its message box after any draft, and
+  the files beside it (`AppModel.putShared`), for you to send. It replaced an extension that sent
+  from the share sheet, which couldn't when the gateway was reached through the app's built-in
+  Tailscale, for rooms, while a Bot was answering, or when the gateway was slow, and then left the
+  item until you next opened the app.
+- **Opening the app from the extension uses the responder chain.** iOS gives a share extension no
+  supported way (`NSExtensionContext.open` answers no), so `ShareViewController` walks to the
+  `UIApplication` and calls `openURL:options:completionHandler:` through the runtime, since the
+  method is marked unavailable to extensions. T3 Code (through expo-sharing) ships the same and
+  passes review. If iOS stops allowing it, the sheet says to open Usual Bot, and the item waits in
+  the folder for the next time the app comes to the front. The Mac uses `NSWorkspace.open`.
+- **The link uses the build's own scheme,** its bundle ID, so a development build's extension opens
+  that build, whose App Group holds the item, and not the released app. `usualbot://` stays for
+  notifications.
+- **Nothing is sent without you.** Closing the sheet keeps the item and asks again when the app
+  next comes to the front; Don't Send deletes it. An item is deleted once it's in a message box.
 - **Rooms take shared text and links only,** like the room's message box: `groups.send` has no
-  attachments here. The picker greys a room out when files are shared.
-- **The folder holds as little as the picker and the send need:** names, pins, colours, pictures
-  and each Bot's chat ID, the gateway's address and whether built-in Tailscale is on; no previews or
-  profile details. The roster is keyed by a hash of the gateway address. Items carry that
-  key, so another sign-in (or the demo) leaves them alone. Sign-out deletes the whole folder. Files
-  are written with complete protection and left out of backups.
+  attachments here. The sheet greys a room out when files are shared.
+- **The folder holds only what was shared,** with complete protection and left out of backups, and
+  sign-out deletes it. Items aren't tied to a gateway: you pick the chat in whichever one is in
+  use. The app deletes the `roster.json` (your Bots and their pictures) and `last` that earlier
+  versions wrote there for the extension's picker.
+- **The sign-in still sits in the App Group's keychain access group on iPhone**
+  (`KeychainTokenStore.forApp`, and `RefreshLock` around renewals), from when the extension sent
+  with it. Nothing outside the app reads it now, but moving it back would touch every saved sign-in.
 - **The demo leaves the folder alone** unless started with `USUALBOT_DEMO_SHARE=1` or
-  `--demo-share`: a demo run on a device that's also signed in would otherwise replace the real
-  roster with made-up Bots.
+  `--demo-share`, so a demo run doesn't pick up what you shared for your real gateway.
 - **One App Group ID on both platforms,** `group.<prefix>.UsualBot`. On the Mac the folder is asked
   for only when the build has the entitlement and a team (`ShareContainer.appGroup`): a build
   signed to run locally would get macOS's "access data from other apps" question instead.
-- **The extension links UsualUI,** for the same avatars and colours as the sidebar. Its files are
-  copied, never read into memory, and photos are converted to JPEG by the app when it sends.
+- **The extension copies files, never reads them into memory,** and the app converts photos to
+  JPEG when it puts them in the message box.
 
 ## Gateways
 
 - **Two at most, one in use.** The developer wanted their own gateways side by side, but chose
   switching over a merged list: a messenger with one live connection stays small, and the cap
   keeps battery and connections in check on iPhone. The one you leave disconnects fully; its sign-in,
-  cache, drafts, sidebar and waiting shares stay on the device (`AppModel.leave(forgetting:)`), so
+  cache, drafts and sidebar stay on the device (`AppModel.leave(forgetting:)`), so
   switching back shows it at once. Chat IDs stay bare (every gateway has `default`), so anything
   that outlives a switch is per gateway: the cache, drafts and sections by address, and the open
   chat and Quick Message recipient, which `@AppStorage` keeps under one key each, are swapped in
@@ -984,17 +969,11 @@ read at Hermes `2bd378ed1b`.
   tagged notification reaching a device and opening on the other gateway, the subtitle naming the
   gateway, clears scoped to one gateway, and the new-notification dot from real notifications.
 
-- Sharing from other apps ran on 2026-11-10 in the iPhone Simulator with the demo
-  (`--demo --demo-share`): a page from Safari and a photo from Photos, to a Bot and to the room,
-  the waiting and failed states below the chat list, and the signed-out notice. Not run: the Mac's
-  Share menu at all (the extension needs a build signed for a team with the App Group, and one
-  wasn't made), a signed build on an iPhone, a file from Files, a send to a real gateway (the
-  upload and `prompt.submit` ran against the test fake only), VoiceOver itself (the labels were
-  read from the accessibility tree), and `scripts/testflight.sh` with the two new profiles.
-- The extension sending itself ran only against the scripted gateway in `ShareSenderTests`. Not
-  run: a signed build on an iPhone, moving an existing sign-in into the shared keychain group, the
-  two processes renewing at once, whether iOS asks the extension for Local Network access to a
-  gateway on the home network, and the extension's memory with a 10 MB file.
+- Sharing from other apps, as the extension opening the app, ran on 2026-11-22 in the iPhone 18 Pro
+  Simulator (iOS 27.0) with `--demo --demo-share`: a page from Safari opened Usual Bot on Send to,
+  in light and dark, picking a Bot put the link in its message box, and Don't Send deleted it. Not
+  run: a signed build on an iPhone, the Mac's Share menu (the extension needs a build signed for a
+  team with the App Group), files from Photos or Files, a room, and VoiceOver.
 - Goals ran against a throwaway Hermes 0.23.1 gateway with a stand-in model and a stand-in judge,
   from a script on its socket (`canonical-protocol.md`), and in the app only in the demo. Not run:
   the app itself on a real gateway; anything on the dashboard, whose goal calls and events are

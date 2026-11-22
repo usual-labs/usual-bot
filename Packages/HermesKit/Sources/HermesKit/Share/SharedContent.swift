@@ -90,37 +90,11 @@ public struct SharedContent: Equatable, Sendable {
         if !links.contains(url) { links.append(url) }
     }
 
-    /// The message that goes to the chat: your note, then the text, then the links. A link the
-    /// text already spells out isn't repeated.
-    public func message(note: String) -> String {
-        let said = [note.trimmingCharacters(in: .whitespacesAndNewlines)] + texts
-        let extra = links.map(\.absoluteString).filter { link in !said.contains { $0.contains(link) } }
-        return (said + extra).filter { !$0.isEmpty }.joined(separator: "\n\n")
-    }
-
-    /// Why this can't go to `contact`, or `nil` when it can. Rooms take text only.
-    public func problem(sendingTo contact: Contact) -> String? {
-        guard contact.kind != .agent, !files.isEmpty else { return nil }
-        return String(localized: "Rooms take text and links only. Pick a Bot to send files.")
-    }
-
-    /// What's being shared, in a few words, for the top of the picker.
-    public var summary: String {
-        var parts: [String] = []
-        let images = files.count { Self.sizeLimit(forFileNamed: $0.name) == 25 * 1024 * 1024 }
-        let others = files.count - images
-        if images == 1 { parts.append(String(localized: "1 image")) }
-        if images > 1 { parts.append(String(localized: "\(images) images")) }
-        if others == 1 { parts.append(String(localized: "1 file")) }
-        if others > 1 { parts.append(String(localized: "\(others) files")) }
-        if links.count == 1 { parts.append(links[0].host() ?? links[0].absoluteString) }
-        if links.count > 1 { parts.append(String(localized: "\(links.count) links")) }
-        if !texts.isEmpty, parts.isEmpty {
-            let line = RoomThread.readable(texts.joined(separator: " "))
-            return line.count > 120 ? String(line.prefix(120)) + "…" : line
-        }
-        if !texts.isEmpty { parts.append(String(localized: "text")) }
-        return ListFormatter.localizedString(byJoining: parts)
+    /// What goes in the message box: the text, then the links. A link the text already spells out
+    /// isn't repeated.
+    public var message: String {
+        let extra = links.map(\.absoluteString).filter { link in !texts.contains { $0.contains(link) } }
+        return (texts + extra).joined(separator: "\n\n")
     }
 }
 

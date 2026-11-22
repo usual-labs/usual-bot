@@ -111,11 +111,6 @@ public final class AppModel {
     @ObservationIgnored var roomEdits = 0
     /// The demo has no gateway, so room edits happen here alone.
     @ObservationIgnored var isDemo = false
-    /// Gateway traffic goes through the iPhone app's built-in Tailscale, which the share extension
-    /// can't use, so it leaves what you share for the app. Set by the app.
-    @ObservationIgnored public var usesBuiltInTailscale = false {
-        didSet { if usesBuiltInTailscale != oldValue { publishShareRoster() } }
-    }
     #if DEBUG
         /// Shows the demo's other made-up gateway (`AppModel.demo()`), which nothing connects to.
         @ObservationIgnored var demoSwitch: ((SavedGateway) -> Void)?
@@ -147,8 +142,8 @@ public final class AppModel {
     @ObservationIgnored public let sections: SidebarSections
     /// What's typed and not sent in each chat and room, on this device only.
     @ObservationIgnored public let drafts: Drafts
-    /// What you shared from other apps and the app hasn't sent yet.
-    @ObservationIgnored public let shared: SharedOutbox
+    /// What you shared from other apps, waiting for you to choose a chat for it.
+    @ObservationIgnored public let shared: SharedInbox
     /// How far each Bot Chat was read, shared with your other devices through the gateway.
     @ObservationIgnored lazy var readSync: ReadSync = {
         let sync = ReadSync(auth: { [weak self] in self?.auth }, chats: { [weak self] in self?.readableChats ?? [] })
@@ -195,7 +190,7 @@ public final class AppModel {
         self.makeSocket = makeSocket
         sections = SidebarSections(defaults: defaults)
         drafts = Drafts(directory: draftsDirectory)
-        shared = SharedOutbox(container: share)
+        shared = SharedInbox(container: share)
         let active = list.activeAddress
         gatewayInput = active?.baseURL.absoluteString ?? ""
         isRestoring = active != nil
@@ -208,7 +203,6 @@ public final class AppModel {
             guard let channel = self?.channel else { throw GatewayError.disconnected }
             try await BotMetaWrite.setPinned(isPinned, profile: profile, on: channel)
         }
-        shared.send = { [weak self] in self?.lookForSharedItems() }
     }
 
     /// Resumes the saved session, if this device has one.
@@ -386,8 +380,6 @@ public final class AppModel {
                     if firstRead { readSync.somethingChanged() } else { readSync.look() }
                     firstRead = false
                     saveCache(for: auth.gateway)
-                    publishShareRoster()
-                    lookForSharedItems()
                     reportFocus()
                     try await Task.sleep(for: Self.rosterInterval)
                 }

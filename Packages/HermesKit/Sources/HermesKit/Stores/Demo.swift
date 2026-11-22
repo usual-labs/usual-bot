@@ -8,8 +8,8 @@
         /// A made-up team of agents, their chats, a room and routines, shown as signed in to an
         /// example gateway. For screenshots, and for trying the app without Hermes: Debug builds
         /// launched with `USUALBOT_DEMO=1` use it. It never connects: a chat answers what you send
-        /// with a scripted reply. With `share`, the share extension lists the demo's Bots and what
-        /// you share lands in their chats; without it the demo leaves the shared folder alone.
+        /// with a scripted reply. With `share`, what you share from other apps can go into the demo's
+        /// chats; without it the demo leaves the shared folder alone.
         public static func demo(
             now: Date = .now, longConversations: Bool = false, share: ShareContainer? = nil
         ) -> AppModel {
@@ -33,7 +33,6 @@
                 } else {
                     model.showWorkDemo(now: now, longConversations: longConversations)
                 }
-                model.publishShareRoster()
             }
             model.showWorkDemo(now: now, longConversations: longConversations)
             model.usage = .demo(
@@ -50,7 +49,6 @@
                 return DemoSearch.results(profile: profile, query: query)
             }
             model.media.demoMakers = DemoMedia.makers
-            model.publishShareRoster()
             model.lookForSharedItems()
             return model
         }

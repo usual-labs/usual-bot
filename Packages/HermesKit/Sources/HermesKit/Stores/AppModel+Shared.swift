@@ -1,108 +1,53 @@
 import Foundation
 
-/// Sending what the share extension left for the app (`SharedOutbox`).
+/// What the share extension left for the app (`SharedInbox`): you choose a chat for it here, and
+/// it goes into that chat's message box for you to send.
 extension AppModel {
-    /// Sends what's waiting in the shared folder, if the app is open and connected. Called after
-    /// each roster read, and by the app when it comes to the front.
+    /// The item to choose a chat for: the oldest, once you're signed in.
+    public var sharedItem: SharedItem? {
+        isSignedIn && !shared.isPutOff ? shared.items.first : nil
+    }
+
+    /// Reads what's waiting in the shared folder. Called when the share extension opens the app
+    /// and when the app comes to the front.
     public func lookForSharedItems() {
-        guard shared.container != nil, !shared.isSending, isSignedIn, isForeground else { return }
-        Task { await sendShared() }
+        shared.load()
     }
 
-    /// One pass over the waiting items. An item goes once its chat can take it; one whose chat is
-    /// busy stays for the next pass, and one that can't go says why.
-    func sendShared() async {
-        guard let key = shareKey, !shared.isSending else { return }
-        shared.isSending = true
-        defer { shared.isSending = false }
-        shared.load(for: key)
-        // The roster first: a Bot renamed or deleted since the item was shared shows there.
-        guard case .online = link, isDemo || rosterReads > 0 else { return }
-        for item in shared.items where item.failure == nil {
-            // Signed out meanwhile: the folder is empty now.
-            guard shareKey == key else { return }
-            await send(item)
+    /// Closed without choosing: it waits until the app next comes to the front.
+    public func putOffShared() {
+        shared.isPutOff = true
+    }
+
+    /// The Bots and rooms an item can go to: the sidebar's, in its order.
+    public var shareTargets: [Contact] {
+        sections.ordered(sidebarContacts)
+    }
+
+    /// Puts `item` in `contact`'s message box, after anything already typed there, with its files
+    /// beside it, and opens the chat. Returns why it couldn't, leaving the item where it was.
+    @discardableResult
+    public func putShared(_ item: SharedItem, in contact: Contact) -> String? {
+        if let problem = item.problem(sendingTo: contact) { return problem }
+        var attachments: [Attachment] = []
+        for name in item.files {
+            guard let url = shared.fileURL(name, of: item),
+                let data = try? Data(contentsOf: url, options: .mappedIfSafe)
+            else { return String(localized: "\(name) is no longer on this device.") }
+            attachments.append(.converting(name: name, data: data))
         }
-    }
-
-    /// Tells the share extension who it can send to: the sidebar's contacts in its order.
-    func publishShareRoster() {
-        guard shared.container != nil, case .signedIn(let gateway) = session else { return }
-        let listed = sections.ordered(sidebarContacts)
-        let stored = (listed + hiddenBots).reduce(into: [Contact.ID: Data]()) { $0[$1.id] = pictures.data(for: $1.id) }
-        shared.publish(
-            ShareRoster(
-                gateway: gateway.fileName, contacts: listed.map(\.forSharing), hidden: hiddenBots.map(\.forSharing),
-                pictures: stored, address: isDemo ? nil : gateway, usesBuiltInTailscale: usesBuiltInTailscale))
-    }
-
-    /// The signed-in gateway's name in the shared folder.
-    private var shareKey: String? {
-        if case .signedIn(let gateway) = session { return gateway.fileName }
+        if let text = item.text.nonBlank {
+            let typed = drafts[contact.id]
+            drafts[contact.id] = typed.nonBlank == nil ? text : typed + "\n\n" + text
+        }
+        if !attachments.isEmpty { thread(for: contact).returnedAttachments += attachments }
+        shared.remove(item)
+        requestedContactID = contact.id
         return nil
     }
 
-    private func send(_ item: SharedItem) async {
-        let id = currentID(for: item.contactID)
-        guard let contact = (contacts + hiddenBots).first(where: { $0.id == id }) else {
-            return shared.failed(item, String(localized: "\(item.contactName) isn't on this gateway any more."))
-        }
-        guard contact.kind == .agent else { return sendToRoom(item, contact) }
-        let thread = thread(for: contact)
-        openThread(for: contact)
-        let deadline = ContinuousClock.now + .seconds(10)
-        while thread.phase == .loading, ContinuousClock.now < deadline, !Task.isCancelled {
-            try? await Task.sleep(for: .milliseconds(100))
-        }
-        if case .failed(let reason) = thread.phase { return shared.failed(item, reason) }
-        // A reply is running, or the Bot asked something the next message would answer: this
-        // isn't a reply to either, so it waits for the chat to be free.
-        guard thread.canSendAttachments, thread.questionTheBoxAnswers == nil, let container = shared.container else {
-            return
-        }
-        var attachments: [Attachment] = []
-        for name in item.files {
-            guard let data = try? Data(contentsOf: container.fileURL(name, of: item), options: .mappedIfSafe) else {
-                return shared.failed(item, String(localized: "\(name) is no longer on this device."))
-            }
-            attachments.append(.converting(name: name, data: data))
-        }
-        #if DEBUG
-            if isDemo, !attachments.isEmpty {
-                thread.sendDemo(item.text, attachments: attachments)
-                return shared.sent(item)
-            }
-        #endif
-        let before = thread.state.items.count
-        // Under the item's own ID: if the share extension sent it already, the gateway takes it once.
-        // The demo has no gateway, and plays its replies to text sent the ordinary way.
-        if await thread.send(item.text, attachments: attachments, submissionID: isDemo ? nil : item.id.uuidString) {
-            shared.sent(item)
-        } else {
-            // The chat says why in a notice; the same words go with the item.
-            let notices = thread.state.items.dropFirst(before).compactMap { item -> String? in
-                if case .notice(let text) = item.content { return text }
-                return nil
-            }
-            shared.failed(item, notices.last ?? String(localized: "The chat couldn't take it."))
-        }
-    }
-
-    private func sendToRoom(_ item: SharedItem, _ contact: Contact) {
-        guard item.files.isEmpty else {
-            return shared.failed(item, String(localized: "Rooms take text and links only. Share files to a Bot."))
-        }
-        // A room the list hasn't caught up on, or still loading: the next pass.
-        guard let room = rooms[contact.id] else { return }
-        if isDemo { return shared.failed(item, String(localized: "The demo's room can't take messages.")) }
-        if !room.driverRunning {
-            return shared.failed(
-                item, String(localized: "The gateway's room service isn't running, so Bots won't answer."))
-        }
-        if case .failed(let reason) = room.phase { return shared.failed(item, reason) }
-        guard room.canSend else { return }
-        // From here the room shows it: a message that doesn't send goes back in its message box.
-        room.send(item.text)
-        shared.sent(item)
+    /// Deletes an item without putting it anywhere.
+    public func discardShared(_ item: SharedItem) {
+        shared.remove(item)
     }
 }
