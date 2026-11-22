@@ -13,8 +13,8 @@ public final class PlanLimitOverview {
         public let model: String?
     }
 
-    /// One login's limits, and the Bots that use it. Bots on the same provider whose numbers match
-    /// are taken to share a login: Hermes doesn't say which login a profile uses.
+    /// One login's limits, and the Bots that use it. Hermes doesn't say which login a profile uses,
+    /// so Bots on the same provider whose limits reset together are taken to share one.
     public struct Account: Identifiable, Equatable, Sendable {
         public let provider: ModelProvider
         public let bots: [Contact]
@@ -72,9 +72,8 @@ public final class PlanLimitOverview {
         var groups: [(provider: ModelProvider, bots: [Contact])] = []
         for bot in agents() {
             guard let plan = plans[Self.profile(of: bot)], !plan.provider.limits.isEmpty else { continue }
-            if let index = groups.firstIndex(where: {
-                $0.provider.slug == plan.provider.slug && $0.provider.limits == plan.provider.limits
-            }) {
+            if let index = groups.firstIndex(where: { Self.sameLogin($0.provider, plan.provider) }) {
+                groups[index].provider = Self.newer(groups[index].provider, plan.provider)
                 groups[index].bots.append(bot)
             } else {
                 groups.append((plan.provider, [bot]))
@@ -83,6 +82,26 @@ public final class PlanLimitOverview {
         func fullest(_ provider: ModelProvider) -> Double { provider.limits.map(\.usedPercent).max() ?? 0 }
         return groups.map { Account(provider: $0.provider, bots: $0.bots) }
             .sorted { fullest($0.provider) > fullest($1.provider) }
+    }
+
+    /// Whether two Bots' readings come from one login. Each profile's numbers are read at their own
+    /// moment, so the percentages and reset times of one login drift apart a little; another
+    /// login's limits reset at another time.
+    nonisolated static func sameLogin(_ a: ModelProvider, _ b: ModelProvider) -> Bool {
+        guard a.slug == b.slug, a.limits.map(\.label) == b.limits.map(\.label) else { return false }
+        return zip(a.limits, b.limits).allSatisfy { a, b in
+            // A limit with no reset time yet (no session running) says nothing either way.
+            guard let first = a.resetsAt, let second = b.resetsAt else { return true }
+            return abs(first.timeIntervalSince(second)) <= 10 * 60
+        }
+    }
+
+    /// One login's limits from two readings: the higher of each, since use only grows until a
+    /// limit resets.
+    nonisolated static func newer(_ a: ModelProvider, _ b: ModelProvider) -> ModelProvider {
+        let limits = zip(a.limits, b.limits).map { a, b in a.usedPercent >= b.usedPercent ? a : b }
+        return ModelProvider(
+            slug: a.slug, name: a.name, models: a.models, withoutReasoning: a.withoutReasoning, limits: limits)
     }
 
     /// The fullest limit near or past its end among `members`, with every member it stops.

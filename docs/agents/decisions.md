@@ -247,8 +247,10 @@ read at Hermes `2bd378ed1b`.
   and caches the answer for 15 minutes, refreshing in the background. The first ask after a restart
   can come back without numbers, so the app asks once more ten seconds later. API keys have none.
   A chat warns from its own catalog, since it can run on another model than its Bot; rooms and
-  Settings ask once per Bot's profile. Bots whose numbers match on one provider are shown as one
-  login: Hermes doesn't say which login a profile uses. Multi-login pools (`usage.accounts`) aren't
+  Settings ask once per Bot's profile. Hermes doesn't say which login a profile uses, so Bots on
+  one provider whose limits reset within ten minutes of each other are shown as one login, with the
+  higher reading of each limit. Matching numbers exactly split one login in two: each profile's
+  cached reading is taken at its own moment, so 10.2% and 10.4% can be the same week. Multi-login pools (`usage.accounts`) aren't
   shown. The warning starts at 90%, comes back at 95% and when used up, and never blocks the
   message box: the numbers can be minutes old and a fallback model may still answer.
 - **Rooms have no row of their own.** A member's room turns run in a `bot_room` session in that
