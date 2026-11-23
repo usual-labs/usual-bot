@@ -15,6 +15,8 @@ public enum AppPreferences {
     public static let streamRepliesKey = "streamReplies"
     /// Off: chats leave out the lines for tools a Bot used (`TranscriptItem.isToolActivity`).
     public static let showToolActivityKey = "showToolActivity"
+    /// Off: a routine's result folds into one line you click to read (`RoutineLine`).
+    public static let showRoutineResultsKey = "showRoutineResults"
 }
 
 extension EnvironmentValues {

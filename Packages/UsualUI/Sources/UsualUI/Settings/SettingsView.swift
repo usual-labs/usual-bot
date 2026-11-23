@@ -384,6 +384,7 @@ private struct GeneralSettings: View {
     @AppStorage(AppPreferences.textSizeKey) private var textSize = 0
     @AppStorage(AppPreferences.streamRepliesKey) private var streamsReplies = true
     @AppStorage(AppPreferences.showToolActivityKey) private var showsTools = true
+    @AppStorage(AppPreferences.showRoutineResultsKey) private var showsRoutineResults = true
     #if os(macOS)
         @AppStorage(AppPreferences.commandReturnKey) private var commandReturn = false
         @AppStorage(Zoom.key) private var zoom = Zoom.initialLevel(
@@ -433,6 +434,8 @@ private struct GeneralSettings: View {
                 .toggleStyle(.systemSwitch)
             Toggle("Show what Bots do with tools", isOn: $showsTools)
                 .toggleStyle(.systemSwitch)
+            Toggle("Show routine results in full", isOn: $showsRoutineResults)
+                .toggleStyle(.systemSwitch)
             #if os(macOS)
                 Picker("Send messages with", selection: $commandReturn) {
                     Text("Return").tag(false)
@@ -445,11 +448,11 @@ private struct GeneralSettings: View {
         } footer: {
             #if os(macOS)
                 Text(
-                    "With replies not shown as they’re written, each message appears once it’s finished. With tools hidden, chats show only messages, Bots talking to each other and routine results. Shift-Return always adds a new line. Quick Message uses Return to send and ⌘Return to open the full chat."
+                    "With replies not shown as they’re written, each message appears once it’s finished. With tools hidden, chats show only messages, Bots talking to each other and routine results. With routine results not in full, each one is a line you click to read. Shift-Return always adds a new line. Quick Message uses Return to send and ⌘Return to open the full chat."
                 )
             #else
                 Text(
-                    "With replies not shown as they’re written, each message appears once it’s finished. With tools hidden, chats show only messages, Bots talking to each other and routine results."
+                    "With replies not shown as they’re written, each message appears once it’s finished. With tools hidden, chats show only messages, Bots talking to each other and routine results. With routine results not in full, each one is a line you click to read."
                 )
             #endif
         }

@@ -594,7 +594,9 @@ button (or Esc, or ⌘[) returns to the profile.
     the blank form.
   - **Results:** **Post in this chat** sends each result to the Bot here, and it replies, which
     uses a turn. The result shows in the chat as a message under "From the routine" and its name,
-    with Show All under a long one; your notification comes from the Bot's reply. If the Bot
+    with Show All under a long one; your notification comes from the Bot's reply. Turn off
+    **Show routine results in full** in Settings › General to fold each one into a line you click
+    to read. If the Bot
     chooses not to reply, the result itself counts as unread. **Keep in past runs only** posts nothing. A routine set up to send elsewhere, such
     as Telegram, keeps going there unless you change it.
   - Open a routine to **Edit** it, **Run Now**, **Delete** it, or read its **Past Runs**. Run Now can
