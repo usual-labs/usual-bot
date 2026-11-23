@@ -199,6 +199,7 @@ struct RoomPane: View {
                     leave: { room.leavePaused(pause) })
             }
         }
+        .environment(\.widgetSuccession, WidgetSuccession(room.state.items))
         // Each room's transcript is its own view, so this runs as each one opens.
         .onAppear {
             window.hold(room.state.items)

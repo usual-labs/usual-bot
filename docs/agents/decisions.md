@@ -206,6 +206,12 @@ read at Hermes `2bd378ed1b`.
     that chat ends (`ChatThread.turnsEnded`), and swaps the page only if it changed, so an untouched
     widget keeps its state. One off screen or stopped is read when it runs again, so a long chat
     doesn't read every widget after every reply. A read that fails keeps the page that's showing.
+  - **A file a later message shows again is the later message's.** Agents reuse one file for each
+    new take, and the gateway keeps only the newest page, so reading it again turned every earlier
+    widget into the newest. Once a later message (same author, so a room member's own profile)
+    shows the file (`WidgetSuccession`), an earlier widget already showing keeps its page and stops
+    reading; one not read yet, such as after the chat reopens, shows a card saying a newer message
+    uses its file. The earlier take is gone from the gateway, so there's nothing truer to show.
   - **No alert for its reply.** You were looking at the widget; the push plugin (0.5.1) skips a
     reply whose prompt was hidden too, reading the kind off the turn's newest user message.
 - **Hidden rows never show as yours.** `GatewayTurn.content` returns nothing for `hidden`, which also

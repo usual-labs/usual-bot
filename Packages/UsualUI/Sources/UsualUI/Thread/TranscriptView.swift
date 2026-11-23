@@ -76,6 +76,7 @@ struct TranscriptView: View {
         }
         // The chat's widgets talk back to it.
         .environment(\.widgetChat, thread)
+        .environment(\.widgetSuccession, WidgetSuccession(items))
     }
 
     private var items: [TranscriptItem] { thread.state.items }
@@ -355,8 +356,13 @@ struct ItemView: View {
     @Environment(\.editingFrom) private var editingFrom
     @Environment(\.waitingAsks) private var waitingAsks
 
+    private var memberID: String? {
+        if case .member(let id, _) = item.content { id } else { nil }
+    }
+
     var body: some View {
         content
+            .environment(\.widgetPlace, WidgetPlace(item: item.id, author: memberID))
             // Sending the edit removes what follows the message being edited.
             .opacity(editingFrom.map { item.id > $0 } == true ? 0.4 : 1)
             .animation(.easeOut(duration: 0.15), value: editingFrom)
