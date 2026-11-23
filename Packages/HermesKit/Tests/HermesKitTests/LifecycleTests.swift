@@ -59,6 +59,8 @@ struct LifecycleTests {
         let (model, sockets) = try makeModel()
         model.setForeground(false)
         await model.warmUp("ada", on: nil, within: .milliseconds(100))
+        // The time limit can pass before a busy machine dials.
+        await waitForSockets(1, in: sockets)
         #expect(sockets.count == 1)
         #expect(model.linkTask != nil)
 
@@ -75,6 +77,8 @@ struct LifecycleTests {
         let (model, sockets) = try makeModel()
         model.setForeground(false)
         await model.warmUp("ada", on: nil, within: .milliseconds(100))
+        // Letting go before the link dials would cancel it, and no socket would come.
+        await waitForSockets(1, in: sockets)
         #expect(model.endWarmUp())
         #expect(model.linkTask == nil)
         #expect(!model.isCheckingIn)
