@@ -65,7 +65,7 @@ jobs:
     name: Archive and upload
     needs: due
     if: needs.due.outputs.run == 'true'
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 90
     environment: testflight
     permissions:
@@ -102,9 +102,6 @@ jobs:
             echo "::error::Missing secrets in the testflight environment:$missing. See docs/guides/releasing.md."
             exit 1
           fi
-
-      - name: Toolchain
-        run: xcodebuild -version
 
       - name: Import the signing certificates
         env:

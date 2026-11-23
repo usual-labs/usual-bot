@@ -24,7 +24,7 @@ To change the code, build it yourself as below.
 
 ### Build it yourself
 
-You need a Mac with **Xcode 26 or newer**. The app runs on macOS 26 and iOS 26 or later.
+You need a Mac with **Xcode 27 or newer**. The app runs on macOS 26 and iOS 26 or later.
 
 ```sh
 git clone https://github.com/usual-labs/usual-bot.git

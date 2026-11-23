@@ -7,6 +7,7 @@
 #   macos, ios only that app build
 set -eu
 cd "$(dirname "$0")/.."
+. scripts/xcode.sh
 
 checks() {
     swift format lint --strict --recursive App NotificationService ShareExtension Packages scripts/fixtures

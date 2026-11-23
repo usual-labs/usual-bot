@@ -4,6 +4,9 @@ name: CI
 # they finish together. A change to documentation alone skips the macOS jobs. The `build` job at
 # the end is the required status check on main: it passes when every job passed, or was skipped
 # because only documentation changed. Add a job to its `needs` rather than to the ruleset.
+#
+# The macOS jobs build with the Xcode in .xcode-version, which scripts/check.sh selects. Change the
+# runner image here when that Xcode moves to another one.
 
 on:
   push:
@@ -55,15 +58,12 @@ jobs:
     name: Lint and test
     needs: changes
     if: needs.changes.outputs.app == 'true'
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
-      - name: Toolchain
-        run: xcodebuild -version && swift --version
 
       - name: Lint, checks and both test suites
         run: scripts/check.sh --fast
@@ -72,7 +72,7 @@ jobs:
     name: Build macOS
     needs: changes
     if: needs.changes.outputs.app == 'true'
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -86,7 +86,7 @@ jobs:
     name: Build iOS Simulator
     needs: changes
     if: needs.changes.outputs.app == 'true'
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
