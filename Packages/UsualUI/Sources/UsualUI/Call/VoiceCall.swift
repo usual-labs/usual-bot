@@ -202,7 +202,10 @@ final class VoiceCall {
         }
         if let words, !words.isEmpty, words != heard {
             // A couple of words while the agent talks is you cutting in, not its own echo.
-            if cancelsEcho, phase == .speaking || phase == .thinking, words.split(separator: " ").count >= 2 {
+            // Not while your last words wait to be sent: there's nothing to cut off yet.
+            if cancelsEcho, replyStart != nil, phase == .speaking || phase == .thinking,
+                words.split(separator: " ").count >= 2
+            {
                 interrupt()
             }
             heard = words
@@ -225,10 +228,17 @@ final class VoiceCall {
         listen()
         guard !words.isEmpty, thread.canSend else { return }
         transcript.append(Line(fromYou: true, text: words))
-        thread.send(words)
-        replyStart = thread.state.items.count
-        reply = SpokenReply()
         phase = .thinking
+        Task {
+            // A reply you cut off is still stopping; sending now would steer it instead.
+            for _ in 0..<30 where thread.state.isRunning {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            guard phase == .thinking, replyStart == nil else { return }
+            thread.send(words)
+            replyStart = thread.state.items.count
+            reply = SpokenReply()
+        }
     }
 
     // MARK: Speaking

@@ -76,7 +76,8 @@ recovery: after a short drop it replays missed events with `session.events.since
 **Voice** (`Voice/`, `UsualUI/Call/`). On-device calls use Apple's speech recognition and voices.
 GPT-Live calls ask the gateway to open an OpenAI realtime session (the key stays on the gateway)
 and run the WebRTC media in a hidden `WKWebView` (`live-call.html`); when the voice model hands a
-request to Hermes, it becomes an ordinary turn in the chat.
+request to Hermes, it becomes an ordinary turn in the chat. Gateway calls send each turn to the
+gateway's speech-to-text and speak the reply through its text-to-speech socket (`GatewaySpeaker`).
 
 ## State and persistence
 

@@ -4,8 +4,9 @@ import SwiftUI
 
 /// The call, as a glass bar over the top of the chat (the conversation keeps scrolling behind
 /// it): the agent, its voice as dots, settings, transcript, mute and end. Settings and the
-/// transcript open as a panel inside the bar. The engine is on-device speech (`VoiceCall`) or
-/// GPT-Live (`LiveCall`), as the settings or the agent's gateway choose.
+/// transcript open as a panel inside the bar. The engine is on-device speech (`VoiceCall`),
+/// GPT-Live (`LiveCall`) or the Bot's own speech on the gateway (`GatewayCall`), as the settings
+/// or the agent's gateway choose.
 struct CallBar: View {
     let contact: Contact
     let end: () -> Void
@@ -17,6 +18,8 @@ struct CallBar: View {
     @State private var engineProblem: String?
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.voiceLive) private var voiceLive
+    @Environment(\.transcriber) private var transcriber
+    @Environment(\.speaker) private var speaker
 
     enum Panel {
         case settings, transcript
@@ -59,18 +62,26 @@ struct CallBar: View {
 
             if let problem {
                 Divider().overlay(Theme.border)
-                Text(problem)
-                    .scaledFont(size: 13.5)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
-                    .padding(16)
+                VStack(spacing: 10) {
+                    Text(problem)
+                        .scaledFont(size: 13.5)
+                        .foregroundStyle(Theme.secondaryInk)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                    // Nothing falls back on its own: you chose where your voice goes.
+                    if call is GatewayCall {
+                        Button("Use On-device") { Task { await useOnDevice() } }
+                            .buttonStyle(.clickable(.glass))
+                            .accessibilityHint(Text("Continues this call with this device's speech"))
+                    }
+                }
+                .padding(16)
             } else if let panel {
                 Divider().overlay(Theme.border)
                 switch panel {
                 case .settings:
                     CallSettingsPanel(
-                        live: call is LiveCall, liveStatus: liveStatus,
+                        live: call is LiveCall, gateway: call is GatewayCall, liveStatus: liveStatus,
                         languageChanged: { (call as? VoiceCall)?.languageChanged() },
                         engineChanged: { Task { await restart() } })
                 case .transcript: TranscriptPanel(call: call, agentName: contact.name)
@@ -120,21 +131,22 @@ struct CallBar: View {
 
     private var profile: String { contact.details?.profile ?? contact.id }
 
-    /// Picks the engine and starts the call: GPT-Live when it's chosen (or, on Automatic, when the
-    /// agent's gateway selects it) and the gateway can run it; on-device speech otherwise.
+    /// Picks the engine (`CallSettings.resolve`) and starts the call.
     private func begin() async {
         let choice = CallSettings.engine
-        if choice != "apple", let voiceLive {
+        if choice != "apple", choice != CallSettings.gateway, let voiceLive {
             liveStatus = try? await voiceLive.status(profile: profile)
         }
-        let wantsLive = choice == "gpt-live" || (choice.isEmpty && liveStatus?.mode == "gpt-live")
-        if wantsLive, let voiceLive, let liveStatus, liveStatus.available {
-            call = LiveCall(thread: call.thread, profile: profile, service: voiceLive)
-        } else if choice == "gpt-live" {
-            engineProblem = String(
-                localized:
-                    "GPT-Live can't start: \(liveStatus?.reason ?? String(localized: "the gateway didn't answer")). Choose On-device in the call settings to talk anyway."
-            )
+        switch CallSettings.resolve(choice: choice, status: liveStatus) {
+        case .onDevice: break
+        case .gptLive:
+            if let voiceLive { call = LiveCall(thread: call.thread, profile: profile, service: voiceLive) }
+        case .gateway:
+            if let transcriber, let speaker {
+                call = GatewayCall(thread: call.thread, profile: profile, transcriber: transcriber, speaker: speaker)
+            }
+        case .unavailable(let problem):
+            engineProblem = problem
             panel = .settings
             return
         }
@@ -147,6 +159,14 @@ struct CallBar: View {
         engineProblem = nil
         call = VoiceCall(thread: call.thread)
         await begin()
+    }
+
+    /// The gateway failed this call: go on with this device's speech, leaving the setting as it is.
+    private func useOnDevice() async {
+        call.end()
+        engineProblem = nil
+        call = VoiceCall(thread: call.thread)
+        await call.start()
     }
 
     private var status: String {
@@ -267,6 +287,8 @@ private struct CallBarButton: View {
 private struct CallSettingsPanel: View {
     /// The call runs on GPT-Live, whose voice is set on the gateway.
     let live: Bool
+    /// The call runs on the gateway's own speech, set up in Hermes.
+    let gateway: Bool
     let liveStatus: VoiceLiveStatus?
     let languageChanged: () -> Void
     let engineChanged: () -> Void
@@ -281,11 +303,20 @@ private struct CallSettingsPanel: View {
                 Picker("Engine", selection: $engine) {
                     Text("Automatic").tag("")
                     Text("On-device").tag("apple")
+                    Text("Gateway").tag(CallSettings.gateway)
                     Text("GPT-Live").tag("gpt-live")
                 }
                 .clickable()
             }
-            if live {
+            if gateway {
+                Text(
+                    "Voice, speed and language are set on your gateway in Hermes. Your voice goes to the gateway's speech providers, which may bill for it."
+                )
+                .scaledFont(size: 12)
+                .foregroundStyle(Theme.secondaryInk)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 4)
+            } else if live {
                 HStack {
                     Text("Voice")
                         .scaledFont(size: 14.5)

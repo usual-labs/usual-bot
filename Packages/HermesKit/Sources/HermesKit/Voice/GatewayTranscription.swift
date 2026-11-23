@@ -75,9 +75,15 @@ public final class GatewayTranscriber {
         }
     }
 
+    /// What gateway speech is for: the words differ where they name it.
+    public enum Use: Sendable {
+        case dictation, call
+    }
+
     /// What to tell someone when gateway transcription fails, with the two refusals Hermes gives
     /// most in plain words.
-    public nonisolated static func problem(for error: any Error) -> String {
+    public nonisolated static func problem(for error: any Error, use: Use = .dictation) -> String {
+        if use == .call, let unreachable = unreachableProblem(error) { return unreachable }
         if case GatewayError.http(let status, let message) = error {
             let detail = message ?? ""
             if detail.localizedCaseInsensitiveContains("stt is disabled") {
@@ -90,11 +96,25 @@ public final class GatewayTranscriber {
             }
             // A route this Hermes doesn't have answers FastAPI's plain "Not Found".
             if status == 404, message == nil || detail == "Not Found" {
-                return String(localized: "Update Hermes on your gateway to use Gateway dictation, or use On-device.")
+                return use == .call
+                    ? String(localized: "Update Hermes on your gateway to use Gateway calls, or use On-device.")
+                    : String(localized: "Update Hermes on your gateway to use Gateway dictation, or use On-device.")
             }
             if !detail.isEmpty { return String(localized: "The gateway couldn’t transcribe that: \(detail)") }
         }
         return String(localized: "The gateway couldn’t transcribe that. \(error.localizedDescription)")
+    }
+
+    /// A call that loses its gateway says so, rather than the transport's own words.
+    nonisolated static func unreachableProblem(_ error: any Error) -> String? {
+        switch error as? GatewayError {
+        case .unreachable, .disconnected, .timedOut:
+            String(
+                localized:
+                    "Your gateway isn’t reachable, so the call can’t go on. Use On-device, or try again when it’s back."
+            )
+        default: nil
+        }
     }
 
     private static func query(_ profile: String?) -> String {

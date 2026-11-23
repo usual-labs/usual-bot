@@ -320,6 +320,22 @@ read at Hermes `2bd378ed1b`.
 - The stream opens with the ordinary `/api/auth/ws-ticket` ticket, not the Webapp's named
   `/api/webapp/socket-ticket` one: Hermes accepts an unnamed ticket for every socket but the host
   terminal (source finding). If it's refused, the recording is uploaded.
+- **Gateway calls are chosen, never automatic.** Automatic follows `voice.voice_chat_mode` only
+  to GPT-Live. Hermes's `chained` mode stays On-device, for the reason dictation is opt-in: Gateway
+  sends your voice off the device and both providers may bill. Voice, speed and language are the
+  gateway's: neither speech route takes them.
+- **The device decides when your turn ends,** after 1.1 s of quiet on the microphone
+  (`TurnDetector`). A gateway that can't stream sends no words until the end, so its words only
+  keep a turn open. Each turn streams to `transcribe-stream` and, without final words, uploads as
+  16 kHz WAV (a turn is short, so it skips the AAC encoder).
+- **The reply is spoken over `/api/audio/speak-stream`,** one socket per reply, fed the sentences
+  `SpokenReply` picks as the reply streams, so speech starts with the first sentence. Its
+  `fallback` frame, or a socket that won't open, sends each sentence to `POST /api/audio/speak`
+  instead, as Hermes's own app does. Talking over the Bot for 0.4 s cuts it off, only with echo
+  cancellation; without it the call takes turns. A gateway failure ends the call with the reason
+  and **Use On-device**, which carries on this call without changing the setting.
+- **Rooms have no calls,** with any engine. If they get them, they use the gateway's own profile,
+  as dictation does.
 
 ## Rooms
 
@@ -1025,6 +1041,11 @@ read at Hermes `2bd378ed1b`.
   fakes the upload. Not run: any real gateway (upload, live stream, `stt-lease`, the error texts),
   the unnamed ticket opening `transcribe-stream`, the legacy dashboard, a 10-minute recording, and
   **Use On-device** on a real recording.
+- Gateway calls have run only against fakes (`GatewaySpeechTests`, `GatewayCallTests`) and in the
+  demo, which speaks with the device's voice through the same PCM path and fakes the upload. Not
+  run: any real gateway (`speak-stream`, `/speak`, `tts-lease`, the error texts), the unnamed
+  ticket opening `speak-stream`, Edge through ffmpeg, how long the first sentence takes, the
+  turn thresholds on real rooms and microphones, and barge-in against echo on a device.
 - Notifications through the relay were run on the developer's gateway on 2026-11-05: sealed replies
   reached a Mac and an iPhone and opened in the extension, an open chat on either kept both quiet,
   and muting a Bot on one device left the other hearing it. Not yet run: a room approval, a `/bg`
