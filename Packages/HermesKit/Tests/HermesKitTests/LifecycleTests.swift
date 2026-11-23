@@ -55,6 +55,57 @@ struct LifecycleTests {
         #expect(model.linkTask != nil)
     }
 
+    @Test func tappingANotificationThatWokeTheAppKeepsItsLink() async throws {
+        let (model, sockets) = try makeModel()
+        model.setForeground(false)
+        await model.warmUp("ada", on: nil, within: .milliseconds(100))
+        #expect(sockets.count == 1)
+        #expect(model.linkTask != nil)
+
+        model.setForeground(true)
+        #expect(model.linkTask != nil)
+        #expect(!model.isCheckingIn)
+        #expect(!model.endWarmUp())
+        // sleep-ok: no second socket should come, so there is no event to wait for
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(sockets.count == 1)
+    }
+
+    @Test func aWakeNobodyTappedLetsGo() async throws {
+        let (model, sockets) = try makeModel()
+        model.setForeground(false)
+        await model.warmUp("ada", on: nil, within: .milliseconds(100))
+        #expect(model.endWarmUp())
+        #expect(model.linkTask == nil)
+        #expect(!model.isCheckingIn)
+        #expect(sockets.count == 1)
+    }
+
+    @Test func anotherGatewaysNotificationWaitsForTheTap() async throws {
+        let (model, sockets) = try makeModel()
+        model.setForeground(false)
+        await model.warmUp("ada", on: "elsewhere", within: .milliseconds(100))
+        #expect(sockets.count == 0)
+        #expect(!model.endWarmUp())
+    }
+
+    @Test func theChatOpenWhenYouLeftIsntReadWhileYoureAway() throws {
+        let (model, _) = try makeModel()
+        let ada = Contact(id: "ada", name: "Ada")
+        model.visibleContactID = "ada"
+        #expect(model.thread(for: ada).isVisible)
+
+        model.setForeground(false)
+        #expect(!model.thread(for: ada).isVisible)
+        // Made while away, say as a notification loads it.
+        #expect(!model.thread(for: Contact(id: "bo", name: "Bo")).isVisible)
+        model.visibleContactID = "bo"
+        #expect(!model.thread(for: Contact(id: "bo", name: "Bo")).isVisible)
+
+        model.setForeground(true)
+        #expect(model.thread(for: Contact(id: "bo", name: "Bo")).isVisible)
+    }
+
     @Test func launchShowsTheSplashUntilTheSavedSignInIsRead() async throws {
         let (model, _) = try makeModel()
         #expect(model.isRestoring)

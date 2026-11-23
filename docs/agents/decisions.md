@@ -446,6 +446,20 @@ read at Hermes `2bd378ed1b`.
   since the relay can't count what it can't read. The app puts its own number back when it's in
   front, so a push for a reply it already counted, a chat read elsewhere, or the other gateway's
   message is corrected only then. A build without push has the badge only while the app runs.
+- **A notification wakes the iPhone app to load its chat before you tap.** The app asks the relay
+  for `wake` when it registers (and again each launch until a relay answers that it stored it, so
+  an app released before its relay still gets there), and the relay then adds `content-available` to its message and
+  "needs you" pushes. The app opens the sealed text itself, since a wake gets the push as Apple sent
+  it and not as the extension changed it. It connects, opens that chat ahead of the others, saves the
+  cache and keeps the link up 15 s from the wake. A tap within that window keeps the link
+  (`setForeground` doesn't redial during `warmUp`); a later tap finds the message in memory or the
+  cache and reconnects as before. Only the gateway in use warms up. It's opt-in per device because
+  iOS wakes an app less often when it does nothing with its wakes, which an older build would do,
+  and less often the longer each wake runs, hence the short hold. iOS never wakes an app swiped
+  away in the app switcher, and rations wakes in Low Power Mode, so this is best effort. A chat
+  loaded while the app is away isn't on screen (`AppModel.isShown`), so a reply loaded for a wake
+  isn't marked read here or on your other devices just because that chat was open when you left.
+  Unverified on a device: how often iOS grants these wakes.
 - **The app reports the open chat every roster tick, and "none" once,** and the plugin forgets an
   entry after 15 s, so a crash can't silence pushes. Repeating "none" would let a Mac in the
   background overrule the iPhone in your hand.

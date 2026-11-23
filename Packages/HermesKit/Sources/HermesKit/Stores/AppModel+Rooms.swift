@@ -30,7 +30,7 @@ extension AppModel {
         let id = RoomSummary.contactID(summary.id)
         let room = rooms[id] ?? makeRoom(summary, id: id)
         room.update(summary)
-        room.isVisible = id == visibleContactID
+        room.isVisible = isShown(id)
         return room
     }
 

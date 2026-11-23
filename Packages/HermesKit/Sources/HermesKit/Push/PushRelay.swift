@@ -29,7 +29,18 @@ public final class PushRelay {
         public let sealKey: Data
         var token: String
         var environment: String
+        /// Whether the relay stored that it wakes this device for its notifications (`asksToWake`);
+        /// `nil` from a build or a relay before that.
+        var wakes: Bool?
     }
+
+    /// The iPhone asks the relay to wake it for each message, to load the chat before you tap the
+    /// notification (`AppModel.warmUp`). The Mac stays connected while it runs.
+    #if os(iOS)
+        nonisolated static let asksToWake = true
+    #else
+        nonisolated static let asksToWake = false
+    #endif
 
     private let relay: URL?
     private let environment: String
@@ -88,28 +99,31 @@ public final class PushRelay {
     /// Where the gateway sends this device's notifications.
     public var address: URL? { relay }
 
-    /// Apple's token for this install. Registers once, then only says when the token changes.
+    /// Apple's token for this install. Registers once, then only says when the token changes, or
+    /// until the relay has stored the ask to wake this device.
     public func received(token data: Data) async {
         guard let relay else { return }
         let token = data.map { String(format: "%02x", $0) }.joined()
         do {
+            let device = Device(token: token, environment: environment, wake: Self.asksToWake)
             if var known = registration {
-                if known.token != token || known.environment != environment {
-                    try await call(
+                if known.token != token || known.environment != environment || (known.wakes ?? false) != Self.asksToWake
+                {
+                    let answer: Updated = try await call(
                         relay.appending(path: "v1/devices/\(known.id)"), method: "PUT", bearer: known.secret,
-                        body: ["token": token, "environment": environment])
+                        body: device)
                     known.token = token
                     known.environment = environment
+                    known.wakes = answer.wake
                     try save(known)
                 }
             } else {
                 let answer: Registered = try await call(
-                    relay.appending(path: "v1/devices"), method: "POST",
-                    body: ["token": token, "environment": environment])
+                    relay.appending(path: "v1/devices"), method: "POST", body: device)
                 try save(
                     Registration(
                         id: answer.id, secret: answer.secret, sendKey: answer.sendKey, sealKey: Self.newKey(),
-                        token: token, environment: environment))
+                        token: token, environment: environment, wakes: answer.wake))
             }
             phase = .ready
         } catch RelayError.status(404) where registration != nil {
@@ -146,10 +160,23 @@ public final class PushRelay {
         case notRegistered
     }
 
+    /// What the relay keeps about this device. A relay before `wake` ignores it.
+    private struct Device: Encodable, Sendable {
+        let token: String
+        let environment: String
+        let wake: Bool
+    }
+
+    /// `wake` is what the relay stored, and `nil` from a relay before it: the app asks again then.
     private struct Registered: Decodable, Sendable {
         let id: String
         let secret: String
         let sendKey: String
+        let wake: Bool?
+    }
+
+    private struct Updated: Decodable, Sendable {
+        let wake: Bool?
     }
 
     private struct Push: Encodable, Sendable {
