@@ -26,7 +26,8 @@ who or what wrote it. Agents start from `AGENTS.md`.
 
 ## Getting set up
 
-1. Install **Xcode 26 or newer**.
+1. Install **Xcode 27 or newer**. CI builds with the version in `.xcode-version`, and
+   `scripts/check.sh` warns when yours differs.
 2. Clone the repository and `open UsualBot.xcodeproj`.
 3. Pick the **UsualBot** scheme and a Mac or iPhone simulator, and Run.
 4. No gateway? Set `USUALBOT_DEMO=1` in the scheme's environment for a made-up team of agents

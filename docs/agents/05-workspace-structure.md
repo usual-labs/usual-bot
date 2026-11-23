@@ -12,6 +12,7 @@
 - `.github/workflows/ci.yml` — `scripts/check.sh` split over parallel macOS jobs on pushes and
   PRs (skipped for documentation-only changes), gated by the required `build` job
 - `scripts/check.sh` — the same checks locally (`--fast` skips the builds; `macos`/`ios` is one);
+  `scripts/xcode.sh` — picks the Xcode in `.xcode-version` for it and `testflight.sh`;
   `scripts/check-test-waits.sh` — rejects unexplained fixed sleeps in tests; `.githooks/pre-commit`
   — optional lint of staged Swift files (`git config core.hooksPath .githooks`)
 - `.github/CODEOWNERS` — requests a maintainer's review on workflows, signing, scripts, sign-in and
@@ -41,7 +42,7 @@
   `.github/`), findings in code scanning; `.github/workflows/scorecard.yml` — OpenSSF Scorecard
   weekly and on pushes to main, publishes the README badge; `.github/dependabot.yml` — weekly grouped
   updates of the pinned actions (7-day cooldown); `.github/workflows/codeql.yml` — CodeQL for Swift
-  (xcodebuild of the app on `macos-26`, manual build mode; on main, weekly and by hand) and Actions
+  (xcodebuild of the app on `xcode-27`, manual build mode; on main, weekly and by hand) and Actions
   (also on PRs). A package-only SwiftPM scan misses `App/`; the tracked workflow builds the app with
   Xcode
 - `scripts/testflight.sh` — archives the Mac and iPhone apps with push and uploads them to

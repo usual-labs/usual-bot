@@ -39,7 +39,12 @@ struct LifecycleTests {
     @Test func aCheckInConnectsForAMomentThenLetsGo() async throws {
         let (model, sockets) = try makeModel()
         model.setForeground(false)
-        await model.checkIn(within: .milliseconds(100))
+        // Ended once it has dialled, not by a time limit: a busy machine can pass a short limit
+        // before it dials, and the check-in then cancels the link with no socket.
+        let checkIn = Task { await model.checkIn(within: .seconds(60)) }
+        await waitForSockets(1, in: sockets)
+        checkIn.cancel()
+        await checkIn.value
         #expect(sockets.count == 1)
         #expect(model.linkTask == nil)
         #expect(!model.isCheckingIn)

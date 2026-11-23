@@ -5,8 +5,15 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 
 ## CI and releases
 
-- CI uses `macos-26`: the app needs the macOS 26 / iOS 26 SDK (`ToolbarSpacer`,
-  `sharedBackgroundVisibility`), which the `macos-15` image's Xcode can't compile.
+- **CI builds with the Xcode in `.xcode-version`, the one releases ship from.** `scripts/xcode.sh`
+  selects it on the runner (`/Applications/Xcode_<version>.app`), fails CI if it's missing, and
+  warns on a Mac with another one. With Xcode 26.6 on CI and 27 on the Mac, code that built locally
+  failed on CI three times in twelve days (a private initializer, an iOS 26.5 SDK API, a tuple
+  conversion). The `xcode-27` runner image has it; when the pinned Xcode moves to another image,
+  change `runs-on` in `ci.yml`, `codeql.yml` and `testflight.yml` together.
+- **GitHub's macOS runners sometimes never start.** A job waits about 15 minutes, ends cancelled
+  with "The job was not acquired by Runner of type hosted", and the `build` check fails though
+  nothing is wrong with the change. Re-run the failed jobs; it isn't a failure to investigate.
 - The required status check `build` is CI's last job, which passes only when every other job passed
   or was skipped for a documentation-only change. Add a new CI job to its `needs`, not to the ruleset,
   and keep its name: renaming it also needs the repository's branch rule updated. Filtering the
@@ -32,9 +39,9 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   repository's Actions allow-list. CodeQL builds the app with Xcode; a package-only SwiftPM scan
   doesn't cover `App/`.
 - `CODEOWNERS` applies from the base branch, so a pull request that adds an owner isn't gated by it.
-- **Pass `Binding(get:set:)` a closure, not a method reference.** CI's Xcode 26.6 crashed in IR
+- **Pass `Binding(get:set:)` a closure, not a method reference.** Xcode 26.6 crashed in IR
   generation on `set: setLaunchAtLogin` (a reabstraction thunk for an `@isolated(any)` setter);
-  `set: { setLaunchAtLogin($0) }` builds. Xcode 27 compiles both, so a local build doesn't catch it.
+  `set: { setLaunchAtLogin($0) }` builds. Xcode 27 compiles both.
 - Public build and release setup, signing-secret names, environment protection, immutable-release
   behavior and troubleshooting live in [the release guide](../guides/releasing.md). Maintainer
   credentials, account administration and release-session diaries don't belong in the public KB.
@@ -47,14 +54,17 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 - **Recovery starts after the chat takes input again.** `attach` opens the chat, then the recovery
   task runs. What can be lost is decided when the chat attaches; otherwise a question sent just
   after a reconnect shows as lost, which failed `SideQuestionTests` on CI.
-- **Wait for the event, not a fixed time.** Fixed sleeps failed on slow runners
-  (`silentSocketIsClosedAfterTheLimit`). `scripts/check-test-waits.sh` rejects a `Task.sleep` without
-  a `// sleep-ok:` reason. Leave several intervals of slack in timing tests. Don't retry a flaky test;
-  find the race.
-
-- **`GatewaySearchTests.anAnswerToAnOlderQueryIsDropped` is flaky (unresolved).** On 8 November 2026
-  it failed twice in a row in `scripts/check.sh --fast` (its 1 s `waitUntilOnMain` ran out) and
-  passed on the next run, with no HermesKit change. The race isn't found yet.
+- **Wait for the event, not a fixed time.** Fixed sleeps failed on slow runners.
+  `scripts/check-test-waits.sh` rejects a `Task.sleep` without a `// sleep-ok:` reason. Don't retry a
+  flaky test; find the race.
+- **A short time limit in the code under test races a busy runner too.** A test that asserts what
+  happened *within* a limit fails when the machine is slow to start: the heartbeat's silence limit
+  passed before its first ping, and a 100 ms check-in or warm-up ran out before it dialled
+  (`JSONRPCChannelTests`, `LifecycleTests`). Give the limit something no test outlasts and end the
+  work on the event (cancel it once it dialled), or test the limit on its own.
+- `GatewaySearchTests.anAnswerToAnOlderQueryIsDropped` failed while the shared wait was 1 s (last
+  seen 14 November 2026). Since the wait became 5 s it hasn't, and 200 repeated runs passed on
+  23 November. If it comes back, the race is still unknown.
 
 ## Mac
 
