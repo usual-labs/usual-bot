@@ -8,16 +8,17 @@ import Testing
 struct MediaStoreTests {
     private let png = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A])
 
-    private func store(_ http: ScriptedHTTP, temporaryDirectory: URL = FileManager.default.temporaryDirectory)
-        -> MediaStore
-    {
+    private func store(
+        _ http: ScriptedHTTP, temporaryDirectory: URL = FileManager.default.temporaryDirectory,
+        chats: [String: String] = [:]
+    ) -> MediaStore {
         let auth = AuthSession(
             gateway: testGateway,
             tokens: TokenSet(
                 accessToken: "a0", refreshToken: "r0", expiresAt: .now.addingTimeInterval(3600), provider: "nous",
                 userID: "u1"),
             store: MemoryTokenStore(), http: http)
-        return MediaStore(auth: { auth }, temporaryDirectory: temporaryDirectory)
+        return MediaStore(auth: { auth }, chat: { chats[$0] }, temporaryDirectory: temporaryDirectory)
     }
 
     @Test func readsTheFileAsTheAgentsProfileAndCachesIt() async throws {
@@ -71,6 +72,33 @@ struct MediaStoreTests {
         await #expect(throws: GatewayError.http(status: 404, message: "File not found")) {
             try await store(http).file(at: "/gone.png", profile: "ops")
         }
+    }
+
+    /// A file you sent is named relative to the chat's workspace (`@file:attachments/clip.mp4`):
+    /// the gateway resolves it only against the session that names it.
+    @Test func relativePathsAreReadInTheAgentsBotChat() async throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "MediaStoreTests-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let png = png
+        let http = ScriptedHTTP { request in
+            request.url?.path == "/api/fs/download"
+                ? (200, "clip") : (200, #"{"dataUrl":"data:image/png;base64,\#(png.base64EncodedString())"}"#)
+        }
+        let media = store(http, temporaryDirectory: folder, chats: ["ops": "20261108_171927_45a785"])
+
+        _ = try await media.playableFile(at: "attachments/Screen Recording.MP4", profile: "ops")
+        _ = try await media.file(at: "attachments/chart.png", profile: "ops")
+        _ = try await media.file(at: "/abs/chart.png", profile: "ops")
+        _ = try await media.file(at: "attachments/chart.png", profile: "other")
+
+        #expect(
+            http.requests.map { $0.url?.query }
+                == [
+                    "path=attachments%2FScreen%20Recording.MP4&profile=ops&session_id=20261108_171927_45a785",
+                    "path=attachments%2Fchart.png&profile=ops&session_id=20261108_171927_45a785",
+                    "path=%2Fabs%2Fchart.png&profile=ops",
+                    "path=attachments%2Fchart.png&profile=other",
+                ])
     }
 
     @Test func downloadsAudioWholeToAFileNamedLikeIt() async throws {

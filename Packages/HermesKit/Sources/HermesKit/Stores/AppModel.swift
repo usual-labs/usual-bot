@@ -115,7 +115,11 @@ public final class AppModel {
         @ObservationIgnored var demoSwitch: ((SavedGateway) -> Void)?
     #endif
     /// Images and files agents name in chats, read from the gateway.
-    @ObservationIgnored public private(set) lazy var media = MediaStore(auth: { [weak self] in self?.auth })
+    @ObservationIgnored public private(set) lazy var media = MediaStore(
+        auth: { [weak self] in self?.auth },
+        chat: { [weak self] profile in
+            self?.contacts.first { $0.kind == .agent && ($0.details?.profile ?? $0.id) == profile }?.chatID
+        })
     @ObservationIgnored public private(set) lazy var voiceLive = VoiceLiveService(auth: { [weak self] in self?.auth })
     @ObservationIgnored public private(set) lazy var transcriber = GatewayTranscriber(
         auth: { [weak self] in self?.auth }, isDemo: { [weak self] in self?.isDemo ?? false })

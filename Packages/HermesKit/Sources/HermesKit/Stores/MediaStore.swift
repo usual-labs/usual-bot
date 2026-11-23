@@ -6,6 +6,8 @@ import Foundation
 @MainActor
 public final class MediaStore {
     private let auth: @MainActor () -> AuthSession?
+    /// The stored ID of a profile's Bot Chat, which the gateway resolves relative paths in.
+    private let chat: @MainActor (String) -> String?
     private var cache: [String: Data] = [:]
     /// Cache keys, oldest first.
     private var order: [String] = []
@@ -24,9 +26,11 @@ public final class MediaStore {
     private static let playableLimit = 8
 
     init(
-        auth: @escaping @MainActor () -> AuthSession?, temporaryDirectory: URL = FileManager.default.temporaryDirectory
+        auth: @escaping @MainActor () -> AuthSession?, chat: @escaping @MainActor (String) -> String? = { _ in nil },
+        temporaryDirectory: URL = FileManager.default.temporaryDirectory
     ) {
         self.auth = auth
+        self.chat = chat
         let pid = ProcessInfo.processInfo.processIdentifier
         playbackFolder = temporaryDirectory.appending(path: "\(Self.playbackPrefix)\(pid)", directoryHint: .isDirectory)
         Self.removeEndedRuns(in: temporaryDirectory)
@@ -45,7 +49,8 @@ public final class MediaStore {
         #endif
         if let task = loading[key] { return try await task.value }
         guard let auth = auth() else { throw GatewayError.disconnected }
-        let task = Task { try await Self.fetch(path, profile: profile, auth: auth) }
+        let query = query(path, profile: profile)
+        let task = Task { try await Self.fetch(query, auth: auth) }
         loading[key] = task
         defer { loading[key] = nil }
         let data = try await task.value
@@ -85,7 +90,7 @@ public final class MediaStore {
             }
         } else {
             guard let auth = auth() else { throw GatewayError.disconnected }
-            let query = "path=\(Self.escape(path))&profile=\(Self.escape(profile))"
+            let query = query(path, profile: profile)
             task = Task.detached {
                 let data = try await auth.download(path: "/api/fs/download?\(query)")
                 return try Self.write(data, named: name, in: folder)
@@ -138,12 +143,21 @@ public final class MediaStore {
 
     /// `GET /api/fs/read-data-url`: what the official app reads remote media with. (`/api/media`
     /// only serves the default profile's image folders.)
-    private static func fetch(_ path: String, profile: String, auth: AuthSession) async throws -> Data {
+    private static func fetch(_ query: String, auth: AuthSession) async throws -> Data {
         struct Reply: Decodable { let dataUrl: String }
-        let reply = try await auth.json(
-            Reply.self, path: "/api/fs/read-data-url?path=\(escape(path))&profile=\(escape(profile))")
+        let reply = try await auth.json(Reply.self, path: "/api/fs/read-data-url?\(query)")
         guard let data = decode(dataURL: reply.dataUrl) else { throw GatewayError.invalidResponse }
         return data
+    }
+
+    /// The file routes' query. A relative path, such as a file you sent
+    /// (`@file:attachments/clip.mp4`), names the profile's Bot Chat too: the gateway resolves it in
+    /// that session's workspace, and against its own folder without one (404).
+    private func query(_ path: String, profile: String) -> String {
+        var query = "path=\(Self.escape(path))&profile=\(Self.escape(profile))"
+        let relative = !path.hasPrefix("/") && !path.hasPrefix("~") && !path.lowercased().hasPrefix("file:")
+        if relative, let session = chat(profile) { query += "&session_id=\(Self.escape(session))" }
+        return query
     }
 
     /// The bytes of a `data:<type>;base64,<payload>` URL.

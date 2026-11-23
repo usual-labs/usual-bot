@@ -48,6 +48,10 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   `attachments` (empty for none), uploaded while the reply ran, so it never takes images staged for
   another and a held one can be sent again later with the same paths. `session.steer` takes text
   only, so files never steer. A message queued with images wasn't run against a real gateway.
+- **A file you send is named relative to the chat's workspace.** `file.attach` returns
+  `@file:attachments/<name>` when the session's cwd holds it (the profile home, by default). The
+  `/api/fs/*` routes resolve a relative path against a session only when given `session_id` (the
+  stored one); without it they look in the gateway's own folder and answer 404.
 - **Undo rewinds to your last message.** There's no `session.undo`: the app reads `session.history`
   and rewinds to the newest row `GatewayTurn` reads as yours, skipping routine results and other
   rows Hermes starts itself.
