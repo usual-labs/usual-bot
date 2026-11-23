@@ -405,6 +405,7 @@ struct MessageBox: View {
                 .id(conversation)
             }
             .fieldScrollKnob()
+            .inlinePredictions()
         #endif
     }
 
