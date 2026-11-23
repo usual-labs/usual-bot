@@ -42,7 +42,7 @@ struct TranscriptView: View {
             let dates = DateLabels.labels(for: showsTools ? items : items.filter { !$0.isToolActivity })
             // One ForEach, so an item or card keeps its view (and what you typed in a card) as the
             // cards move.
-            let start = window.start(in: items, including: target)
+            let start = window.start(in: items, including: target ?? newLineID)
             ForEach(
                 Self.rows(of: items, cardsAt: cardsIndex, from: start, folding: exchanges, showingTools: showsTools),
                 id: \.id
@@ -79,6 +79,7 @@ struct TranscriptView: View {
     }
 
     private var items: [TranscriptItem] { thread.state.items }
+    private var newLineID: Int? { thread.newLine?.itemID(in: items) }
     private var exchanges: [BotExchange] { BotExchange.all(in: items) }
     /// The turn running now is one for another Bot: what it does shows inside its folded line.
     private var runsForABot: Bool { thread.state.isRunning && thread.turnIsForABot }
@@ -144,6 +145,7 @@ struct TranscriptView: View {
         -> some View
     {
         let first = items[exchange.items.lowerBound]
+        if let newLineID, items[exchange.items].contains(where: { $0.id == newLineID }) { NewMessagesLine() }
         if let date = dates[first.id] { DateLabel(text: date) }
         let running = runsForABot && exchange.items.upperBound == items.count
         BotExchangeLine(
@@ -158,6 +160,7 @@ struct TranscriptView: View {
     @ViewBuilder private func row(
         _ item: TranscriptItem, at index: Int, in items: [TranscriptItem], dates: [Int: String]
     ) -> some View {
+        if item.id == newLineID { NewMessagesLine() }
         if let date = dates[item.id] { DateLabel(text: date) }
         let isLast = index + 1 == items.count
         let shown = Self.shown(items, at: index)

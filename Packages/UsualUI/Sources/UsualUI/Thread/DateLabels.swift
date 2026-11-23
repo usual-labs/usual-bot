@@ -69,3 +69,26 @@ struct DateLabel: View {
             .accessibilityAddTraits(.isHeader)
     }
 }
+
+/// The NEW line above the first reply you hadn't read when you opened the chat or room.
+struct NewMessagesLine: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            rule
+            Text("New")
+                .textCase(.uppercase)
+                .scaledFont(size: 12, weight: .semibold)
+                .tracking(0.6)
+                .foregroundStyle(Theme.newLine)
+            rule
+        }
+        .padding(.top, 8)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("New messages"))
+        .accessibilityAddTraits(.isHeader)
+    }
+
+    private var rule: some View {
+        Rectangle().fill(Theme.newLine.opacity(0.6)).frame(height: 1)
+    }
+}

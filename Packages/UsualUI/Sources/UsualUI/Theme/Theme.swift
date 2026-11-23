@@ -70,6 +70,8 @@ public enum Theme {
     /// The dot on the Mac sidebar's Plugins button when the gateway's plugin can be updated: yellow,
     /// as asked, and darker in light mode so it shows on the sidebar's glass.
     static let updateDot = Color(light: 0xE09B00, dark: 0xF5C36B)
+    /// The NEW line above unread replies: blue, as in Grok, the one colour in a transcript of greys.
+    static let newLine = Color(light: 0x1F5FD6, dark: 0x5B95F5)
     public static let danger = Color(light: 0xB42318, dark: 0xF97066)
     /// Code blocks, which sit on a bubble, and a result's report. A folded line's rows hang off a
     /// rail instead (`FoldedRow`).
