@@ -33,7 +33,10 @@ final class NotificationService: UNNotificationServiceExtension {
                 }
             }
             if opened.sound == false { content.sound = nil }
-            if opened.kind == "message", let count = Badge.added() { content.badge = NSNumber(value: count) }
+            // What a Bot says before its reply isn't unread on its own: the app counts the turn once.
+            if opened.kind == "message", opened.interim != true, let count = Badge.added() {
+                content.badge = NSNumber(value: count)
+            }
             if let read = opened.read, !read.isEmpty {
                 let threads = Set(read.map { chat in opened.gateway.map { "\($0)/\(chat)" } ?? chat })
                 return TakeDown.read(threads, then: Finished(content: content, handler: contentHandler))
@@ -77,6 +80,8 @@ private struct Sealed: Decodable {
     let gateway: String?
     /// Chats read on another device whose notifications should go first (plugin 0.9.0 and later).
     let read: [String]?
+    /// What a Bot said on the way to its reply (plugin 0.12.0 and later).
+    let interim: Bool?
 
     static func open(_ text: String) -> Sealed? {
         guard let key = sealKey(), let data = Data(base64Encoded: text),

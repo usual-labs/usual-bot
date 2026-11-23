@@ -42,7 +42,8 @@ and a switch for each Bot on that device.
 
 What it sends:
 
-- A reply or message from a Bot, and a room member's reply.
+- A reply or message from a Bot, and a room member's reply. What a Bot says on the way to its
+  reply ("On it, looking now") notifies too.
 - When a Bot asks for approval, asks a question or wants the sudo password. Passwords and your
   answers never reach the plugin.
 

@@ -18,7 +18,7 @@ from . import context, flags, push, secret_prompt, store
 log = logging.getLogger(__name__)
 
 # As in plugin.yaml. The app reads it to offer an update.
-VERSION = "0.11.1"
+VERSION = "0.12.0"
 
 # Where a person talks to the agent. Leaves out helpers ("subagent"), routines ("cron") and rooms
 # ("bot_room"), whose sessions continue no chat of the app's. A gateway's own chats can say "local".
@@ -47,6 +47,10 @@ def _before_turn(
     line. A room turn gets only the voice line: its members aren't told about widgets this way, and
     the app shows every room on the gateway."""
     try:
+        push.on_turn_start(platform=platform, conversation_history=conversation_history, **_)
+    except Exception as exc:  # noqa: BLE001 - the turn goes on; only its mid-turn words stay quiet
+        log.warning("usual-bot: couldn't note the turn: %s", type(exc).__name__)
+    try:
         if platform == _ROOM_PLATFORM:
             return {"context": context.VOICE}
         if platform not in _CHAT_PLATFORMS:
@@ -65,6 +69,7 @@ def _before_turn(
 
 def register(ctx) -> None:
     ctx.register_hook("post_llm_call", push.on_reply)
+    ctx.register_hook("on_interim_message", push.on_interim)
     ctx.register_hook("on_human_input_request", push.on_request)
     ctx.register_hook("on_room_member_activity", push.on_room_activity)
     ctx.register_hook("pre_tool_call", _before_tool)
