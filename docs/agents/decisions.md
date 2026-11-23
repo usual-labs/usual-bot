@@ -857,8 +857,13 @@ read at Hermes `2bd378ed1b`.
   rather than how, no report sections, and a Bot's own SOUL voice wins. One note far back in a long
   chat loses to the replies written since, so every other turn in the app's chats gets a one-line
   `<usual-bot-voice>` reminder (a turn another Bot started gets its own line instead, since that
-  reply goes to the Bot). It stays in the history, so it costs about 40 tokens a turn until
-  compression. Rooms get the line every turn, without the context: push already treats every room
+  reply goes to the Bot). The reminder also repeats the short line before long work and says it
+  holds whatever voice the Bot's own instructions set: with only "unless your own instructions set
+  another voice", Bots with a SOUL voice of their own never sent it, in long chats where the context
+  was far back. Replaying 11 real turns from four Bots (Opus 5.5, first step only, twice each), the
+  line came before the first tool call in 0 of 16 runs for those Bots before and 15 of 16 after;
+  sending the whole context again reached 9 of 16. It stays in the history, so it costs about 70
+  tokens a turn until compression. Rooms get the line every turn, without the context: push already treats every room
   on the gateway as the app's. Splitting one reply into several bubbles was left out; a prompt
   can't time messages, and Hermes already shows text sent before a tool call as its own message.
   Checked offline only (Opus 5.5, a made-up SOUL with the `tui` hint and a report-style earlier

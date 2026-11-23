@@ -133,8 +133,15 @@ class ContextTests(PluginCase):
         self.assertNotIn("tables and code blocks", context.TEXT)
 
     def test_the_voice_line_is_short_and_defers_to_the_bots_own(self):
-        self.assertIn("your own instructions", context.VOICE)
-        self.assertLess(len(context.VOICE), 220)
+        self.assertIn("Your own instructions can set another tone and length", context.VOICE)
+        self.assertLess(len(context.VOICE), 320)
+
+    def test_the_voice_line_keeps_the_line_before_long_work_whatever_the_voice(self):
+        # Bots with their own SOUL voice took the old "unless your own instructions…" as leave to
+        # skip it, and the context saying it once was hundreds of messages back by then.
+        self.assertIn("first send one short line", context.VOICE)
+        self.assertIn("whatever voice", context.VOICE)
+        self.assertNotIn("unless your own instructions", context.VOICE)
 
 
 class BotTurnTests(PluginCase):

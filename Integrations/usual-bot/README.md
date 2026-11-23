@@ -155,8 +155,10 @@ where files it sends print as text. In a chat Usual Bot opened, the plugin adds 
 message: that the Bot is talking through Usual Bot, which isn't Hermes's official app; how to write
 in a messenger (a few short sentences with the answer first, a short line before long work, no
 report sections, unless the Bot's own instructions set another voice); and what shows there
-(Markdown, files with `MEDIA:` lines, and widgets). The text is in [`context.py`](context.py). It
-says nothing about you or your device.
+(Markdown, files with `MEDIA:` lines, and widgets). Every later message you send gets one line
+repeating the voice, and that the short line before long work holds whatever voice the Bot's own
+instructions set. The text is in [`context.py`](context.py). It says nothing about you or your
+device.
 
 Every later turn you start gets one line at its end, reminding the Bot to reply like a text: in a
 long chat, a note far back counts for less than the replies written since. Room turns get that

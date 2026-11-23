@@ -52,8 +52,12 @@ widget's file, not with prose.
 </usual-bot-context>"""
 
 # Every turn the user starts, and every room turn. Its own tag, so it never passes for `TEXT`.
+# The line before long work is repeated here and holds whatever the voice: Bots with a SOUL voice of
+# their own read a plain "unless your own instructions…" as leave to skip it.
 VOICE = ("<usual-bot-voice>Usual Bot is a messenger: reply like a text, with the answer first in a few "
-         "short plain sentences, unless your own instructions set another voice.</usual-bot-voice>")
+         "short plain sentences. Your own instructions can set another tone and length, but whatever voice "
+         "they set: before work that takes more than a few seconds, first send one short line saying what "
+         "you're on.</usual-bot-voice>")
 
 
 def bot_turn(name: str, note: bool) -> str:
