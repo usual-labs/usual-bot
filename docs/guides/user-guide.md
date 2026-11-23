@@ -425,7 +425,8 @@ Bot's name above the chat):
   have the Bot's own speech-to-text on Hermes hear you instead. Your voice goes to your gateway,
   which may send it on to a paid service, depending on how its speech-to-text is set up. Words
   appear as you talk if the gateway streams them; otherwise they come all at once after you stop,
-  while the box says **Transcribing…**. Tap the mic again then to cancel. Sending waits until the
+  while **Transcribing…** shows where they'll go and a ring turns around the mic. Tap the mic again
+  then to cancel. Sending waits until the
   words arrive. Dictation stops by itself after 10 minutes; its ring counts down the last 15
   seconds. In a room, the gateway's own profile hears you. If the gateway can't transcribe, the box
   says why; **Use On-device** turns the same recording into words on your device instead.

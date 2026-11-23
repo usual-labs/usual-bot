@@ -64,6 +64,9 @@ struct MessageBox: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.conversationTaps) private var conversationTaps
     @State private var dictation = Dictation()
+    /// The conversation dictation was started in; words that land after the box moved on don't
+    /// move this box's cursor.
+    @State private var dictatingIn: Contact.ID?
     @Environment(\.transcriber) private var transcriber
     @AppStorage(DictationSettings.engineKey) private var dictationEngine = ""
     #if os(iOS)
@@ -156,9 +159,14 @@ struct MessageBox: View {
                 }
             #endif
             .onDisappear { dictation.leave() }
+            // The words shown for it aren't read out, so VoiceOver hears it here.
+            .onChange(of: transcribing) { _, transcribing in
+                if transcribing { AccessibilityNotification.Announcement(String(localized: "Transcribing")).post() }
+            }
             // The next conversation gets its own text, and none of what was open over the last one.
             .onChange(of: conversation) {
                 dictation.leave()
+                dictatingIn = nil
                 dismissedText = nil
                 selection = TextSelection(insertionPoint: text.endIndex)
             }
@@ -261,8 +269,6 @@ struct MessageBox: View {
                     DictationProblem(
                         message: message, showsSettings: false, useOnDevice: useOnDevice,
                         dismiss: dictation.dismissProblem)
-                case .transcribing:
-                    DictationTranscribing()
                 default:
                     EmptyView()
                 }
@@ -347,13 +353,17 @@ struct MessageBox: View {
 
     private var field: some View {
         TextField(
-            quotes?.wrappedValue.isEmpty == false ? String(localized: "Reply…") : placeholder, text: $text,
-            selection: $selection, axis: .vertical
+            transcribing ? "" : quotes?.wrappedValue.isEmpty == false ? String(localized: "Reply…") : placeholder,
+            text: $text, selection: $selection, axis: .vertical
         )
         .textFieldStyle(.plain)
-        .textInputTint()
+        .textInputTint(hidesCursor: transcribing)
         .scaledFont(size: Self.fontSize)
         .lineLimit(1...8)
+        // Where the words will land, in place of a row under the box.
+        .overlay(alignment: .topLeading) {
+            if transcribing { TranscribingTail(text: text, fontSize: Self.fontSize).lineLimit(1...8) }
+        }
         .focused($focused)
         // Menu completion wins over sending. A handled key can still trigger onSubmit on iOS.
         .onKeyPress(.return, phases: .down) { press in
@@ -454,12 +464,22 @@ struct MessageBox: View {
         }
     }
 
+    private var transcribing: Bool { dictation.state == .transcribing }
+
     private var hasAttachments: Bool { attaching?.attachments.isEmpty == false }
 
     private func startDictation() {
+        let here = conversation
+        dictatingIn = here
         dictation.start(
             after: text, transcriber: dictatesThroughGateway ? transcriber : nil,
-            profile: transcriptionProfile, current: { text }, update: { text = $0 })
+            profile: transcriptionProfile, current: { text },
+            update: { words in
+                text = words
+                // The cursor follows the words, so you type on after them; the field would
+                // otherwise keep wherever it was, often the first character.
+                if dictatingIn == here { selection = TextSelection(insertionPoint: text.endIndex) }
+            })
         focused = true
     }
 
