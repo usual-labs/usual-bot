@@ -2,13 +2,32 @@ import Foundation
 import Observation
 import os
 
-/// What you've typed and not sent, for each chat and room. It never goes to the gateway, so your
+/// A quote waiting above a message box: a message you're replying to, or words you picked from
+/// one, with what you said to it. The message box's `QuotedMessage`, as a draft keeps it.
+public struct DraftQuote: Codable, Hashable, Sendable {
+    public var author: String
+    public var excerpt: String
+    public var mention: String?
+    public var lines: [String]
+    public var note: String
+
+    public init(author: String, excerpt: String, mention: String?, lines: [String], note: String) {
+        self.author = author
+        self.excerpt = excerpt
+        self.mention = mention
+        self.lines = lines
+        self.note = note
+    }
+}
+
+/// What you've typed and not sent, and the quotes you're replying to, for each chat and room. It never goes to the gateway, so your
 /// other devices don't have it. On disk it lives in Application Support, because the system may
 /// empty Caches; it's left out of backups, and deleted on sign-out.
 @MainActor
 @Observable
 public final class Drafts {
     private var texts: [Contact.ID: String] = [:]
+    private var quotes: [Contact.ID: [DraftQuote]] = [:]
     /// `nil` keeps drafts only while the app runs, as the demo does.
     @ObservationIgnored private let directory: URL?
     @ObservationIgnored private var gateway: GatewayAddress?
@@ -35,6 +54,23 @@ public final class Drafts {
         }
     }
 
+    /// The quotes waiting above `id`'s message box, oldest first.
+    public subscript(quotes id: Contact.ID) -> [DraftQuote] {
+        get { quotes[id] ?? [] }
+        set {
+            guard newValue != self[quotes: id] else { return }
+            quotes[id] = newValue.isEmpty ? nil : newValue
+            saveSoon()
+        }
+    }
+
+    /// The file: a chat's quotes beside its text. Files written before quotes were kept hold the
+    /// texts alone, as a plain dictionary.
+    private struct Stored: Codable {
+        var texts: [Contact.ID: String]
+        var quotes: [Contact.ID: [DraftQuote]]
+    }
+
     /// Writes a change that's still waiting, before the app goes away.
     public func save() {
         guard pendingSave != nil else { return }
@@ -42,9 +78,9 @@ public final class Drafts {
         pendingSave = nil
         guard let url = fileURL, var directory else { return }
         // Spaces and line breaks alone aren't a draft worth keeping.
-        let kept = texts.filter { $0.value.nonBlank != nil }
+        let kept = Stored(texts: texts.filter { $0.value.nonBlank != nil }, quotes: quotes)
         do {
-            guard !kept.isEmpty else {
+            guard !kept.texts.isEmpty || !kept.quotes.isEmpty else {
                 if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
                 return
             }
@@ -63,10 +99,14 @@ public final class Drafts {
     func load(for gateway: GatewayAddress) {
         self.gateway = gateway
         guard let url = fileURL else { return }
-        let stored = (try? Data(contentsOf: url)).flatMap {
-            try? JSONDecoder().decode([Contact.ID: String].self, from: $0)
+        let data = try? Data(contentsOf: url)
+        if let data, let stored = try? JSONDecoder().decode(Stored.self, from: data) {
+            texts = stored.texts
+            quotes = stored.quotes
+        } else {
+            texts = data.flatMap { try? JSONDecoder().decode([Contact.ID: String].self, from: $0) } ?? [:]
+            quotes = [:]
         }
-        texts = stored ?? [:]
     }
 
     /// Forgets everything on signing out.
@@ -75,6 +115,7 @@ public final class Drafts {
         pendingSave = nil
         if let url = fileURL { try? FileManager.default.removeItem(at: url) }
         texts = [:]
+        quotes = [:]
         gateway = nil
     }
 
@@ -82,19 +123,25 @@ public final class Drafts {
     func unload() {
         save()
         texts = [:]
+        quotes = [:]
         gateway = nil
     }
 
     /// A Bot renamed on the gateway keeps its draft.
     func move(from old: Contact.ID, to new: Contact.ID) {
-        guard let text = texts.removeValue(forKey: old) else { return }
+        let text = texts.removeValue(forKey: old)
+        let quoted = quotes.removeValue(forKey: old)
+        guard text != nil || quoted != nil else { return }
         if texts[new] == nil { texts[new] = text }
+        if quotes[new] == nil { quotes[new] = quoted }
         saveSoon()
     }
 
     /// Drops the draft of a Bot or room that's gone.
     func forget(_ id: Contact.ID) {
-        if texts.removeValue(forKey: id) != nil { saveSoon() }
+        let text = texts.removeValue(forKey: id)
+        let quoted = quotes.removeValue(forKey: id)
+        if text != nil || quoted != nil { saveSoon() }
     }
 
     /// Typing writes at most twice a second, so a quit that isn't a clean one loses half a

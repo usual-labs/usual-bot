@@ -41,6 +41,39 @@ struct DraftsTests {
         #expect(files.count == 1 && !files[0].contains("100.101"))
     }
 
+    @Test func repliesWaitingAboveTheBoxAreKeptWithTheDraft() throws {
+        let directory = directory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let drafts = Drafts(directory: directory)
+        drafts.load(for: testGateway)
+        let quote = DraftQuote(
+            author: "Forge", excerpt: "X ads setup", mention: nil, lines: ["X ads setup"], note: "hello")
+        // A reply with nothing typed in the box is a draft on its own.
+        drafts[quotes: "forge"] = [quote]
+        #expect(drafts["forge"].isEmpty)
+        drafts.save()
+
+        let relaunched = Drafts(directory: directory)
+        relaunched.load(for: testGateway)
+        #expect(relaunched[quotes: "forge"] == [quote])
+        #expect(relaunched[quotes: "scribe"].isEmpty)
+
+        relaunched[quotes: "forge"] = []
+        relaunched.save()
+        #expect((try? FileManager.default.contentsOfDirectory(atPath: directory.path))?.isEmpty != false)
+    }
+
+    @Test func draftsWrittenBeforeRepliesWereKeptStillLoad() throws {
+        let directory = directory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try JSONEncoder().encode(["forge": "Ship it"]).write(to: directory.appending(path: testGateway.fileName))
+
+        let drafts = Drafts(directory: directory)
+        drafts.load(for: testGateway)
+        #expect(drafts["forge"] == "Ship it")
+    }
+
     @Test func sendingOrClearingTheBoxRemovesTheDraft() throws {
         let directory = directory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -107,6 +140,9 @@ struct DraftsTests {
         let model = model()
         model.drafts["scout"] = "Find the"
         model.drafts["ops"] = "Restart"
+        let quote = DraftQuote(author: "Scout", excerpt: "Found it", mention: nil, lines: ["Found it"], note: "")
+        model.drafts[quotes: "scout"] = [quote]
+        model.drafts[quotes: "ops"] = [quote]
 
         model.moveAgent(from: "scout", to: "finder")
         model.forgetAgent("ops")
@@ -114,5 +150,8 @@ struct DraftsTests {
         #expect(model.drafts["finder"] == "Find the")
         #expect(model.drafts["scout"].isEmpty)
         #expect(model.drafts["ops"].isEmpty)
+        #expect(model.drafts[quotes: "finder"] == [quote])
+        #expect(model.drafts[quotes: "scout"].isEmpty)
+        #expect(model.drafts[quotes: "ops"].isEmpty)
     }
 }
