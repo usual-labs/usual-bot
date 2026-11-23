@@ -46,10 +46,11 @@ What it sends:
 - When a Bot asks for approval, asks a question or wants the sudo password. Passwords and your
   answers never reach the plugin.
 
-Helpers, routines and other platforms stay quiet, and so does the reply to a widget's button (its
-answer is the widget changing), a Bot's reply to another Bot's message (it goes back to that Bot,
-whose own report to you notifies you; an approval or question in it still does), and a Bot you've hidden, in Usual Bot or the Hermes app, except in
-rooms. A chat you're reading on any device is quiet on all of them; everything else reaches every
+Helpers, routines and other platforms stay quiet, and so does the reply to a prompt Hermes sends
+itself (a goal's next step), a Bot's reply to another Bot's message (it goes back to that Bot,
+whose own report to you notifies you; an approval or question in it still does), and a Bot you've
+hidden, in Usual Bot or the Hermes app, except in rooms. The reply to a widget's button notifies
+like any other. A chat you're reading on any device is quiet on all of them; everything else reaches every
 device that hasn't turned that Bot off. Opening a chat on one device takes down what your other
 devices show about it, with a silent push that names nothing outside its seal. With previews off on
 a device, its notifications say only who needs you.

@@ -1,4 +1,4 @@
-"""Replies to a hidden prompt (an inline widget's) don't notify."""
+"""Replies to a prompt Hermes sent itself don't notify; a widget's button does, like typing."""
 
 import sys
 import unittest
@@ -9,14 +9,31 @@ import turns  # noqa: E402  (by path: the plugin's folder name isn't a package n
 
 
 class HiddenTurnTests(unittest.TestCase):
-    def test_a_widgets_prompt_is_hidden(self):
+    def test_hermess_own_hidden_prompt_is_quiet(self):
         history = [
             {"role": "user", "content": "Show me disk use"},
             {"role": "assistant", "content": "Here it is."},
-            {"role": "user", "content": "Clear old logs on db-1", "display_kind": "hidden"},
+            {"role": "user", "content": "Continue the goal", "display_kind": "hidden", "display_metadata": {"gateway_input_owner": "x"}},
             {"role": "tool", "content": "ok"},
         ]
         self.assertTrue(turns.asked_hidden(history))
+
+    def test_a_hidden_prompt_without_metadata_is_quiet(self):
+        self.assertTrue(turns.asked_hidden([{"role": "user", "content": "x", "display_kind": "hidden"}]))
+
+    def test_a_widgets_button_notifies(self):
+        # You can tap and leave before the reply: an open chat already keeps every device quiet.
+        history = [
+            {"role": "user", "content": "Show me disk use"},
+            {"role": "assistant", "content": "Here it is."},
+            {
+                "role": "user",
+                "content": "score 4 (x3)",
+                "display_kind": "hidden",
+                "display_metadata": {"gateway_input_owner": "x", "submission_id": "widget-BD07B6D1"},
+            },
+        ]
+        self.assertFalse(turns.asked_hidden(history))
 
     def test_a_message_you_typed_isnt(self):
         history = [
