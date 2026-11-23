@@ -36,7 +36,7 @@ public struct WidgetDirective: Equatable, Sendable {
     /// Plain text's stand-in for a message that is only a widget.
     public static var sentWords: String { String(localized: "Sent a widget") }
 
-    static let opening = "::preview{"
+    public static let opening = "::preview{"
 
     /// `key="value"`, `key='value'` or `key=value`, separated by spaces, as remark-directive reads
     /// them. `#id` and `.class` shorthands mean nothing here and are skipped.

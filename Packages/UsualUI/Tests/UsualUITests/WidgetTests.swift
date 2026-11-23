@@ -1,8 +1,8 @@
 import Foundation
-import HermesKit
 import JavaScriptCore
 import Testing
 
+@testable import HermesKit
 @testable import UsualUI
 
 @MainActor
@@ -141,5 +141,48 @@ struct WidgetLoadingTests {
     @Test func nothingLoadsWhileTheReplyIsWrittenOrWhereWidgetsDontRun() {
         #expect(step(.loading, writing: true) == .keep)
         #expect(step(.loading, runs: false) == .keep)
+    }
+}
+
+@MainActor
+struct WidgetSuccessionTests {
+    private func reply(_ id: Int, _ file: String, member: String? = nil) -> TranscriptItem {
+        let text = "Take \(id):\n::preview{file=\"\(file)\"}"
+        return TranscriptItem(id: id, content: member.map { .member(id: $0, text: text) } ?? .assistant(text))
+    }
+
+    @Test func anAgentReusingAFileReplacesItsEarlierWidgets() {
+        let succession = WidgetSuccession([reply(0, "hook.html"), reply(1, "hook.html"), reply(2, "hook.html")])
+        #expect(succession.isReplaced("hook.html", at: WidgetPlace(item: 0)))
+        #expect(succession.isReplaced("hook.html", at: WidgetPlace(item: 1)))
+        #expect(!succession.isReplaced("hook.html", at: WidgetPlace(item: 2)))
+    }
+
+    @Test func otherFilesAndOtherAuthorsArentReplaced() {
+        let succession = WidgetSuccession([
+            reply(0, "hook.html", member: "cmo"), reply(1, "chart.html"), reply(2, "hook.html", member: "writer"),
+        ])
+        // Each room member's files live in its own profile.
+        #expect(!succession.isReplaced("hook.html", at: WidgetPlace(item: 0, author: "cmo")))
+        #expect(!succession.isReplaced("chart.html", at: WidgetPlace(item: 1)))
+        // A fenced directive is code, not a widget.
+        let fenced = TranscriptItem(id: 3, content: .assistant("```\n::preview{file=\"chart.html\"}\n```"))
+        #expect(!WidgetSuccession([reply(1, "chart.html"), fenced]).isReplaced("chart.html", at: WidgetPlace(item: 1)))
+    }
+}
+
+@MainActor
+struct ReplacedWidgetLoadingTests {
+    @Test func aReplacedPageKeepsWhatItShowsAndOneNotReadSaysItWasReplaced() {
+        let shown = InlineWidget.Phase.loaded("<p>take 1</p>")
+        #expect(
+            InlineWidget.loadStep(
+                shown, runs: true, isBeingWritten: false, isOnline: true, isStale: true, isReplaced: true) == .keep)
+        #expect(
+            InlineWidget.loadStep(.loading, runs: true, isBeingWritten: false, isOnline: true, isReplaced: true)
+                == .replaced)
+        #expect(
+            InlineWidget.loadStep(.offline, runs: true, isBeingWritten: false, isOnline: false, isReplaced: true)
+                == .replaced)
     }
 }

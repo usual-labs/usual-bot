@@ -22,6 +22,8 @@ struct InlineWidget: View {
     @Environment(\.runsWidgets) private var runs
     @Environment(\.gatewayOnline) private var isOnline
     @Environment(\.widgetChat) private var chat
+    @Environment(\.widgetSuccession) private var succession
+    @Environment(\.widgetPlace) private var place
     @Environment(\.messageTextSize) private var textSize
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.self) private var environment
@@ -47,6 +49,8 @@ struct InlineWidget: View {
         case loaded(String)
         /// Not read yet, and the gateway isn't reachable: it loads when it is.
         case offline
+        /// Not read yet, and a later message shows its file: reading it would show that one.
+        case replaced
         case failed(String)
     }
 
@@ -55,17 +59,21 @@ struct InlineWidget: View {
     /// stays: the transcript keeps its views, so this runs once per widget each time a chat opens,
     /// not as it scrolls.
     enum LoadStep: Equatable {
-        case load, waitForGateway, keep
+        case load, waitForGateway, keep, replaced
     }
 
     /// `isStale`: a turn in the chat ended since the page was read, and the page is running. Its
     /// agent may have rewritten it (widgets talking back are answered that way); one off screen is
     /// read when it runs again, so a long chat doesn't read every widget after every reply.
-    static func loadStep(_ phase: Phase, runs: Bool, isBeingWritten: Bool, isOnline: Bool, isStale: Bool = false)
-        -> LoadStep
-    {
+    /// `isReplaced`: a later message shows the same file (`WidgetSuccession`). A page already read
+    /// keeps what it shows, and one not read says so instead of showing the later one.
+    static func loadStep(
+        _ phase: Phase, runs: Bool, isBeingWritten: Bool, isOnline: Bool, isStale: Bool = false,
+        isReplaced: Bool = false
+    ) -> LoadStep {
         guard runs, !isBeingWritten else { return .keep }
-        if case .loaded = phase { return isStale && isOnline ? .load : .keep }
+        if case .loaded = phase { return isStale && isOnline && !isReplaced ? .load : .keep }
+        if isReplaced { return .replaced }
         return isOnline ? .load : .waitForGateway
     }
 
@@ -73,6 +81,7 @@ struct InlineWidget: View {
     private static let offscreenGrace = Duration.seconds(20)
 
     private var name: String { (directive.file as NSString).lastPathComponent }
+    private var isReplaced: Bool { place.map { succession.isReplaced(directive.file, at: $0) } ?? false }
 
     var body: some View {
         Group {
@@ -84,6 +93,12 @@ struct InlineWidget: View {
                     name: name,
                     detail: String(localized: "Usual Bot isn't connected to the gateway. This widget loads when it is.")
                 )
+            } else if phase == .replaced {
+                WidgetCard(
+                    name: name,
+                    detail: String(
+                        localized: "A newer message below uses this widget's file, so this one can't show it anymore."
+                    ))
             } else if case .failed(let reason) = phase {
                 // A failure while the gateway is reachable may not pass by itself, such as a page
                 // the agent hasn't written yet, so it can be tried again.
@@ -102,17 +117,18 @@ struct InlineWidget: View {
         .task(
             id: LoadKey(
                 file: directive.file, profile: profile, isBeingWritten: isBeingWritten, isOnline: isOnline,
-                attempt: attempt, turn: chat?.turnsEnded, isRunning: isRunning)
+                attempt: attempt, turn: chat?.turnsEnded, isRunning: isRunning, isReplaced: isReplaced)
         ) {
             let turn = chat?.turnsEnded
             switch Self.loadStep(
                 phase, runs: runs, isBeingWritten: isBeingWritten, isOnline: isOnline,
-                isStale: isRunning && readAfterTurn != turn)
+                isStale: isRunning && readAfterTurn != turn, isReplaced: isReplaced)
             {
             case .load:
                 readAfterTurn = turn
                 await load()
             case .waitForGateway: phase = .offline
+            case .replaced: phase = .replaced
             case .keep: break
             }
         }
@@ -226,6 +242,7 @@ struct InlineWidget: View {
         let attempt: Int
         let turn: Int?
         let isRunning: Bool
+        let isReplaced: Bool
     }
 }
 
