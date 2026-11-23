@@ -45,6 +45,20 @@ struct QuotedMessage: Hashable {
         quoted = [excerpt]
     }
 
+    /// One kept in a draft, as `saved` wrote it.
+    init(_ saved: DraftQuote) {
+        author = saved.author
+        excerpt = saved.excerpt
+        mention = saved.mention
+        quoted = saved.lines
+        note = saved.note
+    }
+
+    /// As the conversation's draft keeps it, so it's still waiting when you come back.
+    var saved: DraftQuote {
+        DraftQuote(author: author, excerpt: excerpt, mention: mention, lines: quoted, note: note)
+    }
+
     /// What you said, without the spaces around it: the chip's field edits `note` as you type.
     var reply: String { note.trimmingCharacters(in: .whitespacesAndNewlines) }
 

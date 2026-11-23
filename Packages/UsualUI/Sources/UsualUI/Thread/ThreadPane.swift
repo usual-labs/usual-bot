@@ -34,8 +34,6 @@ struct ThreadPane: View {
 
     /// Files waiting to go with the next message.
     @State private var attachments: [Attachment] = []
-    /// What your next message quotes: messages you're replying to and words you added from them.
-    @State private var quotes: [QuotedMessage] = []
     /// The message of yours you're rewriting.
     @State private var editing: TranscriptItem.ID?
     /// An edit or Try Again that removes enough to ask first.
@@ -49,6 +47,7 @@ struct ThreadPane: View {
         @AppStorage("showsTerminal") private var showsTerminal = false
     #endif
     @Environment(\.screens) private var screens
+    @Environment(\.drafts) private var drafts
     @Environment(\.readMarking) private var readMarking
     @Environment(\.gatewayOnline) private var isOnline
     #if os(macOS)
@@ -97,7 +96,7 @@ struct ThreadPane: View {
                 if let thread, thread.phase == .ready {
                     Composer(
                         thread: thread, chatID: contact.id, agentName: contact.name,
-                        attachments: $attachments, quotes: $quotes,
+                        attachments: $attachments, quotes: quotesBinding,
                         editing: $editing, confirm: { rewindRequest = $0 },
                         inCall: calling, startCall: { calling = true }
                     )
@@ -147,7 +146,6 @@ struct ThreadPane: View {
             .onChange(of: contact.id) {
                 attachments = []
                 calling = false
-                quotes = []
                 editing = nil
                 rewindRequest = nil
             }
@@ -164,6 +162,17 @@ struct ThreadPane: View {
                     terminal.map { _ in TerminalCommand(isShown: showsTerminal) { showsTerminal.toggle() } })
             #endif
             .paneChrome()
+    }
+
+    /// What your next message quotes: messages you're replying to and words you added from them.
+    /// They're part of the chat's draft, so they wait for you as its text does.
+    private var quotes: [QuotedMessage] {
+        get { drafts?[quotes: contact.id].map(QuotedMessage.init) ?? [] }
+        nonmutating set { drafts?[quotes: contact.id] = newValue.map(\.saved) }
+    }
+
+    private var quotesBinding: Binding<[QuotedMessage]> {
+        Binding(get: { quotes }, set: { quotes = $0 })
     }
 
     /// React, reply, edit, try again and undo, for the transcript's messages.

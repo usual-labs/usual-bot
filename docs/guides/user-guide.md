@@ -163,10 +163,11 @@ takes you back to the newest message and follows replies again; it has a dot whe
 came in while you were away. Scrolling to the end, or sending a message, does the same. On iPhone,
 sending also puts the keyboard away; tap the message box to write again.
 
-- **Drafts.** What you type and don't send stays in that chat's message box. Switch to another
-  chat or a room, or quit the app, and it's there when you come back. Rooms keep theirs the same
-  way. Drafts are kept on this device only, so your other devices don't show them, and signing out
-  deletes them. A reply quote and attached files aren't kept: they go when you leave the chat.
+- **Drafts.** What you type and don't send stays in that chat's message box, with the messages
+  you're replying to and what you said to them. Switch to another chat or a room, or quit the app,
+  and it's there when you come back. Rooms keep theirs the same way. Drafts are kept on this device
+  only, so your other devices don't show them, and signing out deletes them. Attached files aren't
+  kept: they go when you leave the chat.
 - **Attachments.** Use **+** or drag and drop, or on the Mac paste a copied image or file with ⌘V.
   On iPhone, pick from Photos, the camera or Files. Images up to 25 MB and other files up to
   50 MB.

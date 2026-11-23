@@ -18,8 +18,6 @@ struct RoomPane: View {
     var jump: MessageJump? = nil
     var jumped: () -> Void = {}
 
-    /// What your next message quotes; quoting an agent sends it to that agent only.
-    @State private var quotes: [QuotedMessage] = []
     @State private var showsInfo = false
     /// As in a chat: the newest messages, and earlier ones as you scroll up.
     @State private var window = TranscriptWindow()
@@ -49,7 +47,7 @@ struct RoomPane: View {
                             text: Binding(get: { drafts?[contact.id] ?? "" }, set: { drafts?[contact.id] = $0 }),
                             placeholder: placeholder, isRunning: !room.working.isEmpty, canSend: room.canSend,
                             stopLabel: String(localized: "Stop everyone in \(contact.name)"), mentions: mentions,
-                            quotes: $quotes, commands: roomSkills,
+                            quotes: Binding(get: { quotes }, set: { quotes = $0 }), commands: roomSkills,
                             unsent: Binding(get: { room.unsent }, set: { room.unsent = $0 }), send: room.send,
                             stop: room.stop
                         )
@@ -64,10 +62,7 @@ struct RoomPane: View {
             .onChange(of: room.working.isEmpty) { _, idle in
                 if idle { Task { await planLimits?.refresh(members) } }
             }
-            .onChange(of: room.roomID) {
-                quotes = []
-                showsInfo = false
-            }
+            .onChange(of: room.roomID) { showsInfo = false }
             // Inside the side panel's row: outside, the name drops below the window buttons' line.
             .paneChrome()
             #if os(macOS)
@@ -241,6 +236,13 @@ struct RoomPane: View {
         }
         return MemberAuthor(
             name: room.state.name(memberID), contact: Contact(id: member.profile ?? member.id, name: member.handle))
+    }
+
+    /// What your next message quotes; quoting an agent sends it to that agent only. Kept in the
+    /// room's draft, with its text.
+    private var quotes: [QuotedMessage] {
+        get { drafts?[quotes: contact.id].map(QuotedMessage.init) ?? [] }
+        nonmutating set { drafts?[quotes: contact.id] = newValue.map(\.saved) }
     }
 
     /// Reply and copy; rooms have no reactions.

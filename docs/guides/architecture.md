@@ -85,9 +85,9 @@ gateway's speech-to-text and speak the reply through its text-to-speech socket (
   contacts, threads, rooms, routines and approvals.
 - `OfflineCache` keeps the roster and recent messages per gateway in the Caches directory, with
   file protection, so chats open instantly and read offline.
-- `Drafts` keeps what's typed and not sent, per chat and room and per gateway, in Application
-  Support (Caches can be emptied by the system), with file protection and left out of backups. It
-  never goes to the gateway, and sign-out deletes it.
+- `Drafts` keeps what's typed and not sent, and the quotes being replied to, per chat and room and
+  per gateway, in Application Support (Caches can be emptied by the system), with file protection
+  and left out of backups. It never goes to the gateway, and sign-out deletes it.
 - The Keychain holds tokens; `UserDefaults` holds the gateway address and small UI choices.
 
 ## Demo mode
