@@ -20,14 +20,23 @@ def bot_sender(text) -> tuple[str, bool] | None:
     return name.strip(), body.lstrip().startswith(_NO_REPLY)
 
 
+# What Usual Bot puts before the `submission_id` of a prompt an inline widget sends
+# (`ChatThread.widgetPrefix`); Hermes keeps it in the row's `display_metadata`.
+_WIDGET_SUBMISSION = "widget-"
+
+
 def asked_hidden(conversation_history) -> bool:
-    """Whether the turn's prompt was hidden: an inline widget's (`window.hermes.send`), or one
-    Hermes sent itself. You were looking at the widget when you clicked it, and its answer is the
-    widget changing, so the reply isn't news. The prompt is the newest user message, which carries
-    the kind it was sent with (`agent/turn_context.py`)."""
+    """Whether Hermes sent the turn's prompt itself, hidden, such as a goal's next step. A widget's
+    prompt is hidden too but notifies like typing: you can tap and leave before the reply, and an
+    open chat already keeps every device quiet. The prompt is the newest user message, which
+    carries its kind and metadata (`agent/turn_context.py`)."""
     for message in reversed(conversation_history or []):
         if isinstance(message, dict) and message.get("role") == "user":
-            return message.get("display_kind") == "hidden"
+            if message.get("display_kind") != "hidden":
+                return False
+            metadata = message.get("display_metadata")
+            submission = metadata.get("submission_id") if isinstance(metadata, dict) else None
+            return not (isinstance(submission, str) and submission.startswith(_WIDGET_SUBMISSION))
     return False
 
 

@@ -212,8 +212,11 @@ read at Hermes `2bd378ed1b`.
     shows the file (`WidgetSuccession`), an earlier widget already showing keeps its page and stops
     reading; one not read yet, such as after the chat reopens, shows a card saying a newer message
     uses its file. The earlier take is gone from the gateway, so there's nothing truer to show.
-  - **No alert for its reply.** You were looking at the widget; the push plugin (0.5.1) skips a
-    reply whose prompt was hidden too, reading the kind off the turn's newest user message.
+  - **Its reply notifies like a typed one.** Replies often take 20 s, long enough to tap and
+    leave, and an open chat already keeps every device quiet. The plugin tells a widget's prompt
+    from Hermes's own hidden ones (a goal's next step, which stay quiet) by the app's `widget-`
+    `submission_id` in the newest user message's `display_metadata`. This replaces 0.5.1's rule
+    that no hidden prompt's reply notified.
 - **Hidden rows never show as yours.** `GatewayTurn.content` returns nothing for `hidden`, which also
   covers Hermes's onboarding opening and the official app's goal controls, which used to show as
   your messages and be what Undo and Edit took back. Legacy `session.undo` already skips them in
