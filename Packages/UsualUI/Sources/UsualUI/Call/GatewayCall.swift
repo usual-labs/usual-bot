@@ -239,14 +239,31 @@ final class GatewayCall: CallEngine {
         self.speech = speech
         playing = Task { [weak self] in
             var rate = 24_000.0
+            // Until the reply is heard to be a voice, its audio waits here to be checked.
+            var held = Data()
+            var checked = false
             for await event in speech.events {
                 guard let self, !Task.isCancelled else { return }
                 switch event {
-                case .start(let sampleRate): rate = sampleRate
+                case .start(let sampleRate):
+                    rate = sampleRate
+                    held = Data()
+                    checked = false
+                case .pcm(let pcm) where checked:
+                    play(pcm, rate: rate)
                 case .pcm(let pcm):
-                    if phase == .thinking { phase = .speaking }
-                    audio?.play(pcm16: pcm, sampleRate: rate)
-                case .end: break
+                    held += pcm
+                    // A fifth of a second is enough to tell.
+                    guard held.count >= Int(rate / 5) * 2 else { continue }
+                    guard let voice = check(held) else { return }
+                    play(held, rate: rate)
+                    held = Data()
+                    checked = voice
+                case .end:
+                    guard !held.isEmpty else { break }
+                    guard check(held) != nil else { return }
+                    play(held, rate: rate)
+                    held = Data()
                 case .fallback:
                     await speakClips()
                     return
@@ -255,6 +272,26 @@ final class GatewayCall: CallEngine {
             self?.speechOver = true
         }
         return speech
+    }
+
+    private func play(_ pcm: Data, rate: Double) {
+        if phase == .thinking { phase = .speaking }
+        audio?.play(pcm16: pcm, sampleRate: rate)
+    }
+
+    /// `true` if the audio is a voice, `false` if too quiet to tell, and `nil`, with the call
+    /// stopped, if it's noise: garbled audio is never played loud into someone's ear.
+    private func check(_ pcm: Data) -> Bool? {
+        switch PCMCheck.judge(pcm16: pcm) {
+        case .speech: return true
+        case .quiet: return false
+        case .noise:
+            fail(
+                String(
+                    localized:
+                        "The gateway's voice came back as noise, so the call stopped it. Try again, or use On-device."))
+            return nil
+        }
     }
 
     /// The stream couldn't speak: each sentence as a clip instead, waiting for the ones still
