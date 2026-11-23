@@ -319,14 +319,27 @@ public struct ThreadState: Equatable, Sendable, Codable {
         turnStart = items.count
     }
 
-    /// Puts a turn's message where the turn began, for one sent from another device.
-    mutating func insertPrompt(_ message: HistoryMessage, at index: Int) {
+    /// Puts a turn's message where the turn began, for one sent from another device. Returns the
+    /// item it made.
+    @discardableResult
+    mutating func insertPrompt(_ message: HistoryMessage, at index: Int) -> Int? {
         guard index <= items.count, let text = message.text?.nonBlank,
             let content = GatewayTurn.content(text: text, kind: message.displayKind, title: message.displayText)
-        else { return }
+        else { return nil }
         append(content, rowID: message.rowId, reactions: message.reactions, date: message.date ?? .now)
-        items.insert(items.removeLast(), at: index)
+        let item = items.removeLast()
+        items.insert(item, at: index)
         if index <= turnStart { turnStart += 1 }
+        return item.id
+    }
+
+    /// Swaps a message shown from the gateway's queue for its stored row, which has its images and
+    /// its row. Gone when the row turns out to be one no chat shows.
+    mutating func replacePrompt(_ itemID: Int, with message: HistoryMessage) {
+        guard let index = items.firstIndex(where: { $0.id == itemID }) else { return }
+        items.remove(at: index)
+        if index < turnStart { turnStart -= 1 }
+        insertPrompt(message, at: index)
     }
 
     /// Shows a command you ran that answers with output instead of a turn.

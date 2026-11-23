@@ -104,6 +104,8 @@ public final class ChatThread {
     /// Where the running turn began, when another device started it and this one hasn't seen
     /// what was asked.
     var elsewhereTurnStart: Int?
+    /// That turn's message, shown from the gateway's queue before its stored row could be read.
+    var elsewherePrompt: (itemID: Int, text: String)?
 
     /// The gateway is the one that keeps a queue of messages (the canonical protocol).
     var queuesOnGateway = false
@@ -240,6 +242,7 @@ public final class ChatThread {
         let rejoined = opened.sessionID == lastSessionID && seqEpoch == epoch && lastSeq > 0
         if !rejoined { lastSeq = 0 }
         elsewhereTurnStart = nil
+        elsewherePrompt = nil
         sessionID = opened.sessionID
         lastSessionID = opened.sessionID
         if let stored = opened.storedID { chatOpened?(stored) }
@@ -337,6 +340,7 @@ public final class ChatThread {
         if event.type == "session.info" {
             model = ChatModel(info: event.payload) ?? model
             adoptGoalTurns(from: event.payload)
+            showTurnElsewhere(from: event.payload)
             adoptQueue(from: event.payload)
             return
         }
@@ -362,6 +366,7 @@ public final class ChatThread {
         // Hermes began itself brings its own line.
         if event.type == "message.start", !state.isRunning, event.payload["display_kind"] == nil {
             elsewhereTurnStart = state.items.count
+            elsewherePrompt = nil
         }
         let wasRunning = state.isRunning
         let itemsBefore = state.items.count

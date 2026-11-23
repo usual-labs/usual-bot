@@ -81,7 +81,14 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   (`dispatch.message`); the gateway doesn't send it.
 - **A widget's prompt is `prompt.submit` with `display_kind: "hidden"`**, the one kind a client may
   set (`gateway/session_display.py`; the dashboard takes the same key). The stored row has the
-  kind; the queue's `pending` rows don't, so the app knows its own by `submission_id`.
+  kind; the queue's `pending` rows don't, so the app knows its own by `submission_id`, and sends
+  it as `widget-…` so another device knows it isn't a typed message.
+- **Another device's message shows from `pending` as its turn starts**, since `message.start`
+  carries no words. The row has the text only, not the images, so the stored row replaces it
+  once the turn ends (`finishTurnElsewhere`), matched by its words. Rows Hermes admits itself
+  (`["producer",…]`, `bot:…`) and an empty text (an image sent alone) wait for the stored row.
+  The ID shapes are read from Hermes's source (`gateway/session_automation.py`, `session_bot.py`),
+  not from a recording.
 - **Rooms dismiss with `groups.discard`** when the retry action offers only discard, which needs the
   turn's `member_id` and `execution_generation`. It leaves the room's other replies running.
 

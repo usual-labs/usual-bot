@@ -20,15 +20,33 @@ extension ChatThread {
         }
     }
 
-    /// Another device's message reaches this one only as a turn starting, without its words, so
-    /// they're looked up once the turn is stored, as Hermes's own app does. Only they are put in:
-    /// reloading would take you from what you're reading. A turn that failed may not be stored.
+    /// Another device's message reaches this one only as a turn starting, without its words. The
+    /// gateway's queue lists them as soon as the turn starts, but not its images: so the words show
+    /// now, and the stored row replaces them once the turn ends (`finishTurnElsewhere`). A long
+    /// reply would otherwise leave the chat without what it answers for minutes. Turns Hermes
+    /// starts itself (routines, goals, other Bots' messages, under IDs `["producer",…]` and
+    /// `bot:…`) and widget prompts (`widget-…`) wait for the stored row, which says what they were.
+    func showTurnElsewhere(from info: JSONValue?) {
+        guard let start = elsewhereTurnStart, elsewherePrompt == nil, case .array(let rows) = info?["pending"],
+            let row = rows.first(where: { $0["status"] == "started" && $0["steering"]?.boolValue != true }),
+            let id = row["input_id"]?.stringValue, !["[", "bot:", Self.widgetPrefix].contains(where: id.hasPrefix),
+            !sentDirectly.contains(id), !queue.contains(where: { $0.id == id }),
+            let text = row["text"]?.stringValue?.nonBlank, !state.hiddenPrompts.contains(text),
+            let item = state.insertPrompt(HistoryMessage(role: "user", text: text), at: start)
+        else { return }
+        elsewherePrompt = (item, text)
+    }
+
+    /// Looks up another device's message once its turn is stored, as Hermes's own app does. Only
+    /// it is put in: reloading would take you from what you're reading. A turn that failed or was
+    /// stopped may not be stored, so its row is taken only if it's the message shown already.
     func finishTurnElsewhere(_ payload: JSONValue) {
         guard let index = elsewhereTurnStart else { return }
         elsewhereTurnStart = nil
-        guard payload["status"]?.stringValue ?? "complete" == "complete", let sessionID, let channel = channel() else {
-            return
-        }
+        let shown = elsewherePrompt
+        elsewherePrompt = nil
+        let finished = payload["status"]?.stringValue ?? "complete" == "complete"
+        guard finished || shown != nil, let sessionID, let channel = channel() else { return }
         let load = transcriptLoad
         Task { [weak self] in
             let result = try? await channel.call("session.history", params: ["session_id": .string(sessionID)])
@@ -42,6 +60,15 @@ extension ChatThread {
                 !history[reply...].contains(where: { $0.role == "user" && $0.displayKind == GatewayTurn.hiddenKind })
             else { return }
             let prompt = history[promptIndex]
+            if let shown {
+                // The same message, or the one shown stays: what you wrote, files and images aside.
+                let words = { (text: String) in
+                    AttachmentRef.split(text).text.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                guard words(prompt.text ?? "") == words(shown.text) else { return }
+                state.replacePrompt(shown.itemID, with: prompt)
+                return
+            }
             state.insertPrompt(prompt, at: index)
             // A routine the Bot chose not to answer brings no reply to count, so it counts itself.
             if !isVisible, GatewayTurn.news(in: Array(history[promptIndex...])).first == prompt { unreadCount += 1 }
