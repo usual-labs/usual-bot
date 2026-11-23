@@ -148,6 +148,66 @@ struct GatewaySpeechTests {
         #expect(url.query == "profile=ops&ticket=t1")
     }
 
+    /// Hermes forwards the provider's chunks as they come, and they split samples: each `.pcm`
+    /// must still hold whole samples, or every one after the split plays as noise.
+    @Test func oddSizedFramesComeOutAsWholeSamples() async {
+        let wave = (0..<2000).map { Int16(12_000 * sin(Double($0) / 9)) }
+        let bytes = wave.withUnsafeBufferPointer { Data(buffer: $0) }
+        var chunks = [bytes.prefix(343)]
+        var offset = 343
+        while offset < bytes.count {
+            chunks.append(bytes[offset..<min(offset + 1369, bytes.count)])
+            offset += 1369
+        }
+        let socket = FakeSpeechSocket()
+        socket.onSend = { socket, text in
+            guard text.contains("done") else { return }
+            socket.answer(.text(#"{"type":"start","sample_rate":24000}"#))
+            for chunk in chunks { socket.answer(.data(Data(chunk))) }
+            socket.answer(.text(#"{"type":"end"}"#))
+        }
+        let stream = speaker(Self.ticket, socket: socket).stream(profile: "ops")
+        stream.say("Hi.")
+        stream.done()
+        var heard: [Int16] = []
+        for event in await events(stream) {
+            guard case .pcm(let pcm) = event else { continue }
+            #expect(pcm.count.isMultiple(of: 2))
+            // Read each piece on its own, as the call plays it.
+            heard += stride(from: 0, to: pcm.count - 1, by: 2).map {
+                Int16(
+                    littleEndian: Int16(
+                        bitPattern: UInt16(pcm[pcm.startIndex + $0]) | UInt16(pcm[pcm.startIndex + $0 + 1]) << 8))
+            }
+        }
+        #expect(heard == wave)
+    }
+
+    @Test func aNewUtteranceNeverStartsOnHalfASample() {
+        var joiner = PCMJoiner()
+        #expect(joiner.add(Data([1, 2, 3])) == Data([1, 2]))
+        #expect(joiner.add(Data([4])) == Data([3, 4]))
+        #expect(joiner.add(Data([5])) == Data())
+        joiner.reset()
+        #expect(joiner.add(Data([6, 7])) == Data([6, 7]))
+    }
+
+    @Test func noiseIsToldFromSpeech() {
+        let speech = (0..<4800).map { Int16(12_000 * sin(Double($0) / 9)) }
+        // The same samples a byte out: what the app played before.
+        let bytes = speech.withUnsafeBufferPointer { Data(buffer: $0) }
+        let shifted = bytes.dropFirst().prefix(bytes.count - 2)
+        let noise = stride(from: 0, to: shifted.count - 1, by: 2).map {
+            Int16(
+                bitPattern: UInt16(shifted[shifted.startIndex + $0]) | UInt16(shifted[shifted.startIndex + $0 + 1]) << 8
+            )
+        }
+        #expect(PCMCheck.judge(speech) == .speech)
+        #expect(PCMCheck.judge(noise) == .noise)
+        #expect(PCMCheck.judge([Int16](repeating: 3, count: 4800)) == .quiet)
+        #expect(PCMCheck.judge((0..<4800).map { Int16(100 * sin(Double($0))) }) == .quiet)
+    }
+
     @Test func aGatewayThatCantStreamSaysFallBack() async {
         let socket = FakeSpeechSocket()
         socket.onSend = { socket, text in if text.contains("done") { socket.answer(.text(#"{"type":"fallback"}"#)) } }
