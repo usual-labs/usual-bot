@@ -431,8 +431,15 @@ Bot's name above the chat):
   - **On-device** speech uses Apple's speech recognition and voices. Free. Your words are
     recognised on the device when it has the language's speech model, otherwise by Apple's
     servers, as with dictation.
+  - **Gateway** uses the Bot's own speech-to-text and text-to-speech on Hermes, so it hears you
+    and answers in the voice set up there. Your voice goes to your gateway, which may send it on
+    to paid services. A pause ends what you're saying, and the reply is spoken sentence by
+    sentence as it's written. Voice, speed and language are set on the gateway. If the gateway
+    can't hear or speak, the call says why; **Use On-device** carries on with your device's speech.
   - **GPT-Live** uses OpenAI's realtime voice through your gateway, for a more natural
     conversation. It's offered when the gateway has an OpenAI key, and OpenAI bills the minutes.
+  - **Automatic** uses GPT-Live when the Bot's gateway is set to it, and On-device otherwise.
+    Gateway is never picked for you.
 
 ## The Usual Bot plugin
 
@@ -729,7 +736,7 @@ and Settings opens with your gateway at the top. Preferences stay on this device
   bar is enough), and the iPhone only while connected or when iOS lets it check in.
 - **Voice:** choose the call engine and the language, voice and speed for on-device speech. These
   preferences are shared with the controls inside a call, and Read Aloud uses the language, voice
-  and speed too; GPT-Live’s voice stays on the gateway.
+  and speed too; Gateway and GPT-Live voices stay on the gateway.
 - **Connection:** see the gateway address, status, version and identity when available, name it,
   turn its notifications off, or sign out. Signing out removes the saved sign-in and cached chats
   for that gateway from this device, so the app asks first; with two gateways, the app goes on to

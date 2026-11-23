@@ -177,6 +177,15 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   the login Keychain from `security`; to let a test gateway borrow the Claude Code sign-in, link
   only `~/Library/Keychains` into it.
 
+## Calls
+
+- **Talking over a reply could steer it.** `ChatThread.stop()` is asynchronous and `send` steers a
+  running turn, so words said right after cutting the Bot off joined the reply being stopped.
+  Both `VoiceCall` and `GatewayCall` now wait up to 3 s for `isRunning` to clear before sending.
+- **Hermes's `/api/audio/speak` returns only the first part** when long text is split into several
+  files, and leaves the rest on the gateway (read at v0.23.3). Gateway calls send one sentence at a
+  time, so they don't hit it.
+
 ## Dictation
 
 - **Apple's recognizer starts over after a pause.** A result marked with `speechRecognitionMetadata`

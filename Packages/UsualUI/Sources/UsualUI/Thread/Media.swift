@@ -10,6 +10,8 @@ extension EnvironmentValues {
     @Entry var voiceLive: VoiceLiveService?
     /// Speech to text on the gateway, for dictation; set by the app.
     @Entry var transcriber: GatewayTranscriber?
+    /// Text to speech on the gateway, for Gateway calls; set by the app.
+    @Entry var speaker: GatewaySpeaker?
     /// The profile whose files a message names: the chat's agent, or a room reply's author.
     @Entry var mediaProfile: String?
     /// Transcripts of the voice memos in a reply, by path (`SpokenAudio.transcripts`).

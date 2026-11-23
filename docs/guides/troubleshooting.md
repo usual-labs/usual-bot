@@ -101,10 +101,16 @@ save the image again.
 Allow the microphone in **System Settings › Privacy & Security › Microphone** on the Mac, or
 **Settings › Usual Bot** on iPhone. Dictation also needs **Speech Recognition**.
 
-### GPT-Live isn't offered, or "GPT-Live couldn't start"
+### GPT-Live isn't offered, or "GPT-Live can't start"
 
 GPT-Live runs through your gateway with its OpenAI key. Make sure the gateway has one set up for
 its voice features, then try again. On-device calls work without it.
+
+### A Gateway call can't hear you or doesn't speak
+
+Gateway calls use the Bot's speech-to-text and text-to-speech settings in Hermes. The call says
+which one is missing or off: set it up on the gateway, or tap **Use On-device** to carry on with
+your device's speech. "Update Hermes" means the gateway is too old for Gateway calls.
 
 ## Still stuck?
 

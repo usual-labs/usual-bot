@@ -119,6 +119,8 @@ public final class AppModel {
     @ObservationIgnored public private(set) lazy var voiceLive = VoiceLiveService(auth: { [weak self] in self?.auth })
     @ObservationIgnored public private(set) lazy var transcriber = GatewayTranscriber(
         auth: { [weak self] in self?.auth }, isDemo: { [weak self] in self?.isDemo ?? false })
+    @ObservationIgnored public private(set) lazy var speaker = GatewaySpeaker(
+        auth: { [weak self] in self?.auth }, isDemo: { [weak self] in self?.isDemo ?? false })
     /// How the gateway reaches you when this app can't.
     @ObservationIgnored public private(set) lazy var push = PushSettings(
         auth: { [weak self] in self?.auth }, relay: { [weak self] in self?.relay },

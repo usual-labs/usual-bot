@@ -121,7 +121,8 @@ The film and all screenshots come from the built-in demo, with made-up Bots.
 - **Edit and undo.** Rewrite your last message for a fresh answer, or take it back.
 - **Dictation.** Tap the mic and speak; your words appear as you talk.
 - **Voice calls.** Talk with a Bot and it answers aloud, and stops when you speak over it. Uses
-  on-device speech, or Hermes's GPT-Live voice when your gateway has an OpenAI key.
+  on-device speech, the Bot's own speech providers on your gateway, or Hermes's GPT-Live voice
+  when your gateway has an OpenAI key.
 
 **Staying in control**
 

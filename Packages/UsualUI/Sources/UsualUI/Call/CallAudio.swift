@@ -15,6 +15,11 @@ final class CallAudio: @unchecked Sendable {
     private let voiceFormat = AVAudioFormat(standardFormatWithSampleRate: 24_000, channels: 1)!
     private let lock = NSLock()
     private var request: SFSpeechAudioBufferRecognitionRequest?
+    /// Where the microphone goes as 16 kHz 16-bit PCM, for the gateway; `nil` while nothing takes it.
+    private var pcmSink: (@Sendable (Data) -> Void)?
+    private var pcmConverter: AVAudioConverter?
+    private let pcmFormat = AVAudioFormat(
+        commonFormat: .pcmFormatFloat32, sampleRate: 16_000, channels: 1, interleaved: false)!
     private var muted = false
     private var pending = 0
     private var latestLevel = 0.0
@@ -72,6 +77,11 @@ final class CallAudio: @unchecked Sendable {
         lock.withLock { self.request = request }
     }
 
+    /// Where the microphone's audio goes as 16 kHz mono 16-bit PCM; `nil` stops it.
+    func listen(pcm sink: (@Sendable (Data) -> Void)?) {
+        lock.withLock { pcmSink = sink }
+    }
+
     func setMuted(_ muted: Bool) {
         lock.withLock { self.muted = muted }
     }
@@ -81,11 +91,20 @@ final class CallAudio: @unchecked Sendable {
 
     private func heard(_ buffer: AVAudioPCMBuffer) {
         let level = Self.level(of: buffer)
-        let request = lock.withLock { () -> SFSpeechAudioBufferRecognitionRequest? in
+        let (request, sink) = lock.withLock {
+            () -> (SFSpeechAudioBufferRecognitionRequest?, (@Sendable (Data) -> Void)?) in
             latestLevel = muted ? 0 : level
-            return muted ? nil : self.request
+            return muted ? (nil, nil) : (self.request, pcmSink)
         }
         request?.append(buffer)
+        guard let sink else { return }
+        // Only the tap's thread touches the converter.
+        if pcmConverter?.inputFormat != buffer.format {
+            pcmConverter = AVAudioConverter(from: buffer.format, to: pcmFormat)
+        }
+        guard let pcmConverter, let converted = GatewayRecording.convert(buffer, with: pcmConverter, to: pcmFormat)
+        else { return }
+        sink(GatewayRecording.pcm16(converted))
     }
 
     // MARK: Speaking
@@ -106,6 +125,38 @@ final class CallAudio: @unchecked Sendable {
         if !player.isPlaying { player.play() }
     }
 
+    /// Queues the gateway's voice: 16-bit little-endian mono PCM at `sampleRate`.
+    func play(pcm16 data: Data, sampleRate: Double) {
+        let frames = AVAudioFrameCount(data.count / 2)
+        guard frames > 0,
+            let format = AVAudioFormat(
+                commonFormat: .pcmFormatInt16, sampleRate: sampleRate, channels: 1, interleaved: true),
+            let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames),
+            let samples = buffer.int16ChannelData?[0]
+        else { return }
+        buffer.frameLength = frames
+        data.withUnsafeBytes { bytes in
+            for index in 0..<Int(frames) {
+                samples[index] = Int16(littleEndian: bytes.loadUnaligned(fromByteOffset: index * 2, as: Int16.self))
+            }
+        }
+        play(buffer)
+    }
+
+    /// Queues a whole clip of the gateway's voice, in any format AVFoundation reads. `false` if it
+    /// can't be read.
+    func play(clip audio: Data, fileExtension: String) -> Bool {
+        let url = FileManager.default.temporaryDirectory.appending(path: "call-\(UUID().uuidString).\(fileExtension)")
+        defer { try? FileManager.default.removeItem(at: url) }
+        guard (try? audio.write(to: url)) != nil, let file = try? AVAudioFile(forReading: url),
+            let buffer = AVAudioPCMBuffer(
+                pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)),
+            (try? file.read(into: buffer)) != nil, buffer.frameLength > 0
+        else { return false }
+        play(buffer)
+        return true
+    }
+
     /// Cuts the agent off: drops everything queued.
     func stopSpeaking() {
         lock.withLock {
@@ -118,6 +169,7 @@ final class CallAudio: @unchecked Sendable {
     func shutdown() {
         stopSpeaking()
         listen(into: nil)
+        listen(pcm: nil)
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
         #if os(iOS)

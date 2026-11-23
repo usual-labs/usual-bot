@@ -56,6 +56,35 @@
             return finished ? try? Data(contentsOf: url) : nil
         }
 
+        /// A voice memo's audio as 16-bit mono PCM, the way the gateway's speak stream sends it.
+        static func pcm16(fromM4A clip: Data) -> (Double, Data)? {
+            let url = FileManager.default.temporaryDirectory.appending(path: "UsualBotDemo-\(UUID().uuidString).m4a")
+            defer { try? FileManager.default.removeItem(at: url) }
+            guard (try? clip.write(to: url)) != nil, let file = try? AVAudioFile(forReading: url),
+                let format = AVAudioFormat(
+                    commonFormat: .pcmFormatInt16, sampleRate: file.fileFormat.sampleRate, channels: 1,
+                    interleaved: true),
+                let read = AVAudioPCMBuffer(
+                    pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length)),
+                (try? file.read(into: read)) != nil,
+                let converter = AVAudioConverter(from: file.processingFormat, to: format),
+                let output = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: read.frameLength + 1024)
+            else { return nil }
+            var supplied = false
+            var error: NSError?
+            converter.convert(to: output, error: &error) { _, status in
+                if supplied {
+                    status.pointee = .endOfStream
+                    return nil
+                }
+                supplied = true
+                status.pointee = .haveData
+                return read
+            }
+            guard error == nil, let samples = output.int16ChannelData?[0], output.frameLength > 0 else { return nil }
+            return (format.sampleRate, Data(bytes: samples, count: Int(output.frameLength) * 2))
+        }
+
         private struct Voice: @unchecked Sendable {
             let voice: AVSpeechSynthesisVoice?
             init(_ voice: AVSpeechSynthesisVoice?) { self.voice = voice }
