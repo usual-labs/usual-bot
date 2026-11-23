@@ -4,17 +4,25 @@ import SwiftUI
 /// A routine's output, posted in its Bot's chat: a message from the Bot with the routine's name
 /// over it. It used to be a folded line like a background command's, and a morning brief or a
 /// list to act on went unread for days behind it. A long one shows its start with Show All; one
-/// with nothing in it is only its line.
+/// with nothing in it is only its line. Settings › General can fold them back
+/// (`AppPreferences.showRoutineResultsKey`) for a Bot whose routines are noise.
 struct RoutineLine: View {
     let item: TranscriptItem
     let name: String
     let output: String
     let agentName: String
+    @AppStorage(AppPreferences.showRoutineResultsKey) private var showsInFull = true
 
     private var label: String { TranscriptItem.Content.routineLabel(name) }
 
     var body: some View {
-        if output.isEmpty {
+        if !showsInFull {
+            FoldedRow(symbol: "clock", opens: !output.isEmpty) {
+                Text(label).lineLimit(1)
+            } rows: {
+                ReportPeek(text: output, style: .markdown)
+            }
+        } else if output.isEmpty {
             FoldedRow(symbol: "clock", opens: false) {
                 Text(label).lineLimit(1)
             } rows: {

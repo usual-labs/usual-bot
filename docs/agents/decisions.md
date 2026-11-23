@@ -665,7 +665,8 @@ read at Hermes `2bd378ed1b`.
 - **A posted result shows in full, as a message from the Bot under the routine's name**
   (`RoutineLine`), with the first lines and Show All when it's long. It was a folded line like a
   background command's, and a user missed days of briefs behind it: for many Bots the routine's
-  output is the main thing they send. A setting to fold them again waits until someone asks.
+  output is the main thing they send. **Show routine results in full** in Settings › General
+  (on by default) folds them back into that line, for Bots whose routines are noise.
 - **A result the Bot answered with silence counts as unread, with no alert** (`GatewayTurn.news`).
   Otherwise it arrives with no sign at all. A result the Bot did answer is news only through that
   reply, which notifies as any reply does; the plugin stays quiet for routines, so one run never
