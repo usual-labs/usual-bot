@@ -136,6 +136,7 @@ public struct SpokenClip: Sendable, Equatable {
 public enum SpeechEvent: Sendable, Equatable {
     /// The audio's format: 16-bit little-endian mono PCM at this rate.
     case start(sampleRate: Double)
+    /// Whole samples, however the gateway cut its frames.
     case pcm(Data)
     /// Everything said has been sent.
     case end
@@ -234,13 +235,17 @@ public final class SpeechStream: Sendable {
                 }
                 group.addTask {
                     var heardAudio = false
+                    var joiner = PCMJoiner()
                     while let frame = try? await socket.receive() {
                         switch frame {
-                        case .data(let pcm):
+                        case .data(let piece):
                             heardAudio = true
-                            output.yield(.pcm(pcm))
+                            let pcm = joiner.add(piece)
+                            if !pcm.isEmpty { output.yield(.pcm(pcm)) }
                         case .text(let text):
-                            switch SpeechMessage(text) {
+                            let message = SpeechMessage(text)
+                            if message != .unknown { joiner.reset() }
+                            switch message {
                             case .start(let rate): output.yield(.start(sampleRate: rate))
                             case .end:
                                 output.yield(.end)

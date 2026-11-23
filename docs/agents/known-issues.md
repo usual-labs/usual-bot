@@ -182,6 +182,11 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 - **Talking over a reply could steer it.** `ChatThread.stop()` is asynchronous and `send` steers a
   running turn, so words said right after cutting the Bot off joined the reply being stopped.
   Both `VoiceCall` and `GatewayCall` now wait up to 3 s for `isRunning` to clear before sending.
+- **`speak-stream` frames split samples.** Hermes forwards the provider's HTTP chunks as they come
+  (`ws.send_bytes(chunk)`), and most are an odd number of bytes. Reading each frame as whole
+  Int16 samples put every later sample a byte out: full-scale noise, heard on a real gateway.
+  `SpeechStream` carries the half-sample over (`PCMJoiner`), and `GatewayCall` holds a reply's first
+  0.2 s until `PCMCheck` hears a voice, ending the call if it hears loud noise instead.
 - **Hermes's `/api/audio/speak` returns only the first part** when long text is split into several
   files, and leaves the rest on the gateway (read at v0.23.3). Gateway calls send one sentence at a
   time, so they don't hit it.
