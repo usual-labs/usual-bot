@@ -12,6 +12,8 @@ import os
 @MainActor
 final class PushRegistration: NSObject {
     static var relay: PushRelay?
+    /// Set by the iPhone app: a notification woke it, to load that chat before you tap it.
+    static var woken: ((PushRelay.News) async -> Void)?
 
     static func start(_ relay: PushRelay) {
         self.relay = relay
@@ -32,11 +34,16 @@ final class PushRegistration: NSObject {
         relay?.failedToRegister(error)
     }
 
-    /// A silent push from the gateway: you read a chat on another device, so its notifications go.
-    /// Answers whether it was one.
+    /// A push that woke the app: a silent one from the gateway because you read a chat on another
+    /// device, so its notifications go, or a notification, whose chat loads. Answers whether it
+    /// did anything.
     static func received(_ userInfo: [AnyHashable: Any]) async -> Bool {
-        guard let read = PushRelay.chatReadElsewhere(in: userInfo) else { return false }
-        await AgentNotifications.shared.clear(read.chat, on: read.gateway)
+        if let read = PushRelay.chatReadElsewhere(in: userInfo) {
+            await AgentNotifications.shared.clear(read.chat, on: read.gateway)
+            return true
+        }
+        guard let news = PushRelay.news(in: userInfo), let woken else { return false }
+        await woken(news)
         return true
     }
 }

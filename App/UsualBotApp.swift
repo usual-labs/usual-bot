@@ -77,7 +77,9 @@ struct UsualBotApp: App {
             }
         #else
             AgentNotifications.shared.watch(model, showApp: {})
-            _backgroundLink = State(initialValue: BackgroundLink(model: model, suspend: { tailscale.suspend() }))
+            let backgroundLink = BackgroundLink(model: model, suspend: { tailscale.suspend() })
+            _backgroundLink = State(initialValue: backgroundLink)
+            PushRegistration.woken = { await backgroundLink.woken(by: $0) }
         #endif
     }
 

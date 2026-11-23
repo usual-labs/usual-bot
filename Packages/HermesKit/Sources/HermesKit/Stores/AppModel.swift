@@ -30,8 +30,7 @@ public final class AppModel {
     /// The chat on screen, if any. Its replies don't count as unread.
     public var visibleContactID: Contact.ID? {
         didSet {
-            for (id, thread) in threads { thread.isVisible = id == visibleContactID }
-            for (id, room) in rooms { room.isVisible = id == visibleContactID }
+            showVisibleChat()
             if let visibleContactID { alertsCleared?(visibleContactID) }
             if visibleContactID != oldValue { reportFocus() }
         }
@@ -76,7 +75,7 @@ public final class AppModel {
     var linkTask: Task<Void, Never>?
     /// Whether the app is on screen; the socket stays closed while it isn't.
     var isForeground = true
-    /// iOS gave the app a moment in the background (`checkIn()`).
+    /// iOS gave the app a moment in the background (`checkIn()`, `warmUp`).
     var isCheckingIn = false
     /// Counts roster reads, so `checkIn()` knows when this link has read the gateway.
     @ObservationIgnored var rosterReads = 0
@@ -337,9 +336,25 @@ public final class AppModel {
     public func setForeground(_ foreground: Bool) {
         guard foreground != isForeground else { return }
         isForeground = foreground
+        showVisibleChat()
         guard let auth else { return }
         if !foreground { saveCache(for: auth.gateway) }
+        // A notification woke the app, which connected (`warmUp`): you tapped it, so keep that link.
+        if foreground, isCheckingIn, linkTask != nil {
+            isCheckingIn = false
+            attachVisibleChat()
+            return
+        }
         connect(auth)
+    }
+
+    /// Whether a chat is on screen. Not while the app is away: a chat that loads in the background,
+    /// say for a notification, isn't read just because it was the one open when you left.
+    func isShown(_ id: Contact.ID) -> Bool { isForeground && id == visibleContactID }
+
+    private func showVisibleChat() {
+        for (id, thread) in threads { thread.isVisible = isShown(id) }
+        for (id, room) in rooms { room.isVisible = isShown(id) }
     }
 
     /// Connects, refreshes the roster every few seconds, and reconnects with backoff when the
@@ -461,7 +476,7 @@ public final class AppModel {
 
     func makeThread(_ id: Contact.ID, cached: CachedThread?) -> ChatThread {
         let thread = ChatThread(contactID: id, cached: cached, channel: { [weak self] in self?.channel })
-        thread.isVisible = id == visibleContactID
+        thread.isVisible = isShown(id)
         wireAlerts(of: thread, id: id)
         thread.storedAnswer = { [weak self] taskID in await self?.storedAnswer(taskID: taskID, profile: id) }
         thread.gateway = { [weak self] in self?.auth?.gateway }
@@ -508,7 +523,7 @@ public final class AppModel {
     /// answers a socket's requests one by one and each open builds an agent, so opening every
     /// chat together left the last ones, and the roster read behind them, past their timeout.
     /// Opens the chat on screen from what the last roster said, before this link reads it again.
-    private func attachVisibleChat() {
+    func attachVisibleChat() {
         guard let visible = contacts.first(where: { $0.id == visibleContactID }),
             visible.kind == .agent, visible.chatID != nil
         else { return }

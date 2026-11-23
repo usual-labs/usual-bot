@@ -22,11 +22,19 @@
         /// trip to another app, short enough not to keep the radio up for nothing.
         private static let returnWindow: Duration = .seconds(20)
 
+        /// How long a notification's wake may spend loading its chat. iOS gives about 30 s in all.
+        private static let wakeLimit: Duration = .seconds(20)
+        /// How long the link stays up after a notification woke the app, so tapping it soon finds the
+        /// chat connected. Short: iOS wakes an app less often the more each wake costs.
+        private static let wakeHold: Duration = .seconds(15)
+
         private let model: AppModel
         /// Stops what a suspended app can't keep, once the app has let go of the gateway.
         private let suspend: @MainActor () -> Void
         @ObservationIgnored private var hold: Task<Void, Never>?
         @ObservationIgnored private var grace = UIBackgroundTaskIdentifier.invalid
+        /// Counts notification wakes, so only the latest closes the link they share.
+        @ObservationIgnored private var wakes = 0
 
         init(model: AppModel, suspend: @escaping @MainActor () -> Void) {
             self.model = model
@@ -66,6 +74,23 @@
             if UIApplication.shared.applicationState == .background { model.setForeground(false) }
             await model.checkIn()
             if UIApplication.shared.applicationState == .background { suspend() }
+        }
+
+        /// A notification woke the app (the relay's `wake`): loads its chat and holds the link a
+        /// moment for the tap. Nothing to do while the app is on screen, or still holding the link
+        /// after you left it, as the message comes over that.
+        func woken(by news: PushRelay.News) async {
+            guard UIApplication.shared.applicationState == .background, hold == nil else { return }
+            wakes += 1
+            let wake = wakes
+            let start = ContinuousClock.now
+            // Launched just for this, the model still thinks it's on screen.
+            model.setForeground(false)
+            await model.warmUp(news.chat, on: news.gateway, within: Self.wakeLimit)
+            try? await Task.sleep(until: start + Self.wakeHold)
+            // You came in, left again into `hold`, or a newer wake holds the link now.
+            guard wake == wakes, hold == nil, UIApplication.shared.applicationState == .background else { return }
+            if model.endWarmUp() { suspend() }
         }
 
         private func letGo() {

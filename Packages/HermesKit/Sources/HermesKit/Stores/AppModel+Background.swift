@@ -80,6 +80,45 @@ extension AppModel {
         linkTask = nil
     }
 
+    /// A notification says `chat` has something new: connects from the background and loads that
+    /// chat first, so tapping the notification opens it with the message there. Returns once it's
+    /// loaded, or `limit` runs out, and leaves the link up for that tap; `endWarmUp()` closes it.
+    /// Only for the gateway in use: switching gateways waits for the tap.
+    public func warmUp(_ chat: Contact.ID, on gateway: String?, within limit: Duration) async {
+        await restore()
+        guard let auth, !isForeground, gateway == nil || gateway == activeGateway?.id else { return }
+        isCheckingIn = true
+        // Woken again while the last one is still up: that link carries this one too.
+        if linkTask == nil { connect(auth) }
+        let start = rosterReads
+        let deadline = ContinuousClock.now + limit
+        while !hasLoaded(chat, since: start), ContinuousClock.now < deadline, !isForeground, !Task.isCancelled {
+            // Ahead of the others `attachChats()` opens a few at a time.
+            if let contact = contacts.first(where: { $0.id == chat }), contact.kind == .agent {
+                openThread(for: contact)
+            }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        if !isForeground { saveCache(for: auth.gateway) }
+    }
+
+    /// Closes the link `warmUp` left up, unless you came to the app meanwhile. Answers whether it did.
+    @discardableResult public func endWarmUp() -> Bool {
+        guard isCheckingIn, !isForeground, let auth else { return false }
+        isCheckingIn = false
+        saveCache(for: auth.gateway)
+        linkTask?.cancel()
+        linkTask = nil
+        return true
+    }
+
+    /// A Bot Chat once it's attached, which loads its history; a room once the roster has been read
+    /// twice since `reads`, as rooms catch up after the first.
+    private func hasLoaded(_ chat: Contact.ID, since reads: Int) -> Bool {
+        if contacts.first(where: { $0.id == chat })?.kind == .agent { return threads[chat]?.isAttached == true }
+        return rosterReads >= reads + 2
+    }
+
     private var allChatsAttached: Bool {
         contacts.allSatisfy { contact in
             contact.kind != .agent || contact.chatID == nil || threads[contact.id]?.isAttached == true

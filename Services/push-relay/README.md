@@ -24,11 +24,16 @@ Sign-ups are limited by address, and changes and pushes by device. The limits ar
 
 | Call | Who | Does |
 | --- | --- | --- |
-| `POST /v1/devices` `{token, environment}` | the app | Registers; answers `{id, secret, sendKey}` |
-| `PUT /v1/devices/:id` `{token, environment}` | the app, `Authorization: Bearer <secret>` | New token |
+| `POST /v1/devices` `{token, environment, wake?}` | the app | Registers; answers `{id, secret, sendKey, wake}` |
+| `PUT /v1/devices/:id` `{token, environment, wake?}` | the app, `Authorization: Bearer <secret>` | New token, or a change to `wake` |
 | `DELETE /v1/devices/:id` | the app, `Authorization: Bearer <secret>` | Removes the row |
 | `POST /v1/send` `{pushes: [{device, key, kind, sealed, thread?, collapse?}]}` | a gateway | Up to 20 pushes; answers each one's `status`: `sent`, `gone` (forget the device), `refused`, `limited` or `failed` |
 | `POST /v1/clear` `{pushes: [{device, key, sealed}]}` | a gateway | The same, as silent background pushes that take down a chat's notifications |
+
+`wake: true` asks for `message` and `needs_you` notifications to carry `content-available`, so iOS
+also wakes the app in the background to load the chat before you tap. The iPhone app asks; the Mac
+app and older versions don't, and get plain alerts. Both calls answer `wake` as stored, which tells
+the app this relay knows it; the app asks again until one does.
 
 `kind` is `message`, `needs_you` or `test`. `sealed` is base64 AES-GCM (nonce, ciphertext, tag) of
 JSON with `title`, `body`, `chat`, `kind` and `sound`. `thread` groups a chat's notifications
@@ -54,5 +59,13 @@ A fork with its own bundle ID needs its own relay, as an APNs key reaches only i
 
 4. Build the app with `USUAL_PUSH = YES` and `USUAL_PUSH_RELAY_URL_YES` set to your relay
    (`Config/Local.xcconfig.example`).
+
+A relay set up before `wake` needs the column added before the Worker that reads it is deployed,
+or sign-ups fail:
+
+```sh
+npx wrangler d1 execute usual-push --remote \
+  --command "ALTER TABLE devices ADD COLUMN wake INTEGER NOT NULL DEFAULT 0"
+```
 
 `wrangler dev` can't reach APNs: workerd has no HTTP/2 client. Test against a deployed Worker.

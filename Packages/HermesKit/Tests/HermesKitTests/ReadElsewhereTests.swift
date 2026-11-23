@@ -36,6 +36,22 @@ struct ReadElsewhereTests {
         #expect(PushRelay.chatReadElsewhere(sealed: "not sealed", key: key) == nil)
     }
 
+    @Test func opensTheChatANotificationIsAbout() throws {
+        let sealed = try seal(
+            ["kind": "message", "chat": "ada", "gateway": "home", "title": "Ada", "body": "Hi", "sound": true],
+            with: key)
+        #expect(PushRelay.news(sealed: sealed, key: key) == .init(chat: "ada", gateway: "home"))
+        let needsYou = try seal(["kind": "needs_you", "chat": "ada", "title": "Ada", "body": "?"], with: key)
+        #expect(PushRelay.news(sealed: needsYou, key: key) == .init(chat: "ada", gateway: nil))
+    }
+
+    @Test func aClearOrATestIsNoNews() throws {
+        #expect(PushRelay.news(sealed: try seal(["kind": "read", "chat": "ada"], with: key), key: key) == nil)
+        #expect(
+            PushRelay.news(sealed: try seal(["kind": "test", "title": "T", "body": "B"], with: key), key: key) == nil)
+        #expect(PushRelay.news(in: ["kind": "test", "s": "x"]) == nil)
+    }
+
     @Test func otherPushesAreNotClears() {
         #expect(PushRelay.chatReadElsewhere(in: ["kind": "message", "s": "x"]) == nil)
     }
