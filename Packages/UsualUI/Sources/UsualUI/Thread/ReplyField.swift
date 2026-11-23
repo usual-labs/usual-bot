@@ -1,7 +1,9 @@
 import SwiftUI
 
 /// Your answer to one quote, typed beside it: Reply on selected words, and a waiting quote's chip
-/// to change what you said. Return keeps it; left empty, the quote goes on its own.
+/// to change what you said. It grows to a few lines as you type. Its keys are the message box's: on
+/// the Mac Return keeps it (⌘Return if that's how you send) and Shift-Return starts a line; on
+/// iPhone Return starts a line and the button keeps it. Left empty, the quote goes on its own.
 struct ReplyField: View {
     let excerpt: String
     @Binding var note: String
@@ -11,6 +13,10 @@ struct ReplyField: View {
     /// A way out where Escape isn't one (iPhone); `nil` hides it.
     var cancel: (() -> Void)?
     @FocusState private var focused: Bool
+    #if os(macOS)
+        @State private var selection: TextSelection?
+        @AppStorage(AppPreferences.commandReturnKey) private var commandReturn = false
+    #endif
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -21,11 +27,14 @@ struct ReplyField: View {
                 .padding(.leading, 9)
                 .overlay(alignment: .leading) { Capsule().fill(Theme.secondaryInk.opacity(0.5)).frame(width: 2) }
                 .accessibilityLabel(Text("Replying to \(excerpt)"))
-            HStack(spacing: 8) {
-                TextField("Reply", text: $note)
+            HStack(alignment: .bottom, spacing: 8) {
+                field
                     .textFieldStyle(.plain)
                     .scaledFont(size: 14)
+                    .lineLimit(1...6)
                     .focused($focused)
+                    // Centred on the buttons' 24 pt while it's one line, then growing upward.
+                    .padding(.vertical, 3)
                     .onSubmit(submit)
                 if let cancel {
                     Button(action: cancel) { icon("xmark") }
@@ -36,7 +45,7 @@ struct ReplyField: View {
                 Button(action: submit) { icon("return") }
                     .buttonStyle(.clickable(.borderless))
                     .foregroundStyle(.secondary)
-                    .help("Keep this quote and your reply (Return)")
+                    .help("Keep this quote and your reply")
                     .accessibilityLabel(Text("Add Reply"))
             }
         }
@@ -44,6 +53,32 @@ struct ReplyField: View {
         .frame(width: width)
         .onAppear { focused = true }
     }
+
+    #if os(macOS)
+        private var field: some View {
+            TextField("Reply", text: $note, selection: $selection, axis: .vertical)
+                .onKeyPress(.return, phases: .down) { press in
+                    if !press.modifiers.contains(.shift), !commandReturn || press.modifiers.contains(.command) {
+                        submit()
+                    } else {
+                        insertLineBreak()
+                    }
+                    return .handled
+                }
+        }
+
+        private func insertLineBreak() {
+            guard case .selection(let range) = selection?.indices else {
+                note += "\n"
+                return
+            }
+            selection = TextSelection(insertionPoint: note.insertLineBreak(replacing: range))
+        }
+    #else
+        private var field: some View {
+            TextField("Reply", text: $note, axis: .vertical)
+        }
+    #endif
 
     private func icon(_ name: String) -> some View {
         Image(systemName: name)
