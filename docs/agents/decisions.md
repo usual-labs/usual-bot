@@ -446,6 +446,13 @@ read at Hermes `2bd378ed1b`.
   report to you does. The plugin skips `post_llm_call` when the turn's newest user row is an
   `internal_notification` starting `Message from 🤖`; approvals and questions in that turn come
   through `on_human_input_request` and still notify.
+- **What a Bot says before its reply notifies too, always.** The developer chose this over a setting
+  (November 2026): a Bot's "On it, looking now" is a message you'd want on your phone. Hermes hands
+  it to `on_interim_message` without the turn's history, so the plugin notes at
+  `pre_llm_call` which turn IDs may notify (the same rules as the reply) and stays quiet for any
+  other, such as a side question's fork. It goes as `message` with `interim` sealed in, which the
+  extension doesn't add to the badge: the app counts each turn once. The app's own alerts, in a
+  build without push, still come once per turn.
 - **Every device hears every message, unless that chat is open on one of them.** An open chat means
   a window in front with that chat selected, or the quick panel. It quiets every device, so reading
   on the Mac keeps the iPhone still. Another chat's message still notifies, even inside the app; this
@@ -467,7 +474,7 @@ read at Hermes `2bd378ed1b`.
   `removeDeliveredNotifications` from a notification service extension.
 - **The icon's badge is the app's own unread count, kept going by the extension.** The app sets it
   from the chats and rooms of the gateway in use, less muted ones, and saves it in the push keychain
-  group (`AppBadge`); the extension adds one for each pushed `message` while the app is closed,
+  group (`AppBadge`); the extension adds one for each pushed `message`, less `interim` ones, while the app is closed,
   since the relay can't count what it can't read. The app puts its own number back when it's in
   front, so a push for a reply it already counted, a chat read elsewhere, or the other gateway's
   message is corrected only then. A build without push has the badge only while the app runs.

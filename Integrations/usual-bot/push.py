@@ -9,6 +9,7 @@ import json
 import logging
 import threading
 import time
+from collections import OrderedDict
 from pathlib import Path
 
 from . import relay, store
@@ -30,6 +31,11 @@ _HIDDEN = {"message": "New message. Open Usual Bot to read it.", "needs_you": "O
 # The relay refuses a sealed text over 3000 characters: 2222 bytes of JSON once its base64, nonce
 # and tag are taken off. Less the gateway's tag, which `relay` adds.
 _READ_ROOM = 2100
+# Turns whose words reach your devices, by Hermes's turn ID, as `pre_llm_call` saw them start: what
+# a Bot says mid-turn arrives without the turn's history, so this is the only place to tell.
+_LOUD_TURNS: OrderedDict[str, None] = OrderedDict()
+_LOUD_TURNS_LIMIT = 256
+_LOUD_TURNS_LOCK = threading.Lock()
 TEST = {"title": "Usual Bot", "body": "Notifications from your gateway are working."}
 
 
@@ -67,8 +73,11 @@ def _shorten(text: str) -> str:
     return line if len(line) <= _PREVIEW_LIMIT else line[: _PREVIEW_LIMIT - 1] + "…"
 
 
-def deliver(kind: str, title: str, preview: str, chat: str, speaker: str | None = None) -> None:
-    """To every device that wants it, unless you're reading that chat on one of them."""
+def deliver(
+    kind: str, title: str, preview: str, chat: str, speaker: str | None = None, interim: bool = False
+) -> None:
+    """To every device that wants it, unless you're reading that chat on one of them. `interim` is
+    what a Bot says before its reply, which the app doesn't count as unread on its own."""
     if store.is_open(chat):
         return
     settings = store.settings()
@@ -83,6 +92,8 @@ def deliver(kind: str, title: str, preview: str, chat: str, speaker: str | None 
             continue
         body = _shorten(preview) if device.get("previews", True) else _HIDDEN[kind]
         payload = {"title": title, "body": body, "chat": chat, "kind": kind, "sound": device.get("sound", True)}
+        if interim:
+            payload["interim"] = True
         if read := _fitting(payload, chat, store.owed_clears(device_id)):
             payload["read"] = carried[device_id] = read
         pushes.append((device["relay"], relay.push(device_id, device, kind, payload, chat)))
@@ -148,13 +159,13 @@ def _push(kind: str, title: str, preview: str, chat: str) -> None:
     threading.Thread(target=_safely, args=(deliver, kind, title, preview, chat), daemon=True).start()
 
 
-def _push_unless_hidden(kind: str, title: str, preview: str, chat: str) -> None:
+def _push_unless_hidden(kind: str, title: str, preview: str, chat: str, interim: bool = False) -> None:
     """A Bot's own chat. A hidden Bot still speaks up in rooms, which aren't hidden."""
     home = _home()
 
     def deliver_unless_hidden() -> None:
         if not _is_hidden(home):
-            deliver(kind, title, preview, chat)
+            deliver(kind, title, preview, chat, interim=interim)
 
     threading.Thread(target=_safely, args=(deliver_unless_hidden,), daemon=True).start()
 
@@ -166,23 +177,53 @@ def _safely(action, *args) -> None:
         logger.warning("usual-bot: couldn't notify: %s", type(error).__name__)
 
 
-def _deliver_room_reply(profile: str, text: str) -> None:
+def _deliver_room_reply(profile: str, text: str, interim: bool) -> None:
     """The reply's hook doesn't say which room, but that member's activity just did."""
     time.sleep(_ROOM_ACTIVITY_DELAY)
     if room := store.room_of(profile):
-        deliver("message", "{name}", text, f"room:{room}", speaker=profile)
+        deliver("message", "{name}", text, f"room:{room}", speaker=profile, interim=interim)
+
+
+def _is_loud(platform: str, conversation_history) -> bool:
+    return platform in _CHAT_PLATFORMS | {_ROOM_PLATFORM} and not (
+        asked_hidden(conversation_history) or asked_by_bot(conversation_history)
+    )
+
+
+def on_turn_start(turn_id="", platform="", conversation_history=None, **_) -> None:
+    """Remembers whether what the Bot says on the way to its reply should notify too."""
+    if not turn_id or not _is_loud(platform, conversation_history):
+        return
+    with _LOUD_TURNS_LOCK:
+        _LOUD_TURNS[turn_id] = None
+        while len(_LOUD_TURNS) > _LOUD_TURNS_LIMIT:
+            _LOUD_TURNS.popitem(last=False)
+
+
+def on_interim(text="", surface="", turn_id="", **_) -> None:
+    """What a Bot says before it's done, such as "On it, looking now". A turn `pre_llm_call` didn't
+    see start, like a side question's fork, stays quiet."""
+    with _LOUD_TURNS_LOCK:
+        loud = bool(turn_id) and turn_id in _LOUD_TURNS
+    if loud:
+        _notify(text, surface, interim=True)
 
 
 def on_reply(assistant_response="", platform="", conversation_history=None, **_) -> None:
+    if _is_loud(platform, conversation_history):
+        _notify(assistant_response, platform)
+
+
+def _notify(response, platform: str, interim: bool = False) -> None:
     # A Bot that chose not to reply (`[SILENT]`, often a routine or a finished process) has no news.
-    words = said(assistant_response)
-    if not words.strip() or asked_hidden(conversation_history) or asked_by_bot(conversation_history):
+    words = said(response)
+    if not isinstance(words, str) or not words.strip():
         return
     text = plain(words)
     if platform in _CHAT_PLATFORMS:
-        _push_unless_hidden("message", "{name}", text, _profile())
+        _push_unless_hidden("message", "{name}", text, _profile(), interim)
     elif platform == _ROOM_PLATFORM:
-        threading.Thread(target=_safely, args=(_deliver_room_reply, _profile(), text), daemon=True).start()
+        threading.Thread(target=_safely, args=(_deliver_room_reply, _profile(), text, interim), daemon=True).start()
 
 
 def _surface() -> str:
