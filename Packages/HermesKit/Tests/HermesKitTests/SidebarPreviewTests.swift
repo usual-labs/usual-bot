@@ -53,4 +53,21 @@ struct SidebarPreviewTests {
         #expect(model.sidebarContacts.first?.preview == "From the roster")
         #expect(model.sidebarContacts.first?.lastActive == rosterTime)
     }
+
+    /// Hermes's preview of a message sent while the Bot worked: the marker the model reads, cut at 80.
+    private let steerPreview =
+        "[OUT-OF-BAND USER MESSAGE — a direct message from the user, delivered once at t..."
+
+    @Test func aMessageSentWhileItWorkedShowsYourWordsNotTheMarker() {
+        let model = model(history: [message("assistant", "Working on it", minutesAfterRoster: -2)])
+        model.threads["atlas"]?.state.steerLocally("pr looks good")
+        // The roster heard of the tool calls after it, so it's newer than the message.
+        model.contacts[0].preview = Contact.plainPreview(steerPreview)
+        model.contacts[0].lastActive = .now.addingTimeInterval(60)
+        #expect(model.sidebarContacts.first?.preview == "pr looks good")
+    }
+
+    @Test func withoutTheChatAMessageSentWhileItWorkedSaysSo() {
+        #expect(Contact.plainPreview(steerPreview) == GatewayTurn.steerPreview)
+    }
 }

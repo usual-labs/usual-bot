@@ -12,6 +12,11 @@ enum GatewayTurn {
     private static let routinePrefix = "[Cronjob \""
     /// Another Bot's message: `Message from 🤖 <name> (@<handle>): <body>` (`tools/bot_mode_dm.py`).
     private static let botPrefix = "Message from 🤖 "
+    /// A message you sent while the Bot worked, as the model reads it (`STEER_MARKER_OPEN` in
+    /// `agent/prompt_builder.py`). History gives your words back; the roster's preview doesn't.
+    private static let steerPrefix = "[OUT-OF-BAND USER MESSAGE"
+    /// The sidebar's line for one: the gateway cuts its preview at 80, inside the marker.
+    static var steerPreview: String { String(localized: "You added a message while it worked") }
     /// What a message wanting no reply starts with (`NO_REPLY_MARKER`).
     private static let noReplyMarker = "[no reply needed]"
 
@@ -102,6 +107,7 @@ enum GatewayTurn {
         if let (routine, _) = routineResult(text) { return fromRoutine(routine) }
         if let (bot, _) = botMessage(text) { return String(localized: "Message from \(bot)") }
         if text.hasPrefix(goalPrefix) { return goalStep }
+        if text.hasPrefix(steerPrefix) { return steerPreview }
         return nil
     }
 

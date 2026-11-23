@@ -442,6 +442,7 @@ public final class AppModel {
                 } else if let newest = Self.newestMessage(in: items),
                     newest.date > contact.lastActive ?? .distantPast
                         || contact.preview.map(thread.state.isHiddenPreview) == true
+                        || contact.preview == GatewayTurn.steerPreview
                 {
                     contact.preview = newest.text
                     contact.lastActive = newest.date
