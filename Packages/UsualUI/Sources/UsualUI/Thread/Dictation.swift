@@ -336,6 +336,7 @@ struct MicButton: View {
                     .animation(.easeOut(duration: 0.12), value: dictation.level)
                     .allowsHitTesting(false)
             }
+            if dictation.state == .transcribing { TranscribingRing(size: size) }
             if let secondsLeft = dictation.secondsLeft {
                 Circle()
                     .trim(from: 0, to: secondsLeft / Dictation.countdown)
@@ -359,6 +360,29 @@ struct MicButton: View {
         if dictation.state == .transcribing { return String(localized: "Cancel transcription") }
         if dictation.isListening { return String(localized: "Stop dictation") }
         return throughGateway ? String(localized: "Dictate through your gateway") : String(localized: "Dictate")
+    }
+}
+
+/// Around the mic's ✕ while the recording turns into words: busy, and tapping cancels.
+private struct TranscribingRing: View {
+    let size: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var turned = false
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(Theme.ink.opacity(0.12), lineWidth: 2)
+            Circle()
+                .trim(from: 0, to: 0.25)
+                .stroke(Theme.ink.opacity(0.6), style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                .rotationEffect(.degrees(turned ? 270 : -90))
+        }
+        .frame(width: size + 6, height: size + 6)
+        .allowsHitTesting(false)
+        .onAppear {
+            guard !reduceMotion else { return }
+            withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) { turned = true }
+        }
     }
 }
 
@@ -397,17 +421,30 @@ struct DictationProblem: View {
     }
 }
 
-/// Under the message box while a recording turns into words.
-struct DictationTranscribing: View {
+/// Over the message box's field while a recording turns into words: "Transcribing…" shimmering
+/// where the words will land, after what's typed. The typed words are drawn clear, so the tail
+/// wraps where the field's own text does. Reduce Motion leaves it plain.
+struct TranscribingTail: View {
+    let text: String
+    let fontSize: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
-        HStack(spacing: 8) {
-            ProgressView().controlSize(.mini)
-            Text("Transcribing…")
-                .scaledFont(size: 12.5)
-                .foregroundStyle(Theme.secondaryInk)
+        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { context in
+            let band = ShimmerText.band(at: context.date.timeIntervalSinceReferenceDate)
+            let fill = reduceMotion ? AnyShapeStyle(Theme.secondaryInk) : AnyShapeStyle(ShimmerText.fill(at: band))
+            (Text(text).foregroundStyle(.clear) + Text(tail).foregroundStyle(fill))
+                .scaledFont(size: fontSize)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 8)
-        .accessibilityElement(children: .combine)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private var tail: String {
+        guard !text.isEmpty else { return String(localized: "Transcribing…") }
+        let word = String(localized: "transcribing…")
+        return text.last?.isWhitespace == true ? word : " " + word
     }
 }
 

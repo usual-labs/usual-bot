@@ -169,17 +169,21 @@ struct ShimmerText: View {
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { context in
-            let time = context.date.timeIntervalSinceReferenceDate
             // The band starts and ends off the text, so the words rest between passes.
-            let band = time.truncatingRemainder(dividingBy: Self.period) / Self.period * 1.8 - 0.4
+            let band = Self.band(at: context.date.timeIntervalSinceReferenceDate)
             Text(text)
                 .scaledFont(size: 13)
                 .lineLimit(1, accessibility: 3)
-                .foregroundStyle(reduceMotion ? AnyShapeStyle(Theme.secondaryInk) : AnyShapeStyle(fill(at: band)))
+                .foregroundStyle(reduceMotion ? AnyShapeStyle(Theme.secondaryInk) : AnyShapeStyle(Self.fill(at: band)))
         }
     }
 
-    private func fill(at band: Double) -> LinearGradient {
+    /// Where the lighter band is, from -0.4 to 1.4, `time` seconds in.
+    static func band(at time: TimeInterval) -> Double {
+        time.truncatingRemainder(dividingBy: period) / period * 1.8 - 0.4
+    }
+
+    static func fill(at band: Double) -> LinearGradient {
         LinearGradient(
             stops: [
                 .init(color: Theme.secondaryInk, location: band - 0.2),
