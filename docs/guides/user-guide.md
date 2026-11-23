@@ -261,6 +261,10 @@ sending also puts the keyboard away; tap the message box to write again.
   desktop app too, and their Mark as Unread shows here. Opening the chat on the device where you
   marked it goes back to that message; the others open at the end, as Hermes keeps no message.
   Rooms have no read state in Hermes, so they don't offer it.
+- **The NEW line.** Open a chat or room with replies you haven't read and a blue **NEW** line
+  sits above the first of them, or above the message you marked unread from. It stays put while
+  you read, and coming back to the window or the app moves it only if more replies came meanwhile.
+  Open the chat again with nothing new and it's gone.
 - **Reply to part of a message.** Select some words and choose **Reply**: on the Mac from the
   button over the selection, by right-clicking it, or with ⌘L; on iPhone from the selection's menu
   in **Select Text**, which stays open so you can pick more. Type what you want to say to those

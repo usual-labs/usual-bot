@@ -151,8 +151,15 @@ public final class ChatThread {
     var unreadOnGateway = false
     /// Set by the app while this chat is on screen.
     var isVisible = false {
-        didSet { if isVisible { markViewed() } }
+        didSet {
+            guard isVisible else { return }
+            if !oldValue { newLines.cameOnScreen(unread: unreadCount, since: lastViewed) }
+            markViewed()
+        }
     }
+    var newLines = NewLineKeeper()
+    /// Where the NEW line goes (`NewLineKeeper`).
+    public var newLine: NewLine? { newLines.line }
 
     private var openTask: Task<Void, Never>?
     /// Opening is under way.

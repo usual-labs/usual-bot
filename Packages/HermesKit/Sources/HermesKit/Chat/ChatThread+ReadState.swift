@@ -65,6 +65,7 @@ extension ChatThread {
     /// is where to show. Coming back to a window that already shows it isn't opening it.
     public func opened() -> TranscriptItem.ID? {
         let target = returnPoint?.find(in: state.items)
+        newLines.opened(at: target == nil ? nil : returnPoint)
         returnPoint = nil
         guard isMarkedUnread else { return target }
         markedUnreadAt = nil

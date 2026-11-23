@@ -146,8 +146,10 @@ struct RoomPane: View {
             }
             let dates = DateLabels.labels(
                 for: showsTools ? room.state.items : room.state.items.filter { !$0.isToolActivity })
-            let start = window.start(in: room.state.items, including: target)
+            let newLineID = room.newLine?.itemID(in: room.state.items)
+            let start = window.start(in: room.state.items, including: target ?? newLineID)
             ForEach(room.state.items[start...].filter { showsTools || !$0.isToolActivity }) { item in
+                if item.id == newLineID { NewMessagesLine() }
                 if let date = dates[item.id] { DateLabel(text: date) }
                 ItemView(item: item, agentName: contact.name, author: author)
                     .transition(.settle)
@@ -198,7 +200,10 @@ struct RoomPane: View {
             }
         }
         // Each room's transcript is its own view, so this runs as each one opens.
-        .onAppear { window.hold(room.state.items) }
+        .onAppear {
+            window.hold(room.state.items)
+            room.opened()
+        }
         .onChange(of: room.state.items.isEmpty) { window.reset(room.state.items) }
         .onChange(of: jump, initial: true) { if let jump { jumpedTo = jump } }
         .onChange(of: room.approvals.count) { old, new in
