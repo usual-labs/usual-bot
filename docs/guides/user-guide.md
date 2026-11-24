@@ -730,7 +730,10 @@ and Settings opens with your gateway at the top. Preferences stay on this device
   the Dock and on the Home Screen, shows how many replies you haven't read, leaving out chats you
   muted. If you'd allowed notifications before this came in, turn on **Badges** for Usual Bot in
   the system's notification settings.
-- **Push:** with the [Usual Bot plugin](../../Integrations/usual-bot/README.md) on your gateway, every device you sign in on is reached instantly, even with Usual Bot closed. Your
+- **Push:** with the [Usual Bot plugin](../../Integrations/usual-bot/README.md) on your gateway, every device you sign in on is reached, even with Usual Bot closed. The device you're
+  using hears first, or the one you used last if you're using none; your other devices hear 15
+  seconds later, unless you've read that chat by then (plugin 0.13.0 or later). A Mac you've left
+  alone for a minute doesn't count as in use, even with Usual Bot in front. Your
   gateway seals each notification for that device, and Usual's relay and Apple pass it on without
   reading it. Reading a chat on one device keeps it quiet on the others, and takes down the
   notifications they already show about it (push plugin 0.4.0 or later). If you swiped Usual Bot

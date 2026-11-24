@@ -114,15 +114,45 @@ def _presence() -> dict[str, dict]:
     return {key: value for key, value in _read("presence.json").items() if isinstance(value, dict)}
 
 
-def set_open(device_id: str, chat: str | None) -> None:
-    """The chat a device has in front of you, or `None` once it has none."""
+def set_open(device_id: str, chat: str | None, active: bool | None = None) -> None:
+    """The chat a device has in front of you, or `None` once it has none. `active` says you're
+    using that device; an app from before it said so is in use whenever it has a chat open."""
+    now = time.time()
     with _lock:
         presence = _presence()
         if chat is None:
             presence.pop(device_id, None)
         else:
-            presence[device_id] = {"chat": chat, "at": time.time()}
+            presence[device_id] = {"chat": chat, "at": now}
         _write("presence.json", presence)
+        in_use = active or (active is None and chat is not None)
+        if not (in_use or chat):
+            return
+        seen = _read("seen.json")
+        used = seen.get("devices", {}) | ({device_id: now} if in_use else {})
+        read = seen.get("chats", {})
+        if chat:
+            read = {key: at for key, at in read.items() if key != chat} | {chat: now}
+        _write("seen.json", {"devices": used, "chats": dict(list(read.items())[-TOLD_LIMIT:])})
+
+
+def first_to_hear(device_ids: list[str]) -> list[str]:
+    """Of these devices, the ones a notification goes to straight away: those you're using, or else
+    the one you used last. The others hear later, if you haven't read it by then. With no device
+    ever seen in use, as with apps from before this, all of them hear at once."""
+    used = _read("seen.json").get("devices", {})
+    known = {key: used[key] for key in device_ids if isinstance(used.get(key), (int, float))}
+    if not known:
+        return list(device_ids)
+    now = time.time()
+    in_use = [key for key, at in known.items() if now - at < PRESENCE_LIFETIME]
+    return in_use or [max(known, key=known.get)]
+
+
+def read_since(chat: str, since: float) -> bool:
+    """Whether you've had this chat open on any device since then."""
+    at = _read("seen.json").get("chats", {}).get(chat)
+    return isinstance(at, (int, float)) and at >= since
 
 
 def is_open(chat: str) -> bool:

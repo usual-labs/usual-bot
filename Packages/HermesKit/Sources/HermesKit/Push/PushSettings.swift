@@ -50,6 +50,8 @@ public final class PushSettings {
     public var isFocused: Bool { isWindowFocused || isPanelOpen }
     var isWindowFocused = false
     var isPanelOpen = false
+    /// You've left this device alone a while, though the app is still in front. Tests set it.
+    @ObservationIgnored var isAway: @MainActor () -> Bool = { UserIdle.isAway }
 
     /// The gateway pushes here, so this device's own alerts would say it twice.
     public var isActive: Bool { phase == .ready && isConnected }
@@ -64,6 +66,8 @@ public final class PushSettings {
     private var lastNames: [String: String]?
     /// The chat last said to be in front; `.some(nil)` once "none" was said.
     private var reportedChat: Contact.ID??
+    /// Whether this device was last said to be in use.
+    private var reportedActive: Bool?
     private var isReporting = false
     private var isConnecting = false
     /// Changes stay here, as if the gateway took them.
@@ -227,26 +231,30 @@ public final class PushSettings {
     private struct Presence: Encodable, Sendable {
         let device: String
         let chat: String?
+        let active: Bool
         let names: [String: String]?
     }
 
-    /// Tells the gateway which chat you're reading here, so no device hears about it. It forgets
-    /// after a few seconds, so this repeats while one is open. "None" is said once: a Mac left
-    /// running would otherwise keep overruling the iPhone in your hand.
+    /// Tells the gateway which chat you're reading here, so no device hears about it, and whether
+    /// you're using this device, so it hears first and your others a little later. The gateway
+    /// forgets both after a few seconds, so this repeats while either holds. Leaving is said once.
     func report(visible: Contact.ID?, names: [String: String]) async {
         await connectIfNeeded()
         let chat = isFocused ? visible : nil
+        let active = isFocused && !isAway()
         let changed = names != lastNames
-        guard isActive, !isReporting, chat != nil || reportedChat != .some(chat) || changed,
+        guard isActive, !isReporting,
+            chat != nil || active || reportedChat != .some(chat) || reportedActive != active || changed,
             let registration = relay()?.registration, let auth = auth()
         else { return }
         isReporting = true
         do {
             _ = try await auth.json(
                 Done.self, path: "\(path)/presence", method: "PUT",
-                body: Presence(device: registration.id, chat: chat, names: changed ? names : nil))
+                body: Presence(device: registration.id, chat: chat, active: active, names: changed ? names : nil))
             lastNames = names
             reportedChat = .some(chat)
+            reportedActive = active
         } catch {
             Self.log.error("Couldn't report the open chat: \(AppModel.describe(error), privacy: .public)")
         }
@@ -260,7 +268,7 @@ public final class PushSettings {
         do {
             _ = try await auth.json(
                 Done.self, path: "\(path)/presence", method: "PUT",
-                body: Presence(device: registration.id, chat: nil, names: nil))
+                body: Presence(device: registration.id, chat: nil, active: false, names: nil))
         } catch {
             Self.log.error("Couldn't say no chat is open: \(AppModel.describe(error), privacy: .public)")
         }
@@ -285,6 +293,7 @@ public final class PushSettings {
         path = UsualPlugin.path
         lastNames = nil
         reportedChat = nil
+        reportedActive = nil
     }
 
     private static var platform: String {

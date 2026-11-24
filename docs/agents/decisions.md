@@ -453,11 +453,20 @@ read at Hermes `2bd378ed1b`.
   other, such as a side question's fork. It goes as `message` with `interim` sealed in, which the
   extension doesn't add to the badge: the app counts each turn once. The app's own alerts, in a
   build without push, still come once per turn.
-- **Every device hears every message, unless that chat is open on one of them.** An open chat means
-  a window in front with that chat selected, or the quick panel. It quiets every device, so reading
-  on the Mac keeps the iPhone still. Another chat's message still notifies, even inside the app; this
-  replaces the earlier rule that nothing notified while you were at the app. On the device itself,
-  `willPresent` also hides a push for the chat on screen, as the gateway may not know yet.
+- **Nothing notifies for a chat that's open on any device.** An open chat means a window in front
+  with that chat selected, or the quick panel. It quiets every device, so reading on the Mac keeps
+  the iPhone still. Another chat's message still notifies, even inside the app. On the device
+  itself, `willPresent` also hides a push for the chat on screen, as the gateway may not know yet.
+- **The device you're using hears first; the others 15 s later, unless you've read it by then.**
+  Every device hearing every message at once was too much, so the developer chose Telegram's way
+  (November 2026). "In use" is a window in front or the quick panel open, less a Mac with no input
+  for a minute (`UserIdle`), or the window left in front would hold the phone back for good. With
+  none in use, the one in use last goes first. "Read" is that chat open on any device since the
+  message (`seen.json`); reading another chat doesn't stop the rest. The in-use device gets a push
+  too, not an in-app alert: once the gateway pushes, the app's own alerts cover only background
+  tasks, and `willPresent` shows it. The wait is a sleeping thread in the gateway, so restarting
+  the gateway loses the late pushes. A device muting the chat isn't first even in use. An app from
+  before this counts as in use only with a chat open; with no device ever in use, all hear at once.
 - **Reading a chat takes its notifications down on your other devices.** The app can't clear what it
   doesn't hear about while iOS has it suspended, and `ReadSync` covers only Bot Chats, so the plugin
   does it: it remembers which chats each device was notified about (`told.json`), and when another
@@ -492,9 +501,9 @@ read at Hermes `2bd378ed1b`.
   loaded while the app is away isn't on screen (`AppModel.isShown`), so a reply loaded for a wake
   isn't marked read here or on your other devices just because that chat was open when you left.
   Unverified on a device: how often iOS grants these wakes.
-- **The app reports the open chat every roster tick, and "none" once,** and the plugin forgets an
-  entry after 15 s, so a crash can't silence pushes. Repeating "none" would let a Mac in the
-  background overrule the iPhone in your hand.
+- **The app reports every roster tick while a chat is open or you're using it, and leaving once,**
+  and the plugin forgets an entry after 15 s, so a crash can't silence pushes or keep a device
+  first.
 - **Muting is per device and per chat, and everything starts on.** Settings › Notifications lists
   Bots; the plugin skips a device whose `muted` holds the chat. Messages, "needs you", previews and
   sound are per device too, taken from that device's Alerts switches.
