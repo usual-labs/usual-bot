@@ -73,4 +73,59 @@ struct ReplyTests {
                 == "> Shiv: Accepted.\n\n> Scout: Blocked on card 4.\n\n> Shiv: Card 5 next.\n\n@shiv @scout Sort it out"
         )
     }
+
+    @Test func eachQuoteCarriesYourReplyUnderIt() {
+        var quotes: [QuotedMessage] = []
+        quotes.add(QuotedMessage(author: "Atlas", selection: "cheapest\nfast", note: " Check egress too "))
+        quotes.add(QuotedMessage(author: "Atlas", selection: "Pinecone costs 3×"))
+        quotes.add(QuotedMessage(author: "You", selection: "which index?", note: "Still open"))
+        let sent = quotes.message("Start the trial")
+        #expect(
+            sent
+                == "> Atlas: cheapest\n> fast\n\nCheck egress too\n\n> Atlas: Pinecone costs 3×\n\n"
+                + "> You: which index?\n\nStill open\n\nStart the trial")
+        #expect(
+            QuotedMessage.parts(sent) == [
+                .quote("Atlas: cheapest fast"), .text("Check egress too"), .quote("Atlas: Pinecone costs 3×"),
+                .quote("You: which index?"), .text("Still open\n\nStart the trial"),
+            ])
+        // Previews and notifications read your words, one after another.
+        #expect(QuotedMessage.split(sent).text == "Check egress too\n\nStill open\n\nStart the trial")
+        // A reply alone, with nothing typed in the box.
+        #expect(
+            [QuotedMessage(author: "Atlas", selection: "fast", note: "Why?")].message("") == "> Atlas: fast\n\nWhy?")
+    }
+
+    @Test func repliesUnderQuotesAreEnoughToSend() {
+        // Your answers to the quotes are a message, with nothing typed in the box.
+        #expect([QuotedMessage(author: "Atlas", selection: "fast", note: "yes")].hasReplies)
+        // A quote alone isn't: there's nothing of yours to send yet.
+        #expect(![QuotedMessage(author: "Atlas", selection: "fast", note: "  ")].hasReplies)
+        #expect(![QuotedMessage]().hasReplies)
+    }
+
+    @Test func quotingTheSameWordsAgainKeepsTheNewerReply() {
+        var quotes = [QuotedMessage(author: "Atlas", selection: "fast", note: "Why?")]
+        quotes.add(QuotedMessage(author: "Atlas", selection: "fast"))
+        #expect(quotes.map(\.note) == ["Why?"])
+        quotes.add(QuotedMessage(author: "Atlas", selection: "fast", note: "How fast?"))
+        #expect(quotes.map(\.note) == ["How fast?"])
+    }
+
+    @Test func aRoomReplyAddressesTheAuthorAfterTheReplies() {
+        let quotes = [QuotedMessage(author: "Shiv", selection: "Accepted.", mention: "shiv", note: "Thanks")]
+        #expect(quotes.message("Next card") == "> Shiv: Accepted.\n\nThanks\n\n@shiv Next card")
+    }
+
+    @Test func onlyAMessageThatStartsWithAQuoteHasQuotes() {
+        // Your own Markdown quote, with no author, stays your words.
+        #expect(QuotedMessage.parts("> just a thought\n\nok") == [.text("> just a thought\n\nok")])
+        #expect(QuotedMessage.parts("Look:\n\n> Atlas: fast") == [.text("Look:\n\n> Atlas: fast")])
+        // A quote of yours inside a reply, with no blank line before it, isn't a new one.
+        #expect(
+            QuotedMessage.parts("> Atlas: fast\n\nAs they said\n> Ref: x") == [
+                .quote("Atlas: fast"), .text("As they said\n> Ref: x"),
+            ])
+        #expect(QuotedMessage.parts("").isEmpty)
+    }
 }

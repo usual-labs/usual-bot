@@ -3,7 +3,7 @@ import Foundation
 /// A file to send with a message: an image the agent looks at, or any other file it can open
 /// with its tools.
 public struct Attachment: Identifiable, Equatable, Sendable {
-    public enum Kind: Equatable, Sendable {
+    public enum Kind: String, Equatable, Sendable, Codable {
         /// Queued for the agent's next turn, which sees it.
         case image
         /// Saved in the chat's workspace and named in the message, so the agent's tools can read it.
@@ -42,12 +42,18 @@ public struct Attachment: Identifiable, Equatable, Sendable {
 
 /// An attachment as a sent message names it: an `@image:` or `@file:` line after the text, which
 /// is also how the gateway's history shows them.
-public struct AttachmentRef: Equatable, Sendable {
+public struct AttachmentRef: Equatable, Sendable, Codable {
     public let kind: Attachment.Kind
     /// The file's path on the gateway, absolute or relative to the chat's workspace.
     public let path: String
 
     public var name: String { (path as NSString).lastPathComponent }
+
+    /// An image as `prompt.submit`'s `attachments` names it: only the gateway's image types get here.
+    var submitted: JSONValue {
+        let ext = (path as NSString).pathExtension.lowercased()
+        return ["path": .string(path), "mime": .string("image/" + (ext == "jpg" ? "jpeg" : ext))]
+    }
 
     /// The line naming it, quoted the way Hermes reads references back (`format_reference_value`).
     var line: String {
@@ -94,6 +100,9 @@ public struct AttachmentRef: Equatable, Sendable {
     private static let legacyImagePrefix = "[Image attached at:"
     /// Hermes's text-only copy of a message adds one per image it carried.
     private static let imagePlaceholder = "[screenshot]"
+    /// What Hermes writes when an image comes with no words (`image_routing.py`); its own history
+    /// hides it the same way, so a message that really says only this shows as the image alone.
+    private static let emptyCaption = "What do you see in this image?"
 
     /// Splits the attachment lines off the end of a message: what you wrote, and what you sent with it.
     public static func split(_ message: String) -> (text: String, attachments: [AttachmentRef]) {
@@ -111,6 +120,8 @@ public struct AttachmentRef: Equatable, Sendable {
             lines.removeLast()
         }
         guard !attachments.isEmpty else { return (message, []) }
-        return (lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines), attachments)
+        let text = lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        let captionOnly = text == emptyCaption && attachments.contains { $0.kind == .image }
+        return (captionOnly ? "" : text, attachments)
     }
 }

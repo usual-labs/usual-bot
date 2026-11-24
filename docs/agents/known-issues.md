@@ -5,8 +5,15 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 
 ## CI and releases
 
-- CI uses `macos-26`: the app needs the macOS 26 / iOS 26 SDK (`ToolbarSpacer`,
-  `sharedBackgroundVisibility`), which the `macos-15` image's Xcode can't compile.
+- **CI builds with the Xcode in `.xcode-version`, the one releases ship from.** `scripts/xcode.sh`
+  selects it on the runner (`/Applications/Xcode_<version>.app`), fails CI if it's missing, and
+  warns on a Mac with another one. With Xcode 26.6 on CI and 27 on the Mac, code that built locally
+  failed on CI three times in twelve days (a private initializer, an iOS 26.5 SDK API, a tuple
+  conversion). The `xcode-27` runner image has it; when the pinned Xcode moves to another image,
+  change `runs-on` in `ci.yml`, `codeql.yml` and `testflight.yml` together.
+- **GitHub's macOS runners sometimes never start.** A job waits about 15 minutes, ends cancelled
+  with "The job was not acquired by Runner of type hosted", and the `build` check fails though
+  nothing is wrong with the change. Re-run the failed jobs; it isn't a failure to investigate.
 - The required status check `build` is CI's last job, which passes only when every other job passed
   or was skipped for a documentation-only change. Add a new CI job to its `needs`, not to the ruleset,
   and keep its name: renaming it also needs the repository's branch rule updated. Filtering the
@@ -32,9 +39,9 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   repository's Actions allow-list. CodeQL builds the app with Xcode; a package-only SwiftPM scan
   doesn't cover `App/`.
 - `CODEOWNERS` applies from the base branch, so a pull request that adds an owner isn't gated by it.
-- **Pass `Binding(get:set:)` a closure, not a method reference.** CI's Xcode 26.6 crashed in IR
+- **Pass `Binding(get:set:)` a closure, not a method reference.** Xcode 26.6 crashed in IR
   generation on `set: setLaunchAtLogin` (a reabstraction thunk for an `@isolated(any)` setter);
-  `set: { setLaunchAtLogin($0) }` builds. Xcode 27 compiles both, so a local build doesn't catch it.
+  `set: { setLaunchAtLogin($0) }` builds. Xcode 27 compiles both.
 - Public build and release setup, signing-secret names, environment protection, immutable-release
   behavior and troubleshooting live in [the release guide](../guides/releasing.md). Maintainer
   credentials, account administration and release-session diaries don't belong in the public KB.
@@ -47,14 +54,17 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 - **Recovery starts after the chat takes input again.** `attach` opens the chat, then the recovery
   task runs. What can be lost is decided when the chat attaches; otherwise a question sent just
   after a reconnect shows as lost, which failed `SideQuestionTests` on CI.
-- **Wait for the event, not a fixed time.** Fixed sleeps failed on slow runners
-  (`silentSocketIsClosedAfterTheLimit`). `scripts/check-test-waits.sh` rejects a `Task.sleep` without
-  a `// sleep-ok:` reason. Leave several intervals of slack in timing tests. Don't retry a flaky test;
-  find the race.
-
-- **`GatewaySearchTests.anAnswerToAnOlderQueryIsDropped` is flaky (unresolved).** On 8 November 2026
-  it failed twice in a row in `scripts/check.sh --fast` (its 1 s `waitUntilOnMain` ran out) and
-  passed on the next run, with no HermesKit change. The race isn't found yet.
+- **Wait for the event, not a fixed time.** Fixed sleeps failed on slow runners.
+  `scripts/check-test-waits.sh` rejects a `Task.sleep` without a `// sleep-ok:` reason. Don't retry a
+  flaky test; find the race.
+- **A short time limit in the code under test races a busy runner too.** A test that asserts what
+  happened *within* a limit fails when the machine is slow to start: the heartbeat's silence limit
+  passed before its first ping, and a 100 ms check-in or warm-up ran out before it dialled
+  (`JSONRPCChannelTests`, `LifecycleTests`). Give the limit something no test outlasts and end the
+  work on the event (cancel it once it dialled), or test the limit on its own.
+- `GatewaySearchTests.anAnswerToAnOlderQueryIsDropped` failed while the shared wait was 1 s (last
+  seen 14 November 2026). Since the wait became 5 s it hasn't, and 200 repeated runs passed on
+  23 November. If it comes back, the race is still unknown.
 
 ## Mac
 
@@ -82,6 +92,13 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   I-beam by cursor rectangle and on every mouse move, which beats SwiftUI's `pointerStyle`, so
   `.clickable` alone shows the hand only for a moment. A button that floats over the conversation
   also needs `.handOverText()`, which the text views leave alone.
+- **A window being freed takes its views out of it.** An `NSView` that keeps `window` in a `weak`
+  property from `viewWillMove(toWindow:)` then aborts the app ("Cannot form weak reference"), as
+  `HandArea` did in 0.5.0 when a window closed. Keep only a window that `isVisible`.
+- **iOS ends an app suspended with a file lock in the App Group** (`0xdead10cc`). `RefreshLock`
+  is held across a renewal request, so it stays awake with `performExpiringActivity` and lets go
+  when that expires; 0.5.0 didn't, and was killed going to the background. Any new lock or
+  SQLite file in the group needs the same.
 - **AppKit fills menus when they open.** `NSApp.mainMenu` read at launch shows neither the tab items nor
   Enter Full Screen, so open the menu before checking its items.
 
@@ -96,6 +113,28 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   is skipped, not a reason to reconnect; the channel's heartbeat closes a silent one. Don't add
   calls that fan out over every Bot on connect. Still open: a chat whose own open times out shows
   the error instead of its saved copy.
+
+- **Bot-to-Bot messages are recognised by Hermes's wording.** The incoming message is an
+  `internal_notification` starting `Message from 🤖 <name> (@<handle>): `, a note's body starts
+  `[no reply needed]`, and the answer is a background process running `bot_mode_dm.py
+  --run-delivery` (or `--fan-out`) whose last `{` line is JSON. If Hermes changes any of it, those
+  turns fall back to how other notices look: nothing breaks, the fold and the push skip just stop.
+  The app and the plugin (`turns.bot_sender`) each parse it; change both.
+- **A long Bot answer can arrive empty** (Hermes 0.23.x, NousResearch/hermes-agent#152075 and
+  #156513, fixes open). Hermes keeps a process's last 2000 characters and cuts back to a newline,
+  and the runner prints the reply as one line, so nothing is left. The asking Bot's chat says the
+  reply didn't come through and offers the other Bot's chat, where it is.
+- **A turn with an image stores what was added for the model in its text** (Hermes #71998,
+  seen on 0.23.x). A text-only turn keeps `pre_llm_call` context and recalled memory in the row's
+  `api_content`; an image turn carries it as a text part, and the row flattens it into `content`
+  after the `[Image attached at: …]` line, so history shows our `<usual-bot-voice>` line and hides
+  the image. `InjectedContext` cuts those blocks off user rows as history is read; a new tag the
+  plugin adds needs adding there too. An image sent without words is stored as "What do you see in
+  this image?"; `AttachmentRef.split` hides that caption as Hermes's own history does.
+- **History keeps no `message_agent` receipt,** only the call's arguments. So an answer is matched to
+  the earliest message waiting on that Bot (or on anyone), and a message stops "waiting" 32 minutes
+  after it was sent, when Hermes stops waiting too. A call Hermes refused shows as sent after a
+  reload.
 
 - **A Bot renamed outside the app refuses its chat for up to 5 minutes** ("This chat is open in
   another Hermes window/terminal"). A chat's lease is filed in the profile folder, and the session
@@ -113,6 +152,10 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 - **A catalog install that fetches code reports nothing back.** `needs_install` entries run as a
   background `hermes mcp install` and answer `{background: true}`. The app reloads the list for about
   three minutes and says so if the server never appears; the install's log is on the gateway.
+- **A secret is out of the chat, not out of the Bot's reach.** `request_secret` and skills save to
+  the profile's `.env`, which Hermes publishes to its own environment. Hermes strips names that look
+  like credentials from `execute_code` sandboxes (`is_secret_env_name`), but whether a terminal
+  command can still print one hasn't been checked, so the app doesn't promise the Bot can't see it.
 - **Removing an app keeps its secrets.** `_remove_mcp_server` deletes only the config entry: a key in
   the profile's `.env` and an OAuth token stay, and adding it again reuses them.
 - **Run Now answers only when the run ends.** `POST /api/cron/jobs/{id}/trigger` runs the job inside
@@ -144,12 +187,36 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   the login Keychain from `security`; to let a test gateway borrow the Claude Code sign-in, link
   only `~/Library/Keychains` into it.
 
+## Calls
+
+- **Talking over a reply could steer it.** `ChatThread.stop()` is asynchronous and `send` steers a
+  running turn, so words said right after cutting the Bot off joined the reply being stopped.
+  Both `VoiceCall` and `GatewayCall` now wait up to 3 s for `isRunning` to clear before sending.
+- **`speak-stream` frames split samples.** Hermes forwards the provider's HTTP chunks as they come
+  (`ws.send_bytes(chunk)`), and most are an odd number of bytes. Reading each frame as whole
+  Int16 samples put every later sample a byte out: full-scale noise, heard on a real gateway.
+  `SpeechStream` carries the half-sample over (`PCMJoiner`), and `GatewayCall` holds a reply's first
+  0.2 s until `PCMCheck` hears a voice, ending the call if it hears loud noise instead.
+- **iOS stops a call's audio engine without telling the tap.** On an iPhone, Gateway calls went
+  deaf a few seconds in while the bar still said Listening. `MicWatch` restarts the engine when
+  it stops or no buffer comes for a second, and ends the call after three restarts that bring
+  nothing back. Unverified: what stopped it. `CallAudio` logs configuration changes,
+  interruptions and route changes under the `call` category, so the next device log says which.
+- **Hermes's `/api/audio/speak` returns only the first part** when long text is split into several
+  files, and leaves the rest on the gateway (read at v0.23.3). Gateway calls send one sentence at a
+  time, so they don't hit it.
+
 ## Dictation
 
 - **Apple's recognizer starts over after a pause.** A result marked with `speechRecognitionMetadata`
   closes an utterance, and the next results hold only the new one, so showing `bestTranscription`
   as is replaces what was said. `Utterances` keeps the closed ones. Seen on an iPhone with on-device
   recognition. The joining is tested with made-up results, not yet on a device.
+- **A stopped recognizer still sends its final words, then its end.** `task.finish()` processes
+  the audio already buffered, so the last result arrives after you tap Stop or Send. Written to the
+  box as is, it put a sent message back (seen on an iPhone). `Dictation` numbers its recordings and
+  lets only the latest write or end; after Stop the final words go only into a box still as
+  dictation left it, and after Send or ✕ not at all (`DictationRecordingTests`).
 
 ## Push notifications
 

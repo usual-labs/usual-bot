@@ -39,7 +39,12 @@ struct LifecycleTests {
     @Test func aCheckInConnectsForAMomentThenLetsGo() async throws {
         let (model, sockets) = try makeModel()
         model.setForeground(false)
-        await model.checkIn(within: .milliseconds(100))
+        // Ended once it has dialled, not by a time limit: a busy machine can pass a short limit
+        // before it dials, and the check-in then cancels the link with no socket.
+        let checkIn = Task { await model.checkIn(within: .seconds(60)) }
+        await waitForSockets(1, in: sockets)
+        checkIn.cancel()
+        await checkIn.value
         #expect(sockets.count == 1)
         #expect(model.linkTask == nil)
         #expect(!model.isCheckingIn)
@@ -53,6 +58,61 @@ struct LifecycleTests {
         model.setForeground(true)
         await checkIn.value
         #expect(model.linkTask != nil)
+    }
+
+    @Test func tappingANotificationThatWokeTheAppKeepsItsLink() async throws {
+        let (model, sockets) = try makeModel()
+        model.setForeground(false)
+        await model.warmUp("ada", on: nil, within: .milliseconds(100))
+        // The time limit can pass before a busy machine dials.
+        await waitForSockets(1, in: sockets)
+        #expect(sockets.count == 1)
+        #expect(model.linkTask != nil)
+
+        model.setForeground(true)
+        #expect(model.linkTask != nil)
+        #expect(!model.isCheckingIn)
+        #expect(!model.endWarmUp())
+        // sleep-ok: no second socket should come, so there is no event to wait for
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(sockets.count == 1)
+    }
+
+    @Test func aWakeNobodyTappedLetsGo() async throws {
+        let (model, sockets) = try makeModel()
+        model.setForeground(false)
+        await model.warmUp("ada", on: nil, within: .milliseconds(100))
+        // Letting go before the link dials would cancel it, and no socket would come.
+        await waitForSockets(1, in: sockets)
+        #expect(model.endWarmUp())
+        #expect(model.linkTask == nil)
+        #expect(!model.isCheckingIn)
+        #expect(sockets.count == 1)
+    }
+
+    @Test func anotherGatewaysNotificationWaitsForTheTap() async throws {
+        let (model, sockets) = try makeModel()
+        model.setForeground(false)
+        await model.warmUp("ada", on: "elsewhere", within: .milliseconds(100))
+        #expect(sockets.count == 0)
+        #expect(!model.endWarmUp())
+    }
+
+    @Test func theChatOpenWhenYouLeftIsntReadWhileYoureAway() throws {
+        let (model, _) = try makeModel()
+        let ada = Contact(id: "ada", name: "Ada")
+        model.visibleContactID = "ada"
+        #expect(model.thread(for: ada).isVisible)
+
+        model.setForeground(false)
+        #expect(!model.thread(for: ada).isVisible)
+        // Made while away, say as a notification loads it.
+        #expect(!model.thread(for: Contact(id: "bo", name: "Bo")).isVisible)
+        model.visibleContactID = "bo"
+        #expect(!model.thread(for: Contact(id: "bo", name: "Bo")).isVisible)
+
+        model.setForeground(true)
+        #expect(model.thread(for: Contact(id: "bo", name: "Bo")).isVisible)
     }
 
     @Test func launchShowsTheSplashUntilTheSavedSignInIsRead() async throws {

@@ -139,25 +139,13 @@ private struct BrowserSetup: View {
         let browsers = bots.map { model.browser(for: $0) }
         let plugin = Self.hasPlugin(browsers.map(\.hasPlugin))
         Section {
+            // The rows stay the same while the plugin check runs: swapping a lone spinner row for
+            // the Bot rows makes the Mac's grouped Form drop the last row out of the section.
             if plugin == false {
                 Text("Needs the Usual Bot plugin, above.").foregroundStyle(Theme.secondaryInk)
-            } else if plugin == nil {
-                ProgressView().controlSize(.small)
-            }
-            ForEach(plugin == true ? bots : []) { bot in
-                let browser = model.browser(for: bot)
-                LabeledContent(bot.name) {
-                    if browser.isAvailable {
-                        Text("Ready")
-                    } else {
-                        HStack(spacing: 8) {
-                            Text("Off").foregroundStyle(.secondary)
-                            SetupMenu(
-                                command: SetupCommands.turnOnBrowser(profile: browser.profile),
-                                message: SetupCommands.askTurnOnBrowser(profile: browser.profile, name: bot.name),
-                                bots: bots, ask: ask)
-                        }
-                    }
+            } else {
+                ForEach(bots) { bot in
+                    row(bot, pluginKnown: plugin == true)
                 }
             }
         } header: {
@@ -166,6 +154,25 @@ private struct BrowserSetup: View {
             Text(
                 "Lets you watch a Bot browse with a copy of your own browser profile, signed in where you are, in a browser with no window on the gateway. A Bot shows Ready once it browses with your real profile and its browser runs headless. Set Up turns that on for a Bot: it gets your signed-in browser, so only do it for Bots you trust with it."
             )
+        }
+    }
+
+    private func row(_ bot: Contact, pluginKnown: Bool) -> some View {
+        let browser = model.browser(for: bot)
+        return LabeledContent(bot.name) {
+            if !pluginKnown {
+                ProgressView().controlSize(.small)
+            } else if browser.isAvailable {
+                Text("Ready")
+            } else {
+                HStack(spacing: 8) {
+                    Text("Off").foregroundStyle(.secondary)
+                    SetupMenu(
+                        command: SetupCommands.turnOnBrowser(profile: browser.profile),
+                        message: SetupCommands.askTurnOnBrowser(profile: browser.profile, name: bot.name),
+                        bots: bots, ask: ask)
+                }
+            }
         }
     }
 

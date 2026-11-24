@@ -16,6 +16,7 @@ struct TranscriptView: View {
     /// The message the chat was marked unread from on this device, gone back to on opening it.
     @State private var returnJump: MessageJump?
     @AppStorage(AppPreferences.streamRepliesKey) private var streamsReplies = true
+    @AppStorage(AppPreferences.showToolActivityKey) private var showsTools = true
 
     var body: some View {
         // A reloaded transcript numbers its items afresh, so a position kept by item would now
@@ -37,18 +38,24 @@ struct TranscriptView: View {
                     .padding(.top, 40)
             }
             let items = thread.state.items
-            let dates = DateLabels.labels(for: items)
+            // A hidden line's date goes to the next line shown.
+            let dates = DateLabels.labels(for: showsTools ? items : items.filter { !$0.isToolActivity })
             // One ForEach, so an item or card keeps its view (and what you typed in a card) as the
             // cards move.
-            let start = window.start(in: items, including: target)
-            ForEach(Self.rows(of: items, cardsAt: cardsIndex, from: start), id: \.id) { row in
+            let start = window.start(in: items, including: target ?? newLineID)
+            ForEach(
+                Self.rows(of: items, cardsAt: cardsIndex, from: start, folding: exchanges, showingTools: showsTools),
+                id: \.id
+            ) { row in
                 switch row {
                 case .item(let index, _): self.row(items[index], at: index, in: items, dates: dates)
+                case .exchange(let exchange, _): self.row(exchange, in: items, dates: dates)
                 case .live: live
                 case .cards: cards
                 }
             }
         }
+        .environment(\.waitingAsks, BotAsk.waiting(in: items))
         .onAppear {
             window.hold(items)
             // Opening the chat reads it, unless a search is taking you somewhere already.
@@ -69,54 +76,98 @@ struct TranscriptView: View {
         }
         // The chat's widgets talk back to it.
         .environment(\.widgetChat, thread)
+        .environment(\.widgetSuccession, WidgetSuccession(items))
     }
 
     private var items: [TranscriptItem] { thread.state.items }
+    private var newLineID: Int? { thread.newLine?.itemID(in: items) }
+    private var exchanges: [BotExchange] { BotExchange.all(in: items) }
+    /// The turn running now is one for another Bot: what it does shows inside its folded line.
+    private var runsForABot: Bool { thread.state.isRunning && thread.turnIsForABot }
     /// The reply being written, as far as the chat shows it.
     private var draft: String { streamsReplies ? thread.state.draft : "" }
     private var cardsIndex: Int { Self.cardsIndex(in: items, after: cardsAfter) }
 
-    /// A part of the transcript: an item, the reply being written with what the turn is doing, or
-    /// the cards waiting for you.
+    /// A part of the transcript: an item, an exchange with another Bot folded into one line, the
+    /// reply being written with what the turn is doing, or the cards waiting for you.
     enum Row: Equatable {
         case item(index: Int, id: Int)
+        case exchange(BotExchange, id: Int)
         case live
         case cards
 
         /// An item's ID, not its index, which shifts when one is inserted earlier. Item IDs start at 0.
+        /// An exchange goes by its first item's.
         var id: Int {
             switch self {
-            case .item(_, let id): id
+            case .item(_, let id), .exchange(_, let id): id
             case .live: -1
             case .cards: -2
             }
         }
+
+        /// The items it shows.
+        var items: Range<Int>? {
+            switch self {
+            case .item(let index, _): index..<(index + 1)
+            case .exchange(let exchange, _): exchange.items
+            case .live, .cards: nil
+            }
+        }
     }
 
-    /// The items from `start` in order with the cards at `split`. What's live follows the newest
-    /// message, so it sits above cards nothing has followed yet. The cards show wherever they sit.
-    nonisolated static func rows(of items: [TranscriptItem], cardsAt split: Int, from start: Int = 0) -> [Row] {
-        let rows = items.indices.map { Row.item(index: $0, id: items[$0].id) }
-        let tail: [Row] = split < items.count ? [.cards] + rows[split...] + [.live] : [.live, .cards]
-        return (Array(rows[..<split]) + tail).filter {
-            if case .item(let index, _) = $0 { index >= start } else { true }
+    /// The items from `start` in order with the cards at `split`, each of `exchanges` as one row.
+    /// What's live follows the newest message, so it sits above cards nothing has followed yet. The
+    /// cards show wherever they sit, after the whole of an exchange they came in. Without
+    /// `showingTools`, tool activity outside an exchange gets no row.
+    nonisolated static func rows(
+        of items: [TranscriptItem], cardsAt split: Int, from start: Int = 0, folding exchanges: [BotExchange] = [],
+        showingTools: Bool = true
+    ) -> [Row] {
+        var rows: [Row] = []
+        var index = 0
+        while index < items.count {
+            if let exchange = exchanges.first(where: { $0.items.lowerBound == index && !$0.items.isEmpty }) {
+                rows.append(.exchange(exchange, id: items[index].id))
+                index = exchange.items.upperBound
+            } else {
+                if showingTools || !items[index].isToolActivity {
+                    rows.append(.item(index: index, id: items[index].id))
+                }
+                index += 1
+            }
         }
+        let cut = rows.firstIndex { ($0.items?.lowerBound ?? 0) >= split } ?? rows.count
+        let tail: [Row] = cut < rows.count ? [.cards] + rows[cut...] + [.live] : [.live, .cards]
+        return (Array(rows[..<cut]) + tail).filter { ($0.items?.upperBound ?? .max) > start }
+    }
+
+    @ViewBuilder private func row(_ exchange: BotExchange, in items: [TranscriptItem], dates: [Int: String])
+        -> some View
+    {
+        let first = items[exchange.items.lowerBound]
+        if let newLineID, items[exchange.items].contains(where: { $0.id == newLineID }) { NewMessagesLine() }
+        if let date = dates[first.id] { DateLabel(text: date) }
+        let running = runsForABot && exchange.items.upperBound == items.count
+        BotExchangeLine(
+            exchange: exchange, items: items, agentName: agentName, running: running,
+            draft: running ? draft : "",
+            reveals: target.map { id in items[exchange.items].contains { $0.id == id } } == true
+        )
+        .transition(.settle)
+        .accessibilityElement(children: .contain)
     }
 
     @ViewBuilder private func row(
         _ item: TranscriptItem, at index: Int, in items: [TranscriptItem], dates: [Int: String]
     ) -> some View {
+        if item.id == newLineID { NewMessagesLine() }
         if let date = dates[item.id] { DateLabel(text: date) }
-        // A date between two replies parts them.
         let isLast = index + 1 == items.count
         let shown = Self.shown(items, at: index)
+        let joins = Self.joins(items, at: index, dates: dates, showingTools: showsTools, draftBelow: !draft.isEmpty)
         ItemView(
-            item: shown, agentName: agentName,
-            joinsAbove: item.isReply && index > 0 && items[index - 1].isReply && dates[item.id] == nil,
-            joinsBelow: item.isReply
-                && (isLast
-                    ? !draft.isEmpty
-                    : items[index + 1].isReply && dates[items[index + 1].id] == nil),
+            item: shown, agentName: agentName, joinsAbove: joins.above, joinsBelow: joins.below,
             spokenTexts: Self.spokenTexts(of: shown, in: items, at: index),
             working: isLast ? working : nil
         )
@@ -124,9 +175,26 @@ struct TranscriptView: View {
         .accessibilityElement(children: .contain)
     }
 
+    /// Whether a reply joins the replies shown either side of it: a date between them parts them,
+    /// and a hidden tool line doesn't. The last one shown joins the reply being written.
+    nonisolated static func joins(
+        _ items: [TranscriptItem], at index: Int, dates: [Int: String], showingTools: Bool, draftBelow: Bool
+    ) -> (above: Bool, below: Bool) {
+        guard items[index].isReply else { return (false, false) }
+        func shown(_ item: TranscriptItem) -> Bool { showingTools || !item.isToolActivity }
+        let above = items[..<index].last(where: shown)
+        let below = items[(index + 1)...].first(where: shown)
+        return (
+            above?.isReply == true && dates[items[index].id] == nil,
+            below.map { $0.isReply && dates[$0.id] == nil } ?? draftBelow
+        )
+    }
+
     /// The reply being written and what the turn is doing, after the newest message.
     @ViewBuilder private var live: some View {
-        if !draft.isEmpty {
+        if runsForABot {
+            // Shown in the exchange's line.
+        } else if !draft.isEmpty {
             // Becomes a transcript item when it ends, so it leaves without a fade.
             AgentBubble(joinsAbove: items.last?.isReply == true) {
                 MarkdownView(draft, isBeingWritten: true)
@@ -134,20 +202,23 @@ struct TranscriptView: View {
             .joined(items.last?.isReply == true)
             .transition(.asymmetric(insertion: .settle, removal: .identity))
         }
-        LiveCards(live: thread.state.live)
-        if let working, !lastItemIsActivity {
-            WorkingRow(text: working).transition(.settle)
+        if !runsForABot {
+            if showsTools { LiveCards(live: thread.state.live) }
+            // With tools hidden, the activity line that would say what's happening isn't shown.
+            if let working, !lastItemIsActivity || !showsTools {
+                WorkingRow(working).transition(.settle)
+            }
         }
     }
 
     /// What the agent is doing, shown in one row: the newest tool line, or a row of its own after
     /// the rest. One row that changes its words, so the chat doesn't grow a row and lose it again
     /// with each tool. `nil` while a reply is shown being written, or while the agent waits for you.
-    private var working: String? {
+    private var working: WorkingRow.Words? {
         // A card with nothing after it is what the agent waits for, so it isn't thinking. Once you
         // write after the card, the agent is working on that.
         guard draft.isEmpty, thread.state.isRunning, !hasCards || cardsIndex < items.count else { return nil }
-        return WorkingRow.text(for: thread.state)
+        return WorkingRow.words(for: thread.state)
     }
 
     /// What the agent waits on you for.
@@ -278,14 +349,20 @@ struct ItemView: View {
     /// Transcripts for a reply's voice memos, by path.
     var spokenTexts: [String: String] = [:]
     /// What the agent is doing now, for the newest tool line to say.
-    var working: String? = nil
+    var working: WorkingRow.Words? = nil
     /// Rooms only: resolves a member ID to its author.
     var author: (String) -> MemberAuthor? = { _ in nil }
     @Environment(\.highlightedItem) private var highlighted
     @Environment(\.editingFrom) private var editingFrom
+    @Environment(\.waitingAsks) private var waitingAsks
+
+    private var memberID: String? {
+        if case .member(let id, _) = item.content { id } else { nil }
+    }
 
     var body: some View {
         content
+            .environment(\.widgetPlace, WidgetPlace(item: item.id, author: memberID))
             // Sending the edit removes what follows the message being edited.
             .opacity(editingFrom.map { item.id > $0 } == true ? 0.4 : 1)
             .animation(.easeOut(duration: 0.15), value: editingFrom)
@@ -352,6 +429,14 @@ struct ItemView: View {
             NoticeLine(text: text)
         case .result(let title, let detail):
             ResultLine(title: title, detail: detail)
+        case .routine(let name, let output):
+            RoutineLine(item: item, name: name, output: output, agentName: agentName)
+        case .botMessage(let from, let text, _):
+            BotMessageLine(from: from, text: text)
+        case .botAsk(let ask):
+            BotAskLine(ask: ask, waiting: waitingAsks.contains(ask.id))
+        case .botAnswer(let answers):
+            BotAnswerLine(answers: answers)
         case .output(let text):
             MessageRow(item: item, text: text, author: agentName, agentName: agentName, isMine: false) {
                 CommandOutput(text: text)
@@ -387,7 +472,8 @@ struct UserBubble: View {
     }
 }
 
-/// Your message as wide as its text: attachments above the bubble, a quoted reply inside it.
+/// Your message as wide as its text: attachments above the bubble, and inside it what it quotes,
+/// each quote with what you said to it.
 struct UserBubbleContent: View {
     let text: String
     @Environment(\.sentImages) private var sentImages
@@ -396,7 +482,7 @@ struct UserBubbleContent: View {
     var body: some View {
         // Attachments travel as `@image:`/`@file:` lines after the text; they show above it.
         let (withQuote, attachments) = AttachmentRef.split(text)
-        let (quotes, body) = QuotedMessage.split(withQuote)
+        let parts = QuotedMessage.parts(withQuote)
         // Audio and video you sent get a player; the rest show as tiles.
         let (playable, tiles) = (
             attachments.filter { $0.kind == .file && MediaLoading.kind(of: $0.path).isPlayable },
@@ -417,29 +503,32 @@ struct UserBubbleContent: View {
                     }
                 }
             }
-            if !body.isEmpty || !quotes.isEmpty {
+            if !parts.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
-                    // What this one replies to.
-                    ForEach(Array(quotes.enumerated()), id: \.offset) { _, quote in
-                        Text(quote)
-                            .scaledFont(size: 13)
-                            .foregroundStyle(Theme.userBubbleInk.opacity(0.7))
-                            .lineLimit(2)
-                            .padding(.leading, 9)
-                            .overlay(alignment: .leading) {
-                                Capsule().fill(Theme.userBubbleInk.opacity(0.35)).frame(width: 2)
-                            }
-                    }
-                    if !body.isEmpty {
-                        #if os(macOS)
-                            MessageText(content: .mine(body, size: messageSize))
-                        #else
-                            // Links underlined in the bubble's own ink: the link colour wouldn't
-                            // read on the bubble.
-                            Text(Links.detect(in: body).underliningLinks())
-                                .messageFont()
-                                .tint(Theme.userBubbleInk)
-                        #endif
+                    ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
+                        switch part {
+                        case .quote(let quote):
+                            Text(quote)
+                                .scaledFont(size: 13)
+                                .foregroundStyle(Theme.userBubbleInk.opacity(0.7))
+                                .lineLimit(2)
+                                .padding(.leading, 9)
+                                .overlay(alignment: .leading) {
+                                    Capsule().fill(Theme.userBubbleInk.opacity(0.35)).frame(width: 2)
+                                }
+                                // A little more room above a quote that follows your words.
+                                .padding(.top, index > 0 && !parts[index - 1].isQuote ? 4 : 0)
+                        case .text(let words):
+                            #if os(macOS)
+                                MessageText(content: .mine(words, size: messageSize))
+                            #else
+                                // Links underlined in the bubble's own ink: the link colour wouldn't
+                                // read on the bubble.
+                                Text(Links.detect(in: words).underliningLinks())
+                                    .messageFont()
+                                    .tint(Theme.userBubbleInk)
+                            #endif
+                        }
                     }
                 }
                 .foregroundStyle(Theme.userBubbleInk)
@@ -468,10 +557,10 @@ struct NoticeLine: View {
 private struct ActivityLine: View {
     let steps: [ToolStep]
     let agentName: String
-    var working: String? = nil
+    var working: WorkingRow.Words? = nil
 
     var body: some View {
-        let now = ActivitySummary.current(in: steps) ?? working
+        let now = ActivitySummary.current(in: steps).map { WorkingRow.Words(text: $0) } ?? working
         let failed = steps.contains { $0.state == .failed }
         FoldedRow(
             symbol: now == nil ? ActivitySummary.symbol(for: steps) : nil,
@@ -479,7 +568,7 @@ private struct ActivityLine: View {
             openByDefault: now != nil
         ) {
             if let now {
-                WorkingRow(text: now)
+                WorkingRow(now)
             } else {
                 Text(ActivitySummary.line(for: steps, agent: agentName))
             }

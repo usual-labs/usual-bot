@@ -20,13 +20,19 @@ public enum Theme {
     /// What floats over a message's own words and has to hide them: a step lighter than `bubble`.
     static let floating = Color(light: 0xFFFFFF, dark: 0x2C2C2C)
     /// Chat text: 15 pt on the Mac, and 18 pt with a 24 pt line on iPhone, as in Grok's phone app,
-    /// since a phone is held further from the eye.
+    /// since a phone is held further from the eye. On the Mac, the spacing is as measured in Grok's
+    /// Mac app: lines 1.5 times the size, paragraphs 14 pt apart, a list's items closer than that, and
+    /// letters a little looser than the system font's own, so a long reply reads less dense.
     #if os(macOS)
         static let messageSize: CGFloat = 15
-        static let messageLineSpacing: CGFloat = 4
+        static let messageLineSpacing: CGFloat = 5
+        static let messageBlockSpacing: CGFloat = 14
+        static let messageItemSpacing: CGFloat = 8
+        static let messageTracking: CGFloat = 0.2
     #else
         static let messageSize: CGFloat = 18
         static let messageLineSpacing: CGFloat = 2.5
+        static let messageBlockSpacing: CGFloat = 10
     #endif
     /// The widest a message or card grows, so lines stay readable in a wide window.
     static let bubbleWidth: CGFloat = 560
@@ -61,6 +67,11 @@ public enum Theme {
     public static let userBubbleInk = Color(light: 0xFFFFFF, dark: 0xFFFFFF)
     public static let needsYouFill = Color(light: 0xFFF1D6, dark: 0x3A2A0A)
     public static let needsYouInk = Color(light: 0x8A5300, dark: 0xF5C36B)
+    /// The dot on the Mac sidebar's Plugins button when the gateway's plugin can be updated: yellow,
+    /// as asked, and darker in light mode so it shows on the sidebar's glass.
+    static let updateDot = Color(light: 0xE09B00, dark: 0xF5C36B)
+    /// The NEW line above unread replies: blue, as in Grok, the one colour in a transcript of greys.
+    static let newLine = Color(light: 0x1F5FD6, dark: 0x5B95F5)
     public static let danger = Color(light: 0xB42318, dark: 0xF97066)
     /// Code blocks, which sit on a bubble, and a result's report. A folded line's rows hang off a
     /// rail instead (`FoldedRow`).
@@ -201,11 +212,12 @@ extension ToggleStyle where Self == SystemSwitchStyle {
 extension View {
     /// A text field's cursor and selected text in the system's own blue (the Mac's accent). A field
     /// takes both from the tint, and the app's ink tint would draw selection grey in dark mode.
-    public func textInputTint() -> some View {
+    /// `hidesCursor` clears the caret, for a field whose words are still to come.
+    public func textInputTint(hidesCursor: Bool = false) -> some View {
         #if os(macOS)
-            tint(Color(nsColor: .controlAccentColor))
+            tint(hidesCursor ? .clear : Color(nsColor: .controlAccentColor))
         #else
-            tint(.blue)
+            tint(hidesCursor ? .clear : .blue)
         #endif
     }
 }

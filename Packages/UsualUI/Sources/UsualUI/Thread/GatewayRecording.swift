@@ -76,7 +76,7 @@ final class GatewayRecording: @unchecked Sendable {
         }
     }
 
-    private static func convert(
+    static func convert(
         _ buffer: AVAudioPCMBuffer, with converter: AVAudioConverter, to target: AVAudioFormat
     ) -> AVAudioPCMBuffer? {
         let ratio = target.sampleRate / buffer.format.sampleRate

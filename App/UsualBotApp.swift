@@ -42,8 +42,8 @@ struct UsualBotApp: App {
                 demo
                 ? AppModel.demo(
                     longConversations: ProcessInfo.processInfo.arguments.contains("--demo-long-chat"),
-                    // USUALBOT_DEMO_SHARE=1 (or --demo-share) lets the share extension send to the
-                    // demo's Bots. Without it the demo leaves the shared folder to the real sign-in.
+                    // USUALBOT_DEMO_SHARE=1 (or --demo-share) puts what you share into the demo's
+                    // chats. Without it the demo leaves the shared folder to the real sign-in.
                     share: ProcessInfo.processInfo.environment["USUALBOT_DEMO_SHARE"] == "1"
                         || ProcessInfo.processInfo.arguments.contains("--demo-share") ? .appGroup() : nil)
                 : live()
@@ -77,7 +77,9 @@ struct UsualBotApp: App {
             }
         #else
             AgentNotifications.shared.watch(model, showApp: {})
-            _backgroundLink = State(initialValue: BackgroundLink(model: model, suspend: { tailscale.suspend() }))
+            let backgroundLink = BackgroundLink(model: model, suspend: { tailscale.suspend() })
+            _backgroundLink = State(initialValue: backgroundLink)
+            PushRegistration.woken = { await backgroundLink.woken(by: $0) }
         #endif
     }
 
@@ -106,8 +108,6 @@ struct UsualBotApp: App {
                             Task { await AgentNotifications.shared.lookForNews() }
                         }
                     }
-                    // The share extension sends for you only without it.
-                    .onChange(of: tailscale.isOn, initial: true) { _, isOn in model.usesBuiltInTailscale = isOn }
                 #endif
         }
         #if os(iOS)

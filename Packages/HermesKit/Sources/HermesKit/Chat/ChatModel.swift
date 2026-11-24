@@ -37,6 +37,9 @@ public struct ModelProvider: Identifiable, Equatable, Sendable {
     public let models: [String]
     /// Models whose catalog entry says they can't take a reasoning level.
     let withoutReasoning: Set<String>
+    /// The login's subscription limits, when the gateway has them (`usage.windows`). A provider
+    /// with several logins reports each one apart (`usage.accounts`); the app doesn't show those.
+    public let limits: [PlanLimit]
 
     public var id: String { slug }
 
@@ -56,13 +59,17 @@ public struct ModelProvider: Identifiable, Equatable, Sendable {
             for (model, entry) in capabilities where entry["reasoning"]?.boolValue == false { without.insert(model) }
         }
         withoutReasoning = without
+        limits = PlanLimit.all(in: row)
     }
 
-    init(slug: String, name: String, models: [String], withoutReasoning: Set<String> = []) {
+    init(
+        slug: String, name: String, models: [String], withoutReasoning: Set<String> = [], limits: [PlanLimit] = []
+    ) {
         self.slug = slug
         self.name = name
         self.models = models
         self.withoutReasoning = withoutReasoning
+        self.limits = limits
     }
 
     /// Model IDs are plain strings on current gateways and `{id, name}` objects on older ones.
@@ -93,6 +100,27 @@ extension ChatThread {
             case .array(let rows) = result["providers"]
         else { return }
         modelProviders = rows.compactMap(ModelProvider.init(row:))
+        modelsLoadedAt = .now
+    }
+
+    /// Loads the catalog again, for its subscription limits, when the last load is over five
+    /// minutes old: after a reply, say. Hermes's numbers are minutes old anyway.
+    public func refreshPlanLimits() async {
+        if let modelsLoadedAt, Date.now.timeIntervalSince(modelsLoadedAt) < 5 * 60 { return }
+        await loadModels()
+    }
+
+    /// The subscription limit this chat's model is close to, or past.
+    public var planLimitWarning: PlanLimitWarning? {
+        guard let model, let provider = modelProviders.first(where: { $0.slug == model.provider }) else { return nil }
+        return PlanLimitWarning(provider: provider, model: model.name)
+    }
+
+    /// Whether the gateway gave limits for this chat's provider. Hermes fetches them in the
+    /// background the first time it's asked, so the first answer can come without them.
+    public var hasPlanLimits: Bool {
+        guard let model else { return false }
+        return modelProviders.first { $0.slug == model.provider }?.limits.isEmpty == false
     }
 
     /// Switches this chat (only this chat: the agent's default stays) to `name` from `provider`.

@@ -5,6 +5,10 @@ import Foundation
 /// the row is stored, but no chat shows it as a message: the agent answers by rewriting the
 /// widget's page, which reads its file again when the turn ends (`turnsEnded`).
 extension ChatThread {
+    /// Starts the submission ID of a widget's prompt, so another device running Usual Bot can tell
+    /// it from a typed message while the turn runs: the gateway's queue doesn't carry its kind.
+    static let widgetPrefix = "widget-"
+
     /// Sends a widget's prompt. It answers once the gateway has it, so a widget can say "saved"
     /// only when it was. While a reply runs, it waits in the gateway's queue, shown as "From a
     /// widget"; it's never steered into the reply, which would mix a click into another answer.
@@ -31,7 +35,7 @@ extension ChatThread {
                 return .undelivered(
                     .busy, String(localized: "The agent is still replying. Try again when it's done."))
             }
-            let item = QueuedMessage(id: UUID().uuidString, text: prompt, isFromWidget: true)
+            let item = QueuedMessage(id: Self.widgetPrefix + UUID().uuidString, text: prompt, isFromWidget: true)
             queue.append(item)
             if let error = await admit(item) { return .undelivered(.refused, AppModel.describe(error)) }
             return .sent
@@ -41,7 +45,7 @@ extension ChatThread {
             "display_kind": .string(GatewayTurn.hiddenKind),
         ]
         if queuesOnGateway {
-            let id = UUID().uuidString
+            let id = Self.widgetPrefix + UUID().uuidString
             sentDirectly.insert(id)
             params["submission_id"] = .string(id)
         }

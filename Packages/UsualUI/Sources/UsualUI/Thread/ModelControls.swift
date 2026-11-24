@@ -103,12 +103,17 @@ extension ChatThread {
         modelProviders.first { $0.slug == model.provider }?.reasons(model.name) ?? true
     }
 
-    /// The model catalog and the context numbers, once the chat is live.
+    /// The model catalog, with its subscription limits, and the context numbers, once the chat is
+    /// live.
     func loadModelsAndUsage() async {
         guard isAttached else { return }
         async let models: Void = loadModels()
         async let usage: Void = loadUsage()
         _ = await (models, usage)
+        // Hermes fetches subscription limits in the background the first time it's asked.
+        guard !hasPlanLimits else { return }
+        try? await Task.sleep(for: .seconds(10))
+        if !Task.isCancelled { await loadModels() }
     }
 }
 

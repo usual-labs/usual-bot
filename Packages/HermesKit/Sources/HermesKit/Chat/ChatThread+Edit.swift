@@ -32,7 +32,14 @@ extension ChatThread {
     public var retryReply: TranscriptItem? {
         guard let last = lastSent, let index = state.items.firstIndex(where: { $0.id == last.id }) else { return nil }
         let after = state.items[(index + 1)...]
-        if after.contains(where: { if case .result = $0.content { true } else { false } }) { return nil }
+        if after.contains(where: {
+            switch $0.content {
+            case .result, .routine, .botMessage, .botAnswer: true
+            default: false
+            }
+        }) {
+            return nil
+        }
         // Nor has a reply to one of a goal's own turns.
         if after.contains(where: { $0.content == .notice(GatewayTurn.goalStep) }) { return nil }
         return after.last { if case .assistant = $0.content { true } else { false } }
@@ -74,12 +81,14 @@ extension ChatThread {
             case .user:
                 cost.messages += 1
                 cost.reachesBack = true
-            case .result:
+            case .result, .routine, .botMessage, .botAnswer:
                 cost.messages += 1
                 cost.fromHermes += 1
                 cost.reachesBack = true
             case .assistant, .member, .background, .output: cost.messages += 1
             case .activity(let steps): cost.steps += steps.count
+            // A message to another Bot was delivered, and stays.
+            case .botAsk: cost.steps += 1
             case .notice, .progress: break
             }
         }
@@ -247,8 +256,8 @@ extension TranscriptItem {
     /// Something said, rather than a step, a notice or a list.
     fileprivate var isMessage: Bool {
         switch content {
-        case .user, .assistant, .member, .background, .output, .result: true
-        case .activity, .notice, .progress: false
+        case .user, .assistant, .member, .background, .output, .result, .routine, .botMessage, .botAnswer: true
+        case .activity, .notice, .progress, .botAsk: false
         }
     }
 }

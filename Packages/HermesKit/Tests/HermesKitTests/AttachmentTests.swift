@@ -27,8 +27,33 @@ struct AttachmentRefTests {
             #expect(text == "Testing share button")
             #expect(attachments == [AttachmentRef(kind: .image, path: path)])
         }
+        let alone = AttachmentRef.split("What do you see in this image?\n\n[Image attached at: \(path)]\n[screenshot]")
+        #expect(alone.text.isEmpty)
+        #expect(alone.attachments == [AttachmentRef(kind: .image, path: path)])
+        #expect(AttachmentRef.split("What do you see in this image?").text == "What do you see in this image?")
         #expect(AttachmentRef.split("Look\n[screenshot]").text == "Look\n[screenshot]")
         #expect(AttachmentRef.split("[Image attached at: ]").attachments.isEmpty)
+    }
+
+    /// A turn with an image keeps what Hermes added for the model in the stored text (#71998).
+    @Test func historyDropsWhatHermesAddedToAnImageTurn() throws {
+        let path = "/Users/h/.hermes/cache/documents/native-inputs/af16/upload_1.png"
+        let voice = "<usual-bot-voice>Usual Bot is a messenger: reply like a text.</usual-bot-voice>"
+        let context = "<usual-bot-context version=\"2\">\nThis chat is in Usual Bot.\n</usual-bot-context>"
+        let memory = "<memory-context>\n[System note: recalled]\n\n- likes tea\n</memory-context>"
+        let row = "What do you see in this image?\n\n[Image attached at: \(path)]\n[screenshot]"
+        for added in [voice, context + "\n\n" + voice, memory + "\n\n" + context] {
+            let json = try JSONEncoder().encode(["role": "user", "text": row + "\n" + added])
+            let message = try JSONDecoder().decode(HistoryMessage.self, from: json)
+            let (text, attachments) = AttachmentRef.split(try #require(message.text))
+            #expect(text.isEmpty)
+            #expect(attachments == [AttachmentRef(kind: .image, path: path)])
+        }
+        let quoted = "What does <usual-bot-voice>x</usual-bot-voice> mean?"
+        #expect(InjectedContext.strip(quoted) == quoted)
+        #expect(InjectedContext.strip("Hi " + voice) == "Hi " + voice)
+        let reply = try JSONEncoder().encode(["role": "assistant", "text": "Done.\n" + voice])
+        #expect(try JSONDecoder().decode(HistoryMessage.self, from: reply).text == "Done.\n" + voice)
     }
 
     @Test func leavesOrdinaryMessagesAlone() {

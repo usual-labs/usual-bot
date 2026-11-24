@@ -51,7 +51,7 @@ shows what it needs.
 
 ## Build from source
 
-**Try it in a minute, without a gateway.** You need a Mac with Xcode 26 or newer.
+**Try it in a minute, without a gateway.** You need a Mac with Xcode 27 or newer.
 
 ```sh
 git clone https://github.com/usual-labs/usual-bot.git
@@ -121,7 +121,8 @@ The film and all screenshots come from the built-in demo, with made-up Bots.
 - **Edit and undo.** Rewrite your last message for a fresh answer, or take it back.
 - **Dictation.** Tap the mic and speak; your words appear as you talk.
 - **Voice calls.** Talk with a Bot and it answers aloud, and stops when you speak over it. Uses
-  on-device speech, or Hermes's GPT-Live voice when your gateway has an OpenAI key.
+  on-device speech, the Bot's own speech providers on your gateway, or Hermes's GPT-Live voice
+  when your gateway has an OpenAI key.
 
 **Staying in control**
 
@@ -161,7 +162,7 @@ The [user guide](docs/guides/user-guide.md) walks through each of these.
 - **Sign-in on the gateway.** It needs a sign-in method (username and password, or OAuth); Usual
   Bot uses its browser sign-in for apps (`native_pkce` in `/api/status`).
 - **Tested with** Hermes Agent 0.22.7 (the Webapp), and 0.21.5 and 0.22.5 (the dashboard).
-- **The app** runs on macOS 26 and iOS 26 or later. Building it needs Xcode 26 or newer.
+- **The app** runs on macOS 26 and iOS 26 or later. Building it needs Xcode 27 or newer.
 
 ## Documentation
 

@@ -1,10 +1,10 @@
 name: CodeQL
 
 # Scans the Swift code and the workflows with CodeQL; findings show up in code scanning. Swift is
-# built with xcodebuild on the macOS 26 runner like CI, so the app target is scanned as well as the
-# packages (GitHub's default setup only built the packages). That traced build takes about half an
-# hour, so Swift is scanned on main, weekly and by hand, not on pull requests; the workflows are
-# scanned everywhere.
+# built with scripts/check.sh on the Xcode 27 runner like CI, so the app target is scanned as well
+# as the packages (GitHub's default setup only built the packages). That traced build takes about
+# half an hour, so Swift is scanned on main, weekly and by hand, not on pull requests; the
+# workflows are scanned everywhere.
 
 on:
   push:
@@ -45,7 +45,7 @@ jobs:
   swift:
     name: Analyze (swift)
     if: github.event_name != 'pull_request'
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 60
     permissions:
       contents: read # check out the source
@@ -61,9 +61,7 @@ jobs:
           build-mode: manual
 
       - name: Build the app
-        run: >
-          xcodebuild build -project UsualBot.xcodeproj -scheme UsualBot
-          -destination 'generic/platform=macOS' CODE_SIGNING_ALLOWED=NO
+        run: scripts/check.sh macos
 
       - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:

@@ -38,6 +38,10 @@ struct ConversationScrollState {
     private var lastSent: SentMessages?
     /// The content's height when earlier messages were added above it, until they're measured.
     private var heightBeforeAbove: CGFloat?
+    /// The move that keeps the reader in place over those messages, from where and to where, until
+    /// the scroll view reports it. Geometry before then still has the old offset, so it still looks
+    /// near the top: another page added then was measured from there, and its move undid this one's.
+    private var movingAbove: (from: CGFloat, to: CGFloat)?
     /// Counts the times the space a conversation keeps at its end may go (`GrowsOnly`).
     private(set) var releases = 0
     /// That space is out of sight: you've scrolled more than its most above the end.
@@ -56,13 +60,20 @@ struct ConversationScrollState {
     mutating func update(_ viewport: ConversationViewport) -> CGFloat? {
         guard viewport.isUsable else { return nil }
         self.viewport = viewport
+        if let moving = movingAbove, abs(viewport.offset - moving.to) < abs(viewport.offset - moving.from) {
+            movingAbove = nil
+        }
         let hidden = !followsEnd && viewport.offset + viewport.height < viewport.contentHeight - GrowsOnly.limit
         if hidden, !spaceHidden { releases += 1 }
         spaceHidden = hidden
         if let before = heightBeforeAbove, viewport.contentHeight != before {
             heightBeforeAbove = nil
             // Even mid-gesture: what grew is above the reader, so this keeps them where they were.
-            if !followsEnd { return viewport.offset + viewport.contentHeight - before }
+            if !followsEnd {
+                let offset = viewport.offset + viewport.contentHeight - before
+                movingAbove = (viewport.offset, offset)
+                return offset
+            }
         }
         return correction
     }
@@ -70,7 +81,7 @@ struct ConversationScrollState {
     /// Within a screen of the top, where earlier messages should be ready. Following the end,
     /// that's a conversation too short to fill two screens.
     var nearsTop: Bool {
-        guard let viewport, heightBeforeAbove == nil else { return false }
+        guard let viewport, heightBeforeAbove == nil, movingAbove == nil else { return false }
         return (followsEnd ? viewport.end : viewport.offset) < viewport.height
     }
 
@@ -82,6 +93,8 @@ struct ConversationScrollState {
     mutating func scrollingByHand(_ scrolling: Bool) -> CGFloat? {
         let wasScrolling = isScrollingByHand
         isScrollingByHand = scrolling
+        // A move that hasn't landed by a gesture's end isn't coming.
+        if !scrolling { movingAbove = nil }
         if scrolling {
             followsEnd = false
         } else if wasScrolling {
@@ -96,6 +109,7 @@ struct ConversationScrollState {
         // The reload shows the newest page again, so a page being added is gone; with the same
         // newest messages no new height would ever say it arrived, and scrolling up would stop.
         heightBeforeAbove = nil
+        movingAbove = nil
         guard load != jumpedLoad else { return nil }
         followsEnd = true
         return correction

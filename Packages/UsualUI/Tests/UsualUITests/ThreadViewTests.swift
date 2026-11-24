@@ -203,7 +203,7 @@ struct ActivitySummaryTests {
         ]
         #expect(
             ActivitySummary.line(for: steps, agent: "Hermes")
-                == "Hermes read 2 files, edited 1 file and ran 2 commands · 48s")
+                == "Hermes read 2 files, edited a file and ran 2 commands · 48s")
     }
 
     @Test func singleKindsAndOthers() {
@@ -211,7 +211,7 @@ struct ActivitySummaryTests {
         #expect(ActivitySummary.line(for: [step("memory"), step("todo_list")], agent: "Ops") == "Ops used 2 tools")
         #expect(
             ActivitySummary.line(for: [step("terminal"), step("memory")], agent: "Ops")
-                == "Ops ran 1 command and used 1 other tool")
+                == "Ops ran a command and used another tool")
     }
 
     @Test func showsProgressAndFailures() {
@@ -220,14 +220,16 @@ struct ActivitySummaryTests {
         #expect(ActivitySummary.current(in: [step("terminal")]) == nil)
         #expect(
             ActivitySummary.line(for: [step("terminal", .failed, duration: 75)], agent: "Hermes")
-                == "Hermes ran 1 command · 1m 15s · 1 failed")
+                == "Hermes ran a command · 1m 15s · 1 failed")
     }
 
-    @Test func oneStepNamesWhatItWorkedOn() {
-        let edit = ToolStep(id: "1", name: "patch", context: "work/disk.html", state: .done)
-        #expect(ActivitySummary.line(for: [edit], agent: "Ops") == "Ops edited work/disk.html")
-        let run = ToolStep(id: "2", name: "terminal", context: "npm test", duration: 3, state: .failed)
-        #expect(ActivitySummary.line(for: [run], agent: "Ops") == "Ops ran npm test · 3s · 1 failed")
+    @Test func oneStepStaysGeneric() {
+        // What a step worked on is in the expanded list, not the line.
+        let edit = ToolStep(id: "1", name: "patch", context: "/Users/me/.hermes/ops/MEMORY.md", state: .done)
+        #expect(ActivitySummary.line(for: [edit], agent: "Ops") == "Ops edited a file")
+        let run = ToolStep(
+            id: "2", name: "terminal", context: "git fetch -q origin + 3 commands", duration: 3, state: .failed)
+        #expect(ActivitySummary.line(for: [run], agent: "Ops") == "Ops ran a command · 3s · 1 failed")
         // Browsing names no page, and two steps are counted.
         let web = ToolStep(id: "3", name: "web_search", context: "pgvector pricing", state: .done)
         #expect(ActivitySummary.line(for: [web], agent: "Ops") == "Ops browsed the web")
@@ -295,5 +297,26 @@ struct WorkingRowTests {
         #expect(WorkingRow.text(for: state) == "Thinking…")
         state.apply(GatewayEvent(type: "message.delta", sessionID: "s1", seq: nil, payload: ["text": "Hel"]))
         #expect(WorkingRow.text(for: state) == "Writing…")
+    }
+
+    private func event(_ type: String, _ payload: JSONValue) -> GatewayEvent {
+        GatewayEvent(type: type, sessionID: "s1", seq: nil, payload: payload)
+    }
+
+    @Test func saysWhatKindOfToolRunsAndHermesMoodBetweenTools() {
+        var state = ThreadState()
+        state.sendLocally("Hi")
+        state.apply(event("thinking.delta", ["text": "(¬‿¬) pondering..."]))
+        // VoiceOver hears the verb without the face.
+        #expect(WorkingRow.words(for: state) == .init(text: "(¬‿¬) pondering…", spoken: "pondering…"))
+        state.apply(event("tool.start", ["tool_id": "1", "name": "read_file", "context": "notes.md"]))
+        #expect(WorkingRow.text(for: state) == "Reading…")
+        state.apply(event("tool.complete", ["tool_id": "1"]))
+        #expect(WorkingRow.text(for: state) == "Thinking…")
+        state.apply(event("thinking.delta", ["text": "(◔_◔) mulling..."]))
+        state.apply(event("reasoning.delta", ["text": "Check the logs next."]))
+        #expect(WorkingRow.text(for: state) == "Check the logs next.")
+        state.apply(event("thinking.delta", ["text": "⏳ Still waiting on the provider (30s)"]))
+        #expect(WorkingRow.text(for: state) == "Still waiting on the provider (30s)")
     }
 }

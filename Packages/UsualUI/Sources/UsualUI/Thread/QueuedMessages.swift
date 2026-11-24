@@ -3,7 +3,8 @@ import SwiftUI
 
 /// The messages waiting above the message box, in the order they'll go: held ones first (Stop took
 /// them back, and they wait for Resume), then the ones the gateway sends when the reply ends. Each
-/// can be edited (back into the box), sent now or removed.
+/// can be edited (back into the box, files too), sent now or removed. Files can't steer a reply,
+/// so a message with files is sent now only when nothing runs.
 struct QueuedMessages: View {
     let thread: ChatThread
     /// About four one-line rows before the list scrolls. It grows with the text, short of taking
@@ -88,27 +89,52 @@ private struct QueuedMessageRow: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityLabel(Text("Queued from a widget"))
             } else {
-                Text(message.text)
-                    .scaledFont(size: 13)
-                    .foregroundStyle(message.isSending ? Theme.secondaryInk : Theme.ink)
-                    .lineLimit(2, accessibility: 4)
-                    .truncationMode(.tail)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityLabel(
-                        Text(message.isHeld ? "Held message: \(message.text)" : "Queued message: \(message.text)"))
-                button("pencil", "Edit", hint: "Takes it out of the queue and puts it in the message box") {
-                    thread.edit(message)
+                VStack(alignment: .leading, spacing: 2) {
+                    if !message.text.isEmpty {
+                        Text(message.text)
+                            .scaledFont(size: 13)
+                            .foregroundStyle(message.isSending ? Theme.secondaryInk : Theme.ink)
+                            .lineLimit(2, accessibility: 4)
+                            .truncationMode(.tail)
+                    }
+                    if !files.isEmpty {
+                        Label(files, systemImage: "paperclip")
+                            .scaledFont(size: 12)
+                            .foregroundStyle(Theme.secondaryInk)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
                 }
-                .disabled(!ready)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(accessibilityLabel)
+                button(
+                    "pencil", "Edit",
+                    hint: message.canEdit
+                        ? "Takes it out of the queue and puts it in the message box"
+                        : "Unavailable: its files were picked before the app last opened"
+                ) { thread.edit(message) }
+                .disabled(!ready || !message.canEdit)
                 button(
                     "arrow.up", "Send Now",
-                    hint: thread.state.isRunning ? "Steers the reply that's running" : "Sends it as your next message"
+                    hint: !thread.state.isRunning
+                        ? "Sends it as your next message"
+                        : message.files.isEmpty
+                            ? "Steers the reply that's running" : "Unavailable: a running reply can't take files"
                 ) { thread.sendNow(message) }
-                .disabled(!ready || !thread.canSend)
+                .disabled(!ready || !thread.canSendNow(message))
             }
             button("xmark", "Remove", hint: "Takes it out of the queue") { thread.remove(message) }
                 .disabled(!ready)
         }
+    }
+
+    private var files: String { message.files.map(\.name).formatted(.list(type: .and)) }
+
+    private var accessibilityLabel: Text {
+        let text =
+            message.text.isEmpty ? files : message.files.isEmpty ? message.text : "\(message.text), with \(files)"
+        return message.isHeld ? Text("Held message: \(text)") : Text("Queued message: \(text)")
     }
 
     private func button(

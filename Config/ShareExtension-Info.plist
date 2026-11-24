@@ -28,6 +28,9 @@
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).ShareViewController</string>
 	</dict>
+	<!-- The link scheme that opens this build's app, and not another build's (Config/Info.plist). -->
+	<key>UsualAppScheme</key>
+	<string>$(BUNDLE_ID_PREFIX).UsualBot</string>
 	<!-- The App Group folder the app reads what was shared from (ShareContainer). -->
 	<key>UsualShareGroup</key>
 	<string>$(USUAL_SHARE_GROUP)</string>

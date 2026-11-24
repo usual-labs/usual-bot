@@ -15,8 +15,8 @@
 
     /// A message's words as one attributed string, so a single text view shows them and a drag
     /// selects across paragraphs, headings, list items and quotes. Laid out as `MarkdownView`
-    /// lays out the rest: blocks 10 pt apart, 4 pt between lines, a little more room above a
-    /// heading, list markers in a column of their own.
+    /// lays out the rest: blocks `Theme.messageBlockSpacing` apart and a list's items closer, a
+    /// little more room above a heading, list markers in a column of their own.
     enum RichText {
         /// Marks a quote's text, which gets a bar down its leading edge.
         static let quoteBar = NSAttributedString.Key("UsualQuoteBar")
@@ -42,7 +42,9 @@
                 let paragraph = NSMutableParagraphStyle()
                 paragraph.lineSpacing = Theme.messageLineSpacing
                 // TextKit leaves the line spacing under a paragraph's last line too.
-                paragraph.paragraphSpacing = index == blocks.count - 1 ? 0 : 10 - Theme.messageLineSpacing
+                paragraph.paragraphSpacing =
+                    index == blocks.count - 1
+                    ? 0 : spacing(after: block, before: blocks[index + 1]) - Theme.messageLineSpacing
                 let piece: NSMutableAttributedString
                 switch block {
                 case .paragraph(let text):
@@ -78,6 +80,15 @@
                 result.append(piece)
             }
             return result
+        }
+
+        /// A list's items sit closer than paragraphs, so the list reads as one thing.
+        private static func spacing(after block: MarkdownBlock, before next: MarkdownBlock) -> CGFloat {
+            if case .listItem = block, case .listItem = next {
+                Theme.messageItemSpacing
+            } else {
+                Theme.messageBlockSpacing
+            }
         }
 
         /// Your message: shown as typed, with its addresses as links.
@@ -142,6 +153,8 @@
                     }
                 }
                 var attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: color]
+                // Code keeps its columns.
+                if chip == nil { attributes[.kern] = Theme.messageTracking }
                 if let chip { attributes[.backgroundColor] = chip }
                 if inline.contains(.strikethrough) {
                     attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue

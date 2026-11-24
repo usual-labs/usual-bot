@@ -31,8 +31,9 @@ final class Dictation {
 
     // Set here and in DictationGateway.swift; views only read them.
     var state = State.idle
-    /// How loud the microphone is, 0…1, for the button's ring.
-    var level: Double = 0
+    /// The microphone's recent loudness, 0…1, oldest first: the loudest of each `barInterval`
+    /// while listening, for the waveform. It stays as it was once you stop.
+    private(set) var levels: [Double] = []
     /// The recording is going to the gateway: sending waits for its words.
     var throughGateway = false
     /// The gateway couldn't transcribe the recording, which is kept for On-device to try.
@@ -40,13 +41,33 @@ final class Dictation {
     /// Seconds before gateway dictation stops by itself, in its last 15.
     var secondsLeft: Double?
 
-    @ObservationIgnored private var session: SpeechSession?
+    @ObservationIgnored private var session: (any SpeechRecording)?
+    /// Counts recordings. Only the latest may write to the box or end: a stopped recognizer still
+    /// sends its final words, which landed after Send and put the message back.
+    @ObservationIgnored private var recording = 0
+    /// Reads the box, and writes to it through `start`'s `update`.
+    @ObservationIgnored private var box: (current: @MainActor () -> String, update: @MainActor (String) -> Void)?
+    /// The box's text as dictation last left it.
+    @ObservationIgnored private var written = ""
     /// What the message box held when listening started; speech goes after it.
     @ObservationIgnored var prefix = ""
     /// Words arrived in this recording, so an error ends dictation rather than preventing it.
     @ObservationIgnored var heardWords = false
     /// The gateway recording in progress, and what it delivers to (`DictationGateway.swift`).
     @ObservationIgnored var gateway: GatewayJob?
+    /// Asks for what On-device needs, then starts Apple's recognizer. Tests put fakes here.
+    @ObservationIgnored var permission: @MainActor () async -> String? = { await Dictation.permissionProblem() }
+    @ObservationIgnored var recognizer: @MainActor (SpeechCallbacks) throws -> any SpeechRecording = {
+        try SpeechSession(callbacks: $0)
+    }
+    /// The loudest sound since the last bar, and when that bar was added.
+    @ObservationIgnored private var loudest = 0.0
+    @ObservationIgnored private var lastBar = ContinuousClock.now
+
+    /// One waveform bar per this long.
+    static let barInterval: Duration = .milliseconds(70)
+    /// More bars than the widest message box shows.
+    static let barCount = 240
 
     var isListening: Bool { state == .listening || state == .starting }
     /// Listening or transcribing: the button belongs to dictation.
@@ -55,37 +76,58 @@ final class Dictation {
     var holdsSending: Bool { throughGateway && isActive }
 
     /// Starts listening. `update` gets the box's whole new text each time the words change, and
-    /// `current` reads it. With a `transcriber` the gateway hears you, as `profile`'s Bot.
+    /// `current` reads it. With a `transcriber` the gateway hears you, as `profile`'s Bot. On-device
+    /// returns the task that starts the recognizer, for tests to wait on.
+    @discardableResult
     func start(
         after text: String, transcriber: GatewayTranscriber? = nil, profile: String? = nil,
         current: @escaping @MainActor () -> String = { "" }, update: @escaping @MainActor (String) -> Void
-    ) {
-        guard !isActive else { return }
+    ) -> Task<Void, Never>? {
+        guard !isActive else { return nil }
         discardKeptRecording()
+        recording += 1
+        let recording = recording
         prefix = text
+        written = text
         heardWords = false
+        levels = []
+        loudest = 0
         state = .starting
+        let write: @MainActor (String) -> Void = { [weak self] text in
+            if let self, self.recording == recording { written = text }
+            update(text)
+        }
+        box = (current, write)
         if let transcriber {
-            startGateway(transcriber, profile: profile, current: current, update: update)
-            return
+            startGateway(transcriber, profile: profile, current: current, update: write)
+            return nil
         }
         throughGateway = false
         var spoken = Utterances()
-        Task {
-            if let problem = await Self.permissionProblem() {
+        return Task { [self] in
+            if let problem = await permission() {
                 state = .denied(problem)
                 return
             }
-            guard state == .starting else { return }  // Stopped while asking.
+            // Stopped while asking, or started again since.
+            guard state == .starting, self.recording == recording else { return }
             do {
-                let session = try SpeechSession(
-                    onText: { [weak self] words, endsUtterance in
-                        guard let self else { return }
-                        self.heardWords = true
-                        update(Self.merge(self.prefix, spoken.adding(words, endsUtterance: endsUtterance)))
-                    },
-                    onLevel: { [weak self] level in self?.level = level },
-                    onEnd: { [weak self] error in self?.finish(error) })
+                let session = try recognizer(
+                    SpeechCallbacks(
+                        onText: { [weak self] words, endsUtterance in
+                            // Once you stop, the final words may still correct the box, if it's
+                            // as dictation left it: not once it's sent or you've typed in it.
+                            guard let self, self.recording == recording, isListening || current() == written
+                            else { return }
+                            heardWords = true
+                            write(Self.merge(prefix, spoken.adding(words, endsUtterance: endsUtterance)))
+                        },
+                        onLevel: { [weak self] level in
+                            if let self, self.recording == recording { hear(level) }
+                        },
+                        onEnd: { [weak self] error in
+                            if let self, self.recording == recording { finish(error) }
+                        }))
                 self.session = session
                 state = .listening
             } catch {
@@ -94,16 +136,26 @@ final class Dictation {
         }
     }
 
-    /// Stops listening. On-device keeps the words so far; the gateway now transcribes the recording.
-    func stop() {
+    /// Stops listening. On-device keeps the words so far, which the recognizer's final ones may
+    /// still correct; sending takes the box as it is (`keepingLateWords: false`). The gateway now
+    /// transcribes the recording.
+    func stop(keepingLateWords: Bool = true) {
         if throughGateway {
             if isListening { finishGateway() }
             return
         }
+        if !keepingLateWords { recording += 1 }
         session?.stop()
         session = nil
-        level = 0
         if isListening { state = .idle }
+    }
+
+    /// Drops the recording, whether it's being heard or transcribed, and takes its words back out
+    /// of the box if it's as dictation left it.
+    func cancel() {
+        recording += 1
+        if gateway != nil { dropGateway() } else { stop() }
+        if let box, written != prefix, box.current() == written { box.update(prefix) }
     }
 
     /// The box moves to another conversation or goes. Words still to come from the gateway land
@@ -117,7 +169,6 @@ final class Dictation {
             gateway?.detached = true
             gateway = nil
         }
-        level = 0
         secondsLeft = nil
         state = .idle
     }
@@ -129,9 +180,20 @@ final class Dictation {
         state = .idle
     }
 
+    /// How loud the microphone is now, 0…1.
+    func hear(_ level: Double) {
+        guard isListening else { return }
+        loudest = max(loudest, level)
+        let now = ContinuousClock.now
+        guard now - lastBar >= Self.barInterval else { return }
+        levels.append(loudest)
+        if levels.count > Self.barCount { levels.removeFirst(levels.count - Self.barCount) }
+        loudest = 0
+        lastBar = now
+    }
+
     private func finish(_ error: (any Error)?) {
         session = nil
-        level = 0
         // Cancelling, or hearing nothing, isn't worth a message.
         if let error, state == .listening, !Self.isQuietEnd(error) {
             state = .failed(
@@ -234,9 +296,25 @@ struct Utterances {
     }
 }
 
+/// What an On-device recording reports, on the main actor: its words so far and whether they close
+/// an utterance, the microphone's loudness, and its end.
+struct SpeechCallbacks {
+    let onText: @MainActor (String, Bool) -> Void
+    let onLevel: @MainActor (Double) -> Void
+    let onEnd: @MainActor ((any Error)?) -> Void
+}
+
+/// An On-device recording: `SpeechSession`, or a test's fake. Not on the main actor: a type
+/// conforming would be inferred to be, and `SpeechSession`'s audio callbacks, which run on the
+/// audio thread, would then stop the app.
+protocol SpeechRecording: AnyObject {
+    /// Stops the microphone. The recognizer still reports its final words, then ends.
+    func stop()
+}
+
 /// One recording: the microphone feeding the recognizer. Lives off the main actor because the
 /// audio tap runs on the audio thread; its callbacks hop back to the main actor.
-private final class SpeechSession: @unchecked Sendable {
+private final class SpeechSession: SpeechRecording, @unchecked Sendable {
     struct Problem: Error {
         let message: String
     }
@@ -245,10 +323,10 @@ private final class SpeechSession: @unchecked Sendable {
     private let request = SFSpeechAudioBufferRecognitionRequest()
     private var task: SFSpeechRecognitionTask?
 
-    init(
-        onText: @escaping @MainActor (String, Bool) -> Void, onLevel: @escaping @MainActor (Double) -> Void,
-        onEnd: @escaping @MainActor ((any Error)?) -> Void
-    ) throws {
+    init(callbacks: SpeechCallbacks) throws {
+        let onText = callbacks.onText
+        let onLevel = callbacks.onLevel
+        let onEnd = callbacks.onEnd
         guard let recognizer = SFSpeechRecognizer(), recognizer.isAvailable else {
             throw Problem(message: String(localized: "Dictation isn't available for your language right now."))
         }
@@ -304,64 +382,6 @@ private final class SpeechSession: @unchecked Sendable {
     }
 }
 
-/// The mic in the message box: tap to dictate, tap again to stop. While listening a ring around
-/// it follows your voice; in gateway dictation's last 15 seconds a second ring runs down. While
-/// the gateway transcribes, tapping cancels.
-struct MicButton: View {
-    let dictation: Dictation
-    /// Gateway dictation is chosen: said in the label, not drawn.
-    var throughGateway = false
-    let start: () -> Void
-    @Environment(\.composerButtonSize) private var size
-
-    var body: some View {
-        Button {
-            if dictation.state == .transcribing {
-                dictation.cancel()
-            } else if dictation.isListening {
-                dictation.stop()
-            } else {
-                start()
-            }
-        } label: {
-            ComposerGlyph(systemImage: glyph, scale: dictation.isActive ? 11 : 13)
-        }
-        .composerGlass()
-        .overlay {
-            if dictation.isListening {
-                Circle()
-                    .stroke(Theme.ink.opacity(0.25), lineWidth: 3)
-                    .frame(width: size, height: size)
-                    .scaleEffect(1 + dictation.level * 0.45)
-                    .animation(.easeOut(duration: 0.12), value: dictation.level)
-                    .allowsHitTesting(false)
-            }
-            if let secondsLeft = dictation.secondsLeft {
-                Circle()
-                    .trim(from: 0, to: secondsLeft / Dictation.countdown)
-                    .stroke(Theme.ink.opacity(0.6), style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                    .frame(width: size + 6, height: size + 6)
-                    .animation(.linear(duration: 0.25), value: secondsLeft)
-                    .allowsHitTesting(false)
-            }
-        }
-        .help(label)
-        .accessibilityLabel(Text(label))
-    }
-
-    private var glyph: String {
-        if dictation.state == .transcribing { return "xmark" }
-        return dictation.isListening ? "stop.fill" : "mic.fill"
-    }
-
-    private var label: String {
-        if dictation.state == .transcribing { return String(localized: "Cancel transcription") }
-        if dictation.isListening { return String(localized: "Stop dictation") }
-        return throughGateway ? String(localized: "Dictate through your gateway") : String(localized: "Dictate")
-    }
-}
-
 /// Why dictation can't run, under the message box, with a way to fix it.
 struct DictationProblem: View {
     let message: String
@@ -397,17 +417,30 @@ struct DictationProblem: View {
     }
 }
 
-/// Under the message box while a recording turns into words.
-struct DictationTranscribing: View {
+/// Over the message box's field while a recording turns into words: "Transcribing…" shimmering
+/// where the words will land, after what's typed. The typed words are drawn clear, so the tail
+/// wraps where the field's own text does. Reduce Motion leaves it plain.
+struct TranscribingTail: View {
+    let text: String
+    let fontSize: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
-        HStack(spacing: 8) {
-            ProgressView().controlSize(.mini)
-            Text("Transcribing…")
-                .scaledFont(size: 12.5)
-                .foregroundStyle(Theme.secondaryInk)
+        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { context in
+            let band = ShimmerText.band(at: context.date.timeIntervalSinceReferenceDate)
+            let fill = reduceMotion ? AnyShapeStyle(Theme.secondaryInk) : AnyShapeStyle(ShimmerText.fill(at: band))
+            (Text(text).foregroundStyle(.clear) + Text(tail).foregroundStyle(fill))
+                .scaledFont(size: fontSize)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 8)
-        .accessibilityElement(children: .combine)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private var tail: String {
+        guard !text.isEmpty else { return String(localized: "Transcribing…") }
+        let word = String(localized: "transcribing…")
+        return text.last?.isWhitespace == true ? word : " " + word
     }
 }
 

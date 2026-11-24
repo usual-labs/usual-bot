@@ -24,7 +24,9 @@
 
         override func viewWillMove(toWindow newWindow: NSWindow?) {
             super.viewWillMove(toWindow: newWindow)
-            leaving = window
+            // Only one on screen: a closed one has no pointer to fix, and as it's freed it
+            // takes its views out, and a weak reference to it then is a crash.
+            leaving = window?.isVisible == true ? window : nil
         }
 
         override func viewDidMoveToWindow() {

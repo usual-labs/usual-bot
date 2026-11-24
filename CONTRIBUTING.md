@@ -26,7 +26,8 @@ who or what wrote it. Agents start from `AGENTS.md`.
 
 ## Getting set up
 
-1. Install **Xcode 26 or newer**.
+1. Install **Xcode 27 or newer**. CI builds with the version in `.xcode-version`, and
+   `scripts/check.sh` warns when yours differs.
 2. Clone the repository and `open UsualBot.xcodeproj`.
 3. Pick the **UsualBot** scheme and a Mac or iPhone simulator, and Run.
 4. No gateway? Set `USUALBOT_DEMO=1` in the scheme's environment for a made-up team of agents
@@ -121,12 +122,13 @@ Debug builds read these environment variables:
 | Variable | What it does |
 | --- | --- |
 | `USUALBOT_DEMO=1` or the `--demo` launch argument | Shows made-up agents instead of signing in. Never connects; a message gets a scripted reply. |
-| `USUALBOT_DEMO_SHARE=1` or `--demo-share`, with the demo | Lets the share extension list the demo's Bots and send to them. Without it the demo leaves the shared folder to your real sign-in. Needs a build with the App Group: the Simulator, or one signed for a team. |
+| `USUALBOT_DEMO_SHARE=1` or `--demo-share`, with the demo | Lets what you share from other apps go into the demo's chats. Without it the demo leaves the shared folder to your real sign-in. Needs a build with the App Group: the Simulator, or one signed for a team. |
 | `--demo-long-chat` | Runs the demo with long, uneven chats (tool lines, lists, tables and code included) and a room to check scrolling, app switching and reflow. Never connects. |
+| `USUALBOT_DEMO_PLUGIN_UPDATE=1`, with the demo | The gateway has an older Usual Bot plugin: the Mac sidebar's Plugins button shows its yellow dot and the Plugins sheet offers Update. |
 | `USUALBOT_SHOW_QUICK_PANEL=1` | Opens the ⌥Space panel shortly after launch (Mac). |
 | `USUALBOT_WINDOW_WIDTH=560` | Opens the main window at that width (Mac). |
 | `USUALBOT_OPEN_ROUTINE=health` | Opens that routine's sheet in the profile once routines load. `new` opens New Routine and `new/<template key>` a template's form; add `/edit`, `/run` (its latest run) or `/start` (Run Now). Use with `-showsProfile YES`. |
-| `USUALBOT_SCROLL_BENCH=<file>` | Scrolls the open chat up through its history and back down with trackpad gestures sent to the app itself, then writes the frames it missed to `<file>` (Mac). Pair it with `--demo-long-chat` and `open -g` so it runs behind your other windows. |
+| `USUALBOT_SCROLL_BENCH=<file>` | Scrolls the open chat up through its history and back down with trackpad gestures sent to the app itself, then writes the frames it missed and how far the text on screen jumped to `<file>` (Mac). Pair it with `--demo-long-chat` and `open -g` so it runs behind your other windows. |
 | `USUALBOT_RECORD_FRAMES=1` | Appends every socket frame to `usualbot-frames.jsonl` in the app's temporary directory, with answers to masked prompts and vault secrets blanked. |
 
 Launch arguments set the stored UI choices for one run, which helps for screenshots:

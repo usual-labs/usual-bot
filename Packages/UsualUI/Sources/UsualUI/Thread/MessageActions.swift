@@ -13,8 +13,8 @@ struct MessageActions {
     var canReact: (TranscriptItem) -> Bool = { _ in false }
     var react: (String?, TranscriptItem) -> Void = { _, _ in }
     var reply: (TranscriptItem) -> Void = { _ in }
-    /// Quotes the words you selected in a message in your next one.
-    var quote: (TranscriptItem, String) -> Void = { _, _ in }
+    /// Quotes the words you selected in a message in your next one, with what you said to them.
+    var quote: (TranscriptItem, String, String) -> Void = { _, _, _ in }
     /// Chats only: a message of yours, which can be edited.
     var canEdit: (TranscriptItem) -> Bool = { _ in false }
     /// Chats only: the Bot's last reply, which can be asked again.
@@ -33,9 +33,9 @@ struct MessageActions {
 
 extension EnvironmentValues {
     @Entry var messageActions: MessageActions?
-    /// Quotes words selected in the message around it in the next message; `nil` where a message
-    /// can't be replied to.
-    @Entry var quoteSelection: ((String) -> Void)?
+    /// Quotes words selected in the message around it in the next message, with your reply to
+    /// them; `nil` where a message can't be replied to.
+    @Entry var quoteSelection: ((_ words: String, _ reply: String) -> Void)?
 }
 
 /// The quick reactions, as in Messages and Grok Bot, and the rest behind + (or More Reactions).
@@ -95,8 +95,11 @@ struct MessageRow<Content: View>: View {
             // The slot grows with the zoom, as the bar does: at a fixed width a zoomed-in bar
             // spilled over the bubble.
             let slot: CGFloat = actions == nil ? 0 : barWidth + 6
+            // The whole rectangle answers a right-click, from a background: a content shape on the
+            // message itself would also stop clicks on what reaches past it, as Reply over a
+            // selection's first line does.
             message
-                .contentShape(Rectangle())
+                .background { Color.clear.contentShape(Rectangle()) }
                 .contextMenu { if let actions { menu(actions) } }
                 .padding(isMine ? .leading : .trailing, slot)
                 .overlay(alignment: isMine ? .leading : .trailing) { barSlot }
@@ -144,7 +147,7 @@ struct MessageRow<Content: View>: View {
     private var message: some View {
         VStack(alignment: isMine ? .trailing : .leading, spacing: 4) {
             content
-                .environment(\.quoteSelection, actions.map { actions in { actions.quote(item, $0) } })
+                .environment(\.quoteSelection, actions.map { actions in { actions.quote(item, $0, $1) } })
             if isReading { stopReadingPill.padding(.leading, bubbleInset) }
             if !item.reactions.isEmpty { reactionPills }
         }
@@ -342,23 +345,47 @@ struct MessageRow<Content: View>: View {
 
     // MARK: The right-click menu (Mac) and the touch-and-hold sheet (iPhone)
 
-    @ViewBuilder private func menu(_ actions: MessageActions) -> some View {
-        if canReact(actions) {
-            // A Mac menu's palette leaves out buttons without an image, so emoji go in a submenu.
-            Menu("React", systemImage: reactSymbol) {
-                ForEach(quickReactions, id: \.self) { emoji in
-                    Button(emoji) { actions.react(emoji, item) }
+    #if os(macOS)
+        @ViewBuilder private func menu(_ actions: MessageActions) -> some View {
+            if canReact(actions) {
+                // A row of emoji across the top, as in Grok Bot. A Mac menu's palette leaves out
+                // buttons without an image, so each emoji is drawn into one.
+                ControlGroup {
+                    ForEach(quickReactions, id: \.self) { emoji in
+                        Button {
+                            actions.react(emoji, item)
+                        } label: {
+                            Label {
+                                Text("React \(emoji)")
+                            } icon: {
+                                emojiImage(emoji)
+                            }
+                        }
+                    }
+                    Button("More Reactions…", systemImage: "face.smiling") { picking = true }
                 }
+                .controlGroupStyle(.palette)
                 Divider()
-                Button("More Reactions…") { picking = true }
             }
+            Button("Reply", systemImage: "arrowshape.turn.up.left") { actions.reply(item) }
+            Button("Copy", systemImage: "doc.on.doc", action: copy)
+            readButton
+            markUnreadButton(actions)
+            rewindButtons(actions)
         }
-        Button("Reply", systemImage: "arrowshape.turn.up.left") { actions.reply(item) }
-        Button("Copy", systemImage: "doc.on.doc", action: copy)
-        readButton
-        markUnreadButton(actions)
-        rewindButtons(actions)
-    }
+
+        /// An emoji as an image, for a menu palette.
+        private func emojiImage(_ emoji: String) -> Image {
+            let font = NSFont.systemFont(ofSize: 17)
+            let string = NSAttributedString(string: emoji, attributes: [.font: font])
+            let size = string.size()
+            let image = NSImage(size: size, flipped: false) { rect in
+                string.draw(in: rect)
+                return true
+            }
+            return Image(nsImage: image)
+        }
+    #endif
 
     #if os(iOS)
         /// The touch-and-hold menu: reactions, then Reply and Mark as Unread, as Grok groups them;
@@ -371,7 +398,7 @@ struct MessageRow<Content: View>: View {
             if let selectText, !text.isEmpty {
                 words.append(
                     MessageMenuItem(title: Text("Select Text"), systemImage: "selection.pin.in.out") {
-                        selectText(SelectableText.plain(text)) { actions.quote(item, $0) }
+                        selectText(SelectableText.plain(text)) { actions.quote(item, $0, $1) }
                     })
             }
             if canRead {

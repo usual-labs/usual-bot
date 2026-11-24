@@ -12,6 +12,13 @@ enum GatewayTurn {
     private static let routinePrefix = "[Cronjob \""
     /// Another Bot's message: `Message from 🤖 <name> (@<handle>): <body>` (`tools/bot_mode_dm.py`).
     private static let botPrefix = "Message from 🤖 "
+    /// A message you sent while the Bot worked, as the model reads it (`STEER_MARKER_OPEN` in
+    /// `agent/prompt_builder.py`). History gives your words back; the roster's preview doesn't.
+    private static let steerPrefix = "[OUT-OF-BAND USER MESSAGE"
+    /// The sidebar's line for one: the gateway cuts its preview at 80, inside the marker.
+    static var steerPreview: String { String(localized: "You added a message while it worked") }
+    /// What a message wanting no reply starts with (`NO_REPLY_MARKER`).
+    private static let noReplyMarker = "[no reply needed]"
 
     /// What Hermes sends the Bot to carry a goal on, after a reply that didn't finish it
     /// (`CONTINUATION_PROMPT_*` in `hermes_cli/goals.py`; a failed quality gate's ends differently).
@@ -35,6 +42,9 @@ enum GatewayTurn {
         if kind == "process_complete" || body.hasPrefix(processPrefix) {
             // The report keeps its first line: how the process ended and its exit code (`ProcessReport`).
             let report = unwrapped(body)
+            if let process = ProcessReport.parse(report), let answers = BotAnswer.parse(process) {
+                return .botAnswer(answers)
+            }
             return .result(title: title ?? firstLine(of: report).line, detail: report)
         }
         if kind == "async_delegation_complete" || body.hasPrefix(delegationPrefix) {
@@ -45,11 +55,11 @@ enum GatewayTurn {
         if body.hasPrefix(goalPrefix) { return .notice(goalStep) }
         switch kind {
         case "internal_notification":
-            if let (routine, output) = routineResult(body) {
-                return .result(title: title ?? fromRoutine(routine), detail: output)
-            }
+            if let (routine, output) = routineResult(body) { return .routine(name: routine, output: output) }
             if let (bot, message) = botMessage(body) {
-                return .result(title: title ?? String(localized: "Message from \(bot)"), detail: message)
+                let note = message.hasPrefix(noReplyMarker)
+                let text = note ? String(message.dropFirst(noReplyMarker.count)) : message
+                return .botMessage(from: bot, text: text.trimmingCharacters(in: .whitespacesAndNewlines), isNote: note)
             }
             return .result(title: title ?? String(localized: "Message from Hermes"), detail: body)
         case "auto_continue":
@@ -59,17 +69,49 @@ enum GatewayTurn {
         }
     }
 
+    /// The Bot's messages in `history` that answer you, leaving out its replies to other Bots'
+    /// messages: those go back to that Bot, and the chat folds them away. A choice not to reply
+    /// (`Silence`) isn't one either.
+    static func repliesToYou(in history: [HistoryMessage]) -> [HistoryMessage] {
+        news(in: history).filter { $0.role == "assistant" }
+    }
+
+    /// What counts as unread in `history`: the replies to you, and a routine's output the Bot
+    /// didn't answer (it chose silence), which would otherwise come in without a sign.
+    static func news(in history: [HistoryMessage]) -> [HistoryMessage] {
+        var news: [HistoryMessage] = []
+        var forABot = false
+        // A routine's output, until the Bot replies to it.
+        var unanswered: HistoryMessage?
+        for message in history {
+            if message.role == "user" {
+                if let routine = unanswered { news.append(routine) }
+                let body = withoutFooter(message.text ?? "")
+                let delivered = message.displayKind == "internal_notification"
+                forABot = delivered && botMessage(body) != nil
+                unanswered = delivered && routineResult(body) != nil ? message : nil
+            } else if message.role == "assistant", !forABot, !Silence.isMarker(message.text ?? "") {
+                news.append(message)
+                unanswered = nil
+            }
+        }
+        if let routine = unanswered { news.append(routine) }
+        return news
+    }
+
     /// What the sidebar says when one of these is the chat's newest message. The gateway's preview
     /// comes without its kind, and cut short.
     static func preview(of text: String) -> String? {
         if text.hasPrefix(processPrefix) { return String(localized: "Background process finished") }
         if text.hasPrefix(delegationPrefix) { return agentWorkFinished }
         if let (routine, _) = routineResult(text) { return fromRoutine(routine) }
+        if let (bot, _) = botMessage(text) { return String(localized: "Message from \(bot)") }
         if text.hasPrefix(goalPrefix) { return goalStep }
+        if text.hasPrefix(steerPrefix) { return steerPreview }
         return nil
     }
 
-    private static func fromRoutine(_ name: String) -> String { String(localized: "From the routine “\(name)”") }
+    static func fromRoutine(_ name: String) -> String { String(localized: "From the routine “\(name)”") }
 
     private static func routineResult(_ text: String) -> (name: String, output: String)? {
         guard text.hasPrefix(routinePrefix) else { return nil }

@@ -22,12 +22,11 @@
   - **A template's prompt before saving:** `/api/cron/blueprints` leaves out each template's prompt
     and skills, so New Routine shows them only once Hermes has created the routine. Seeing and
     editing them first needs Hermes to send them in the catalog.
-  - **Read Aloud in the Bot's own voice:** Read Aloud speaks with the device's voice only. Hermes
-    can synthesise speech with the profile's configured voice (`POST /api/audio/speak`, WS
-    `/api/audio/speak-stream`, RPC `voice.tts`; read at v0.23.1, never called). Left out because a
-    call can bill the gateway's owner and none of it was run against a live gateway. If added, it's
-    a choice in Settings › Voice that says it may cost money, never the default, and the device's
-    voice stays the fallback offline.
+  - **Read Aloud in the Bot's own voice:** Read Aloud speaks with the device's voice only. Gateway
+    calls already speak through the profile's voice (`GatewaySpeaker`), so Read Aloud could too.
+    Left out because it can bill the gateway's owner. If added, it's a choice in Settings › Voice
+    that says it may cost money, never the default, and the device's voice stays the fallback
+    offline.
   - **Agent's computer, what's left:** the package install (`display.install`, with its masked sudo
     prompt), the sandbox image switch (`display.switchSandboxImage`), Stop, the clipboard (Hermes
     turns the server's off; sending ours isn't wired) and Tight encoding. The viewer is in.
@@ -118,6 +117,5 @@ Child-local ideas stay in their package KBs.
 - **Widgets in rooms that talk back.** Hermes has no hidden room turn, and a room's message goes to
   members, so `window.hermes.canSend` is false in rooms. It would need a hidden `groups` send and a
   rule for which member answers.
-- **Queue: files, and a choice of what Send does.** A queued message can't carry attachments (the
-  gateway takes them on `prompt.submit`, but uploads are staged for the next message). Someone who
-  always queues has to press Queue each time; a setting would follow Hermes's `busy_input_mode`.
+- **Queue: a choice of what Send does.** Someone who always queues has to press Queue each time; a
+  setting would follow Hermes's `busy_input_mode`.

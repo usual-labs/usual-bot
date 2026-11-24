@@ -44,7 +44,14 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   large), and asking from further back returns none, only `truncated`: so the read starts 511 frames
   back, then 127. A turn longer than that shows its reply so far from partway.
 - **Images ride with the message.** `image.attach_bytes` only stages a file; the paths go as
-  `prompt.submit`'s `attachments`. Taking one back is local.
+  `prompt.submit`'s `attachments`. Taking one back is local. A queued message names its own
+  `attachments` (empty for none), uploaded while the reply ran, so it never takes images staged for
+  another and a held one can be sent again later with the same paths. `session.steer` takes text
+  only, so files never steer. A message queued with images wasn't run against a real gateway.
+- **A file you send is named relative to the chat's workspace.** `file.attach` returns
+  `@file:attachments/<name>` when the session's cwd holds it (the profile home, by default). The
+  `/api/fs/*` routes resolve a relative path against a session only when given `session_id` (the
+  stored one); without it they look in the gateway's own folder and answer 404.
 - **Undo rewinds to your last message.** There's no `session.undo`: the app reads `session.history`
   and rewinds to the newest row `GatewayTurn` reads as yours, skipping routine results and other
   rows Hermes starts itself.
@@ -78,7 +85,14 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   (`dispatch.message`); the gateway doesn't send it.
 - **A widget's prompt is `prompt.submit` with `display_kind: "hidden"`**, the one kind a client may
   set (`gateway/session_display.py`; the dashboard takes the same key). The stored row has the
-  kind; the queue's `pending` rows don't, so the app knows its own by `submission_id`.
+  kind; the queue's `pending` rows don't, so the app knows its own by `submission_id`, and sends
+  it as `widget-…` so another device knows it isn't a typed message.
+- **Another device's message shows from `pending` as its turn starts**, since `message.start`
+  carries no words. The row has the text only, not the images, so the stored row replaces it
+  once the turn ends (`finishTurnElsewhere`), matched by its words. Rows Hermes admits itself
+  (`["producer",…]`, `bot:…`) and an empty text (an image sent alone) wait for the stored row.
+  The ID shapes are read from Hermes's source (`gateway/session_automation.py`, `session_bot.py`),
+  not from a recording.
 - **Rooms dismiss with `groups.discard`** when the retry action offers only discard, which needs the
   turn's `member_id` and `execution_generation`. It leaves the room's other replies running.
 
@@ -113,6 +127,12 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   snapshot holds the text twice, as the stored row with its `display_kind` and as the running
   admission's `text`, with no submission id linking them. `legacySnapshot` matches the newest user
   row with a display kind by text; otherwise the message shows again as yours.
+- **A Bot that chooses not to reply answers `[SILENT]` or `NO_REPLY`**, which Hermes asks for after
+  a routine with nothing new, another Bot's note or a finished background process. Hermes drops it
+  only from what it delivers live in a "Bot Chat" session (`tui_gateway/prompt_turn.py`): the
+  history keeps it as written, routines' sessions aren't Bot Chats, and the push plugin's reply hook
+  sees the raw reply. The app (`Silence`) and the plugin's push (`turns.said`) drop it themselves;
+  keep their marker lists in step with `gateway/response_filters.py`.
 
 ## Not verified
 

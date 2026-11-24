@@ -76,7 +76,8 @@ recovery: after a short drop it replays missed events with `session.events.since
 **Voice** (`Voice/`, `UsualUI/Call/`). On-device calls use Apple's speech recognition and voices.
 GPT-Live calls ask the gateway to open an OpenAI realtime session (the key stays on the gateway)
 and run the WebRTC media in a hidden `WKWebView` (`live-call.html`); when the voice model hands a
-request to Hermes, it becomes an ordinary turn in the chat.
+request to Hermes, it becomes an ordinary turn in the chat. Gateway calls send each turn to the
+gateway's speech-to-text and speak the reply through its text-to-speech socket (`GatewaySpeaker`).
 
 ## State and persistence
 
@@ -84,9 +85,9 @@ request to Hermes, it becomes an ordinary turn in the chat.
   contacts, threads, rooms, routines and approvals.
 - `OfflineCache` keeps the roster and recent messages per gateway in the Caches directory, with
   file protection, so chats open instantly and read offline.
-- `Drafts` keeps what's typed and not sent, per chat and room and per gateway, in Application
-  Support (Caches can be emptied by the system), with file protection and left out of backups. It
-  never goes to the gateway, and sign-out deletes it.
+- `Drafts` keeps what's typed and not sent, and the quotes being replied to, per chat and room and
+  per gateway, in Application Support (Caches can be emptied by the system), with file protection
+  and left out of backups. It never goes to the gateway, and sign-out deletes it.
 - The Keychain holds tokens; `UserDefaults` holds the gateway address and small UI choices.
 
 ## Demo mode

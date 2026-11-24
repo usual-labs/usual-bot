@@ -40,8 +40,15 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   newest page and adds a page when the reader nears the top; `ConversationScrollState` then moves
   the offset by the growth, even mid-gesture, so the same message stays put. A search jump keeps
   its target in the window. The offscreen harness that measured this hosted `TranscriptView` in an
-  `NSHostingView` and timed `layoutSubtreeIfNeeded()`; the continuity of a reveal during a real
-  trackpad scroll was seen once, not frame by frame.
+  `NSHostingView` and timed `layoutSubtreeIfNeeded()`.
+- **Geometry after a move can still carry the old offset.** `position.scrollTo` lands a layout
+  later, so the next `onScrollGeometryChange` may report the new height with the offset from
+  before the move. A page added on that stale offset still looked near the top, so the next page
+  came at once and its move, measured from the stale offset, replaced the first: scrolling up from
+  the newest messages jumped about 6,800 pt in the long demo and loaded all of history in one
+  400 ms stall. The next page now waits until the move is reported (`movingAbove`).
+  `USUALBOT_SCROLL_BENCH` follows a piece of text on screen and reports jumps, so check a change
+  to the paging there; it can't see a jump on iPhone, which shares the policy.
 - **Nothing that changes every frame of a scroll may reach a view's body.** `ConversationScroll`
   kept its whole `ConversationScrollState`, offset included, in `@State`, so its body ran once a
   frame (1,884 times in a 30 s trace) and redid the jump button, toolbar preferences and command
@@ -63,12 +70,14 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   every pointer move: about half that work in a long chat. On the Mac, `MarkdownView` puts a
   reply's paragraphs, headings, list items and quotes in a row into one `NSTextView`
   (`MessageText`, built by `RichText`), which is also what lets a drag select across them and
-  Add to Chat read the selection; SwiftUI's `Text` exposes neither. Code, tables and media stay
+  Reply read the selection; SwiftUI's `Text` exposes neither. Code, tables and media stay
   separate views. TextKit puts the line spacing under a paragraph's last line too, so paragraph
-  spacing is 10 pt minus `Theme.messageLineSpacing`; its line height for 15 pt SF is 18 pt against
+  spacing is the block (or list item) spacing minus `Theme.messageLineSpacing`; its line height for 15 pt SF is 18 pt against
   SwiftUI's 19, so Mac lines sit 1 pt closer than iPhone's. On iPhone the paragraphs and headings
-  are still one `Text`, whose gaps are blank lines in a 2 pt (5 pt before a heading) font because
-  `Text` ignores `NSParagraphStyle`: change the spacing and compare a reply before and after.
+  are still one `Text`, whose gaps are blank lines in a small font because `Text` ignores
+  `NSParagraphStyle`. `MarkdownView.blankLineSize` works the font out from the line spacing; a
+  fixed 2 pt one, sized for 4 pt line spacing, left iPhone paragraphs 5 pt apart against 8 pt for
+  everything else. Change the spacing and compare a reply before and after.
 - **`MessageText` sizes itself with a second layout manager on the same text storage.** Measuring
   with the shown one would rewrap the view SwiftUI is drawing. Widths are cached until the text
   changes; a streaming reply measures again on each change. It compares `MessageTextContent`, not
@@ -76,12 +85,12 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   text, and the selection with it, on every update.
 - **A text view's selection is the conversation's selection.** `SelectableTextView` clears its
   selection when it gives up first responder, so clicking another message or the box lets go of it
-  as a web page would, and a right-click outside the selection returns no menu so the message's own
+  as a web page would (except while its Reply field is open, `holdsSelection`), and a right-click outside the selection returns no menu so the message's own
   React/Reply/Copy menu shows.
 - **A text view owns the pointer over all of itself,** whatever SwiftUI draws on top: it lays an
   I-beam cursor rectangle over its visible part and sets the I-beam again on each move, so a
   `pointerStyle` on an overlay shows only until the pointer moves. `SelectableTextView` is told
-  where Add to Chat sits (`button`) and gives that area the pointing hand in both places; the
+  where Reply sits (`button`) and gives that area the pointing hand in both places; the
   text view with the selection is first responder, which is how the text view above it, which the
   button can reach over, finds it. The cursor rectangles have a test; the pointer itself wasn't
   watched in the running app.
@@ -180,13 +189,20 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
 - **Unverified: where the pointing hand starts over a Form row.** `pointerStyle` can't be probed from automation: events sent to a window move neither the cursor nor `onHover`. Pickers and switches in grouped Forms carry `.clickable()` on the whole control, which may take in its label.
 - **`ImageRenderer` draws `SecureField` and `Toggle` as yellow blocks,** because it can't draw controls backed by AppKit. Sizes are right, but those controls need a run of the app to be seen.
 - **On iPhone, don't use `.inspector`.** A compact inspector's content lives in the presenting chat's navigation stack: its toolbar items show in the chat's bar even while closed, `.toolbarVisibility(.hidden)` hides the chat's bar, and a `NavigationStack` inside it never pushes. Emptying its content to stop that leaves a blank sheet that can't be closed. Even a panel with no toolbar breaks the chat: with the room panel as an inspector, the room's `.principal` name pill never showed, so there was no way into the panel. On iOS the profile and the room panel are pushed instead, with `navigationDestination(isPresented:)`, which needs the split view's detail wrapped in its own `NavigationStack`: the detail column alone ignores it. The Mac doesn't use inspectors either (see the side panels above).
+- **An iPhone `List` cell opens one context menu, the first in the cell.** With a menu on each
+  pinned tile, touch and hold on any tile lifted the whole row with the first tile's menu.
+  `PinnedTiles` puts one menu on the row, filled for the tile last touched and previewed as that
+  tile alone. A `UIGestureRecognizer` that notes the touch and fails at once finds the tile: a
+  SwiftUI `LongPressGesture` stopped a swipe that started on a tile from scrolling, a custom
+  `ButtonStyle` made touch and hold open the chat instead of the menu, and hosting the tiles in
+  their own `UIHostingController` showed no menu at all and hid them from accessibility.
 - **An iPhone `List` section header can't use `.contextMenu`:** touch and hold triggers the header's button instead. `SectionHeader` uses `Menu(content:label:primaryAction:)`, so a tap folds and touch and hold opens the menu.
 - **That `Menu` shows VoiceOver its parts:** a pop-up button, an unlabelled button and the label's image ("Go Down" for `chevron.down`). `accessibilityHidden` and `accessibilityElement(children: .ignore)` inside the label didn't change that (iOS 27 Simulator); `accessibilityRepresentation` on the menu, with its items as `accessibilityActions`, made one heading button. VoiceOver itself wasn't run, only the accessibility tree.
 
 ## Message actions
 
 - **macOS 26 swaps the face symbols with the appearance.** `face.smiling` is an outline in light mode and filled in dark mode; `face.smiling.inverse` is the opposite. `MessageRow.reactSymbol` picks by `colorScheme` so React stays an outline. Seen in the app and in `ImageRenderer`; iPhone's long-press sheet doesn't use it.
-- **A Mac menu's palette drops buttons without an image.** A `.palette` `ControlGroup` in a Mac context menu showed only the `+`, not the emoji, so the Mac menu puts reactions in a React submenu. iPhone has no context menu on a message: touch and hold opens `MessageMenuSheet`, as in Grok's app, because a context menu lifted a long reply over the whole screen and pushed its menu half off it. The sheet runs a picked action only once it has closed (`onDismiss`), since Select Text and Reply open a sheet or the keyboard, which can't start while it's still up. Scrolling past a message, Reply and Select Text from the sheet, and the + grid were checked in the iOS 27 Simulator; a reaction from it wasn't, because the demo has no session to react in.
+- **A Mac menu's palette drops buttons without an image.** A `.palette` `ControlGroup` in a Mac context menu showed only the `+`, not the emoji, so the Mac menu draws each emoji into an `NSImage` for its reaction row, which shows all five and the More Reactions face (seen in the macOS 27 demo). iPhone has no context menu on a message: touch and hold opens `MessageMenuSheet`, as in Grok's app, because a context menu lifted a long reply over the whole screen and pushed its menu half off it. The sheet runs a picked action only once it has closed (`onDismiss`), since Select Text and Reply open a sheet or the keyboard, which can't start while it's still up. Scrolling past a message, Reply and Select Text from the sheet, and the + grid were checked in the iOS 27 Simulator; a reaction from it wasn't, because the demo has no session to react in.
 - **SwiftUI's `onLongPressGesture` on an iPhone message ran its action only when the finger lifted**, so holding on showed nothing. `MessageLongPress` is a `UILongPressGestureRecognizer`, which begins at 0.4 s while the finger is still down, as Messages and Signal do. Message text also doesn't take `.textSelection` on iPhone (`messageTextSelection()`), because its own touch and hold selected a word instead of opening the sheet; Select Text in the sheet is the way to select. Timing was checked in the iOS 27 Simulator by logging; not yet on a device.
 - **Accessibility modifiers inside a `.contain` group reach each element in it** (checked on the Mac through AX). `MessageRow` puts its actions on the message's content, so every paragraph carries Reply, Copy and React. On the group itself they'd belong to the container, which VoiceOver on iPhone doesn't focus.
 - **iPhone's sideways swipes are UIKit pans, not SwiftUI drags** (`MessageSwipes.swift`). A

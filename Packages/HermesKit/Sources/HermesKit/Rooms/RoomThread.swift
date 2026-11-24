@@ -57,8 +57,18 @@ public final class RoomThread {
     public private(set) var driverRunning = true
 
     var isVisible = false {
-        didSet { if isVisible { markViewed() } }
+        didSet {
+            guard isVisible else { return }
+            if !oldValue { newLines.cameOnScreen(unread: unreadCount, since: lastViewed) }
+            markViewed()
+        }
     }
+    private var newLines = NewLineKeeper()
+    /// Where the NEW line goes (`NewLineKeeper`).
+    public var newLine: NewLine? { newLines.line }
+
+    /// The room was opened: a NEW line from an earlier visit goes.
+    public func opened() { newLines.opened() }
     /// Set by the app: a reply or a request you aren't looking at.
     var alert: ((AgentAlert) -> Void)?
     /// Set by the app: a request alerted about is over, by its alert's ID.

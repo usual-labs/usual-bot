@@ -91,7 +91,7 @@ extension ChatThread {
         }
         let secrets = secrets.map { prompt in
             switch prompt.kind {
-            case .secret(let name, _): (id: prompt.id, text: String(localized: "Asks for \(name)"))
+            case .secret(let name, _, _): (id: prompt.id, text: String(localized: "Asks for \(name)"))
             case .sudo: (id: prompt.id, text: String(localized: "Asks for the sudo password"))
             }
         }

@@ -143,6 +143,8 @@ extension Contact {
     /// gateway (so bold or code can be left unclosed). The list shows them as plain text.
     static func plainPreview(_ text: String) -> String {
         if let note = GatewayTurn.preview(of: text) { return note }
+        // The Bot chose not to reply: no words, so the row falls back to the Bot's description.
+        if Silence.isMarker(text) { return "" }
         // A widget line, whole or cut short by the gateway, isn't words to read.
         let words = text.replacing(/::preview\{[^}]*\}?/, with: "")
         if words != text, words.allSatisfy(\.isWhitespace) { return WidgetDirective.sentWords }
@@ -163,7 +165,7 @@ extension Contact {
 
     /// The name an untitled profile shows, matching the official app: the primary profile, literally
     /// called `default`, is "Hermes"; others read as words, so `job-scout` becomes "Job Scout".
-    static func friendlyName(forProfile name: String) -> String {
+    public static func friendlyName(forProfile name: String) -> String {
         if name.lowercased() == "default" { return "Hermes" }
         let words = name.split(whereSeparator: { $0 == "-" || $0 == "_" })
         guard !words.isEmpty else { return name }

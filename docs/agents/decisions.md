@@ -206,8 +206,17 @@ read at Hermes `2bd378ed1b`.
     that chat ends (`ChatThread.turnsEnded`), and swaps the page only if it changed, so an untouched
     widget keeps its state. One off screen or stopped is read when it runs again, so a long chat
     doesn't read every widget after every reply. A read that fails keeps the page that's showing.
-  - **No alert for its reply.** You were looking at the widget; the push plugin (0.5.1) skips a
-    reply whose prompt was hidden too, reading the kind off the turn's newest user message.
+  - **A file a later message shows again is the later message's.** Agents reuse one file for each
+    new take, and the gateway keeps only the newest page, so reading it again turned every earlier
+    widget into the newest. Once a later message (same author, so a room member's own profile)
+    shows the file (`WidgetSuccession`), an earlier widget already showing keeps its page and stops
+    reading; one not read yet, such as after the chat reopens, shows a card saying a newer message
+    uses its file. The earlier take is gone from the gateway, so there's nothing truer to show.
+  - **Its reply notifies like a typed one.** Replies often take 20 s, long enough to tap and
+    leave, and an open chat already keeps every device quiet. The plugin tells a widget's prompt
+    from Hermes's own hidden ones (a goal's next step, which stay quiet) by the app's `widget-`
+    `submission_id` in the newest user message's `display_metadata`. This replaces 0.5.1's rule
+    that no hidden prompt's reply notified.
 - **Hidden rows never show as yours.** `GatewayTurn.content` returns nothing for `hidden`, which also
   covers Hermes's onboarding opening and the official app's goal controls, which used to show as
   your messages and be what Undo and Edit took back. Legacy `session.undo` already skips them in
@@ -242,6 +251,17 @@ read at Hermes `2bd378ed1b`.
   the chart leaves it out. Periods are the official app's 7, 30 and 90 days.
 - **Not used for usage:** `usage.bars` is the Nous subscription's dollar meter (`agent.billing_usage`),
   and `insights.get` counts sessions and messages only.
+- **Subscription limits come from `model.options`** (`providers[].usage.windows`): Hermes asks the
+  provider (for a Claude sign-in, Anthropic's `api/oauth/usage`, which Anthropic doesn't document)
+  and caches the answer for 15 minutes, refreshing in the background. The first ask after a restart
+  can come back without numbers, so the app asks once more ten seconds later. API keys have none.
+  A chat warns from its own catalog, since it can run on another model than its Bot; rooms and
+  Settings ask once per Bot's profile. Hermes doesn't say which login a profile uses, so Bots on
+  one provider whose limits reset within ten minutes of each other are shown as one login, with the
+  higher reading of each limit. Matching numbers exactly split one login in two: each profile's
+  cached reading is taken at its own moment, so 10.2% and 10.4% can be the same week. Multi-login pools (`usage.accounts`) aren't
+  shown. The warning starts at 90%, comes back at 95% and when used up, and never blocks the
+  message box: the numbers can be minutes old and a fallback model may still answer.
 - **Rooms have no row of their own.** A member's room turns run in a `bot_room` session in that
   member's profile, so they're in its Bot's numbers and can't be told apart in the report.
 - **No per-chat split.** The report has none; `/api/sessions` rows carry lifetime totals per session
@@ -261,6 +281,18 @@ read at Hermes `2bd378ed1b`.
   as user rows so the model reads them. `GatewayTurn` shows them by `display_kind`, and by wording
   for untyped rows. An unknown kind stays a message, so nothing you wrote can disappear. A live card
   on `message.start` is handled but hasn't been seen on a real gateway.
+- **A Bot's work for another Bot folds into one line in its chat.** Hermes runs another Bot's
+  message (`message_agent`, `tools/bot_mode_dm.py`) as a turn in the recipient's one Bot Chat, and
+  that turn's final reply goes back to the sender. Shown as messages, it read as the recipient
+  writing to you. So `BotExchange` folds the message and everything up to the next turn into
+  "Talked with CMO · 14 steps", collapsed even while it runs ("Working for CMO…"). Its reply
+  doesn't count as unread or alert, and the sidebar says "Talked with CMO". Cards it raises
+  still show after it, and still notify. In the asking Bot's chat, a `message_agent` call is its own
+  line ("Asked Forge · waiting", "Told Scribe" for a note) and the background process that brings
+  the answer is "Forge answered", read from the runner's JSON line. Hermes has no hidden channel
+  for Bots and gives the message no author field, so both sides go by its wording. The developer
+  chose folding over upstream changes (November 2026). Rooms are untouched: Hermes delivers these
+  only into Bot Chats.
 - **A turn started on another device gets its message when it ends.** `message.start` doesn't carry
   the prompt, so a watching device has only the reply until then. Hermes's Desktop also reads it back
   (`owner_forward.py`), and the turn is stored before `message.complete`. Only the message is put in,
@@ -297,6 +329,22 @@ read at Hermes `2bd378ed1b`.
 - The stream opens with the ordinary `/api/auth/ws-ticket` ticket, not the Webapp's named
   `/api/webapp/socket-ticket` one: Hermes accepts an unnamed ticket for every socket but the host
   terminal (source finding). If it's refused, the recording is uploaded.
+- **Gateway calls are chosen, never automatic.** Automatic follows `voice.voice_chat_mode` only
+  to GPT-Live. Hermes's `chained` mode stays On-device, for the reason dictation is opt-in: Gateway
+  sends your voice off the device and both providers may bill. Voice, speed and language are the
+  gateway's: neither speech route takes them.
+- **The device decides when your turn ends,** after 1.1 s of quiet on the microphone
+  (`TurnDetector`). A gateway that can't stream sends no words until the end, so its words only
+  keep a turn open. Each turn streams to `transcribe-stream` and, without final words, uploads as
+  16 kHz WAV (a turn is short, so it skips the AAC encoder).
+- **The reply is spoken over `/api/audio/speak-stream`,** one socket per reply, fed the sentences
+  `SpokenReply` picks as the reply streams, so speech starts with the first sentence. Its
+  `fallback` frame, or a socket that won't open, sends each sentence to `POST /api/audio/speak`
+  instead, as Hermes's own app does. Talking over the Bot for 0.4 s cuts it off, only with echo
+  cancellation; without it the call takes turns. A gateway failure ends the call with the reason
+  and **Use On-device**, which carries on this call without changing the setting.
+- **Rooms have no calls,** with any engine. If they get them, they use the gateway's own profile,
+  as dictation does.
 
 ## Rooms
 
@@ -367,8 +415,13 @@ read at Hermes `2bd378ed1b`.
   `ProcessReport` and `HelperReport` read its lines (`Command:`, `--- ✓ TASK n/m: …`). Text in
   another shape shows as it came, as Markdown. A new Hermes that rewords them falls back the same
   way; check these after a Hermes update.
-- **`thinking.delta` is mostly spinner frames.** Only the explained waits Hermes's own app shows pass
-  `LiveActivity.waitText`. `tool.generating` and `tool.output_risk` are ignored.
+- **`thinking.delta` is Hermes's mood line, one per model call.** Hermes sends `"{face} {verb}..."`
+  with both picked at random (`agent/turn_iteration_prep.py`), in the gateway's language, or a skin's
+  lists; an explained wait instead; or `""` to clear. The working row shows the mood after a wait,
+  reasoning and the running tool's kind, so it never hides what's happening; VoiceOver hears only the
+  verb. Only that shape counts as a mood (`LiveActivity.Mood`), so other text on the event isn't
+  shown. Rooms keep "X is replying…": their events don't carry a member's mood.
+  `tool.generating` and `tool.output_risk` are ignored.
 
 ## Notifications
 
@@ -389,6 +442,17 @@ read at Hermes `2bd378ed1b`.
 - **No Firebase.** Its messaging is free, but it needs Google's SDK in the app, which breaks
   "no third-party packages", and it adds Google as another party that sees every push. A deployed
   Worker reaches APNs over HTTP/2 itself. Local `wrangler dev` can't, so test on a deployed Worker.
+- **A Bot's reply to another Bot's message doesn't notify.** It goes back to that Bot, whose own
+  report to you does. The plugin skips `post_llm_call` when the turn's newest user row is an
+  `internal_notification` starting `Message from 🤖`; approvals and questions in that turn come
+  through `on_human_input_request` and still notify.
+- **What a Bot says before its reply notifies too, always.** The developer chose this over a setting
+  (November 2026): a Bot's "On it, looking now" is a message you'd want on your phone. Hermes hands
+  it to `on_interim_message` without the turn's history, so the plugin notes at
+  `pre_llm_call` which turn IDs may notify (the same rules as the reply) and stays quiet for any
+  other, such as a side question's fork. It goes as `message` with `interim` sealed in, which the
+  extension doesn't add to the badge: the app counts each turn once. The app's own alerts, in a
+  build without push, still come once per turn.
 - **Every device hears every message, unless that chat is open on one of them.** An open chat means
   a window in front with that chat selected, or the quick panel. It quiets every device, so reading
   on the Mac keeps the iPhone still. Another chat's message still notifies, even inside the app; this
@@ -400,14 +464,34 @@ read at Hermes `2bd378ed1b`.
   device reports that chat open it sends each of those devices one silent push through the relay's
   `/v1/clear`. Presence, not Hermes's read time, is the trigger, so rooms clear too, and only the
   first report after a notification sends anything. iOS rations silent pushes and drops them for an
-  app swiped away in the app switcher; those notifications stay until the app next runs there.
-  Apple has no reliable way to remove a delivered notification from the server.
+  app swiped away in the app switcher, so the plugin also remembers each clear it sent
+  (`cleared.json`) and seals the chats into that device's next notification (`read`), whose
+  extension removes theirs before showing it. That extension always runs, so a missed clear lasts
+  at most until the next notification, or until the app next runs there. A clear isn't owed for a
+  chat once the device is notified about it again, or the new notification would go too. Apple has
+  no reliable way to remove a delivered notification from the server; a push the extension hides
+  would need Apple's filtering entitlement. Unverified: Apple doesn't document
+  `removeDeliveredNotifications` from a notification service extension.
 - **The icon's badge is the app's own unread count, kept going by the extension.** The app sets it
   from the chats and rooms of the gateway in use, less muted ones, and saves it in the push keychain
-  group (`AppBadge`); the extension adds one for each pushed `message` while the app is closed,
+  group (`AppBadge`); the extension adds one for each pushed `message`, less `interim` ones, while the app is closed,
   since the relay can't count what it can't read. The app puts its own number back when it's in
   front, so a push for a reply it already counted, a chat read elsewhere, or the other gateway's
   message is corrected only then. A build without push has the badge only while the app runs.
+- **A notification wakes the iPhone app to load its chat before you tap.** The app asks the relay
+  for `wake` when it registers (and again each launch until a relay answers that it stored it, so
+  an app released before its relay still gets there), and the relay then adds `content-available` to its message and
+  "needs you" pushes. The app opens the sealed text itself, since a wake gets the push as Apple sent
+  it and not as the extension changed it. It connects, opens that chat ahead of the others, saves the
+  cache and keeps the link up 15 s from the wake. A tap within that window keeps the link
+  (`setForeground` doesn't redial during `warmUp`); a later tap finds the message in memory or the
+  cache and reconnects as before. Only the gateway in use warms up. It's opt-in per device because
+  iOS wakes an app less often when it does nothing with its wakes, which an older build would do,
+  and less often the longer each wake runs, hence the short hold. iOS never wakes an app swiped
+  away in the app switcher, and rations wakes in Low Power Mode, so this is best effort. A chat
+  loaded while the app is away isn't on screen (`AppModel.isShown`), so a reply loaded for a wake
+  isn't marked read here or on your other devices just because that chat was open when you left.
+  Unverified on a device: how often iOS grants these wakes.
 - **The app reports the open chat every roster tick, and "none" once,** and the plugin forgets an
   entry after 15 s, so a crash can't silence pushes. Repeating "none" would let a Mac in the
   background overrule the iPhone in your hand.
@@ -624,6 +708,15 @@ read at Hermes `2bd378ed1b`.
   an inbound turn in that profile's Bot Chat, the chat Usual Bot shows, so the agent replies to it and
   that costs a turn. If the profile's gateway isn't running, the gateway queues it. Verified in the
   source only.
+- **A posted result shows in full, as a message from the Bot under the routine's name**
+  (`RoutineLine`), with the first lines and Show All when it's long. It was a folded line like a
+  background command's, and a user missed days of briefs behind it: for many Bots the routine's
+  output is the main thing they send. **Show routine results in full** in Settings › General
+  (on by default) folds them back into that line, for Bots whose routines are noise.
+- **A result the Bot answered with silence counts as unread, with no alert** (`GatewayTurn.news`).
+  Otherwise it arrives with no sign at all. A result the Bot did answer is news only through that
+  reply, which notifies as any reply does; the plugin stays quiet for routines, so one run never
+  notifies twice.
 - **Presets write cron expressions** ("0 9 * * 1-5"), and the list reads them back in plain words.
   Custom text goes to the gateway as typed, and its 400 message is shown as is: it lists the forms
   it accepts.
@@ -722,10 +815,20 @@ read at Hermes `2bd378ed1b`.
 
 - **One plugin, `usual-bot`, in every profile.** Push and the browser view were two plugins
   (`usual-push`, `usual-browser`); the developer merged them (November 2026) with a third part that
-  tells Bots about the app. It adds no agent tools: Hermes shows a plugin's tools in every app, not
-  just ours. The browser part acts only for Bots with `browser.use_real_profile`, so being in every
+  tells Bots about the app. Its one agent tool is `request_secret` (below): Hermes shows a plugin's
+  tools in every app, not just ours, so any other tool needs the same case made. The browser part acts only for Bots with `browser.use_real_profile`, so being in every
   profile changes nothing for the rest. Data stays in the old folders (`~/.hermes/usual-push/`,
   `<profile>/usual-browser/flags.json`) so devices and written flags survive the move.
+- **`request_secret` lets a Bot ask for a credential whenever it needs one** (the developer,
+  November 2026). Hermes sends `secret` only while a skill loads with a missing variable
+  (`_skill_readiness`), and has no tool for it: asked in chat, a Bot can only have the key pasted
+  in a message. The tool calls the callback skills use (`tools.skills_tool._turn_secret_capture`,
+  then `_secret_capture_callback`), so Hermes still shows the prompt, saves to `.env` and answers
+  only saved or skipped. It's listed in every app but works only in `store.is_app_chat` chats: a
+  `check_fn` can't narrow it, since Hermes caches those per profile, not per chat. It wraps the
+  wait in `human_input_request("secret")`, which skills' prompts don't fire, so push reaches a
+  closed app, and in `human_wait_window` so typing doesn't eat the tool's deadline. MCP
+  elicitation was ruled out: Hermes takes only a consent answer and returns empty content.
 - **Bots are told where they are with a `pre_llm_call` hook, in the app's chats only.** The app's
   chats use `source: "tui"`, so Hermes tells the agent it's in the terminal UI, where `MEDIA:`
   prints as text. `source: "gui"` would give the desktop hint, but also the desktop app's own
@@ -734,17 +837,46 @@ read at Hermes `2bd378ed1b`.
   to the user message and keeps it in `api_content`, which later turns replay and the hook's
   `conversation_history` carries, so the plugin adds it when no user message has its marker: once
   per chat, and again after compression drops it. The text (`context.py`) says who the app is (not
-  official, not Nous) and what renders; nothing about the user or their device, no feature list,
-  no off switch. Whether to add what doesn't render (math) was left open.
+  official, not Nous), how to write in a messenger, and what renders; nothing about the user or
+  their device, no feature list, no off switch. Whether to add what doesn't render (math) was left
+  open.
 - **The app names its chats; the plugin can't tell otherwise.** No client identity reaches a hook
   (`client.capabilities` takes only `server_requests` and `desktop_local`). The app sends each Bot
   Chat's stored session ID (`PUT /chats/<id>`) when it attaches; the plugin keeps it while it's
   used within 30 days, and follows compression to a child session through `parent_session_id`, for
   chat platforms only, so helpers (`subagent`) never get it. The accepted catch: the official app's
   turns in the same Bot Chat get the context too. Routines' results and other Bots' messages are
-  turns in the chat, so they get it. Rooms don't: a member's room session is nothing the app knows,
-  and `on_room_member_activity`, which says the room, runs on a queue of its own with no order
-  against the turn.
+  turns in the chat, so they get it. Rooms don't (they get only the voice line, below): a member's
+  room session is nothing the app knows, and `on_room_member_activity`, which says the room, runs
+  on a queue of its own with no order against the turn.
+- **A turn another Bot started is told who its reply goes to, every time.** The same hook adds a
+  short `<usual-bot-turn>` note to that turn alone: the message is from that Bot, the final reply goes
+  back to it, so write to it, lead with the result and don't address the user (for a note: finish
+  quietly). It's per turn, not in the chat context, so existing chats' context and its prompt cache
+  stay as they were. Its own tag keeps `told` from mistaking it for the context after compression.
+- **Bots write like texting, set by the plugin (November 2026).** Bots in the app replied like
+  reports (headings, bold, tables, "What I did") where Grok Bot's read like texts, at the same
+  length per turn. Three causes: the `tui` source makes Hermes say "terminal UI" and nothing about
+  register; our context listed "headings, … lists, … tables" as a bulleted list, which models take
+  as an invitation (they copy a prompt's shape); and rules that only ban things ("no bold headers"
+  in a SOUL) lose to habit. So the context leads with how to write, in prose with two example
+  replies: a few short sentences, the answer first, one short line before long work, what happened
+  rather than how, no report sections, and a Bot's own SOUL voice wins. One note far back in a long
+  chat loses to the replies written since, so every other turn in the app's chats gets a one-line
+  `<usual-bot-voice>` reminder (a turn another Bot started gets its own line instead, since that
+  reply goes to the Bot). The reminder also repeats the short line before long work and says it
+  holds whatever voice the Bot's own instructions set: with only "unless your own instructions set
+  another voice", Bots with a SOUL voice of their own never sent it, in long chats where the context
+  was far back. Replaying 11 real turns from four Bots (Opus 5.5, first step only, twice each), the
+  line came before the first tool call in 0 of 16 runs for those Bots before and 15 of 16 after;
+  sending the whole context again reached 9 of 16. It stays in the history, so it costs about 70
+  tokens a turn until compression. Rooms get the line every turn, without the context: push already treats every room
+  on the gateway as the app's. Splitting one reply into several bubbles was left out; a prompt
+  can't time messages, and Hermes already shows text sent before a tool call as its own message.
+  Checked offline only (Opus 5.5, a made-up SOUL with the `tui` hint and a report-style earlier
+  reply, 3 prompts twice each): the median reply fell from 220 to 145 words, headings and report
+  sections went from most replies to none, and bullets nearly so; a cost breakdown can still come
+  as a table. Not yet seen on a real gateway, or with other models.
 - **The app installs our plugin, and only ours, with Hermes's installer.** The developer chose
   one-tap install (November 2026) as the exception to "gateway administration stays in the
   official app". `plugins.manage install` takes `usual-labs/usual-bot#Integrations/usual-bot` per
@@ -788,65 +920,75 @@ read at Hermes `2bd378ed1b`.
 - **The Browser button shows only for a Bot whose status says `available`**: real profile on and
   headless. A gateway without the plugin answers 404, so the button stays hidden.
 
+## A Bot's terminal
+
+- **A drawer under the chat, Mac only, for agents only (November 2026).** ⌘J or a Terminal button
+  beside Browser and Computer opens it below the message box, so the chat stays usable. One
+  `showsTerminal` for every Bot, and one height and tab. iPhone, the ⌥Space panel and rooms have
+  none: a room would have to pick a member, and the developer chose the Bot's own chat for it.
+- **Two tabs: a shell, and the commands the Bot ran.** The commands come from the chat's own
+  `terminal` tool steps, which now keep the full command (`args.command`), output (the last 8,000
+  characters) and exit code live. History rows carry no result, so a reloaded chat lists commands
+  alone.
+- **The shell is the plugin's, not Hermes's.** Hermes has no shell route. `terminal_api.py` forks a
+  login shell on a pty (`pty.fork`: the child must get the pty as its controlling terminal for ⌃C
+  and job control, which `subprocess` doesn't do). The developer accepted that anyone signed in to
+  the gateway gets a shell: they could already have a Bot run any command.
+- **Only where the Bot's commands run.** A Bot with any `terminal.backend` but `local` gets no shell
+  (`sandboxed`), rather than a host shell that looks like its terminal and isn't.
+- **A clean environment, not the gateway's.** The gateway process holds provider keys from `.env`;
+  only `PATH`, locale and time zone carry over, plus `HERMES_HOME` for the Bot.
+- **Every message is tagged by its first byte** (0 bytes, 1 JSON) both ways. A shell prints `{`
+  freely, so the browser feed's "JSON starts with `{`" rule can't work here.
+- **A line shell, not a full terminal emulator** (the developer's pick: no third-party package, so
+  no SwiftTerm). `TerminalScreen` handles colours, cursor moves on the screen, erasing, wrapping and
+  `clear`; it ignores the alternate screen and scroll regions, so `vim`, `top` and `less` don't draw.
+  It's dark in light mode too, because shells colour for a dark background.
+
 ## Sharing from other apps
 
-- **On iPhone the extension sends itself when it can; otherwise the app does.** Every item is
-  first written to the App Group folder (`ShareContainer`). `ShareSender` then sends it from the
-  extension and deletes it, and the sheet says Sent and closes itself; the reply arrives like any
-  other. It leaves the item for the app (`AppModel.sendShared`), saying why, when:
-  - the app reaches a tailnet address through its built-in Tailscale. That device lives in the app
-    (state in its Application Support, one node per state folder, a Go runtime in a process iOS
-    holds to about 120 MB), so only the Tailscale app's VPN or a non-tailnet address works here;
-  - it's a room (`groups.send` goes through the room service the app drives), or files over 10 MB
-    in all: a file goes as base64 in a JSON frame, and an extension gets about 120 MB;
-  - the gateway is the dashboard socket, which can't tell a retry from a second message;
-  - the gateway doesn't answer within 15 s, or the Bot is answering or asking something, where a
-    message would steer the reply or answer the question.
-- **Sent twice is ruled out by the item's ID.** Both the extension and the app send an item with
-  its UUID as `submission_id`, and the gateway answers a repeat with the first receipt. Text the
-  extension didn't hear back about simply waits for the app. Files can't be retried that way (an
-  image is staged before the message, and a staged image would ride along with the next one), so
-  before uploading the extension marks the item failed with "may be in the chat already"; it
-  clears only when the send is confirmed. The app then shows it with Try Again and Delete.
-- **The sign-in is shared through the App Group's keychain access group, on iPhone only.**
-  `KeychainTokenStore.forApp()` moves the app's existing item there the first time it reads it.
-  Refresh tokens rotate and a replayed one revokes the sign-in, so every renewal, in either
-  process, holds `RefreshLock` (`flock` on a file in the group) and first adopts a newer pair the
-  other process stored (`AuthSession.performRefresh`). The Mac's sign-in is in the file-based
-  keychain, whose items trust only the app that made them, so the extension would ask for the login
-  password: on the Mac the app always sends, which it does within seconds when it's running.
-- **Nothing opens the app.** iOS gives a share extension no supported way to open its app, so an
-  item left for the app goes the next time the app is open and online: after each roster read
-  (every 5 s) and when the app comes to the front. Only in the foreground: a background check-in is
-  cut off after two roster reads, which would turn a slow upload into a failure.
-- **An item is deleted only once it's in the chat.** It's shown below the chat list until then
-  (`SharedItemsBanner`). It waits, without failing, while offline, while the chat loads, while a
-  reply runs (a message then would steer the turn) and while a question is open that the message
-  box would answer. It fails, and stays with the reason, when the Bot is gone, an upload is
-  refused or the room service is down. A room gets it through `RoomThread.send`, whose own failure
-  puts the text back in the room's message box.
+- **The extension opens the app; the app does the rest** (the developer's call, after T3 Code's
+  iPhone app). The extension has no picker: it copies what you shared into the App Group folder
+  (`ShareContainer`) and opens `<bundle ID>://share`. The app shows **Send to**
+  (`SharedItemSheet`), and the chat you pick gets the text in its message box after any draft, and
+  the files beside it (`AppModel.putShared`), for you to send. It replaced an extension that sent
+  from the share sheet, which couldn't when the gateway was reached through the app's built-in
+  Tailscale, for rooms, while a Bot was answering, or when the gateway was slow, and then left the
+  item until you next opened the app.
+- **Opening the app from the extension uses the responder chain.** iOS gives a share extension no
+  supported way (`NSExtensionContext.open` answers no), so `ShareViewController` walks to the
+  `UIApplication` and calls `openURL:options:completionHandler:` through the runtime, since the
+  method is marked unavailable to extensions. T3 Code (through expo-sharing) ships the same and
+  passes review. If iOS stops allowing it, the sheet says to open Usual Bot, and the item waits in
+  the folder for the next time the app comes to the front. The Mac uses `NSWorkspace.open`.
+- **The link uses the build's own scheme,** its bundle ID, so a development build's extension opens
+  that build, whose App Group holds the item, and not the released app. `usualbot://` stays for
+  notifications.
+- **Nothing is sent without you.** Closing the sheet keeps the item and asks again when the app
+  next comes to the front; Don't Send deletes it. An item is deleted once it's in a message box.
 - **Rooms take shared text and links only,** like the room's message box: `groups.send` has no
-  attachments here. The picker greys a room out when files are shared.
-- **The folder holds as little as the picker and the send need:** names, pins, colours, pictures
-  and each Bot's chat ID, the gateway's address and whether built-in Tailscale is on; no previews or
-  profile details. The roster is keyed by a hash of the gateway address. Items carry that
-  key, so another sign-in (or the demo) leaves them alone. Sign-out deletes the whole folder. Files
-  are written with complete protection and left out of backups.
+  attachments here. The sheet greys a room out when files are shared.
+- **The folder holds only what was shared,** with complete protection and left out of backups, and
+  sign-out deletes it. Items aren't tied to a gateway: you pick the chat in whichever one is in
+  use. The app deletes the `roster.json` (your Bots and their pictures) and `last` that earlier
+  versions wrote there for the extension's picker.
+- **The sign-in still sits in the App Group's keychain access group on iPhone**
+  (`KeychainTokenStore.forApp`, and `RefreshLock` around renewals), from when the extension sent
+  with it. Nothing outside the app reads it now, but moving it back would touch every saved sign-in.
 - **The demo leaves the folder alone** unless started with `USUALBOT_DEMO_SHARE=1` or
-  `--demo-share`: a demo run on a device that's also signed in would otherwise replace the real
-  roster with made-up Bots.
+  `--demo-share`, so a demo run doesn't pick up what you shared for your real gateway.
 - **One App Group ID on both platforms,** `group.<prefix>.UsualBot`. On the Mac the folder is asked
   for only when the build has the entitlement and a team (`ShareContainer.appGroup`): a build
   signed to run locally would get macOS's "access data from other apps" question instead.
-- **The extension links UsualUI,** for the same avatars and colours as the sidebar. Its files are
-  copied, never read into memory, and photos are converted to JPEG by the app when it sends.
+- **The extension copies files, never reads them into memory,** and the app converts photos to
+  JPEG when it puts them in the message box.
 
 ## Gateways
 
 - **Two at most, one in use.** The developer wanted their own gateways side by side, but chose
   switching over a merged list: a messenger with one live connection stays small, and the cap
   keeps battery and connections in check on iPhone. The one you leave disconnects fully; its sign-in,
-  cache, drafts, sidebar and waiting shares stay on the device (`AppModel.leave(forgetting:)`), so
+  cache, drafts and sidebar stay on the device (`AppModel.leave(forgetting:)`), so
   switching back shows it at once. Chat IDs stay bare (every gateway has `default`), so anything
   that outlives a switch is per gateway: the cache, drafts and sections by address, and the open
   chat and Quick Message recipient, which `@AppStorage` keeps under one key each, are swapped in
@@ -870,23 +1012,22 @@ read at Hermes `2bd378ed1b`.
 
 ## Not verified
 
+- Bot-to-Bot folding ran against Hermes 0.23.0's stored rows and runner output, copied into tests,
+  and in the demo. Not run: a live `message_agent` on a real gateway with the app watching both
+  chats (that `tool.start` carries `args`, and the answer arriving live), a fan-out's answer, a peer
+  gateway's Bot, and whether Bots follow the plugin's reply note.
+
 - Two gateways ran only in the demo (two made-up gateways, Mac and iPhone Simulator) and against
   fakes: switching, Sign Out going on to the other gateway, Add Gateway and Cancel, renaming, and
   the push registration's gateway ID. Not run: two real gateways, plugin 0.5.0 on a gateway, a
   tagged notification reaching a device and opening on the other gateway, the subtitle naming the
   gateway, clears scoped to one gateway, and the new-notification dot from real notifications.
 
-- Sharing from other apps ran on 2026-11-10 in the iPhone Simulator with the demo
-  (`--demo --demo-share`): a page from Safari and a photo from Photos, to a Bot and to the room,
-  the waiting and failed states below the chat list, and the signed-out notice. Not run: the Mac's
-  Share menu at all (the extension needs a build signed for a team with the App Group, and one
-  wasn't made), a signed build on an iPhone, a file from Files, a send to a real gateway (the
-  upload and `prompt.submit` ran against the test fake only), VoiceOver itself (the labels were
-  read from the accessibility tree), and `scripts/testflight.sh` with the two new profiles.
-- The extension sending itself ran only against the scripted gateway in `ShareSenderTests`. Not
-  run: a signed build on an iPhone, moving an existing sign-in into the shared keychain group, the
-  two processes renewing at once, whether iOS asks the extension for Local Network access to a
-  gateway on the home network, and the extension's memory with a 10 MB file.
+- Sharing from other apps, as the extension opening the app, ran on 2026-11-22 in the iPhone 18 Pro
+  Simulator (iOS 27.0) with `--demo --demo-share`: a page from Safari opened Usual Bot on Send to,
+  in light and dark, picking a Bot put the link in its message box, and Don't Send deleted it. Not
+  run: a signed build on an iPhone, the Mac's Share menu (the extension needs a build signed for a
+  team with the App Group), files from Photos or Files, a room, and VoiceOver.
 - Goals ran against a throwaway Hermes 0.23.1 gateway with a stand-in model and a stand-in judge,
   from a script on its socket (`canonical-protocol.md`), and in the app only in the demo. Not run:
   the app itself on a real gateway; anything on the dashboard, whose goal calls and events are
@@ -911,6 +1052,11 @@ read at Hermes `2bd378ed1b`.
   "caution", then installed with `force`). Not run: `plugins.manage` over the Webapp with the app's
   sign-in, a running gateway reloading it, a model's turn reading the context, compression moving
   a Bot Chat to a new session, and the app's Install button against a gateway.
+- The terminal drawer ran in the demo on the Mac (shell, commands, a running command's dot, light
+  and dark), and the plugin's shell ran as a real `/bin/sh` on a pty in `test_terminal.py`. Not run:
+  the shell route under Hermes's dashboard or Webapp (`_ws_auth_ok`, the router mounting), the app
+  against a gateway, typing in the app (the demo was driven without taking the keyboard), whether
+  live `tool.start` carries `args.command`, a Linux gateway, and VoiceOver reading the shell.
 - The Browser view hasn't run in the app against a real gateway: the plugin's feed and `BotBrowser`
   were each tested on their own (`BotBrowserTests`, and a script client on the developer's gateway).
 
@@ -930,6 +1076,11 @@ read at Hermes `2bd378ed1b`.
   fakes the upload. Not run: any real gateway (upload, live stream, `stt-lease`, the error texts),
   the unnamed ticket opening `transcribe-stream`, the legacy dashboard, a 10-minute recording, and
   **Use On-device** on a real recording.
+- Gateway calls have run only against fakes (`GatewaySpeechTests`, `GatewayCallTests`) and in the
+  demo, which speaks with the device's voice through the same PCM path and fakes the upload. Not
+  run: any real gateway (`speak-stream`, `/speak`, `tts-lease`, the error texts), the unnamed
+  ticket opening `speak-stream`, Edge through ffmpeg, how long the first sentence takes, the
+  turn thresholds on real rooms and microphones, and barge-in against echo on a device.
 - Notifications through the relay were run on the developer's gateway on 2026-11-05: sealed replies
   reached a Mac and an iPhone and opened in the extension, an open chat on either kept both quiet,
   and muting a Bot on one device left the other hearing it. Not yet run: a room approval, a `/bg`

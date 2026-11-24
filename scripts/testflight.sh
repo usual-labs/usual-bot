@@ -21,6 +21,7 @@
 #                     an individual API key (the .p8 file and its ID), for the upload
 set -eu
 cd "$(dirname "$0")/.."
+. scripts/xcode.sh
 
 destination=upload
 if [ "${1:-}" = --check ]; then

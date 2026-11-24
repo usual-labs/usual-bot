@@ -47,7 +47,10 @@ struct MessageBox: View {
 
     #if os(macOS)
         @AppStorage(AppPreferences.commandReturnKey) private var commandReturn = false
-        @Environment(\.messageBoxTakesTyping) private var takesTyping
+        @Environment(\.messageBoxTakesTyping) private var takesTypingHere
+        /// The terminal drawer's shell, when focused, takes the keys it's typed and pasted itself.
+        @FocusedValue(\.shellHasFocus) private var shellHasFocus
+        private var takesTyping: Bool { takesTypingHere && shellHasFocus != true }
     #endif
     /// The menu row Return picks.
     @State private var highlighted = 0
@@ -61,6 +64,9 @@ struct MessageBox: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.conversationTaps) private var conversationTaps
     @State private var dictation = Dictation()
+    /// The conversation dictation was started in; words that land after the box moved on don't
+    /// move this box's cursor.
+    @State private var dictatingIn: Contact.ID?
     @Environment(\.transcriber) private var transcriber
     @AppStorage(DictationSettings.engineKey) private var dictationEngine = ""
     #if os(iOS)
@@ -95,13 +101,14 @@ struct MessageBox: View {
     private var cornerRadius: CGFloat { buttonSize / 2 + inset }
     private var inset: CGFloat { Theme.zoomed(Self.inset, for: dynamicTypeSize) }
 
-    /// The text gets the box's whole width and the buttons move to a row below it: on iPhone while
-    /// you type in a chat, and on the Mac once your text wraps.
+    /// The text gets the box's whole width and the buttons move to a row below it: while you
+    /// dictate, so the words show above the waveform; on iPhone while you type in a chat; and on
+    /// the Mac once your text wraps.
     private var expanded: Bool {
         #if os(iOS)
-            open && opensForTyping
+            dictation.isActive || open && opensForTyping
         #else
-            hasWrapped
+            dictation.isActive || hasWrapped
         #endif
     }
 
@@ -117,7 +124,7 @@ struct MessageBox: View {
                 .background { stopShortcut }
             #endif
             .environment(\.composerButtonSize, buttonSize)
-            .animation(.snappy(duration: 0.16), value: isEmpty)
+            .animation(.snappy(duration: 0.16), value: hasNothingToSay)
             #if os(macOS)
                 .animation(.smooth(duration: 0.25), value: expanded)
                 .onAppear { focused = true }
@@ -136,6 +143,7 @@ struct MessageBox: View {
                         attaching?.attachments.append(contentsOf: $0)
                     }
                 )
+                .animation(.smooth(duration: 0.25), value: dictation.isActive)
                 // In the keyboard's own animation, which this change arrives in.
                 .onChange(of: keyboardUp) { _, up in open = up && focused }
                 .onChange(of: focused) { _, focused in
@@ -153,9 +161,14 @@ struct MessageBox: View {
                 }
             #endif
             .onDisappear { dictation.leave() }
+            // The words shown for it aren't read out, so VoiceOver hears it here.
+            .onChange(of: transcribing) { _, transcribing in
+                if transcribing { AccessibilityNotification.Announcement(String(localized: "Transcribing")).post() }
+            }
             // The next conversation gets its own text, and none of what was open over the last one.
             .onChange(of: conversation) {
                 dictation.leave()
+                dictatingIn = nil
                 dismissedText = nil
                 selection = TextSelection(insertionPoint: text.endIndex)
             }
@@ -229,15 +242,27 @@ struct MessageBox: View {
                 if let attaching, !attaching.attachments.isEmpty {
                     AttachmentChips(attachments: attaching.$attachments)
                     if isRunning {
-                        Text("You can send these when the reply ends.")
-                            .scaledFont(size: 12)
-                            .foregroundStyle(Theme.secondaryInk)
-                            .padding(.horizontal, 8)
+                        // Files can't join a running reply: they wait in the queue with the
+                        // message, or, with no queue, for the reply to end.
+                        Text(
+                            queue != nil
+                                ? "These wait in the queue with your message, and go when the reply ends."
+                                : "Files go once the reply ends. Stop it to send them now."
+                        )
+                        .scaledFont(size: 12)
+                        .foregroundStyle(Theme.secondaryInk)
+                        .padding(.horizontal, 8)
                     }
                 }
                 // At accessibility text sizes the text always gets the whole width.
                 ComposerLayout(expanded: expanded || dynamicTypeSize.isAccessibilitySize) {
-                    if let attaching {
+                    if dictation.isActive {
+                        // ✕, then your voice, then Stop and Send.
+                        DictationCancelButton(dictation: dictation)
+                            .layoutValue(key: ComposerLayout.RoleKey.self, value: .leading)
+                        DictationWaveform(levels: dictation.levels, transcribing: transcribing)
+                            .layoutValue(key: ComposerLayout.RoleKey.self, value: .fill)
+                    } else if let attaching {
                         AttachButton { attaching.attachments.append(contentsOf: $0) }
                             .layoutValue(key: ComposerLayout.RoleKey.self, value: .leading)
                     }
@@ -252,8 +277,6 @@ struct MessageBox: View {
                     DictationProblem(
                         message: message, showsSettings: false, useOnDevice: useOnDevice,
                         dismiss: dictation.dismissProblem)
-                case .transcribing:
-                    DictationTranscribing()
                 default:
                     EmptyView()
                 }
@@ -338,13 +361,17 @@ struct MessageBox: View {
 
     private var field: some View {
         TextField(
-            quotes?.wrappedValue.isEmpty == false ? String(localized: "Reply…") : placeholder, text: $text,
-            selection: $selection, axis: .vertical
+            transcribing ? "" : quotes?.wrappedValue.isEmpty == false ? String(localized: "Reply…") : placeholder,
+            text: $text, selection: $selection, axis: .vertical
         )
         .textFieldStyle(.plain)
-        .textInputTint()
+        .textInputTint(hidesCursor: transcribing)
         .scaledFont(size: Self.fontSize)
         .lineLimit(1...8)
+        // Where the words will land, in place of a row under the box.
+        .overlay(alignment: .topLeading) {
+            if transcribing { TranscribingTail(text: text, fontSize: Self.fontSize).lineLimit(1...8) }
+        }
         .focused($focused)
         // Menu completion wins over sending. A handled key can still trigger onSubmit on iOS.
         .onKeyPress(.return, phases: .down) { press in
@@ -396,6 +423,7 @@ struct MessageBox: View {
                 .id(conversation)
             }
             .fieldScrollKnob()
+            .inlinePredictions()
         #endif
     }
 
@@ -416,36 +444,51 @@ struct MessageBox: View {
                 .controlSize(.small)
                 .frame(width: buttonSize, height: buttonSize)
                 .accessibilityLabel(Text("Uploading"))
-        } else if isRunning, isEmpty, !hasAttachments, !dictation.isActive {
+        } else if isRunning, hasNothingToSay, !hasAttachments, !dictation.isActive {
             RoundButton(systemImage: "stop.fill", label: stopLabel, prominent: false, action: stop)
-        } else if !inCall, isEmpty, !hasAttachments {
+        } else if !inCall, hasNothingToSay, !hasAttachments, !dictation.isActive {
             // In a chat, the call button holds the spot Send takes over once there's something to send.
-            if let startCall, !dictation.isActive, !isRunning {
+            if let startCall, !isRunning {
                 CallStartButton(action: startCall)
             }
         } else {
+            // While you dictate Send stays, waiting for words.
+            // With files during a reply there's no steering: Queue is the one way they go.
+            let queuesOnly = queue != nil && isRunning && hasAttachments
             HStack(spacing: 6) {
-                if queue != nil, !hasAttachments {
+                if queue != nil {
                     RoundButton(
                         systemImage: "text.line.last.and.arrowtriangle.forward",
-                        label: String(localized: "Queue"), prominent: false
+                        label: String(localized: "Queue"), prominent: queuesOnly
                     ) { submit(queueing: true) }
                     .disabled(!canSubmit)
                     .help(Text("Send when this reply ends (⌥Return)"))
                     .accessibilityHint(Text("Sends your message when this reply ends"))
                 }
-                RoundButton(systemImage: "arrow.up", label: String(localized: "Send")) { submit() }
-                    .disabled(!canSubmit)
+                if !queuesOnly {
+                    RoundButton(systemImage: "arrow.up", label: String(localized: "Send")) { submit() }
+                        .disabled(!canSubmit)
+                }
             }
         }
     }
 
+    private var transcribing: Bool { dictation.state == .transcribing }
+
     private var hasAttachments: Bool { attaching?.attachments.isEmpty == false }
 
     private func startDictation() {
+        let here = conversation
+        dictatingIn = here
         dictation.start(
             after: text, transcriber: dictatesThroughGateway ? transcriber : nil,
-            profile: transcriptionProfile, current: { text }, update: { text = $0 })
+            profile: transcriptionProfile, current: { text },
+            update: { words in
+                text = words
+                // The cursor follows the words, so you type on after them; the field would
+                // otherwise keep wherever it was, often the first character.
+                if dictatingIn == here { selection = TextSelection(insertionPoint: text.endIndex) }
+            })
         focused = true
     }
 
@@ -459,6 +502,9 @@ struct MessageBox: View {
     private var dictatesThroughGateway: Bool { dictationEngine == DictationSettings.gateway && transcriber != nil }
 
     private var isEmpty: Bool { text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    /// No words of yours, in the box or under a quote: answers to quotes send on their own.
+    private var hasNothingToSay: Bool { isEmpty && quotes?.wrappedValue.hasReplies != true }
 
     /// New text for the box with the cursor after it, so you type on where the pick or prefill
     /// ended (the field would otherwise keep the old cursor, mid-word).
@@ -480,7 +526,7 @@ struct MessageBox: View {
         // Gateway words are still to come; sending now would leave them for the next message.
         if dictation.holdsSending { return false }
         if let attaching, !attaching.attachments.isEmpty { return attaching.canSend }
-        return canSend && !isEmpty
+        return canSend && !hasNothingToSay
     }
 
     /// `queueing`: the message waits for the running reply to end, where there's a queue.
@@ -498,8 +544,9 @@ struct MessageBox: View {
             return
         }
         guard canSubmit else { return }
-        // Sending ends dictation; words still arriving would land in the next message.
-        dictation.stop()
+        // Sending ends dictation, and the recognizer's final words, which come after, stay out:
+        // they'd put the message back in the box.
+        dictation.stop(keepingLateWords: false)
         let quoted = quotes?.wrappedValue ?? []
         if let attaching, !attaching.attachments.isEmpty, editing?.wrappedValue != true {
             // Text and files leave together once every file is up; a failure keeps both here.

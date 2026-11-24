@@ -3,6 +3,7 @@
   push.py                   tells your devices what Bots do, through Usual's push relay
   flags.py                  the Chrome flags a Bot's headless real-profile browser launches with
   context.py                tells a Bot, in the app's chats only, that it's talking through Usual Bot
+  secret_prompt.py          request_secret: a Bot asks for a credential and Hermes saves it, unseen
   dashboard/                the routes the app calls: devices, the chats it opened, the browser feed
 
 Hooks never stop a turn: anything going wrong here is logged and the turn goes on without it.
@@ -12,16 +13,17 @@ from __future__ import annotations
 
 import logging
 
-from . import context, flags, push, store
+from . import context, flags, push, secret_prompt, store
 
 log = logging.getLogger(__name__)
 
 # As in plugin.yaml. The app reads it to offer an update.
-VERSION = "0.6.0"
+VERSION = "0.12.0"
 
 # Where a person talks to the agent. Leaves out helpers ("subagent"), routines ("cron") and rooms
 # ("bot_room"), whose sessions continue no chat of the app's. A gateway's own chats can say "local".
 _CHAT_PLATFORMS = {"tui", "desktop", "dashboard", "local"}
+_ROOM_PLATFORM = "bot_room"
 
 
 def _before_tool(tool_name: str = "", **_) -> None:
@@ -36,15 +38,30 @@ def _before_tool(tool_name: str = "", **_) -> None:
     return None
 
 
-def _before_turn(session_id="", parent_session_id="", platform="", conversation_history=None, **_):
+def _before_turn(
+    session_id="", parent_session_id="", platform="", conversation_history=None, user_message="", **_
+):
     """The chat context, in a chat the app opened that doesn't have it yet. Routines' results and
-    other Bots' messages posted into that chat get it too: they're turns in it."""
+    other Bots' messages posted into that chat get it too: they're turns in it. A turn another Bot
+    started also gets a line saying who its reply goes to, every time; any other turn gets the voice
+    line. A room turn gets only the voice line: its members aren't told about widgets this way, and
+    the app shows every room on the gateway."""
     try:
-        if platform not in _CHAT_PLATFORMS or context.told(conversation_history):
+        push.on_turn_start(platform=platform, conversation_history=conversation_history, **_)
+    except Exception as exc:  # noqa: BLE001 - the turn goes on; only its mid-turn words stay quiet
+        log.warning("usual-bot: couldn't note the turn: %s", type(exc).__name__)
+    try:
+        if platform == _ROOM_PLATFORM:
+            return {"context": context.VOICE}
+        if platform not in _CHAT_PLATFORMS:
             return None
         if not store.is_app_chat(str(session_id or ""), str(parent_session_id or "")):
             return None
-        return {"context": context.TEXT}
+        sender = context.bot_sender(user_message)
+        told = context.told(conversation_history)
+        # The reply to a Bot goes back to that Bot, so it gets that Bot's line, not the user's voice.
+        last = context.bot_turn(*sender) if sender else context.VOICE
+        return {"context": last if told else context.TEXT + ("\n\n" + last if sender else "")}
     except Exception as exc:  # noqa: BLE001 - the turn goes on without it
         log.warning("usual-bot: couldn't add the chat context: %s", type(exc).__name__)
         return None
@@ -52,7 +69,12 @@ def _before_turn(session_id="", parent_session_id="", platform="", conversation_
 
 def register(ctx) -> None:
     ctx.register_hook("post_llm_call", push.on_reply)
+    ctx.register_hook("on_interim_message", push.on_interim)
     ctx.register_hook("on_human_input_request", push.on_request)
     ctx.register_hook("on_room_member_activity", push.on_room_activity)
     ctx.register_hook("pre_tool_call", _before_tool)
     ctx.register_hook("pre_llm_call", _before_turn)
+    ctx.register_tool(
+        name=secret_prompt.NAME, toolset="usual_bot", schema=secret_prompt.SCHEMA,
+        handler=secret_prompt.request, description="Ask for a secret in a masked field", emoji="🔑",
+    )

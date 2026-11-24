@@ -5,8 +5,11 @@ A Hermes plugin with what Usual Bot needs from your gateway:
 - **Push.** Tells your devices when a Bot replies, messages you or needs you, even when Usual Bot is
   closed.
 - **A Bot's browser.** Lets you watch a Bot's browser live, while it runs headless on your gateway.
+- **A shell.** Opens a shell on your gateway's computer in a Bot's terminal drawer on the Mac.
 - **Where the Bot is.** Tells a Bot, in the chats Usual Bot opened, that it's talking through
   Usual Bot and what shows there.
+- **Secrets.** Lets a Bot ask you for an API key or a token in a masked field, in the chats Usual
+  Bot opened, instead of in a message.
 
 It does nothing for chats you have in a terminal, the Hermes app or anywhere else.
 
@@ -39,13 +42,16 @@ and a switch for each Bot on that device.
 
 What it sends:
 
-- A reply or message from a Bot, and a room member's reply.
+- A reply or message from a Bot, and a room member's reply. What a Bot says on the way to its
+  reply ("On it, looking now") notifies too.
 - When a Bot asks for approval, asks a question or wants the sudo password. Passwords and your
   answers never reach the plugin.
 
-Helpers, routines and other platforms stay quiet, and so does the reply to a widget's button (its
-answer is the widget changing), and a Bot you've hidden, in Usual Bot or the Hermes app, except in
-rooms. A chat you're reading on any device is quiet on all of them; everything else reaches every
+Helpers, routines and other platforms stay quiet, and so does the reply to a prompt Hermes sends
+itself (a goal's next step), a Bot's reply to another Bot's message (it goes back to that Bot,
+whose own report to you notifies you; an approval or question in it still does), and a Bot you've
+hidden, in Usual Bot or the Hermes app, except in rooms. The reply to a widget's button notifies
+like any other. A chat you're reading on any device is quiet on all of them; everything else reaches every
 device that hasn't turned that Bot off. Opening a chat on one device takes down what your other
 devices show about it, with a silent push that names nothing outside its seal. With previews off on
 a device, its notifications say only who needs you.
@@ -116,19 +122,74 @@ layout from that copy. The feed checks sign-in with the dashboard's own WebSocke
 one Hermes' bundled Kanban plugin uses. It isn't a public Hermes API, so a Hermes update could
 change it.
 
+## A shell
+
+Usual Bot's terminal drawer on the Mac (⌘J) opens a shell here, on the gateway's computer:
+
+- It runs as the gateway's user, as a login shell (`$SHELL -l`), in the folder the Bot runs its
+  commands in (`terminal.cwd`, or the gateway's own folder when that's `.`), with `HERMES_HOME` set
+  to the Bot's profile. The gateway's environment stays out of it, its API keys included: only
+  `PATH`, the locale and the time zone carry over, and your login profile sets up the rest.
+- Only for a Bot whose commands run on this computer (`terminal.backend: local`, Hermes's default). A
+  Bot sandboxed in Docker, SSH, Modal or anywhere else runs its commands where a shell here can't
+  reach, so it gets none.
+- Closing the drawer's connection hangs up the shell (SIGHUP to its process group), as closing a
+  Terminal window does.
+
+Anyone signed in to your gateway can open one. They could already have a Bot run any command, so it
+adds no access, but it's a direct way in: keep your gateway on Tailscale or behind HTTPS.
+
+Routes, behind the dashboard's sign-in:
+
+- `GET /api/plugins/usual-bot/terminal/status?bot=<profile>` answers
+  `{"available", "backend", "user", "host", "cwd"}`.
+- `WS /api/plugins/usual-bot/terminal?bot=<profile>&ticket=<from POST /api/auth/ws-ticket>`, with
+  optional `cols` and `rows`. Every message is binary and starts with a tag byte: `0` and bytes are
+  the shell's output, or what you typed; `1` and JSON is `{"type":"ready","user","host","cwd"}` and
+  `{"type":"exit","code"}` from the plugin, or `{"type":"resize","cols","rows"}` from the app. Close
+  codes: 4401 not signed in, 4404 no such Bot, 4409 the Bot is sandboxed.
+
 ## Where the Bot is
 
 Usual Bot's chats reach Hermes the way its terminal UI's do, so a Bot is told it's in a terminal,
 where files it sends print as text. In a chat Usual Bot opened, the plugin adds a note to the first
-message: that the Bot is talking through Usual Bot, which isn't Hermes's official app, and what
-shows there (Markdown, files with `MEDIA:` lines, and widgets). The text is in
-[`context.py`](context.py). It says nothing about you or your device.
+message: that the Bot is talking through Usual Bot, which isn't Hermes's official app; how to write
+in a messenger (a few short sentences with the answer first, a short line before long work, no
+report sections, unless the Bot's own instructions set another voice); and what shows there
+(Markdown, files with `MEDIA:` lines, and widgets). Every later message you send gets one line
+repeating the voice, and that the short line before long work holds whatever voice the Bot's own
+instructions set. The text is in [`context.py`](context.py). It says nothing about you or your
+device.
+
+Every later turn you start gets one line at its end, reminding the Bot to reply like a text: in a
+long chat, a note far back counts for less than the replies written since. Room turns get that
+line too.
 
 Hermes keeps the note with that message, so the plugin adds it once per chat, and again only when
 the chat no longer has it, as after compressing the chat. Routines' results and other Bots'
-messages posted in the chat get it too, because they're turns in it. Rooms don't.
+messages posted in the chat get it too, because they're turns in it. Rooms don't get the note.
+
+A turn another Bot started also gets a short note, every time: the message is from that Bot, not
+you, and the final reply goes back to it, so the Bot writes it to that Bot and keeps it short. For a
+message that wants no reply, the note says to finish quietly. Usual Bot folds these exchanges away.
 
 The app tells the plugin which chats it opened with `PUT /api/plugins/usual-bot/chats/<session ID>`.
 The list is in `~/.hermes/usual-push/chats.json`; a chat nobody has used in 30 days drops off it. A
 Bot Chat you also open in the Hermes app is the same chat, so its Bot hears about Usual Bot there
 too.
+
+## Secrets
+
+The plugin gives Bots a `request_secret` tool. A Bot calls it with the variable's name (such as
+`TRADINGHUB_BOT_TOKEN`), a short heading and an optional line on where to get it. Usual Bot shows a
+masked card; what you type goes to Hermes, which saves it in the profile's `.env` the way it saves a
+key a skill asks for. The Bot hears only whether it was saved or skipped, never the value. Saving
+to a name that's already set replaces it.
+
+Hermes lists a plugin's tools in every app, so other apps' Bots see the tool too. It works only in
+the chats Usual Bot opened, and anywhere else tells the Bot to have you add the key yourself.
+While it waits, a closed Usual Bot gets a "needs you" notification, which says only that the Bot
+asks for a secret.
+
+The tool hands the request to the prompt Hermes's skills use. That isn't a public Hermes API, so a
+Hermes update could change it; the tool then tells the Bot it can't ask, rather than failing.

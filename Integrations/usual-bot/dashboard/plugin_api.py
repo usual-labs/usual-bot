@@ -1,5 +1,5 @@
-"""The routes Usual Bot calls: its devices, the chats it opened, and a Bot's browser
-(``browser_api.py``). The dashboard's own sign-in guards them all."""
+"""The routes Usual Bot calls: its devices, the chats it opened, a Bot's browser (``browser_api.py``)
+and a shell for its terminal drawer (``terminal_api.py``). The dashboard's own sign-in guards them all."""
 
 from __future__ import annotations
 
@@ -33,6 +33,7 @@ try:
     router.include_router(_load("usual_bot_browser_api", _here / "browser_api.py").router)
 except ImportError as error:  # No aiohttp: everything but the browser view still works.
     logging.getLogger(__name__).warning("usual-bot: no browser view: %s", error)
+router.include_router(_load("usual_bot_terminal_api", _here / "terminal_api.py").router)
 
 # What Hermes names sessions with, and no more: the ID becomes a key in a file.
 _SESSION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")

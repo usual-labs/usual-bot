@@ -2,7 +2,7 @@
 
 ## Implemented today
 
-Keychain stores tokens keyed by gateway URL; cached transcripts live in protected cache files, not credential storage. Keep Keychain access off the main actor where restore already does so. On iPhone the item sits in the App Group's access group so the share extension can send with it (`KeychainTokenStore.forApp`); a build without the group keeps it in the app's own. A renewal in either process holds `RefreshLock` and adopts a newer stored pair first: refresh tokens rotate, and a replayed one revokes the sign-in.
+Keychain stores tokens keyed by gateway URL; cached transcripts live in protected cache files, not credential storage. Keep Keychain access off the main actor where restore already does so. On iPhone the item sits in the App Group's access group, from when the share extension sent with it (`KeychainTokenStore.forApp`; nothing outside the app reads it now); a build without the group keeps it in the app's own. A renewal in either process holds `RefreshLock` and adopts a newer stored pair first: refresh tokens rotate, and a replayed one revokes the sign-in.
 
 Secret and sudo answers go only to the gateway, as the JSON-RPC response to its request. They aren't kept in `ChatThread`, the transcript, notices or `CachedThread`, and `FrameRecorder.redacted` blanks `result.value` in outgoing frames, the one place a recording would catch them. Anything new that answers with `result.value` is covered by that rule; a masked answer in any other shape needs its own. Plain `http` to a private host is allowed by `GatewayAddress`, so `GatewayAddress.isUnencrypted` marks the case where a typed secret could be read on the network (not loopback, not Tailscale) and the card warns before sending.
 

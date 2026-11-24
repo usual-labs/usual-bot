@@ -19,6 +19,38 @@ struct ConversationScrollTests {
         #expect(!state.nearsTop)
     }
 
+    @Test func theNextPageWaitsUntilTheMoveForTheLastOneLands() {
+        var state = ConversationScrollState()
+        _ = state.update(.init(contentHeight: 1_500, height: 700, offset: 800))
+        _ = state.scrollingByHand(true)
+        _ = state.update(.init(contentHeight: 1_500, height: 700, offset: 100))
+        state.addingAbove()
+        #expect(state.update(.init(contentHeight: 2_000, height: 700, offset: 100)) == 600)
+        // The scroll view still reports where it was. Another page measured from there would undo
+        // this one's move: the message being read jumped by a page.
+        #expect(!state.nearsTop)
+        #expect(state.update(.init(contentHeight: 2_000, height: 700, offset: 100)) == nil)
+        #expect(!state.nearsTop)
+        // Landed, a little further up by hand: near the top again, and the next page comes.
+        _ = state.update(.init(contentHeight: 2_000, height: 700, offset: 590))
+        #expect(state.nearsTop)
+        state.addingAbove()
+        #expect(state.update(.init(contentHeight: 2_600, height: 700, offset: 580)) == 1_180)
+    }
+
+    @Test func aMoveThatNeverLandsDoesntStopEarlierMessagesForGood() {
+        var state = ConversationScrollState()
+        _ = state.update(.init(contentHeight: 1_500, height: 700, offset: 800))
+        _ = state.scrollingByHand(true)
+        _ = state.update(.init(contentHeight: 1_500, height: 700, offset: 100))
+        state.addingAbove()
+        _ = state.update(.init(contentHeight: 2_000, height: 700, offset: 100))
+        _ = state.update(.init(contentHeight: 2_000, height: 700, offset: 40))
+        #expect(!state.nearsTop)
+        _ = state.scrollingByHand(false)
+        #expect(state.nearsTop)
+    }
+
     @Test func aShortConversationFollowingTheEndFillsUpWithEarlierMessages() {
         var state = ConversationScrollState()
         _ = state.update(.init(contentHeight: 1_000, height: 700, offset: 300))

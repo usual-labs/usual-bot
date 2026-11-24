@@ -103,6 +103,7 @@ struct ChatHistory: Equatable {
         @FocusedValue(\.windowCommands) private var window
         @FocusedValue(\.chatPanel) private var panel
         @FocusedValue(\.stopReply) private var stopReply
+        @FocusedValue(\.terminal) private var terminal
         @AppStorage(Zoom.key) private var zoom = Zoom.initialLevel(
             chatTextSize: UserDefaults.standard.integer(forKey: AppPreferences.textSizeKey))
 
@@ -146,6 +147,9 @@ struct ChatHistory: Equatable {
                 Button(panel?.title ?? "Show Profile") { panel?.toggle() }
                     .keyboardShortcut("i")
                     .disabled(panel == nil)
+                Button(terminal?.isShown == true ? "Hide Terminal" : "Show Terminal") { terminal?.toggle() }
+                    .keyboardShortcut("j")
+                    .disabled(terminal == nil)
                 Divider()
                 // Where Safari keeps Stop, on the same key.
                 Button("Stop Reply") { stopReply?.stop?() }

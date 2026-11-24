@@ -1,9 +1,12 @@
 name: usual-bot
-version: "0.6.0"
-description: "What Usual Bot needs from your gateway: push to your devices, a Bot's browser to watch, and telling Bots in the app's chats where they are"
+version: "0.12.0"
+description: "What Usual Bot needs from your gateway: push to your devices, a Bot's browser to watch, a shell for its terminal, telling Bots in the app's chats where they are, and a masked field for the secrets they need"
+provides_tools:
+  - request_secret
 author: "Usual Labs"
 provides_hooks:
   - post_llm_call
+  - on_interim_message
   - on_human_input_request
   - on_room_member_activity
   - pre_tool_call

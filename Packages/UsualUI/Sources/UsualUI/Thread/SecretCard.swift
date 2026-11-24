@@ -70,15 +70,22 @@ struct SecretCard: View {
     /// The gateway's own words, never read as Markdown or links.
     @ViewBuilder private var details: some View {
         switch prompt.kind {
-        case .secret(let name, let message):
-            code(name)
+        case .secret(let name, let message, let help):
             if !message.isEmpty {
                 Text(verbatim: message)
+                    .scaledFont(size: 13, weight: .medium)
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(4)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if !help.isEmpty {
+                Text(verbatim: help)
                     .scaledFont(size: 13)
                     .foregroundStyle(Theme.secondaryInk)
                     .lineLimit(8)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            code(name)
         case .sudo(let command):
             if !command.isEmpty { code(command) }
         }

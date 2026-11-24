@@ -71,25 +71,26 @@ async function route(request, env) {
 // MARK: Devices
 
 async function register(input, env) {
-  const { token, environment } = deviceFields(input);
+  const { token, environment, wake } = deviceFields(input);
   const id = randomID(16);
   const secret = randomID(32);
   const sendKey = randomID(32);
   const now = Date.now();
   await env.DB.prepare(
-    "INSERT INTO devices (id, token, environment, secret_hash, send_key_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO devices (id, token, environment, wake, secret_hash, send_key_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
   )
-    .bind(id, token, environment, await hash(secret), await hash(sendKey), now, now)
+    .bind(id, token, environment, wake, await hash(secret), await hash(sendKey), now, now)
     .run();
-  return json({ id, secret, sendKey }, 201);
+  // `wake` says this relay heard the ask; an older one leaves it out, so the app asks again.
+  return json({ id, secret, sendKey, wake: wake === 1 }, 201);
 }
 
 async function update(id, input, env) {
-  const { token, environment } = deviceFields(input);
-  await env.DB.prepare("UPDATE devices SET token = ?, environment = ?, updated_at = ? WHERE id = ?")
-    .bind(token, environment, Date.now(), id)
+  const { token, environment, wake } = deviceFields(input);
+  await env.DB.prepare("UPDATE devices SET token = ?, environment = ?, wake = ?, updated_at = ? WHERE id = ?")
+    .bind(token, environment, wake, Date.now(), id)
     .run();
-  return json({ ok: true });
+  return json({ ok: true, wake: wake === 1 });
 }
 
 function deviceFields(input) {
@@ -97,7 +98,9 @@ function deviceFields(input) {
   const environment = String(input.environment ?? "");
   if (!/^[0-9a-f]{64,200}$/i.test(token)) throw new Refusal(400, "That isn't an APNs device token.");
   if (!(environment in APNS_HOSTS)) throw new Refusal(400, "The environment is sandbox or production.");
-  return { token: token.toLowerCase(), environment };
+  // Only an app that asks is woken for its notifications: an older one would ignore the wake, and
+  // iOS gives fewer wakes to an app that does nothing with them.
+  return { token: token.toLowerCase(), environment, wake: input.wake === true ? 1 : 0 };
 }
 
 async function authorizeDevice(request, id, env) {
@@ -137,7 +140,7 @@ async function sendOne(push, env, silent) {
   // Before the lookup, so a flood for one device costs no reads either.
   if (!(await env.PUSHES.limit({ key: device })).success) return { device, status: "limited" };
 
-  const row = await env.DB.prepare("SELECT token, environment, send_key_hash FROM devices WHERE id = ?")
+  const row = await env.DB.prepare("SELECT token, environment, wake, send_key_hash FROM devices WHERE id = ?")
     .bind(device)
     .first();
   if (!row) return { device, status: "gone" };
@@ -150,6 +153,9 @@ async function sendOne(push, env, silent) {
     ? { aps: { "content-available": 1 }, kind }
     : { aps: { alert: FALLBACK[kind], sound: "default", "mutable-content": 1 }, kind };
   if (sealed) payload.s = sealed;
+  // Also wakes the app in the background, so it can load the chat before you tap the notification.
+  // Still an alert push: iOS shows it as before, and wakes the app only when it can spare it.
+  if (!silent && row.wake && kind !== "test") payload.aps["content-available"] = 1;
   if (push.thread && !silent) payload.aps["thread-id"] = String(push.thread).slice(0, 64);
 
   const headers = {

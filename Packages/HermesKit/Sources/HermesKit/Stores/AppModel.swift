@@ -30,8 +30,7 @@ public final class AppModel {
     /// The chat on screen, if any. Its replies don't count as unread.
     public var visibleContactID: Contact.ID? {
         didSet {
-            for (id, thread) in threads { thread.isVisible = id == visibleContactID }
-            for (id, room) in rooms { room.isVisible = id == visibleContactID }
+            showVisibleChat()
             if let visibleContactID { alertsCleared?(visibleContactID) }
             if visibleContactID != oldValue { reportFocus() }
         }
@@ -76,7 +75,7 @@ public final class AppModel {
     var linkTask: Task<Void, Never>?
     /// Whether the app is on screen; the socket stays closed while it isn't.
     var isForeground = true
-    /// iOS gave the app a moment in the background (`checkIn()`).
+    /// iOS gave the app a moment in the background (`checkIn()`, `warmUp`).
     var isCheckingIn = false
     /// Counts roster reads, so `checkIn()` knows when this link has read the gateway.
     @ObservationIgnored var rosterReads = 0
@@ -100,6 +99,8 @@ public final class AppModel {
     @ObservationIgnored var screens: [Contact.ID: BotScreen] = [:]
     /// Agents' browsers (`usual-bot` plugin), once a chat asked about one.
     @ObservationIgnored var browsers: [Contact.ID: BotBrowser] = [:]
+    /// Agents' shells (`usual-bot` plugin), once a chat's terminal drawer asked about one.
+    @ObservationIgnored var terminals: [Contact.ID: BotTerminal] = [:]
     let makeScreenSocket: ScreenSocketFactory
     /// Chats' messages ready to search (`searchMessages`).
     @ObservationIgnored let messageIndex = MessageIndex()
@@ -109,19 +110,20 @@ public final class AppModel {
     @ObservationIgnored var roomEdits = 0
     /// The demo has no gateway, so room edits happen here alone.
     @ObservationIgnored var isDemo = false
-    /// Gateway traffic goes through the iPhone app's built-in Tailscale, which the share extension
-    /// can't use, so it leaves what you share for the app. Set by the app.
-    @ObservationIgnored public var usesBuiltInTailscale = false {
-        didSet { if usesBuiltInTailscale != oldValue { publishShareRoster() } }
-    }
     #if DEBUG
         /// Shows the demo's other made-up gateway (`AppModel.demo()`), which nothing connects to.
         @ObservationIgnored var demoSwitch: ((SavedGateway) -> Void)?
     #endif
     /// Images and files agents name in chats, read from the gateway.
-    @ObservationIgnored public private(set) lazy var media = MediaStore(auth: { [weak self] in self?.auth })
+    @ObservationIgnored public private(set) lazy var media = MediaStore(
+        auth: { [weak self] in self?.auth },
+        chat: { [weak self] profile in
+            self?.contacts.first { $0.kind == .agent && ($0.details?.profile ?? $0.id) == profile }?.chatID
+        })
     @ObservationIgnored public private(set) lazy var voiceLive = VoiceLiveService(auth: { [weak self] in self?.auth })
     @ObservationIgnored public private(set) lazy var transcriber = GatewayTranscriber(
+        auth: { [weak self] in self?.auth }, isDemo: { [weak self] in self?.isDemo ?? false })
+    @ObservationIgnored public private(set) lazy var speaker = GatewaySpeaker(
         auth: { [weak self] in self?.auth }, isDemo: { [weak self] in self?.isDemo ?? false })
     /// How the gateway reaches you when this app can't.
     @ObservationIgnored public private(set) lazy var push = PushSettings(
@@ -135,14 +137,18 @@ public final class AppModel {
     @ObservationIgnored public internal(set) lazy var usage = UsageOverview(
         auth: { [weak self] in self?.auth },
         agents: { [weak self] in self?.contacts.filter { $0.kind == .agent } ?? [] })
+    /// Each Bot's subscription limits, for Settings › Usage and rooms.
+    @ObservationIgnored public internal(set) lazy var planLimits = PlanLimitOverview(
+        channel: { [weak self] in self?.channel },
+        agents: { [weak self] in self?.contacts.filter { $0.kind == .agent } ?? [] })
     /// Agents' own pictures from the official app; agents without one keep the app's characters.
     @ObservationIgnored public let pictures = BotPictures()
     /// How the sidebar is grouped.
     @ObservationIgnored public let sections: SidebarSections
     /// What's typed and not sent in each chat and room, on this device only.
     @ObservationIgnored public let drafts: Drafts
-    /// What you shared from other apps and the app hasn't sent yet.
-    @ObservationIgnored public let shared: SharedOutbox
+    /// What you shared from other apps, waiting for you to choose a chat for it.
+    @ObservationIgnored public let shared: SharedInbox
     /// How far each Bot Chat was read, shared with your other devices through the gateway.
     @ObservationIgnored lazy var readSync: ReadSync = {
         let sync = ReadSync(auth: { [weak self] in self?.auth }, chats: { [weak self] in self?.readableChats ?? [] })
@@ -189,7 +195,7 @@ public final class AppModel {
         self.makeSocket = makeSocket
         sections = SidebarSections(defaults: defaults)
         drafts = Drafts(directory: draftsDirectory)
-        shared = SharedOutbox(container: share)
+        shared = SharedInbox(container: share)
         let active = list.activeAddress
         gatewayInput = active?.baseURL.absoluteString ?? ""
         isRestoring = active != nil
@@ -202,7 +208,6 @@ public final class AppModel {
             guard let channel = self?.channel else { throw GatewayError.disconnected }
             try await BotMetaWrite.setPinned(isPinned, profile: profile, on: channel)
         }
-        shared.send = { [weak self] in self?.lookForSharedItems() }
     }
 
     /// Resumes the saved session, if this device has one.
@@ -337,9 +342,25 @@ public final class AppModel {
     public func setForeground(_ foreground: Bool) {
         guard foreground != isForeground else { return }
         isForeground = foreground
+        showVisibleChat()
         guard let auth else { return }
         if !foreground { saveCache(for: auth.gateway) }
+        // A notification woke the app, which connected (`warmUp`): you tapped it, so keep that link.
+        if foreground, isCheckingIn, linkTask != nil {
+            isCheckingIn = false
+            attachVisibleChat()
+            return
+        }
         connect(auth)
+    }
+
+    /// Whether a chat is on screen. Not while the app is away: a chat that loads in the background,
+    /// say for a notification, isn't read just because it was the one open when you left.
+    func isShown(_ id: Contact.ID) -> Bool { isForeground && id == visibleContactID }
+
+    private func showVisibleChat() {
+        for (id, thread) in threads { thread.isVisible = isShown(id) }
+        for (id, room) in rooms { room.isVisible = isShown(id) }
     }
 
     /// Connects, refreshes the roster every few seconds, and reconnects with backoff when the
@@ -357,10 +378,14 @@ public final class AppModel {
                 link = .online(ready.dialect)
                 readSync.reconnected()
                 for screen in screens.values { screen.linkChanged() }
-                await push.refresh()
                 let events = Task { for await event in channel.events { route(event) } }
                 let requests = Task { for await request in channel.requests { await handle(request, on: channel) } }
+                // The chat on screen is what you're waiting for: it doesn't wait for push settings or
+                // the roster, the slowest read.
+                let pushRefresh = Task { await push.refresh() }
+                attachVisibleChat()
                 defer {
+                    pushRefresh.cancel()
                     events.cancel()
                     requests.cancel()
                     self.channel = nil
@@ -376,8 +401,6 @@ public final class AppModel {
                     if firstRead { readSync.somethingChanged() } else { readSync.look() }
                     firstRead = false
                     saveCache(for: auth.gateway)
-                    publishShareRoster()
-                    lookForSharedItems()
                     reportFocus()
                     try await Task.sleep(for: Self.rosterInterval)
                 }
@@ -407,9 +430,19 @@ public final class AppModel {
                 contact.activity = thread.activity
                 contact.unreadCount = thread.unreadCount
                 contact.isMarkedUnread = thread.isMarkedUnread
-                if let newest = Self.newestMessage(in: thread.state.items),
+                // The roster's preview would be this Bot's reply to another Bot.
+                let items = thread.state.items
+                if thread.turnIsForABot, let exchange = BotExchange.last(in: items) {
+                    contact.preview = exchange.summary(running: thread.state.isRunning)
+                    if let date = items[exchange.items].last(where: { $0.date != nil })?.date,
+                        date > contact.lastActive ?? .distantPast
+                    {
+                        contact.lastActive = date
+                    }
+                } else if let newest = Self.newestMessage(in: items),
                     newest.date > contact.lastActive ?? .distantPast
                         || contact.preview.map(thread.state.isHiddenPreview) == true
+                        || contact.preview == GatewayTurn.steerPreview
                 {
                     contact.preview = newest.text
                     contact.lastActive = newest.date
@@ -450,7 +483,7 @@ public final class AppModel {
 
     func makeThread(_ id: Contact.ID, cached: CachedThread?) -> ChatThread {
         let thread = ChatThread(contactID: id, cached: cached, channel: { [weak self] in self?.channel })
-        thread.isVisible = id == visibleContactID
+        thread.isVisible = isShown(id)
         wireAlerts(of: thread, id: id)
         thread.storedAnswer = { [weak self] taskID in await self?.storedAnswer(taskID: taskID, profile: id) }
         thread.gateway = { [weak self] in self?.auth?.gateway }
@@ -496,6 +529,14 @@ public final class AppModel {
     /// The chat on screen opens at once and the rest `backgroundOpens` at a time: the gateway
     /// answers a socket's requests one by one and each open builds an agent, so opening every
     /// chat together left the last ones, and the roster read behind them, past their timeout.
+    /// Opens the chat on screen from what the last roster said, before this link reads it again.
+    func attachVisibleChat() {
+        guard let visible = contacts.first(where: { $0.id == visibleContactID }),
+            visible.kind == .agent, visible.chatID != nil
+        else { return }
+        openThread(for: visible)
+    }
+
     func attachChats() {
         guard case .online = link else { return }
         let chats = contacts.filter { $0.kind == .agent && ($0.chatID != nil || threads[$0.id] != nil) }

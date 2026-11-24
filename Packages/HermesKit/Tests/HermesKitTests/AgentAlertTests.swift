@@ -170,4 +170,19 @@ struct CatchUpAlertTests {
         let (_, alerts) = try await reattach(running: true, unread: 0, history: missed)
         #expect(alerts.isEmpty)
     }
+
+    /// A routine the Bot answered with silence is still news, but routines don't alert.
+    @Test func aRoutineTheBotDidntAnswerIsUnreadWithoutAnAlert() async throws {
+        let history: JSONValue = [
+            ["role": "assistant", "text": "Read before", "timestamp": 950],
+            [
+                "role": "user", "text": "[Cronjob \"Brief\" output — x]\n\nThree meetings.", "timestamp": 2000,
+                "display_kind": "internal_notification",
+            ],
+            ["role": "assistant", "text": "[SILENT]", "timestamp": 2001],
+        ]
+        let (thread, alerts) = try await reattach(running: false, unread: 0, history: history)
+        #expect(thread.unreadCount == 1)
+        #expect(alerts.isEmpty)
+    }
 }

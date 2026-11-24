@@ -12,12 +12,12 @@ struct RoomPane: View {
     let agents: [Contact.ID: Contact]
     /// A member's skills, for the `/` menu; `nil` where there are none to show.
     var skills: (Contact) -> SkillList? = { _ in nil }
+    /// The members' subscription limits, to warn when one is nearly used up.
+    var planLimits: PlanLimitOverview?
     /// A message search chose in this room, to scroll to.
     var jump: MessageJump? = nil
     var jumped: () -> Void = {}
 
-    /// What your next message quotes; quoting an agent sends it to that agent only.
-    @State private var quotes: [QuotedMessage] = []
     @State private var showsInfo = false
     /// As in a chat: the newest messages, and earlier ones as you scroll up.
     @State private var window = TranscriptWindow()
@@ -25,6 +25,7 @@ struct RoomPane: View {
     @State private var jumpedTo: MessageJump?
     @Environment(\.drafts) private var drafts
     @Environment(\.roomEditing) private var roomEditing
+    @AppStorage(AppPreferences.showToolActivityKey) private var showsTools = true
 
     var body: some View {
         content
@@ -35,23 +36,33 @@ struct RoomPane: View {
                     .accessibilityHint(Text("Shows the room's members"))
             } bottom: {
                 if room.phase == .ready {
-                    MessageBox(
-                        conversation: contact.id,
-                        text: Binding(get: { drafts?[contact.id] ?? "" }, set: { drafts?[contact.id] = $0 }),
-                        placeholder: placeholder, isRunning: !room.working.isEmpty, canSend: room.canSend,
-                        stopLabel: String(localized: "Stop everyone in \(contact.name)"), mentions: mentions,
-                        quotes: $quotes, commands: roomSkills,
-                        unsent: Binding(get: { room.unsent }, set: { room.unsent = $0 }), send: room.send,
-                        stop: room.stop
-                    )
+                    VStack(spacing: 6) {
+                        if let limit = planLimits?.warning(for: members) {
+                            PlanLimitNotice(
+                                warning: limit.warning,
+                                text: limit.warning.roomText(members: limit.members.map(\.name)))
+                        }
+                        MessageBox(
+                            conversation: contact.id,
+                            text: Binding(get: { drafts?[contact.id] ?? "" }, set: { drafts?[contact.id] = $0 }),
+                            placeholder: placeholder, isRunning: !room.working.isEmpty, canSend: room.canSend,
+                            stopLabel: String(localized: "Stop everyone in \(contact.name)"), mentions: mentions,
+                            quotes: Binding(get: { quotes }, set: { quotes = $0 }), commands: roomSkills,
+                            unsent: Binding(get: { room.unsent }, set: { room.unsent = $0 }), send: room.send,
+                            stop: room.stop
+                        )
+                    }
+                    .animation(.smooth(duration: 0.2), value: planLimits?.warning(for: members))
                     .zoomedFrame(maxWidth: Theme.columnWidth)
                     .padding(.horizontal, ThreadPane.composerMargin)
                 }
             }
-            .onChange(of: room.roomID) {
-                quotes = []
-                showsInfo = false
+            .task(id: room.roomID) { await planLimits?.refresh(members) }
+            // Replies use up some of the subscription: read its limits again once they end.
+            .onChange(of: room.working.isEmpty) { _, idle in
+                if idle { Task { await planLimits?.refresh(members) } }
             }
+            .onChange(of: room.roomID) { showsInfo = false }
             // Inside the side panel's row: outside, the name drops below the window buttons' line.
             .paneChrome()
             #if os(macOS)
@@ -128,9 +139,12 @@ struct RoomPane: View {
                 NoticeLine(text: String(localized: "Say hello to everyone, or use @ to talk to one Bot."))
                     .padding(.top, 40)
             }
-            let dates = DateLabels.labels(for: room.state.items)
-            let start = window.start(in: room.state.items, including: target)
-            ForEach(room.state.items[start...]) { item in
+            let dates = DateLabels.labels(
+                for: showsTools ? room.state.items : room.state.items.filter { !$0.isToolActivity })
+            let newLineID = room.newLine?.itemID(in: room.state.items)
+            let start = window.start(in: room.state.items, including: target ?? newLineID)
+            ForEach(room.state.items[start...].filter { showsTools || !$0.isToolActivity }) { item in
+                if item.id == newLineID { NewMessagesLine() }
                 if let date = dates[item.id] { DateLabel(text: date) }
                 ItemView(item: item, agentName: contact.name, author: author)
                     .transition(.settle)
@@ -180,8 +194,12 @@ struct RoomPane: View {
                     leave: { room.leavePaused(pause) })
             }
         }
+        .environment(\.widgetSuccession, WidgetSuccession(room.state.items))
         // Each room's transcript is its own view, so this runs as each one opens.
-        .onAppear { window.hold(room.state.items) }
+        .onAppear {
+            window.hold(room.state.items)
+            room.opened()
+        }
         .onChange(of: room.state.items.isEmpty) { window.reset(room.state.items) }
         .onChange(of: jump, initial: true) { if let jump { jumpedTo = jump } }
         .onChange(of: room.approvals.count) { old, new in
@@ -220,6 +238,13 @@ struct RoomPane: View {
             name: room.state.name(memberID), contact: Contact(id: member.profile ?? member.id, name: member.handle))
     }
 
+    /// What your next message quotes; quoting an agent sends it to that agent only. Kept in the
+    /// room's draft, with its text.
+    private var quotes: [QuotedMessage] {
+        get { drafts?[quotes: contact.id].map(QuotedMessage.init) ?? [] }
+        nonmutating set { drafts?[quotes: contact.id] = newValue.map(\.saved) }
+    }
+
     /// Reply and copy; rooms have no reactions.
     private var actions: MessageActions {
         MessageActions(
@@ -236,15 +261,16 @@ struct RoomPane: View {
                 }
             },
             // As a reply: words from a member's message address that member.
-            quote: { item, selection in
+            quote: { item, selection, reply in
                 switch item.content {
                 case .member(let id, _):
                     let handle = room.state.member(id)?.handle
                     quotes.add(
                         QuotedMessage(
-                            author: author(id)?.name ?? handle ?? id, selection: selection, mention: handle))
+                            author: author(id)?.name ?? handle ?? id, selection: selection, mention: handle,
+                            note: reply))
                 default:
-                    quotes.add(QuotedMessage(author: String(localized: "You"), selection: selection))
+                    quotes.add(QuotedMessage(author: String(localized: "You"), selection: selection, note: reply))
                 }
             })
     }

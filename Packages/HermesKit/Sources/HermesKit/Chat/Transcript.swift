@@ -18,6 +18,16 @@ public struct TranscriptItem: Identifiable, Equatable, Sendable, Codable {
         /// Work Hermes finished on its own, such as a background process: a title, and what it
         /// reported for anyone who wants to look.
         case result(title: String, detail: String)
+        /// A routine's output delivered into its Bot Chat (`GatewayTurn`), shown in full: it's often
+        /// the main thing the Bot sends you, and folded away it went unread. `output` can be empty.
+        case routine(name: String, output: String)
+        /// Another Bot's message, which started a turn here (`GatewayTurn`). `from` is its name;
+        /// a note wants no reply.
+        case botMessage(from: String, text: String, isNote: Bool)
+        /// A message this chat's Bot sent other Bots.
+        case botAsk(BotAsk)
+        /// What came back from them, which starts a turn here.
+        case botAnswer([BotAnswer])
         /// A finished turn's to-do list and the helpers it used. They stay where they were shown
         /// while it ran, so the end of a turn doesn't pull the conversation down.
         case progress(todos: [LiveActivity.Todo], helpers: [LiveActivity.Helper])
@@ -104,6 +114,11 @@ public struct ToolStep: Identifiable, Equatable, Sendable, Codable {
     /// The audio files that call made, when the gateway said (`result.file_paths` live, the
     /// requested `output_path` in history).
     public var audioFiles: [String]? = nil
+    /// A `terminal` call's full command, and what it printed and exited with once it ends live
+    /// (`BotCommand`). History keeps no result, so a reloaded chat has the command alone.
+    public var command: String? = nil
+    public var output: String? = nil
+    public var exitCode: Int? = nil
 }
 
 /// A message from `session.resume`: the gateway's display projection of the stored history.
@@ -148,7 +163,8 @@ struct HistoryMessage: Decodable, Sendable, Equatable {
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         role = try container.decode(String.self, forKey: .role)
-        text = try? container.decodeIfPresent(String.self, forKey: .text)
+        let text = try? container.decodeIfPresent(String.self, forKey: .text)
+        self.text = role == "user" ? text.map(InjectedContext.strip) : text
         name = try? container.decodeIfPresent(String.self, forKey: .name)
         context = try? container.decodeIfPresent(String.self, forKey: .context)
         toolCallId = try? container.decodeIfPresent(String.self, forKey: .toolCallId)
@@ -179,7 +195,8 @@ struct InflightTurn: Equatable, Sendable {
 public struct ThreadState: Equatable, Sendable, Codable {
     public private(set) var items: [TranscriptItem] = []
     /// The reply streaming in right now. It becomes an assistant item when the turn moves on or ends.
-    public private(set) var draft = ""
+    public var draft: String { Silence.shownWhileStreaming(streamed) }
+    private var streamed = ""
     public private(set) var isRunning = false
     private var nextID = 0
     /// `items.count` when the current turn started, to tell whether the turn has replied yet.
@@ -192,7 +209,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
     /// The hidden prompts in this chat (`GatewayTurn.hiddenKind`), newest last. Not cached.
     private(set) var hiddenPrompts: [String] = []
 
-    private enum CodingKeys: String, CodingKey { case items, draft, isRunning, nextID, turnStart }
+    private enum CodingKeys: String, CodingKey { case items, streamed = "draft", isRunning, nextID, turnStart }
 
     public init() {}
 
@@ -230,7 +247,9 @@ public struct ThreadState: Equatable, Sendable, Codable {
                     id: message.toolCallId ?? "history-\(nextID)", name: message.name ?? "tool",
                     context: message.context ?? "", state: .done)
                 step.readSpeech(args: message.args)
-                addStep(step, date: message.date)
+                step.readCommand(args: message.args)
+                // History keeps no tool's result, so a message's receipt isn't known.
+                addStep(step, args: message.args, state: .done, date: message.date)
             default:
                 break
             }
@@ -248,7 +267,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
                     turnStart = items.count
                 }
             }
-            draft = inflight.assistant
+            streamed = inflight.assistant
         }
         if running, let todoState { live.restoreTodos(todoState) }
     }
@@ -273,7 +292,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
     func trimmed(to limit: Int) -> ThreadState {
         var copy = self
         copy.items = Array(items.suffix(limit))
-        copy.draft = ""
+        copy.streamed = ""
         copy.isRunning = false
         copy.turnStart = copy.items.count
         copy.live = LiveActivity()
@@ -300,14 +319,27 @@ public struct ThreadState: Equatable, Sendable, Codable {
         turnStart = items.count
     }
 
-    /// Puts a turn's message where the turn began, for one sent from another device.
-    mutating func insertPrompt(_ message: HistoryMessage, at index: Int) {
+    /// Puts a turn's message where the turn began, for one sent from another device. Returns the
+    /// item it made.
+    @discardableResult
+    mutating func insertPrompt(_ message: HistoryMessage, at index: Int) -> Int? {
         guard index <= items.count, let text = message.text?.nonBlank,
             let content = GatewayTurn.content(text: text, kind: message.displayKind, title: message.displayText)
-        else { return }
+        else { return nil }
         append(content, rowID: message.rowId, reactions: message.reactions, date: message.date ?? .now)
-        items.insert(items.removeLast(), at: index)
+        let item = items.removeLast()
+        items.insert(item, at: index)
         if index <= turnStart { turnStart += 1 }
+        return item.id
+    }
+
+    /// Swaps a message shown from the gateway's queue for its stored row, which has its images and
+    /// its row. Gone when the row turns out to be one no chat shows.
+    mutating func replacePrompt(_ itemID: Int, with message: HistoryMessage) {
+        guard let index = items.firstIndex(where: { $0.id == itemID }) else { return }
+        items.remove(at: index)
+        if index < turnStart { turnStart -= 1 }
+        insertPrompt(message, at: index)
     }
 
     /// Shows a command you ran that answers with output instead of a turn.
@@ -321,7 +353,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
     mutating func rewind(from itemID: Int) {
         guard let index = items.firstIndex(where: { $0.id == itemID }) else { return }
         items.removeSubrange(index...)
-        draft = ""
+        streamed = ""
         isRunning = false
         live.endTurn()
         turnStart = items.count
@@ -368,7 +400,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
             if !isRunning { turnStart = items.count }
             isRunning = true
         case "message.delta":
-            if let text = payload["text"]?.stringValue { draft += text }
+            if let text = payload["text"]?.stringValue { streamed += text }
             live.moveOn()
         case "message.interim":
             sealDraft()
@@ -384,7 +416,8 @@ public struct ThreadState: Equatable, Sendable, Codable {
                 context: payload["context"]?.stringValue ?? "",
                 state: .running)
             step.readSpeech(args: payload["args"])
-            addStep(step)
+            step.readCommand(args: payload["args"])
+            addStep(step, args: payload["args"])
         case "tool.progress":
             updateStep(payload)
         case "tool.complete":
@@ -447,9 +480,9 @@ public struct ThreadState: Equatable, Sendable, Codable {
         let text = payload["text"]?.stringValue?.nonBlank
         let failed = status == "error" || status == "failed"
         if failed {
-            draft = ""
+            streamed = ""
             append(.notice(text ?? String(localized: "The reply failed.")))
-        } else if !draft.isEmpty {
+        } else if !streamed.isEmpty {
             sealDraft()
         } else if let text, !turnHasReply {
             // Providers that don't stream send the whole reply here.
@@ -486,14 +519,20 @@ public struct ThreadState: Equatable, Sendable, Codable {
     }
 
     private mutating func sealDraft() {
-        if let text = draft.nonBlank { append(.assistant(text)) }
-        draft = ""
+        if let text = streamed.nonBlank { append(.assistant(text)) }
+        streamed = ""
     }
 
     /// Anything that isn't from history is happening now.
     private mutating func append(
         _ content: TranscriptItem.Content, rowID: Int? = nil, reactions: [Reaction] = [], date: Date? = .now
     ) {
+        var content = content
+        if case .assistant(let text) = content {
+            // A Bot choosing not to reply leaves no bubble, live or from history.
+            if Silence.isMarker(text) { return }
+            content = .assistant(Silence.withoutClosingMarker(text))
+        }
         items.append(TranscriptItem(id: nextID, content: content, rowID: rowID, reactions: reactions, date: date))
         nextID += 1
     }
@@ -507,8 +546,16 @@ public struct ThreadState: Equatable, Sendable, Codable {
 
     // MARK: - Tool steps
 
-    /// Consecutive tool calls join the activity item right before them.
-    private mutating func addStep(_ step: ToolStep, date: Date? = .now) {
+    /// Consecutive tool calls join the activity item right before them. A message to other Bots is
+    /// a line of its own.
+    private mutating func addStep(
+        _ step: ToolStep, args: JSONValue? = nil, state: ToolStep.State = .running, date: Date? = .now
+    ) {
+        if step.name == BotAsk.toolName, var ask = BotAsk(id: step.id, args: args) {
+            ask.state = state
+            append(.botAsk(ask), date: date)
+            return
+        }
         if case .activity(var steps) = items.last?.content {
             steps.append(step)
             items[items.count - 1].content = .activity(steps)
@@ -524,6 +571,15 @@ public struct ThreadState: Equatable, Sendable, Codable {
     }
 
     private mutating func completeStep(_ payload: JSONValue) {
+        if let id = payload["tool_id"]?.stringValue,
+            let index = items.lastIndex(where: { if case .botAsk(let ask) = $0.content { ask.id == id } else { false } }
+            ),
+            case .botAsk(var ask) = items[index].content
+        {
+            ask.read(result: payload["result"])
+            items[index].content = .botAsk(ask)
+            return
+        }
         withStep(payload) { step in
             let failed = Self.failed(payload["result"])
             step.state = failed ? .failed : .done
@@ -531,6 +587,7 @@ public struct ThreadState: Equatable, Sendable, Codable {
             step.progress = nil
             if case .number(let seconds) = payload["duration_s"] { step.duration = seconds }
             if !failed { step.readSpeech(args: payload["args"], result: payload["result"]) }
+            step.readCommand(args: payload["args"], result: payload["result"])
         }
     }
 
@@ -559,6 +616,11 @@ public struct ThreadState: Equatable, Sendable, Codable {
     /// When a turn ends, no step can still be running.
     private mutating func finishSteps(as state: ToolStep.State) {
         for index in items.indices {
+            if case .botAsk(var ask) = items[index].content, ask.state == .running {
+                ask.state = state
+                items[index].content = .botAsk(ask)
+                continue
+            }
             guard case .activity(var steps) = items[index].content, steps.contains(where: { $0.state == .running })
             else { continue }
             for step in steps.indices where steps[step].state == .running {
@@ -575,4 +637,9 @@ extension String {
     var nonBlank: String? {
         trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : self
     }
+}
+
+extension TranscriptItem.Content {
+    /// The line over a routine's output: "From the routine “Morning brief”".
+    public static func routineLabel(_ name: String) -> String { GatewayTurn.fromRoutine(name) }
 }

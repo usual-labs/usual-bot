@@ -79,7 +79,7 @@ struct PushSettingsTests {
         #expect(!push.needsUpdate)
         #expect(UsualPlugin.isOlder("0.5.1"))
         #expect(UsualPlugin.isOlder(nil))
-        #expect(!UsualPlugin.isOlder("0.10.0"))
+        #expect(!UsualPlugin.isOlder("0.12.0"))
         #expect(!UsualPlugin.isOlder(UsualPlugin.version))
     }
 

@@ -43,10 +43,14 @@ public final class ChatThread {
     public internal(set) var commands: [SlashCommand] = []
     /// Text a command put back for you to edit and send (`/retry`); the message box takes it.
     public var prefill: String?
+    /// Files a queued message you're editing put back; the message box takes them.
+    public var returnedAttachments: [Attachment] = []
     /// The model this chat runs on; `nil` until the gateway says.
     public internal(set) var model: ChatModel?
     /// The models this chat can switch to; loaded by `loadModels()`.
     public internal(set) var modelProviders: [ModelProvider] = []
+    /// When `modelProviders` last came from the gateway.
+    @ObservationIgnored var modelsLoadedAt: Date?
     /// Your last message is being taken back (`undo()`, `edit(_:)`).
     public internal(set) var isRewinding = false
     /// Questions asked on the side (`/btw`), oldest first, until you dismiss them.
@@ -100,6 +104,8 @@ public final class ChatThread {
     /// Where the running turn began, when another device started it and this one hasn't seen
     /// what was asked.
     var elsewhereTurnStart: Int?
+    /// That turn's message, shown from the gateway's queue before its stored row could be read.
+    var elsewherePrompt: (itemID: Int, text: String)?
 
     /// The gateway is the one that keeps a queue of messages (the canonical protocol).
     var queuesOnGateway = false
@@ -147,8 +153,15 @@ public final class ChatThread {
     var unreadOnGateway = false
     /// Set by the app while this chat is on screen.
     var isVisible = false {
-        didSet { if isVisible { markViewed() } }
+        didSet {
+            guard isVisible else { return }
+            if !oldValue { newLines.cameOnScreen(unread: unreadCount, since: lastViewed) }
+            markViewed()
+        }
     }
+    var newLines = NewLineKeeper()
+    /// Where the NEW line goes (`NewLineKeeper`).
+    public var newLine: NewLine? { newLines.line }
 
     private var openTask: Task<Void, Never>?
     /// Opening is under way.
@@ -229,6 +242,7 @@ public final class ChatThread {
         let rejoined = opened.sessionID == lastSessionID && seqEpoch == epoch && lastSeq > 0
         if !rejoined { lastSeq = 0 }
         elsewhereTurnStart = nil
+        elsewherePrompt = nil
         sessionID = opened.sessionID
         lastSessionID = opened.sessionID
         if let stored = opened.storedID { chatOpened?(stored) }
@@ -258,9 +272,13 @@ public final class ChatThread {
         } else if let lastViewed {
             let since = lastViewed.timeIntervalSince1970
             let unreadBefore = unreadCount
-            unreadCount = opened.history.filter { $0.role == "assistant" && ($0.timestamp ?? 0) > since }.count
-            // A running turn alerts when it ends; its rows so far may not be the reply.
-            if unreadCount > unreadBefore, !opened.running { announceReply(in: opened.history) }
+            let news = GatewayTurn.news(in: opened.history)
+            unreadCount = news.filter { ($0.timestamp ?? 0) > since }.count
+            // A running turn alerts when it ends; its rows so far may not be the reply. A routine
+            // the Bot didn't answer counts, without an alert: routines stay quiet.
+            if unreadCount > unreadBefore, !opened.running, news.last?.role == "assistant" {
+                announceReply(in: news)
+            }
         } else {
             // First time this device sees the chat: nothing is new yet.
             markViewed()
@@ -299,6 +317,13 @@ public final class ChatThread {
 
     // MARK: - Gateway traffic
 
+    /// The turn now running, or about to end, answers another Bot's message: what it does folds into
+    /// that exchange. A turn started on another device after it is yours, its message shown once
+    /// it's known.
+    public var turnIsForABot: Bool {
+        BotExchange.last(in: state.items).map { $0.items.lowerBound >= (elsewhereTurnStart ?? 0) } ?? false
+    }
+
     func apply(_ event: GatewayEvent) {
         if let seq = event.seq { lastSeq = max(lastSeq, seq) }
         if event.type == "session.replay_gap" {
@@ -315,6 +340,7 @@ public final class ChatThread {
         if event.type == "session.info" {
             model = ChatModel(info: event.payload) ?? model
             adoptGoalTurns(from: event.payload)
+            showTurnElsewhere(from: event.payload)
             adoptQueue(from: event.payload)
             return
         }
@@ -340,11 +366,14 @@ public final class ChatThread {
         // Hermes began itself brings its own line.
         if event.type == "message.start", !state.isRunning, event.payload["display_kind"] == nil {
             elsewhereTurnStart = state.items.count
+            elsewherePrompt = nil
         }
         let wasRunning = state.isRunning
         let itemsBefore = state.items.count
+        // A reply to another Bot goes back to it; that Bot's report to you is the news.
+        let forABot = turnIsForABot
         state.apply(event)
-        if event.type == "message.complete", wasRunning, !isVisible,
+        if event.type == "message.complete", wasRunning, !isVisible, !forABot,
             let reply = state.items[min(itemsBefore, state.items.count)...].last(where: \.isReply)
         {
             unreadCount += 1
@@ -457,17 +486,33 @@ public final class ChatThread {
 
     /// Uploads `attachments` to the chat, then sends them with `text`. Returns whether the message
     /// went out. On a failed upload nothing is sent, a notice says which file and why, and the
-    /// caller keeps the draft. Attachments wait for the agent to finish: a running turn can't
-    /// take them. `submissionID`, for something shared from another app, goes as the message's
-    /// own ID, so the gateway takes it once though the share extension may have sent it already.
-    public func send(_ text: String, attachments: [Attachment], submissionID: String? = nil) async -> Bool {
+    /// caller keeps the draft. While a reply runs, the message and its files wait in the queue: a
+    /// running turn takes only text.
+    public func send(_ text: String, attachments: [Attachment]) async -> Bool {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !attachments.isEmpty || submissionID != nil else {
+        guard !attachments.isEmpty else {
             guard canSend, !text.isEmpty else { return false }
             send(text)
             return true
         }
-        guard canSendAttachments, let sessionID, let channel = channel() else { return false }
+        let queueing = state.isRunning
+        guard queueing ? takesAttachments : canSendAttachments else { return false }
+        #if DEBUG
+            // No gateway to upload to: the files show by name, and queued ones wait as on one.
+            if isDemo {
+                guard queueing else {
+                    sendDemo(text, attachments: attachments)
+                    return true
+                }
+                let refs = attachments.map { AttachmentRef(kind: $0.kind, path: "/home/hermes/shared/" + $0.name) }
+                for (ref, attachment) in zip(refs, attachments) where ref.kind == .image {
+                    sentImages[ref.path] = attachment.data
+                }
+                enqueue(text, files: refs, originals: attachments)
+                return true
+            }
+        #endif
+        guard let sessionID, let channel = channel() else { return false }
         isUploading = true
         defer { isUploading = false }
         var sent: [AttachmentRef] = []
@@ -487,18 +532,22 @@ public final class ChatThread {
         for (ref, attachment) in zip(sent, attachments) where ref.kind == .image {
             sentImages[ref.path] = attachment.data
         }
+        // Still running once the files are up: they wait with the message. Ended meanwhile: they
+        // go now, as between turns.
+        if queueing, canQueue {
+            enqueue(text, files: sent, originals: attachments)
+            return true
+        }
         state.sendLocally(
             ([text] + [sent.map(\.line).joined(separator: "\n")]).filter { !$0.isEmpty }
                 .joined(separator: "\n\n"))
-        await submit(
-            Self.message(text, with: sent), sessionID: sessionID, channel: channel,
-            extra: submissionID.map { ["submission_id": .string($0)] } ?? [:])
+        await submit(Self.message(text, with: sent), sessionID: sessionID, channel: channel)
         return true
     }
 
     /// What goes to the agent: queued images reach it with the turn, files only through their
     /// references.
-    static func message(_ text: String, with sent: [AttachmentRef]) -> String {
+    nonisolated static func message(_ text: String, with sent: [AttachmentRef]) -> String {
         let files = sent.filter { $0.kind == .file }.map(\.line)
         return ([text] + files).filter { !$0.isEmpty }.joined(separator: "\n\n")
     }
@@ -545,6 +594,9 @@ public final class ChatThread {
 
     /// Attachments go out only between turns, one message at a time.
     public var canSendAttachments: Bool { canSend && !state.isRunning && !isUploading }
+
+    /// The message box can take files now: between turns, or into the queue behind a reply.
+    public var takesAttachments: Bool { canSendAttachments || (canQueue && !isUploading) }
 
     /// Sends one file to the gateway: an image into the next turn's queue, anything else into the
     /// chat's workspace. Larger files get longer, at roughly 100 KB/s at worst.

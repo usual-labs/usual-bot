@@ -4,7 +4,8 @@ import SwiftUI
 /// The message box under a chat with one agent. The chat's model, thinking and context are in the
 /// agent's profile (ChatModelSection), on iPhone and Mac alike. Return
 /// sends. While the agent works, a message steers it, or waits in the queue above the box for the
-/// reply to end, and the empty box's button stops it. Files can go with a message between turns.
+/// reply to end, and the empty box's button stops it. Files go with a message between turns, or wait
+/// with it in the queue.
 struct Composer: View {
     let thread: ChatThread
     /// Whose chat this is, for its draft.
@@ -27,6 +28,9 @@ struct Composer: View {
     var body: some View {
         // Background tasks and side answers float above the box.
         VStack(alignment: .trailing, spacing: 0) {
+            if let warning = thread.planLimitWarning {
+                PlanLimitNotice(warning: warning, text: warning.chatText(agentName: agentName)).padding(.bottom, 6)
+            }
             if let goal = thread.goal, let phase = thread.goalPhase {
                 GoalBar(thread: thread, goal: goal, phase: phase, agentName: agentName).padding(.bottom, 6)
             }
@@ -43,7 +47,17 @@ struct Composer: View {
             box
         }
         .task(id: thread.isAttached) { await thread.loadModelsAndUsage() }
+        // A reply uses up some of the subscription: read its limits again once it ends.
+        .onChange(of: thread.state.isRunning) { _, running in
+            if !running { Task { await thread.refreshPlanLimits() } }
+        }
         .onChange(of: editing) { if editing == nil { edit = "" } }
+        // A queued message you edit puts its files back beside its text.
+        .onChange(of: thread.returnedAttachments, initial: true) { _, returned in
+            guard !returned.isEmpty else { return }
+            attachments += returned
+            thread.returnedAttachments = []
+        }
         // Item IDs start over with each copy of the chat, so an edit can't outlast one.
         .onChange(of: thread.transcriptLoad) { editing = nil }
         .onChange(of: edited == nil) { _, gone in if gone { editing = nil } }
@@ -51,6 +65,7 @@ struct Composer: View {
         .animation(.smooth(duration: 0.2), value: thread.backgroundTasks)
         .animation(.smooth(duration: 0.2), value: thread.queue)
         .animation(.smooth(duration: 0.2), value: thread.goal == nil)
+        .animation(.smooth(duration: 0.2), value: thread.planLimitWarning)
     }
 
     private var box: some View {
@@ -62,7 +77,7 @@ struct Composer: View {
             placeholder: placeholder, isRunning: thread.state.isRunning, canSend: thread.canSend,
             stopLabel: stopLabel,
             attaching: AttachmentSending(
-                attachments: $attachments, canSend: thread.canSendAttachments, isUploading: thread.isUploading,
+                attachments: $attachments, canSend: thread.takesAttachments, isUploading: thread.isUploading,
                 send: { await thread.send($0, attachments: $1) }),
             quotes: $quotes, editing: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } }),
             // The reason an earlier message can't be replaced yet, in place of what would go.

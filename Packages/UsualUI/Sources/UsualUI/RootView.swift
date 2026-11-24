@@ -101,7 +101,7 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                         gatewayDetails: model.gatewayDetails, loadGatewayDetails: { await model.loadGatewayDetails() },
                         thread: model.thread(for: contact), close: close)
                 },
-                update: model.update, shared: model.shared, isOffline: model.link.isOffline
+                update: model.update, planLimits: model.planLimits
             ) { compact in
                 #if os(macOS)
                     // The connection in a capsule, then Plugins and Settings in circles. The rail
@@ -130,9 +130,22 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
             .environment(\.botPictures, model.pictures)
             .environment(\.voiceLive, model.voiceLive)
             .environment(\.transcriber, model.transcriber)
+            .environment(\.speaker, model.speaker)
             .environment(\.screens, model)
             .environment(\.drafts, model.drafts)
             .environment(\.gatewayOnline, model.isOnline)
+            .sheet(
+                item: Binding(
+                    get: { model.sharedItem },
+                    set: { if $0 == nil { model.putOffShared() } })
+            ) { item in
+                SharedItemSheet(
+                    item: item, contacts: model.shareTargets, hiddenBots: model.hiddenBots,
+                    put: { model.putShared(item, in: $0) }, discard: { model.discardShared(item) },
+                    close: { model.putOffShared() }
+                )
+                .environment(\.botPictures, model.pictures)
+            }
             // Another gateway's chats start afresh: its own selection, search and panels.
             .id(model.activeGateway?.id)
         }
@@ -147,13 +160,29 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
     }
 
     #if os(macOS)
+        /// A yellow dot when the gateway's plugin is older than this build's, where the sheet
+        /// offers Update.
         private var pluginsButton: some View {
-            Button("Plugins", systemImage: "puzzlepiece.extension") { showsPlugins = true }
+            let needsUpdate = model.push.needsUpdate
+            return Button("Plugins", systemImage: "puzzlepiece.extension") { showsPlugins = true }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.clickable(.borderless))
                 .foregroundStyle(Theme.secondaryInk)
                 .zoomedFrame(width: 32, height: 32)
-                .help("Plugins: the Usual Bot plugin, and a Bot’s browser and computer")
+                .overlay(alignment: .topTrailing) {
+                    if needsUpdate {
+                        Circle()
+                            .fill(Theme.updateDot)
+                            .zoomedFrame(width: 8, height: 8)
+                            .offset(x: -5, y: 5)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .accessibilityValue(needsUpdate ? Text("Update available") : Text(verbatim: ""))
+                .help(
+                    needsUpdate
+                        ? "Plugins: an update to the Usual Bot plugin is available"
+                        : "Plugins: the Usual Bot plugin, and a Bot’s browser and computer")
         }
     #endif
 
@@ -243,9 +272,8 @@ struct ContactsSplitView<Footer: View>: View {
     var profile: (Contact, @escaping () -> Void) -> ProfilePanel? = { _, _ in nil }
     /// Offers a newer TestFlight build below the list; not in the rail.
     var update: AppUpdate?
-    /// What was shared from other apps and hasn't been sent, below the list; not in the rail.
-    var shared: SharedOutbox?
-    var isOffline = false
+    /// Each Bot's subscription limits, for rooms' warnings.
+    var planLimits: PlanLimitOverview?
     /// Below the list; told whether the sidebar is the narrow window's rail.
     @ViewBuilder let footer: (_ compact: Bool) -> Footer
 
@@ -291,6 +319,10 @@ struct ContactsSplitView<Footer: View>: View {
             .tint(Theme.ink)
             .environment(\.roomEditing, roomEditing)
             .environment(\.readMarking, readMarking)
+            .environment(
+                \.botDirectory,
+                BotDirectory(contacts: (contacts + hiddenBots).filter { $0.kind == .agent }) { selection = $0 }
+            )
             .environment(
                 \.botEditing,
                 // Hiding or deleting the open Bot closes its chat.
@@ -442,14 +474,7 @@ struct ContactsSplitView<Footer: View>: View {
             .background(Theme.window)
         #else
             .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 0) {
-                    if let shared, !shared.items.isEmpty {
-                        SharedItemsBanner(outbox: shared, offline: isOffline)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 8)
-                    }
-                    if let update { UpdateBanner(update: update).padding(.horizontal, 16).padding(.bottom, 8) }
-                }
+                if let update { UpdateBanner(update: update).padding(.horizontal, 16).padding(.bottom, 8) }
             }
         #endif
     }
@@ -467,7 +492,6 @@ struct ContactsSplitView<Footer: View>: View {
                         .zoomedFrame(width: 32, height: 32)
                         .roundGlass()
                 }
-                if !compact, let shared { SharedItemsBanner(outbox: shared, offline: isOffline) }
                 if !compact, let update { UpdateBanner(update: update) }
                 footer(compact)
             }
@@ -635,7 +659,7 @@ struct ContactsSplitView<Footer: View>: View {
                 agents: Dictionary(
                     (contacts + hiddenBots).filter { $0.kind == .agent }.map { ($0.id, $0) },
                     uniquingKeysWith: { first, _ in first }),
-                skills: skills, jump: jump(in: contact), jumped: { jump = nil })
+                skills: skills, planLimits: planLimits, jump: jump(in: contact), jumped: { jump = nil })
         } else if let contact = contacts.first(where: { $0.id == selection }) {
             let panel = profile(contact) { showsProfile = false }
             ThreadPane(

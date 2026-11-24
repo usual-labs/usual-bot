@@ -16,20 +16,36 @@ struct DemoTests {
         // Six messages and the lead's pick.
         #expect(model.room(for: room)?.state.items.count == 7)
         let atlas = model.thread(for: try #require(contacts.first { $0.id == "atlas" }))
-        #expect(atlas.state.items.count == 8)
+        #expect(atlas.state.items.count == 13)
         guard case .result(_, let helpers) = atlas.state.items[2].content else {
             Issue.record("Atlas's helpers aren't a result")
             return
         }
         #expect(HelperReport.parse(helpers)?.tasks.map(\.succeeded) == [true, true, false])
+        // Atlas asks Forge and tells Scribe; Forge's answer comes back.
+        let asks: [Bool] = atlas.state.items[6...7].compactMap {
+            if case .botAsk(let ask) = $0.content { ask.wantsReply } else { nil }
+        }
+        #expect(asks == [true, false])
+        guard case .botAnswer(let answers) = atlas.state.items[9].content, case .answered = answers.first?.outcome
+        else {
+            Issue.record("Forge's answer isn't one")
+            return
+        }
         #expect(
-            atlas.state.items[6].content
-                == .result(
-                    title: "From the routine “Competitor pricing watch”",
-                    detail: "Northwind cut its Team plan from $12 to $10 a seat. The other two pages haven't changed."))
+            atlas.state.items[11].content
+                == .routine(
+                    name: "Competitor pricing watch",
+                    output: "Northwind cut its Team plan from $12 to $10 a seat. The other two pages haven't changed."))
 
         let ops = model.thread(for: try #require(contacts.first { $0.id == "ops" }))
         #expect(!ops.isLinkUnencrypted)
+        #expect(ops.state.items.contains { $0.content == .botAnswer([BotAnswer(from: "ledger", outcome: .lost)]) })
+        // Forge's chat folds what it did for Atlas.
+        let forge = model.thread(for: try #require(contacts.first { $0.id == "forge" }))
+        let exchange = BotExchange.all(in: forge.state.items).first
+        #expect(exchange?.from == "Atlas")
+        #expect(exchange?.steps(in: forge.state.items) == 4)
         let ledger = model.thread(for: try #require(contacts.first { $0.id == "ledger" }))
         #expect(ledger.secrets.first?.kind == .sudo(command: "sudo systemctl restart invoice-worker"))
         #expect(ledger.secrets.count == 2)

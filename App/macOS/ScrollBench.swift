@@ -20,15 +20,15 @@
             }
         }
 
-        /// The widest scroll view in the main window: the conversation, not the sidebar.
+        /// The widest scroll view in any window: the conversation, not the sidebar. The demo opens
+        /// a Bot's Computer window too, which can be wider than the main one.
         private static func transcript() -> NSScrollView? {
-            let window = NSApp.windows.filter(\.isVisible).max { $0.frame.width < $1.frame.width }
             var found: [NSScrollView] = []
             func walk(_ view: NSView) {
                 if let scroll = view as? NSScrollView { found.append(scroll) }
                 view.subviews.forEach(walk)
             }
-            if let content = window?.contentView { walk(content) }
+            for window in NSApp.windows where window.isVisible { window.contentView.map(walk) }
             return found.max { $0.frame.width < $1.frame.width }
         }
 
@@ -40,6 +40,14 @@
         private var phase = "idle"
         private var report: [String] = []
         private var driver: Timer?
+        /// Points sent since the last frame, and a piece of text followed on screen: moving further
+        /// than that in a frame is a jump, such as earlier messages added above without the reader
+        /// kept in place. Event timing alone accounts for a frame's worth of steps either way.
+        private var sentSinceFrame: CGFloat = 0
+        private weak var anchor: NSView?
+        private var anchorY: CGFloat?
+        private var jumps = 0
+        private var worstJump: CGFloat = 0
 
         private init(scrollView: NSScrollView, path: String) {
             self.scrollView = scrollView
@@ -61,11 +69,42 @@
         @objc private func frame(_ link: CADisplayLink) {
             duration = link.duration > 0 ? link.duration : duration
             if phase != "idle" { stamps.append(link.timestamp) }
+            followAnchor()
+        }
+
+        private func followAnchor() {
+            let sent = sentSinceFrame
+            sentSinceFrame = 0
+            let frame = anchor.flatMap { $0.window == nil ? nil : $0.convert($0.bounds, to: scrollView) }
+            if phase != "idle", let frame, let anchorY {
+                // Scrolling by `sent` moves what's shown by as much the other way, flipped or not.
+                let jump = abs(frame.minY - anchorY) - abs(sent)
+                if jump > 50 { jumps += 1 }
+                worstJump = max(worstJump, jump)
+            }
+            if frame.map({ !scrollView.bounds.insetBy(dx: 0, dy: 40).intersects($0) }) ?? true {
+                anchor = pickAnchor()
+            }
+            anchorY = anchor.map { $0.convert($0.bounds, to: scrollView).minY }
+        }
+
+        /// A text view in the middle of what's shown.
+        private func pickAnchor() -> NSView? {
+            var found: [NSView] = []
+            func walk(_ view: NSView) {
+                if view is NSTextView { found.append(view) }
+                view.subviews.forEach(walk)
+            }
+            if let doc = scrollView.documentView { walk(doc) }
+            let middle = scrollView.bounds.insetBy(dx: 0, dy: scrollView.bounds.height / 4)
+            return found.first { middle.intersects($0.convert($0.bounds, to: scrollView)) }
         }
 
         /// Gestures of 0.8 s each, `step` points every 1/120 s, with a short rest between.
         private func run(_ name: String, gestures: Int, step: Int32) async {
             stamps = []
+            jumps = 0
+            worstJump = 0
             phase = name
             let startOffset = scrollView.contentView.bounds.origin.y
             let startHeight = scrollView.documentView?.frame.height ?? 0
@@ -87,8 +126,8 @@
             report.append(
                 String(
                     format:
-                        "%@: frames %.0f, missed %.0f (%.0f%%), worst gap %.0f ms, gaps over 3 frames %d, moved %.0f pt, content %.0f→%.0f pt",
-                    name, expected, missed, expected > 0 ? missed / expected * 100 : 0, worst, long,
+                        "%@: frames %.0f, missed %.0f (%.0f%%), worst gap %.0f ms, gaps over 3 frames %d, jumps over 50 pt %d (worst %.0f pt), moved %.0f pt, content %.0f→%.0f pt",
+                    name, expected, missed, expected > 0 ? missed / expected * 100 : 0, worst, long, jumps, worstJump,
                     scrollView.contentView.bounds.origin.y - startOffset, startHeight,
                     scrollView.documentView?.frame.height ?? 0))
         }
@@ -115,6 +154,7 @@
                 }
             cg.setIntegerValueField(.scrollWheelEventScrollPhase, value: value)
             guard let event = NSEvent(cgEvent: cg) else { return }
+            sentSinceFrame += CGFloat(dy)
             scrollView.scrollWheel(with: event)
         }
     }

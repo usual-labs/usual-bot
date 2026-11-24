@@ -8,8 +8,8 @@
         /// A made-up team of agents, their chats, a room and routines, shown as signed in to an
         /// example gateway. For screenshots, and for trying the app without Hermes: Debug builds
         /// launched with `USUALBOT_DEMO=1` use it. It never connects: a chat answers what you send
-        /// with a scripted reply. With `share`, the share extension lists the demo's Bots and what
-        /// you share lands in their chats; without it the demo leaves the shared folder alone.
+        /// with a scripted reply. With `share`, what you share from other apps can go into the demo's
+        /// chats; without it the demo leaves the shared folder alone.
         public static func demo(
             now: Date = .now, longConversations: Bool = false, share: ShareContainer? = nil
         ) -> AppModel {
@@ -33,18 +33,22 @@
                 } else {
                     model.showWorkDemo(now: now, longConversations: longConversations)
                 }
-                model.publishShareRoster()
             }
             model.showWorkDemo(now: now, longConversations: longConversations)
             model.usage = .demo(
                 agents: { [weak model] in model?.contacts.filter { $0.kind == .agent } ?? [] }, now: now)
+            model.planLimits = PlanLimitOverview(
+                agents: { [weak model] in model?.contacts.filter { $0.kind == .agent } ?? [] }, now: { now }
+            ) { _ in
+                let anthropic = Demo.models(now: now)[0]
+                return .init(provider: anthropic, model: "claude-sonnet-5-5")
+            }
             model.gatewaySearch.fetch = { profile, query in
                 // sleep-ok: a gateway takes a moment, so "Searching older messages" shows.
                 try await Task.sleep(for: .milliseconds(900))
                 return DemoSearch.results(profile: profile, query: query)
             }
             model.media.demoMakers = DemoMedia.makers
-            model.publishShareRoster()
             model.lookForSharedItems()
             return model
         }
@@ -95,26 +99,59 @@
             }
             let helper: JSONValue = ["subagent_id": "demo-helper", "goal": "Look through the logs"]
             var script: [(pause: Double, type: String, payload: JSONValue)] = [
+                (0.3, "thinking.delta", ["text": "(¬‿¬) pondering..."]),
                 (0.5, "todo.updated", todos("in_progress", "pending")),
-                (0.4, "tool.start", ["tool_id": "demo-1", "name": "read_file", "context": "notes.md"]),
+                (1.0, "tool.start", ["tool_id": "demo-1", "name": "read_file", "context": "notes.md"]),
                 (1.2, "tool.complete", ["tool_id": "demo-1"]),
-                (0.1, "tool.start", ["tool_id": "demo-0", "name": "terminal", "context": "npm test"]),
-                (0.9, "tool.complete", ["tool_id": "demo-0", "result": ["output": "1 failing", "exit_code": 1]]),
+                (
+                    0.1, "tool.start",
+                    ["tool_id": "demo-0", "name": "terminal", "context": "npm test", "args": ["command": "npm test"]]
+                ),
+                (
+                    0.9, "tool.complete",
+                    [
+                        "tool_id": "demo-0", "duration_s": 0.9,
+                        "result": [
+                            "output":
+                                "  search\n    ✓ falls back when Turbopuffer errors\n    1) answers within 300 ms\n\n  1 failing",
+                            "exit_code": 1,
+                        ],
+                    ]
+                ),
+                (0.1, "thinking.delta", ["text": "(◔_◔) mulling..."]),
                 (0.1, "todo.updated", todos("completed", "in_progress")),
                 (0.1, "subagent.start", helper),
-                (0.1, "tool.start", ["tool_id": "demo-2", "name": "terminal", "context": "npm test"]),
+                (
+                    0.1, "tool.start",
+                    [
+                        "tool_id": "demo-2", "name": "terminal", "context": "npm test",
+                        "args": ["command": "npm test -- --timeout 500"],
+                    ]
+                ),
                 (
                     0.5, "subagent.tool",
                     ["subagent_id": "demo-helper", "tool_name": "read_file", "tool_preview": "app.log"]
                 ),
                 (0.6, "tool.progress", ["tool_id": "demo-2", "percent": 60]),
                 (0.8, "subagent.complete", ["subagent_id": "demo-helper", "status": "completed"]),
-                (0.4, "tool.complete", ["tool_id": "demo-2"]),
+                (
+                    0.4, "tool.complete",
+                    [
+                        "tool_id": "demo-2", "duration_s": 1.8,
+                        "result": [
+                            "output":
+                                "  search\n    ✓ falls back when Turbopuffer errors\n    ✓ answers within 300 ms\n\n  2 passing",
+                            "exit_code": 0,
+                        ],
+                    ]
+                ),
                 (0.1, "todo.updated", todos("completed", "completed")),
                 (0.1, "status.update", ["kind": "compacting"]),
                 (1.2, "status.update", ["kind": "compacted"]),
+                (0.1, "thinking.delta", ["text": "٩(๑❛ᴗ❛๑)۶ formulating..."]),
             ]
-            script += chunks.map { (0.35, "message.delta", ["text": .string($0)]) }
+            // The first words wait a moment, so the last mood shows.
+            script += chunks.enumerated().map { ($0 == 0 ? 1.2 : 0.35, "message.delta", ["text": .string($1)]) }
             script.append((0.3, "message.complete", [:]))
             Task {
                 for step in script {
@@ -224,12 +261,17 @@
                 GatewayEvent(
                     type: "tool.start", sessionID: "sample", seq: nil,
                     payload: ["tool_id": "demo-du", "name": "terminal", "context": "ssh db-1 du -sh /var/* | sort -h"]))
-            // Two messages wait for Ops to finish, so the queue above the message box shows.
+            // Two messages wait for Ops to finish, so the queue above the message box shows. The
+            // second has a file, which a running reply can't take.
+            let retention = Attachment(
+                name: "retention-policy.md", data: Data("# Retention\n\nKeep 30 days of backups.\n".utf8))
             threads["ops"]?.queue = [
                 QueuedMessage(id: "demo-queued-1", text: "Then check the same on db-2.", admissionID: "demo"),
                 QueuedMessage(
                     id: "demo-queued-2", text: "When both are done, write up what to delete and what to keep.",
-                    admissionID: "demo"),
+                    admissionID: "demo",
+                    files: [AttachmentRef(kind: .file, path: "/home/hermes/shared/" + retention.name)],
+                    originals: [retention]),
             ]
             // And Ops is three turns into a goal, which shows above the queue.
             threads["ops"]?.goal = Goal(
@@ -250,7 +292,7 @@
                     // Switched for this chat only, so its menu offers Make Default.
                     thread.model?.name = "claude-opus-5-5"
                 }
-                thread.modelProviders = Demo.models
+                thread.modelProviders = Demo.models(now: now)
                 thread.usage =
                     thread.usage
                     ?? ChatUsage(
@@ -286,7 +328,9 @@
             threads["ledger"]?.receive(
                 SecretPrompt(
                     id: "demo-secret", sessionID: "sample",
-                    kind: .secret(name: "STRIPE_API_KEY", message: "The invoicing skill needs a Stripe API key.")))
+                    kind: .secret(
+                        name: "STRIPE_API_KEY", message: "Stripe API key for invoicing",
+                        help: "A restricted key from Stripe's dashboard, under Developers › API keys.")))
             for prompt in Demo.vaultPrompts { threads["ledger"]?.receive(prompt) }
             // Shows the warning a gateway on plain http gets.
             threads["ledger"]?.gateway = { try? GatewayAddress(parsing: "http://192.168.1.20:9119") }
@@ -367,14 +411,23 @@
             SlashCommand(name: "/compress", description: "Summarise the conversation to free context", kind: .command),
         ]
 
-        static let models = [
-            ModelProvider(
-                slug: "anthropic", name: "Anthropic",
-                models: ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"]),
-            ModelProvider(
-                slug: "openrouter", name: "OpenRouter", models: ["x-ai/grok-5", "deepseek/deepseek-v4"],
-                withoutReasoning: ["deepseek/deepseek-v4"]),
-        ]
+        /// The demo's catalog. The Claude login is near its weekly limit, so chats and rooms warn.
+        static func models(now: Date) -> [ModelProvider] {
+            [
+                ModelProvider(
+                    slug: "anthropic", name: "Anthropic",
+                    models: ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"],
+                    limits: [
+                        PlanLimit(label: "Current session", usedPercent: 34, resetsAt: now + 2 * 3600 + 10 * 60),
+                        PlanLimit(label: "Current week", usedPercent: 91, resetsAt: now + 3 * 86_400 + 5 * 3600),
+                        PlanLimit(
+                            label: "Opus week", usedPercent: 62, resetsAt: now + 4 * 86_400 + 5 * 3600, scope: .model),
+                    ]),
+                ModelProvider(
+                    slug: "openrouter", name: "OpenRouter", models: ["x-ai/grok-5", "deepseek/deepseek-v4"],
+                    withoutReasoning: ["deepseek/deepseek-v4"]),
+            ]
+        }
 
         static let chartPath = "/home/hermes/.hermes/profiles/ops/cache/cpu-overnight.png"
         /// What Ops is working on when the demo opens.
@@ -407,7 +460,49 @@
                         db-1: disk at 78%, up from 74% yesterday.
                         MEDIA:\(Demo.chartPath)
                         """),
+                // A reply to two lines of the report, each answered under its quote.
+                HistoryMessage(
+                    role: "user",
+                    text: """
+                        > Ops: web-1: CPU peaked at 61% during the 03:00 backup.
+
+                        Fine, leave the backup where it is.
+
+                        > Ops: db-1: disk at 78%, up from 74% yesterday.
+
+                        What did its bigger disk cost us in October?
+                        """),
+                HistoryMessage(
+                    role: "tool", name: "message_agent", context: "ledger", toolCallId: "demo-ask-ledger",
+                    args: ["target": "ledger", "message": "What did db-1's extra 200 GB of disk cost in October?"]),
+                HistoryMessage(role: "assistant", text: "I've asked Ledger, who keeps the invoices."),
+                // A long answer Hermes cut to nothing on the way back (hermes-agent#152075).
+                HistoryMessage(
+                    role: "user",
+                    text: Self.delivery(to: "ledger", output: "[… output truncated — showing last 0 chars]"),
+                    displayKind: "process_complete"),
+                HistoryMessage(
+                    role: "assistant",
+                    text: "Ledger finished, but its answer didn't reach me. It's in Ledger's chat."),
             ]
+        }
+
+        /// What Atlas asked Forge for.
+        static let forgeTask = """
+            Index the docs nightly into Turbopuffer and query it first, with the current search as the \
+            fallback. The plan is in docs/search/turbopuffer-trial.md.
+            """
+
+        /// What Hermes tells a Bot when another Bot's answer comes back (`bot_mode_dm.py --run-delivery`).
+        static func delivery(to profile: String, output: String) -> String {
+            """
+            [IMPORTANT: Background process proc_demo_\(profile) completed normally (exit code 0).
+            Command: python3 ~/.hermes/hermes-agent/tools/bot_mode_dm.py --run-delivery --profile-home \
+            ~/.hermes/profiles/\(profile) hermes -p \(profile)
+            Output:
+            \(output)
+            ]
+            """
         }
 
         /// The demo's CPU chart: hourly bars over twelve hours, drawn here so the demo needs no files.
@@ -526,10 +621,22 @@
                     text:
                         "Yes, and keep the old search as a fallback. Our limits are on https://docs.example.com/search",
                     reactions: [Reaction(emoji: "👍", byAgent: true)]),
+                HistoryMessage(role: "tool", name: "write_file", context: "docs/search/turbopuffer-trial.md"),
+                // Atlas messages other Bots, as Hermes stores the calls.
+                HistoryMessage(
+                    role: "tool", name: "message_agent", context: "forge", toolCallId: "demo-ask-forge",
+                    args: ["target": "forge", "message": .string(Self.forgeTask)]),
+                HistoryMessage(
+                    role: "tool", name: "message_agent", context: "scribe", toolCallId: "demo-tell-scribe",
+                    args: [
+                        "target": "scribe", "expects_reply": false,
+                        "message":
+                            "FYI for the release notes: docs search starts a two-week Turbopuffer trial this week.",
+                    ]),
                 HistoryMessage(
                     role: "assistant",
                     text: """
-                        Done. The plan is in `docs/search/turbopuffer-trial.md` and I've sent Forge the first task.
+                        Done. The plan is in `docs/search/turbopuffer-trial.md` and I've asked Forge to start on it.
 
                         ## Trial plan
                         - Index the docs nightly into Turbopuffer.
@@ -542,6 +649,20 @@
                         That stays as you asked, so nobody notices if the trial misbehaves.
                         """,
                     reactions: [Reaction(emoji: "🎉", byAgent: false)]),
+                // Forge's answer, as the background process that waited for it reports it.
+                HistoryMessage(
+                    role: "user",
+                    text: Self.delivery(
+                        to: "forge",
+                        output:
+                            #"{"outcome": "@forge answered.", "reply": "Started: the nightly job is in `jobs/index-docs.ts`, and the fallback has a test. The search index migration needs a database migration on staging, which I've asked for.", "status": "settled", "delivery_id": "demo"}"#
+                    ),
+                    displayKind: "process_complete"),
+                HistoryMessage(
+                    role: "assistant",
+                    text:
+                        "Forge has started: the nightly job is written and the fallback is tested. It needs your OK in its chat to run the migration on staging."
+                ),
                 // What a routine set to post in the chat leaves there, as Hermes stores it.
                 HistoryMessage(
                     role: "user",
@@ -588,10 +709,19 @@
                 HistoryMessage(
                     role: "user",
                     text: """
-                        Message from 🤖 Atlas (@atlas): Index the docs nightly into Turbopuffer and query it \
-                        first, with the current search as the fallback.
+                        Message from 🤖 Atlas (@atlas): \(Self.forgeTask)
                         """,
                     displayKind: "internal_notification"),
+                HistoryMessage(role: "tool", name: "read_file", context: "docs/search/turbopuffer-trial.md"),
+                HistoryMessage(role: "tool", name: "write_file", context: "jobs/index-docs.ts"),
+                HistoryMessage(role: "tool", name: "write_file", context: "search/fallback.test.ts"),
+                HistoryMessage(role: "tool", name: "terminal", context: "npm test -- search"),
+                HistoryMessage(
+                    role: "assistant",
+                    text: """
+                        Started: the nightly job is in `jobs/index-docs.ts`, and the fallback has a test. The \
+                        search index migration needs a database migration on staging, which I've asked for.
+                        """),
                 HistoryMessage(
                     role: "user",
                     text: "Add the search index migration and run it on staging.\n\n@file:attachments/search-spec.md"),

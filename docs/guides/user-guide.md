@@ -58,8 +58,7 @@ list. Pinned chats come first, in the order you put them, then the rest by their
 Usual Bot signs in to two gateways and uses one at a time: the sidebar, search, Quick Message and
 sharing show only the one in use. Switch from the gateway's menu at the bottom of the Mac sidebar,
 or from the top of Settings (on the Mac, its Connection tab). The gateway you leave disconnects; a
-reply still running there carries on, and anything you shared to one of its Bots waits until you
-come back. Each gateway reopens the chat you left open in it.
+reply still running there carries on. Each gateway reopens the chat you left open in it.
 
 The other gateway still notifies you, with its name under the Bot's, and tapping a notification
 switches to it. A dot by the gateway's name says it has notifications waiting. In its Connection
@@ -147,7 +146,12 @@ into the message box. On Mac, Settings can change sending to ⌘Return, leaving 
 as the Bot writes them (turn off **Show replies as they're written** in Settings › General to see
 each message only once it's finished, with "Writing…" meanwhile), with Markdown, code blocks you can copy, and tables. While the Bot uses
 tools, one line such as "Forge edited 1 file and ran 1 command" sums them up; click it to see each
-step.
+step. Turn off **Show what Bots do with tools** in Settings › General for a plainer chat: those
+lines, to-do lists, helpers and finished background commands go, and only messages, Bots talking
+to each other and routines' results stay. While a Bot works, the line under the last message says
+what kind of tool it's using ("Reading…", "Running a command…") or, between steps, the face and
+word Hermes picked, such as "(¬‿¬) pondering…". A wait on the provider or the Bot's own reasoning
+shows first.
 
 A date such as "Yesterday 12:27 PM" sits above the first message and again after a new day starts
 or an hour passes. Hover a message on the Mac to see its time. On iPhone, drag the conversation
@@ -159,10 +163,11 @@ takes you back to the newest message and follows replies again; it has a dot whe
 came in while you were away. Scrolling to the end, or sending a message, does the same. On iPhone,
 sending also puts the keyboard away; tap the message box to write again.
 
-- **Drafts.** What you type and don't send stays in that chat's message box. Switch to another
-  chat or a room, or quit the app, and it's there when you come back. Rooms keep theirs the same
-  way. Drafts are kept on this device only, so your other devices don't show them, and signing out
-  deletes them. A reply quote and attached files aren't kept: they go when you leave the chat.
+- **Drafts.** What you type and don't send stays in that chat's message box, with the messages
+  you're replying to and what you said to them. Switch to another chat or a room, or quit the app,
+  and it's there when you come back. Rooms keep theirs the same way. Drafts are kept on this device
+  only, so your other devices don't show them, and signing out deletes them. Attached files aren't
+  kept: they go when you leave the chat.
 - **Attachments.** Use **+** or drag and drop, or on the Mac paste a copied image or file with ⌘V.
   On iPhone, pick from Photos, the camera or Files. Images up to 25 MB and other files up to
   50 MB.
@@ -204,9 +209,11 @@ sending also puts the keyboard away; tap the message box to write again.
   **Stop** stops the reply and holds what's queued, so the next message doesn't start by itself:
   held messages stay on this device, through a relaunch too, until you choose **Resume** (they go
   in order again), send one now or remove it. A message your gateway couldn't take is held the
-  same way. Commands run when you send them, and files can't be queued. The queue needs the
-  gateway's Webapp; on the older dashboard there's no Queue button and a message steers. Rooms and
-  the ⌥Space panel don't queue.
+  same way. Commands run when you send them. A message with files can't steer a reply, so while
+  one runs it can only be queued: its files upload, then wait with it. **Send Now** works for it
+  once nothing runs, and **Edit** puts the files back in the box until you quit the app. The queue
+  needs the gateway's Webapp; on the older dashboard there's no Queue button, a message steers, and
+  files wait for the reply to end. Rooms and the ⌥Space panel don't queue.
 - **Give a Bot a goal.** Send `/goal` and what you want, such as `/goal Free 20 GB on db-1 without
   touching the backups`, and the Bot keeps working on it by itself: after each reply Hermes checks
   whether the goal is done, and if not sends the Bot on to the next step. The goal shows in one
@@ -255,12 +262,19 @@ sending also puts the keyboard away; tap the message box to write again.
   desktop app too, and their Mark as Unread shows here. Opening the chat on the device where you
   marked it goes back to that message; the others open at the end, as Hermes keeps no message.
   Rooms have no read state in Hermes, so they don't offer it.
-- **Quote part of a message.** Select some words and choose **Add to Chat**: on the Mac from the
+- **The NEW line.** Open a chat or room with replies you haven't read and a blue **NEW** line
+  sits above the first of them, or above the message you marked unread from. It stays put while
+  you read, and coming back to the window or the app moves it only if more replies came meanwhile.
+  Open the chat again with nothing new and it's gone.
+- **Reply to part of a message.** Select some words and choose **Reply**: on the Mac from the
   button over the selection, by right-clicking it, or with ⌘L; on iPhone from the selection's menu
-  in **Select Text**. The words wait above the message box and go in front of what you write. Add
-  as many as you like, from any messages, and Reply adds to them too; the ✕ beside each drops it,
-  and on the Mac Escape drops the newest. In a room, quoting a Bot's words addresses that Bot, and
-  quoting several Bots addresses each of them.
+  in **Select Text**, which stays open so you can pick more. Type what you want to say to those
+  words and press Return, or press Return straight away to quote them without a reply. Each quote
+  waits above the message box with your reply under it; click or tap one to change what you said.
+  Add as many as you like, from any messages, and Reply on a whole message adds to them too. They
+  go as one message: each quote with your reply under it, then whatever you type in the box. The ✕
+  beside each drops it, and on the Mac Escape drops the newest. In a room, quoting a Bot's words
+  addresses that Bot, and quoting several Bots addresses each of them.
 - **Links.** Web and email addresses in messages, yours included, are links: underlined, and blue in
   the Bot's replies.
 - **Edit, Try Again and Undo.** These take the chat back to an earlier point; there's still one
@@ -271,8 +285,8 @@ sending also puts the keyboard away; tap the message box to write again.
     once you send the edit or stop editing. Text and file references come back; a picture doesn't,
     so send it again in a new message.
   - **Try Again**, on the Bot's last reply, asks your last message again for a different answer.
-    It isn't offered on a reply to something Hermes delivered itself, such as a routine's result,
-    or when your message had a picture.
+    It isn't offered on a reply to something Hermes delivered itself, such as a routine's result
+    or another Bot's message or answer, or when your message had a picture.
   - **Undo**, on your last message, takes the last exchange back.
 
   What's removed can't be brought back, so the app asks first when more than the last exchange
@@ -281,6 +295,24 @@ sending also puts the keyboard away; tap the message box to write again.
   are, and the Bot may do them again. All three wait for a reply to end and need the gateway, and
   are greyed out with the reason otherwise. Rooms don't have them: there, **Try Again** on a reply
   that stopped partway is the way to ask again.
+
+### When Bots talk to each other
+
+A Bot can message another Bot on your gateway, for example to hand it a task. In the asking Bot's
+chat you see **Asked Forge · waiting**, and then **Forge answered** where the answer arrives, just
+before the Bot tells you what came of it. Click either line to read the message or the answer. A
+message that wants no answer says **Told Forge**. If the answer got lost on the way, which a long one
+can with Hermes 0.23, the line says so and **Open Forge's Chat** shows it there.
+
+In the other Bot's chat, everything it did for that request folds into one line, such as **Talked
+with Atlas · 4 steps**, or **Working for Atlas…** while it runs. Its reply went back to Atlas, so it
+isn't a message to you: it doesn't notify or count as unread, and the sidebar says "Talked with
+Atlas". Click the line to see Atlas's message, each step and the reply. You can still stop it, and
+anything you type waits until it's done. If it needs your OK or has a question, the card shows and
+notifies you as usual.
+
+With the Usual Bot plugin installed, a Bot answering another Bot is also told that its reply goes
+back to that Bot, so it writes to it rather than to you.
 
 ## Approvals and questions
 
@@ -305,9 +337,12 @@ Approvals also wait in the ⌥Space panel on the Mac, so you can answer
 without opening the chat. A card stays where it appeared: a message you send while it waits, and
 the reply, come after it.
 
-When a skill needs a secret, such as an API key, or a command needs your sudo password, a card asks
-for it in a masked field. **Send** gives it to your gateway, and **Skip** lets the Bot carry on
-without it. A secret is saved on the gateway under the name the card shows; Usual Bot keeps no copy.
+When a Bot needs a secret, such as an API key or a bot token, or a command needs your sudo password,
+a card asks for it in a masked field. **Send** gives it to your gateway, and **Skip** lets the Bot
+carry on without it. A secret is saved in the Bot's `.env` on the gateway under the name the card
+shows; the Bot never sees it, and Usual Bot keeps no copy. A skill asks when it needs a key you
+haven't set. With [Usual Bot's plugin](../../Integrations/usual-bot/README.md) on your gateway, a
+Bot can also ask whenever you tell it about a key, so you never paste one into the chat.
 If your gateway uses plain `http` away from this device and outside Tailscale, others on your
 network could read what you send, so the card warns you and the button says **Send Unencrypted**.
 
@@ -383,17 +418,19 @@ Bot's name above the chat):
 ## Dictation and voice calls
 
 - **Dictation.** Tap the mic beside Send and speak; your words go after anything already in the
-  box. Words appear as you talk, recognised on the device when it can. Tap the mic again to stop,
-  then edit and send. On the Mac, ⌘D starts it too: press it again to stop, or hold ⌘D while you
-  talk and let go to stop.
+  box. They appear as you talk, recognised on the device when it can, above a row with a waveform
+  of your voice. Tap Stop to edit them, Send to send the box as it is, or ✕ to drop the recording
+  and take its words back out. On the Mac, ⌘D starts it too: press it again to stop, or hold ⌘D
+  while you talk and let go to stop.
 - **Dictation through your gateway.** In **Settings › Voice › Dictation**, choose **Gateway** to
   have the Bot's own speech-to-text on Hermes hear you instead. Your voice goes to your gateway,
   which may send it on to a paid service, depending on how its speech-to-text is set up. Words
   appear as you talk if the gateway streams them; otherwise they come all at once after you stop,
-  while the box says **Transcribing…**. Tap the mic again then to cancel. Sending waits until the
-  words arrive. Dictation stops by itself after 10 minutes; its ring counts down the last 15
-  seconds. In a room, the gateway's own profile hears you. If the gateway can't transcribe, the box
-  says why; **Use On-device** turns the same recording into words on your device instead.
+  while **Transcribing…** shows where they'll go and a ring turns around Stop. Tap ✕ then to
+  cancel. Sending waits until the words arrive. Dictation stops by itself after 10 minutes; its
+  ring counts down the last 15 seconds. In a room, the gateway's own profile hears you. If the
+  gateway can't transcribe, the box says why; **Use On-device** turns the same recording into
+  words on your device instead.
 - **Voice calls.** Tap the waveform button to call the Bot. It hears you, answers aloud as it
   writes, and stops when you talk over it. The conversation is saved in the chat as usual. The call
   bar above the message box has the transcript, mute, end and settings, where you pick the voice,
@@ -401,18 +438,28 @@ Bot's name above the chat):
   - **On-device** speech uses Apple's speech recognition and voices. Free. Your words are
     recognised on the device when it has the language's speech model, otherwise by Apple's
     servers, as with dictation.
+  - **Gateway** uses the Bot's own speech-to-text and text-to-speech on Hermes, so it hears you
+    and answers in the voice set up there. Your voice goes to your gateway, which may send it on
+    to paid services. A pause ends what you're saying, and the reply is spoken sentence by
+    sentence as it's written. Voice, speed and language are set on the gateway. If the gateway
+    can't hear or speak, the call says why; **Use On-device** carries on with your device's speech.
   - **GPT-Live** uses OpenAI's realtime voice through your gateway, for a more natural
     conversation. It's offered when the gateway has an OpenAI key, and OpenAI bills the minutes.
+  - **Automatic** uses GPT-Live when the Bot's gateway is set to it, and On-device otherwise.
+    Gateway is never picked for you.
 
 ## The Usual Bot plugin
 
 Usual Bot's plugin runs on your gateway. It sends notifications to your devices, lets you watch a
-Bot's browser, and tells your Bots, in the chats you open in Usual Bot, that you're talking through
-Usual Bot and what shows there: Markdown, files and widgets. It tells them nothing about you or your
-device, and does nothing for chats in your other apps. Rooms don't get that note.
+Bot's browser, opens a shell for a Bot's terminal, and tells your Bots, in the chats you open in Usual Bot, that you're talking through
+Usual Bot, how to write in a chat (short messages with the answer first, unless a Bot's own
+instructions say otherwise) and what shows there: Markdown, files and widgets. It tells them
+nothing about you or your device, and does nothing for chats in your other apps. Rooms get only
+the reminder to write like a chat.
 
 On the Mac, **Plugins** (the puzzle piece at the foot of the sidebar) says whether your gateway has
-it: Installed, Update available or Not installed. **Install in Every Bot…** asks Hermes to install
+it: Installed, Update available or Not installed. When an update is available, the puzzle piece
+has a yellow dot until you update. **Install in Every Bot…** asks Hermes to install
 it into each of your Bots, hidden ones included, from Usual Bot's GitHub. Hermes checks plugins
 first and marks this one "caution", because it reads your browser's version and its notifications
 mention sudo; Usual Bot says so and installs only once you agree. A Bot you make in Usual Bot gets
@@ -471,6 +518,31 @@ moment.
   Bot: **Picture quality** (Data Saver, Standard or Best, which is lossless) and **Pixel density**
   (2× is sharper on Retina screens and uses about four times the data). Neither changes the Bot's
   browser or the screenshots it takes.
+
+## A Bot's terminal (Mac)
+
+Every Bot's chat on the Mac has a **Terminal** button (a terminal window) at the top right, beside
+**Browser** and **Computer**, with a green dot while the Bot is running a command. It and ⌘J
+(**View › Show Terminal**) open a drawer along the bottom of the chat, under the message box, so
+you can keep chatting. ⌘J, the button or **Hide** puts it away. Drag its top edge to make it
+taller. It stays open as you move between Bots, and remembers its height and tab.
+
+- **Shell** opens a shell on your gateway's computer, as the gateway's user, in the folder the Bot
+  runs its commands in, with `HERMES_HOME` set to the Bot's profile. Click it and type: Control
+  keys, arrows and Tab work as in Terminal, ⌘V pastes, and ⌘ shortcuts stay Usual Bot's.
+  Right-click to copy everything shown. It's a shell for typing commands; full-screen programs such
+  as `vim`, `top` and `less` don't draw properly in it. Hiding the drawer or opening another chat
+  leaves the shell running. Typing `exit` ends it, and **New Shell** starts another. If the
+  connection drops, the gateway stops what ran in it. Commands you type here don't go to the Bot
+  and cost nothing.
+- **The Bot's Commands** lists the commands the Bot ran in this chat, with what they printed and how
+  they ended. A chat opened again later shows the commands without their output, because Hermes
+  doesn't keep it.
+
+The shell needs the [Usual Bot plugin](../../Integrations/usual-bot/README.md) 0.10.0 or later on
+your gateway. A Bot whose commands run in a Docker, SSH or other sandbox has no shell here, because
+its commands run somewhere else; its Commands tab still works. Rooms have no terminal: open the
+Bot's own chat.
 
 ## Rooms
 
@@ -535,7 +607,11 @@ button (or Esc, or ⌘[) returns to the profile.
     **Skills**, or the routine runs without it. An older gateway without templates goes straight to
     the blank form.
   - **Results:** **Post in this chat** sends each result to the Bot here, and it replies, which
-    uses a turn. **Keep in past runs only** posts nothing. A routine set up to send elsewhere, such
+    uses a turn. The result shows in the chat as a message under "From the routine" and its name,
+    with Show All under a long one; your notification comes from the Bot's reply. Turn off
+    **Show routine results in full** in Settings › General to fold each one into a line you click
+    to read. If the Bot
+    chooses not to reply, the result itself counts as unread. **Keep in past runs only** posts nothing. A routine set up to send elsewhere, such
     as Telegram, keeps going there unless you change it.
   - Open a routine to **Edit** it, **Run Now**, **Delete** it, or read its **Past Runs**. Run Now can
     take a few minutes; you can close the sheet and keep going, and the routine shows when it's done.
@@ -599,27 +675,19 @@ in the share sheet on iPhone, or in the **Share** menu on the Mac. If it isn't l
 scroll the row of apps to **More** and turn it on; on the Mac, turn it on in System Settings ›
 General › Login Items & Extensions › Sharing.
 
-- Pick a Bot or room and add a note if you like, then **Send**. The list is the sidebar's: pinned
-  first, hidden Bots left out. It starts on the one you last shared to.
-- On iPhone it goes straight away: the sheet says **Sent** and closes, and the reply comes like any
-  other. If it can't go from the share sheet, the sheet says **Waiting to send** and why, and Usual
-  Bot sends it the next time it's open. That happens when your gateway is reached through Usual
-  Bot's built-in Tailscale, which runs only inside the app; when it's for a room, or files over 10
-  MB; when the gateway can't be reached; and when the Bot is in the middle of answering.
-- On the Mac, Usual Bot sends it: within a few seconds if it's running, as it usually is, and
-  otherwise when you next open it.
-- If the share sheet couldn't tell whether files reached the chat, it says so. Check the chat
-  before you use **Try Again** below the chat list, so they don't arrive twice.
-- Until it's sent, the item shows below the chat list, saying where it's going. It waits while
-  you're offline or while that Bot is still answering, then goes by itself and appears in the chat
-  as your message. **Don't Send** deletes it.
-- If it can't be sent, it stays below the chat list with the reason, **Try Again** and **Delete**.
+- Usual Bot opens on **Send to**, with what you shared at the top. Pick a Bot or room: its chat
+  opens with the text in the message box, after anything you'd already typed there, and the files
+  attached. Add a note if you like, then send it as usual.
+- **Don't Send** deletes it. Closing **Send to** keeps it, and Usual Bot asks again the next time
+  you come back to it.
+- If Usual Bot doesn't open, the share sheet says so. Open Usual Bot yourself and **Send to**
+  appears.
 - Text, web links, images up to 25 MB and other files up to 50 MB, ten at a time. Anything larger,
-  or a kind Usual Bot can't take, is left out, and the share sheet says so before you send.
+  or a kind Usual Bot can't take, is left out, and **Send to** says so.
 - Rooms take text and links only, so a room is greyed out when you're sharing a file.
-- What you share waits on this device only. It's deleted once sent, and signing out deletes
-  anything still waiting.
-- You need to be signed in: until then the share sheet asks you to open Usual Bot and sign in.
+- What you share waits on this device only, until you put it in a chat or delete it. Signing out
+  deletes it.
+- You need to be signed in: **Send to** appears once you are.
 
 ## Offline and reconnecting
 
@@ -666,13 +734,16 @@ and Settings opens with your gateway at the top. Preferences stay on this device
   gateway seals each notification for that device, and Usual's relay and Apple pass it on without
   reading it. Reading a chat on one device keeps it quiet on the others, and takes down the
   notifications they already show about it (push plugin 0.4.0 or later). If you swiped Usual Bot
-  away in the iPhone's app switcher, they go when you next open it. Under **Bots on this
+  away in the iPhone's app switcher, they go when you next open it. On iPhone, a notification also
+  lets the app load that chat in the background when iOS allows it, so tapping it soon opens the
+  chat already there and connected; iOS doesn't do this for an app swiped away, or always in Low
+  Power Mode. Under **Bots on this
   device**, turn a Bot off to keep it quiet here only; **Send Test** checks the whole way. Signing
   out stops pushes to that device. Without the plugin, the Mac alerts while the app runs (the menu
   bar is enough), and the iPhone only while connected or when iOS lets it check in.
 - **Voice:** choose the call engine and the language, voice and speed for on-device speech. These
   preferences are shared with the controls inside a call, and Read Aloud uses the language, voice
-  and speed too; GPT-Live’s voice stays on the gateway.
+  and speed too; Gateway and GPT-Live voices stay on the gateway.
 - **Connection:** see the gateway address, status, version and identity when available, name it,
   turn its notifications off, or sign out. Signing out removes the saved sign-in and cached chats
   for that gateway from this device, so the app asks first; with two gateways, the app goes on to
@@ -715,6 +786,7 @@ On the Mac these are also in the menu bar (File, View and Go), and **Help › Ke
 | ⌃⌘S | Mac | Collapse or expand the sidebar |
 | ⌘, | Mac | Open Settings |
 | ⌘I | Chat or room | Show the profile or room details |
+| ⌘J | Mac chat | Show or hide the terminal |
 | ⌘[ / ⌘] | Mac | Back / forward through the chats you opened |
 | ⌘+ / ⌘− / ⌘0 | Mac | Zoom the window in, out, or back to actual size |
 | ⌘/ | Mac | Show the keyboard shortcuts |
@@ -723,7 +795,7 @@ On the Mac these are also in the menu bar (File, View and Go), and **Help › Ke
 | ⌘Return | Mac message box | Send when chosen in Settings |
 | Shift-Return | Message box | New line |
 | ⌘. | Chat or room, while a reply runs | Stop the reply |
-| ⌘L | Mac, words selected in a message | Add them to the chat as a quote |
+| ⌘L | Mac, words selected in a message | Reply to them |
 | ↑ / ↓, Tab | `/` or `@` menu | Move, pick |
 | Esc | `/` or `@` menu, reply, edit | Close the menu or cancel |
 | ⇧⌘H | Voice call | End the call |

@@ -309,7 +309,10 @@ public final class PushSettings {
             phase = .ready
             isConnected = true
             tagsGateway = true
-            pluginVersion = UsualPlugin.version
+            // USUALBOT_DEMO_PLUGIN_UPDATE=1: the gateway has an older plugin, so the Mac sidebar's
+            // Plugins button shows its update dot and the sheet offers Update.
+            let older = ProcessInfo.processInfo.environment["USUALBOT_DEMO_PLUGIN_UPDATE"] == "1"
+            pluginVersion = older ? "0.1.0" : UsualPlugin.version
             isDemo = true
         }
     #endif
