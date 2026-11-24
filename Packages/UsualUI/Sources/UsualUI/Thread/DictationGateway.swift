@@ -196,8 +196,8 @@ final class GatewayJob {
     private var stream: TranscriptionStream?
     private var recording: GatewayRecording?
     private(set) var file = URL(filePath: "/dev/null")
-    /// Live words came, so the final ones replace them after `prefix`.
-    private var sawPartial = false
+    /// The box as the live words last left it, if any came: the final words replace them.
+    private var shown: String?
     private var leased = false
     var detached = false
     var limit: Task<Void, Never>?
@@ -217,9 +217,11 @@ final class GatewayJob {
     /// Opens the stream and starts the microphone.
     func begin(onLevel: @escaping @MainActor (Double) -> Void) throws {
         let stream = transcriber.stream(profile: profile) { [weak self] words in
-            guard let self, !words.isEmpty else { return }
-            sawPartial = true
-            update(Dictation.merge(prefix, words))
+            guard let self, !words.isEmpty,
+                let text = Self.showing(words, prefix: prefix, now: current(), shown: shown)
+            else { return }
+            shown = text
+            update(text)
         }
         do {
             let recording = try GatewayRecording(onPCM: { stream.push($0) }, onLevel: onLevel)
@@ -252,16 +254,29 @@ final class GatewayJob {
         return try await transcriber.transcribe(audio, mimeType: GatewayRecording.mimeType, profile: profile)
     }
 
-    /// Puts the words in the box.
-    func deliver(_ words: String) {
-        if let text = Self.placing(words, prefix: prefix, now: current(), sawPartial: sawPartial) { update(text) }
+    /// The box with the live words after `prefix`, while it's as they last left it. Typed in since,
+    /// it's `nil`: they'd write over that, and the final words go after the typing instead.
+    nonisolated static func showing(_ words: String, prefix: String, now: String, shown: String?) -> String? {
+        guard now == shown ?? prefix else { return nil }
+        return Dictation.merge(prefix, words)
     }
 
-    /// The box with the final words: in place of the live ones, which followed `prefix`; else
-    /// after what's in it `now`, typing since you stopped included. `nil` when nothing was heard.
-    nonisolated static func placing(_ words: String, prefix: String, now: String, sawPartial: Bool) -> String? {
+    /// Puts the words in the box.
+    func deliver(_ words: String) {
+        if let text = Self.placing(words, prefix: prefix, now: current(), shown: shown) { update(text) }
+    }
+
+    /// The box with the final words: in place of the live ones, which followed `prefix`, with
+    /// anything typed after them still after them; else after what's in it `now`, typing since you
+    /// stopped included. `nil` when nothing was heard, or you typed among the live words.
+    nonisolated static func placing(_ words: String, prefix: String, now: String, shown: String?) -> String? {
         guard !words.isEmpty else { return nil }
-        return Dictation.merge(sawPartial ? prefix : now, words)
+        guard let shown else { return Dictation.merge(now, words) }
+        guard now.hasPrefix(shown) else { return nil }
+        let typed = now.dropFirst(shown.count)
+        // A longer last word was typed into the live words, not after them.
+        if let first = typed.first, first.isLetter || first.isNumber { return nil }
+        return Dictation.merge(prefix, words) + typed
     }
 
     /// Lets the gateway's model go.

@@ -420,8 +420,9 @@ Bot's name above the chat):
 - **Dictation.** Tap the mic beside Send and speak; your words go after anything already in the
   box. They appear as you talk, recognised on the device when it can, above a row with a waveform
   of your voice. Tap Stop to edit them, Send to send the box as it is, or ✕ to drop the recording
-  and take its words back out. On the Mac, ⌘D starts it too: press it again to stop, or hold ⌘D
-  while you talk and let go to stop.
+  and take its words back out. Typing while you dictate stops it, so your typing stays; tap the
+  mic again to add more after it. On the Mac, ⌘D starts it too: press it again to stop, or hold
+  ⌘D while you talk and let go to stop.
 - **Dictation through your gateway.** In **Settings › Voice › Dictation**, choose **Gateway** to
   have the Bot's own speech-to-text on Hermes hear you instead. Your voice goes to your gateway,
   which may send it on to a paid service, depending on how its speech-to-text is set up. Words

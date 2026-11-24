@@ -85,6 +85,50 @@ struct DictationRecordingTests {
         second.hears("two three")
         #expect(box.text == "One two three")
     }
+
+    @Test func dictatingAgainAddsAfterWhatsThere() async {
+        // Dictated, stopped, typed, then dictated again: each adds after what's in the box.
+        let box = Box(text: "Can you")
+        let dictation = Dictation()
+        let first = FakeRecognizer()
+        await dictation.listen(into: box, with: first)
+        first.hears("check the logs")
+        dictation.stop()
+        first.ends(with: "check the logs.")
+        box.text += " Thanks"
+        let second = FakeRecognizer()
+        await dictation.listen(into: box, with: second)
+        second.hears("and the backups")
+        #expect(box.text == "Can you check the logs. Thanks and the backups")
+    }
+
+    @Test func typingWhileListeningStopsDictation() async {
+        let box = Box()
+        let dictation = Dictation()
+        let recognizer = FakeRecognizer()
+        await dictation.listen(into: box, with: recognizer)
+        recognizer.hears("Ship it")
+        box.text = "Ship it now"
+        dictation.boxChanged(to: box.text)
+        #expect(dictation.state == .idle)
+        // The words that were on their way would have replaced what you typed.
+        recognizer.hears("Ship it today")
+        recognizer.ends(with: "Ship it today.")
+        #expect(box.text == "Ship it now")
+    }
+
+    @Test func dictationsOwnWordsDontStopIt() async {
+        let box = Box(text: "Note:")
+        let dictation = Dictation()
+        let recognizer = FakeRecognizer()
+        await dictation.listen(into: box, with: recognizer)
+        dictation.boxChanged(to: box.text)
+        recognizer.hears("check this")
+        dictation.boxChanged(to: box.text)
+        #expect(dictation.state == .listening)
+        recognizer.hears("check this too")
+        #expect(box.text == "Note: check this too")
+    }
 }
 
 struct DictationWaveformTests {

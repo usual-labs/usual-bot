@@ -161,6 +161,8 @@ struct MessageBox: View {
                 }
             #endif
             .onDisappear { dictation.leave() }
+            // Typing while dictation listens stops it, so its next words don't replace yours.
+            .onChange(of: text) { _, text in dictation.boxChanged(to: text) }
             // The words shown for it aren't read out, so VoiceOver hears it here.
             .onChange(of: transcribing) { _, transcribing in
                 if transcribing { AccessibilityNotification.Announcement(String(localized: "Transcribing")).post() }
