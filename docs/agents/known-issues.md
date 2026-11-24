@@ -197,6 +197,11 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   Int16 samples put every later sample a byte out: full-scale noise, heard on a real gateway.
   `SpeechStream` carries the half-sample over (`PCMJoiner`), and `GatewayCall` holds a reply's first
   0.2 s until `PCMCheck` hears a voice, ending the call if it hears loud noise instead.
+- **iOS stops a call's audio engine without telling the tap.** On an iPhone, Gateway calls went
+  deaf a few seconds in while the bar still said Listening. `MicWatch` restarts the engine when
+  it stops or no buffer comes for a second, and ends the call after three restarts that bring
+  nothing back. Unverified: what stopped it. `CallAudio` logs configuration changes,
+  interruptions and route changes under the `call` category, so the next device log says which.
 - **Hermes's `/api/audio/speak` returns only the first part** when long text is split into several
   files, and leaves the rest on the gateway (read at v0.23.3). Gateway calls send one sentence at a
   time, so they don't hit it.

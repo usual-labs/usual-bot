@@ -111,6 +111,10 @@ final class GatewayCall: CallEngine {
 
     /// Twenty times a second: your loudness for turns, and the reply's new sentences.
     private func tick() {
+        if let audio, !audio.keepListening() {
+            fail(CallAudio.stopped)
+            return
+        }
         let level = audio?.level ?? 0
         levels = Array(levels.dropFirst()) + [phase == .listening && !muted ? level : 0]
         listen(level)
