@@ -54,6 +54,7 @@ struct UsualBotApp: App {
         #if os(macOS)
             #if DEBUG
                 ScrollBench.startIfAsked()
+                SwitchBench.startIfAsked(model: model)
             #endif
             let quickPanel = QuickPanelController(model: model)
             _quickPanel = State(initialValue: quickPanel)

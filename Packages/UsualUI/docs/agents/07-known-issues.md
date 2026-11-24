@@ -105,6 +105,15 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   asks for the conversation's minimum on each update, and so does the window for its minimum size:
   about a fifth of switching chats. `ConversationScroll` sits in `TakesOfferedSize`, which answers
   with the space offered and measures only for an ideal size.
+- **An `.id` on a pane's content reaches what's modified onto it.** `ThreadPane` and `RoomPane`
+  give the transcript its chat's ID, then hang the header and message box on `content` as
+  modifiers (`chatBars`). Bare, the ID rebuilt those too on every switch: every NSView in the box,
+  about a quarter of switching chats. The ID sits inside a `ZStack` of its own, and the box now
+  lives across chats, so what it shows for one chat has to follow `conversation` / `chatID`:
+  per-chat loads go in `.task(id:)` with the chat in the key, per-chat state is reset or keyed,
+  and `.transaction(value:)` stops the next chat's text and cards animating in.
+  `USUALBOT_SWITCH_BENCH` measures switching. Most of what's left is laying out the new chat's
+  messages, whose stack isn't lazy (above).
 - **`onHover` on a message hit-tests the text inside it on every pointer move.** Crossing a long
   chat kept the app busy for up to half a second at a time. `MessageRow` follows the pointer with
   an AppKit tracking area (`PointerTracking`) instead.

@@ -52,6 +52,8 @@ struct RoomPane: View {
                             stop: room.stop
                         )
                     }
+                    // The box stays as you go from room to room; the next room's notice isn't news.
+                    .transaction(value: contact.id) { $0.animation = nil }
                     .animation(.smooth(duration: 0.2), value: planLimits?.warning(for: members))
                     .zoomedFrame(maxWidth: Theme.columnWidth)
                     .padding(.horizontal, ThreadPane.composerMargin)
@@ -113,8 +115,9 @@ struct RoomPane: View {
             .padding(.horizontal, 32)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .ready:
-            // As in a chat: one room's messages mustn't animate into the next.
-            transcript.id(contact.id)
+            // As in a chat: one room's messages mustn't animate into the next. In a stack of its
+            // own, so the header and message box aren't built again with them.
+            ZStack { transcript.id(contact.id) }
         }
     }
 

@@ -115,6 +115,8 @@ struct MessageBox: View {
     var body: some View {
         // One container: the menus above the box, the box and its glass buttons are drawn together.
         GlassEffectContainer(spacing: 0) { stack }
+            // The box stays as you switch chats: the next one's text and buttons come without a morph.
+            .transaction(value: conversation) { $0.animation = nil }
             // ⌘. stops the reply even after Send has taken Stop's place.
             #if os(macOS)
                 // From the menu bar: a default-style button in the chat's bottom bar, even a hidden
@@ -171,6 +173,10 @@ struct MessageBox: View {
                 dictatingIn = nil
                 dismissedText = nil
                 selection = TextSelection(insertionPoint: text.endIndex)
+                #if os(macOS)
+                    // As on appearing: opening a chat is for typing in it.
+                    focused = true
+                #endif
             }
             // The menu reads the gateway's list each time it opens.
             .onChange(of: slashQuery != nil) { _, open in if open { commands?.load() } }
@@ -228,7 +234,7 @@ struct MessageBox: View {
                     pick: pick)
             }
             VStack(alignment: .leading, spacing: 4) {
-                if let quotes, !quotes.wrappedValue.isEmpty { QuoteChips(quotes: quotes) }
+                if let quotes, !quotes.wrappedValue.isEmpty { QuoteChips(quotes: quotes).id(conversation) }
                 if editing?.wrappedValue == true {
                     ReplyChip(
                         text: editingLabel ?? String(localized: "Editing your last message"),
