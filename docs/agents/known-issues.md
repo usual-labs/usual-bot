@@ -18,9 +18,13 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   or was skipped for a documentation-only change. Add a new CI job to its `needs`, not to the ruleset,
   and keep its name: renaming it also needs the repository's branch rule updated. Filtering the
   workflow itself by path (`paths:`) would leave the required check pending forever on a skipped
-  pull request; the `changes` job skips the macOS jobs instead.
-- CodeQL's Swift scan (about half an hour of traced build) runs on `main`, weekly and by hand, not
-  on pull requests, so a pull request's code scanning results cover the workflows only.
+  pull request; the `changes` job skips the macOS job instead.
+- **GitHub runs at most five macOS jobs at once for the repository**, and pull requests queued
+  behind each other and main when CI took three of them a run. CI is one macOS job (lint, tests,
+  both builds in turn, about 13 minutes), a newer push to main cancels the older run, and CodeQL's
+  Swift scan (about half an hour of traced build) runs only weekly and by hand. So a pull request's
+  code scanning results cover the workflows only, and a commit on main whose run was cancelled is
+  checked only by its pull request.
 - **CI signs with certificates and profiles made beforehand, not Xcode's cloud signing.** Cloud
   signing from an App Store Connect API key needs a team key with the Admin role: an App Manager
   key failed with "Cloud signing permission error" and "No profiles for … were found". Team keys

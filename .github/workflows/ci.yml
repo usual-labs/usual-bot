@@ -1,11 +1,13 @@
 name: CI
 
-# Lints, tests and builds the app for macOS and the iOS Simulator, each part on its own runner so
-# they finish together. A change to documentation alone skips the macOS jobs. The `build` job at
-# the end is the required status check on main: it passes when every job passed, or was skipped
-# because only documentation changed. Add a job to its `needs` rather than to the ruleset.
+# Lints, tests and builds the app for macOS and the iOS Simulator in one macOS job. GitHub runs at
+# most five macOS jobs at once for this repository, so one job a run lets pull requests run side by
+# side instead of queueing behind each other and main. A change to documentation alone skips the
+# macOS job. The `build` job at the end is the required status check on main: it passes when every
+# job passed, or was skipped because only documentation changed. Add a job to its `needs` rather
+# than to the ruleset.
 #
-# The macOS jobs build with the Xcode in .xcode-version, which scripts/check.sh selects. Change the
+# The macOS job builds with the Xcode in .xcode-version, which scripts/check.sh selects. Change the
 # runner image here when that Xcode moves to another one.
 
 on:
@@ -17,10 +19,11 @@ on:
 permissions:
   contents: read # check out the source; nothing else
 
-# A new push to a pull request replaces its older run. Every commit on main is checked to the end.
+# A new push to a pull request, or to main, replaces the older run still going. Each pull request
+# was checked before it merged, so main skipping a commit it cancelled loses little.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   changes:
@@ -41,8 +44,8 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD: ${{ github.sha }}
         run: |
-          # The macOS jobs run unless every changed file is documentation. When the diff can't be
-          # worked out (a new branch, a rewritten base), they run.
+          # The macOS job runs unless every changed file is documentation. When the diff can't be
+          # worked out (a new branch, a rewritten base), it runs.
           app=true
           if files=$(git diff --name-only "$BASE...$HEAD" 2>/dev/null) && [ -n "$files" ]; then
             printf '%s\n' "$files"
@@ -51,15 +54,15 @@ jobs:
               || true)
             [ -n "$others" ] || app=false
           fi
-          echo "Run the macOS jobs: $app"
+          echo "Run the macOS job: $app"
           echo "app=$app" >> "$GITHUB_OUTPUT"
 
-  checks:
-    name: Lint and test
+  app:
+    name: Lint, test and build
     needs: changes
     if: needs.changes.outputs.app == 'true'
     runs-on: xcode-27
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -68,38 +71,16 @@ jobs:
       - name: Lint, checks and both test suites
         run: scripts/check.sh --fast
 
-  macos:
-    name: Build macOS
-    needs: changes
-    if: needs.changes.outputs.app == 'true'
-    runs-on: xcode-27
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Build
+      - name: Build macOS
         run: scripts/check.sh macos
 
-  ios:
-    name: Build iOS Simulator
-    needs: changes
-    if: needs.changes.outputs.app == 'true'
-    runs-on: xcode-27
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Build
+      - name: Build iOS Simulator
         run: scripts/check.sh ios
 
   build:
     # The name is the required status check on main.
     name: build
-    needs: [changes, checks, macos, ios]
+    needs: [changes, app]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -108,14 +89,10 @@ jobs:
         env:
           APP: ${{ needs.changes.outputs.app }}
           CHANGES: ${{ needs.changes.result }}
-          CHECKS: ${{ needs.checks.result }}
-          MACOS: ${{ needs.macos.result }}
-          IOS: ${{ needs.ios.result }}
+          APP_JOB: ${{ needs.app.result }}
         run: |
-          echo "What changed: $CHANGES. Lint and test: $CHECKS. macOS: $MACOS. iOS Simulator: $IOS."
+          echo "What changed: $CHANGES. Lint, test and build: $APP_JOB."
           [ "$CHANGES" = success ] || exit 1
           expected=success
           [ "$APP" = true ] || expected=skipped
-          for result in "$CHECKS" "$MACOS" "$IOS"; do
-            [ "$result" = "$expected" ] || exit 1
-          done
+          [ "$APP_JOB" = "$expected" ]
