@@ -1,5 +1,5 @@
 #!/bin/sh
-# The same checks as CI, which runs each part as its own job.
+# The same checks as CI, which runs each part as its own step.
 #
 # Usage: scripts/check.sh [--fast | macos | ios]
 #   (nothing)  everything: lint, the checks, both test suites and both app builds

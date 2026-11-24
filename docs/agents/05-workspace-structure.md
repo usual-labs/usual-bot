@@ -9,7 +9,7 @@
 - `App/SignInPresenters.swift` — browser/web-auth presenters
 - `App/Assets.xcassets` — the app icon (`AppIcon`; `AppIconDev`, its DEV-banded copy for Debug builds), the iPhone launch image (`LaunchMark`) and its
   background (`LaunchBackground`)
-- `.github/workflows/ci.yml` — `scripts/check.sh` split over parallel macOS jobs on pushes and
+- `.github/workflows/ci.yml` — `scripts/check.sh` in one macOS job on pushes and
   PRs (skipped for documentation-only changes), gated by the required `build` job
 - `scripts/check.sh` — the same checks locally (`--fast` skips the builds; `macos`/`ios` is one);
   `scripts/xcode.sh` — picks the Xcode in `.xcode-version` for it and `testflight.sh`;
@@ -42,7 +42,7 @@
   `.github/`), findings in code scanning; `.github/workflows/scorecard.yml` — OpenSSF Scorecard
   weekly and on pushes to main, publishes the README badge; `.github/dependabot.yml` — weekly grouped
   updates of the pinned actions (7-day cooldown); `.github/workflows/codeql.yml` — CodeQL for Swift
-  (xcodebuild of the app on `xcode-27`, manual build mode; on main, weekly and by hand) and Actions
+  (xcodebuild of the app on `xcode-27`, manual build mode; weekly and by hand) and Actions
   (also on PRs). A package-only SwiftPM scan misses `App/`; the tracked workflow builds the app with
   Xcode
 - `scripts/testflight.sh` — archives the Mac and iPhone apps with push and uploads them to
