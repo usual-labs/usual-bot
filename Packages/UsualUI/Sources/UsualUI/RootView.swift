@@ -287,7 +287,11 @@ struct ContactsSplitView<Footer: View>: View {
         /// The width while you drag the sidebar's edge, and where the drag began.
         @State private var dragWidth: Double?
         @State private var dragStart: Double?
-        @State private var windowWidth: CGFloat = 0
+        /// The window's width lives outside the view's state: as state, every step of a resize
+        /// rebuilt the whole window, toolbar included, and resizing lagged. Only what the width
+        /// decides is state.
+        @State private var windowWidth = WindowWidth()
+        @State private var windowRoom = WindowRoom()
         /// The open profile or room panel's usual width; 0 with none.
         @State private var panelWidth: CGFloat = 0
         @State private var showsPalette = false
@@ -409,8 +413,10 @@ struct ContactsSplitView<Footer: View>: View {
             .onGeometryChange(for: CGFloat.self) {
                 $0.size.width
             } action: {
-                windowWidth = $0
+                windowWidth.value = $0
+                measureRoom()
             }
+            .onChange(of: [wantedWidth, panelWidth, zoomed(Self.chatMinWidth)]) { measureRoom() }
             .focusedSceneValue(\.windowCommands, windowCommands)
             .zoomKeys($zoomLevel)
             .onChange(of: selection, initial: true) { _, selected in history.visit(selected) }
@@ -506,11 +512,19 @@ struct ContactsSplitView<Footer: View>: View {
         /// The list narrows to the rail when you drag its edge in, or when the window leaves the
         /// chat too little room.
         private var sidebarWidth: CGFloat {
-            let wanted = dragWidth ?? (listWidth < Self.minListWidth ? railWidth : zoomed(listWidth))
-            if dragWidth == nil, windowWidth > 0, windowWidth - wanted - panelWidth < zoomed(Self.chatMinWidth) {
-                return railWidth
-            }
-            return wanted
+            dragWidth == nil && !windowRoom.fitsWanted ? railWidth : wantedWidth
+        }
+
+        private var wantedWidth: Double {
+            dragWidth ?? (listWidth < Self.minListWidth ? railWidth : zoomed(listWidth))
+        }
+
+        private func measureRoom() {
+            let width = windowWidth.value
+            func fits(_ list: Double) -> Bool { width - list - panelWidth >= zoomed(Self.chatMinWidth) }
+            let measured = WindowRoom(
+                fitsWanted: width == 0 || fits(wantedWidth), fitsFullList: fits(zoomed(Self.fullWidth)))
+            if measured != windowRoom { windowRoom = measured }
         }
 
         private var showsRail: Bool { sidebarWidth < zoomed(Self.minListWidth) }
@@ -590,9 +604,7 @@ struct ContactsSplitView<Footer: View>: View {
         }
 
         /// A window too narrow for the list keeps the rail, so a button there would do nothing.
-        private var canLeaveRail: Bool {
-            windowWidth - zoomed(Self.fullWidth) - panelWidth >= zoomed(Self.chatMinWidth)
-        }
+        private var canLeaveRail: Bool { windowRoom.fitsFullList }
 
         /// The toolbar's row doesn't fit it in the narrowest list.
         private var showsToggleInToolbar: Bool { sidebarWidth >= Self.toolbarGroupWidth }
@@ -807,5 +819,19 @@ struct ContactsSplitView<Footer: View>: View {
             zoomedFrame(width: ThreadPane.barItemHeight, height: ThreadPane.barItemHeight)
                 .glassEffect(.regular.interactive(), in: Circle())
         }
+    }
+#endif
+
+#if os(macOS)
+    /// A box, so writing it doesn't update the view.
+    private final class WindowWidth {
+        var value: CGFloat = 0
+    }
+
+    /// Whether the window leaves the chat its least width beside the list you chose, and beside the
+    /// full list.
+    private struct WindowRoom: Equatable {
+        var fitsWanted = true
+        var fitsFullList = false
     }
 #endif
