@@ -31,7 +31,7 @@ extension Dictation {
             do {
                 try job.begin { [weak self, weak job] level in
                     guard let self, let job, self.gateway === job else { return }
-                    self.level = level
+                    self.hear(level)
                 }
             } catch {
                 state = .failed(Self.describe(error))
@@ -51,7 +51,6 @@ extension Dictation {
         }
         job.limit?.cancel()
         job.end()
-        level = 0
         secondsLeft = nil
         state = .transcribing
         job.work = Task { [weak self] in
@@ -74,15 +73,14 @@ extension Dictation {
         }
     }
 
-    /// Drops the recording, whether it's being heard or transcribed; the box stays as it was.
-    func cancel() {
-        guard let job = gateway else { return stop() }
+    /// Drops the gateway recording, whether it's being heard or transcribed (`cancel`).
+    func dropGateway() {
+        guard let job = gateway else { return }
         job.limit?.cancel()
         job.work?.cancel()
         job.end()
         job.close()
         gateway = nil
-        level = 0
         secondsLeft = nil
         canUseOnDevice = false
         state = .idle

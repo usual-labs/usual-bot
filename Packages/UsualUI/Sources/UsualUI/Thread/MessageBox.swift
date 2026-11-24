@@ -101,13 +101,14 @@ struct MessageBox: View {
     private var cornerRadius: CGFloat { buttonSize / 2 + inset }
     private var inset: CGFloat { Theme.zoomed(Self.inset, for: dynamicTypeSize) }
 
-    /// The text gets the box's whole width and the buttons move to a row below it: on iPhone while
-    /// you type in a chat, and on the Mac once your text wraps.
+    /// The text gets the box's whole width and the buttons move to a row below it: while you
+    /// dictate, so the words show above the waveform; on iPhone while you type in a chat; and on
+    /// the Mac once your text wraps.
     private var expanded: Bool {
         #if os(iOS)
-            open && opensForTyping
+            dictation.isActive || open && opensForTyping
         #else
-            hasWrapped
+            dictation.isActive || hasWrapped
         #endif
     }
 
@@ -142,6 +143,7 @@ struct MessageBox: View {
                         attaching?.attachments.append(contentsOf: $0)
                     }
                 )
+                .animation(.smooth(duration: 0.25), value: dictation.isActive)
                 // In the keyboard's own animation, which this change arrives in.
                 .onChange(of: keyboardUp) { _, up in open = up && focused }
                 .onChange(of: focused) { _, focused in
@@ -254,7 +256,13 @@ struct MessageBox: View {
                 }
                 // At accessibility text sizes the text always gets the whole width.
                 ComposerLayout(expanded: expanded || dynamicTypeSize.isAccessibilitySize) {
-                    if let attaching {
+                    if dictation.isActive {
+                        // ✕, then your voice, then Stop and Send.
+                        DictationCancelButton(dictation: dictation)
+                            .layoutValue(key: ComposerLayout.RoleKey.self, value: .leading)
+                        DictationWaveform(levels: dictation.levels, transcribing: transcribing)
+                            .layoutValue(key: ComposerLayout.RoleKey.self, value: .fill)
+                    } else if let attaching {
                         AttachButton { attaching.attachments.append(contentsOf: $0) }
                             .layoutValue(key: ComposerLayout.RoleKey.self, value: .leading)
                     }
@@ -438,12 +446,13 @@ struct MessageBox: View {
                 .accessibilityLabel(Text("Uploading"))
         } else if isRunning, hasNothingToSay, !hasAttachments, !dictation.isActive {
             RoundButton(systemImage: "stop.fill", label: stopLabel, prominent: false, action: stop)
-        } else if !inCall, hasNothingToSay, !hasAttachments {
+        } else if !inCall, hasNothingToSay, !hasAttachments, !dictation.isActive {
             // In a chat, the call button holds the spot Send takes over once there's something to send.
-            if let startCall, !dictation.isActive, !isRunning {
+            if let startCall, !isRunning {
                 CallStartButton(action: startCall)
             }
         } else {
+            // While you dictate Send stays, waiting for words.
             // With files during a reply there's no steering: Queue is the one way they go.
             let queuesOnly = queue != nil && isRunning && hasAttachments
             HStack(spacing: 6) {
@@ -535,8 +544,9 @@ struct MessageBox: View {
             return
         }
         guard canSubmit else { return }
-        // Sending ends dictation; words still arriving would land in the next message.
-        dictation.stop()
+        // Sending ends dictation, and the recognizer's final words, which come after, stay out:
+        // they'd put the message back in the box.
+        dictation.stop(keepingLateWords: false)
         let quoted = quotes?.wrappedValue ?? []
         if let attaching, !attaching.attachments.isEmpty, editing?.wrappedValue != true {
             // Text and files leave together once every file is up; a failure keeps both here.
