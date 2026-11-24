@@ -245,6 +245,10 @@ final class VoiceCall {
 
     /// Ten times a second: picks up new sentences of the reply and notices when it's done.
     private func tick() {
+        if let audio, !audio.keepListening() {
+            fail(CallAudio.stopped)
+            return
+        }
         level = audio?.level ?? 0
         levels = Array(levels.dropFirst()) + [phase == .listening && !muted ? level : 0]
         guard let replyStart, phase == .thinking || phase == .speaking else { return }
