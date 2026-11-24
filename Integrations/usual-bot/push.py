@@ -36,6 +36,9 @@ _READ_ROOM = 2100
 _LOUD_TURNS: OrderedDict[str, None] = OrderedDict()
 _LOUD_TURNS_LIMIT = 256
 _LOUD_TURNS_LOCK = threading.Lock()
+# How long your other devices wait after the one you're using, or used last, hears. Long enough to
+# read it there first, as Telegram does; short enough that a phone in your pocket still buzzes.
+LATER = 15
 TEST = {"title": "Usual Bot", "body": "Notifications from your gateway are working."}
 
 
@@ -76,19 +79,42 @@ def _shorten(text: str) -> str:
 def deliver(
     kind: str, title: str, preview: str, chat: str, speaker: str | None = None, interim: bool = False
 ) -> None:
-    """To every device that wants it, unless you're reading that chat on one of them. `interim` is
-    what a Bot says before its reply, which the app doesn't count as unread on its own."""
+    """To the device you're using, or else the one you used last, and `LATER` seconds after to
+    every other device that wants it, unless you've read that chat by then. Nothing goes while
+    you're reading that chat on any device. `interim` is what a Bot says before its reply, which
+    the app doesn't count as unread on its own.
+
+    Blocks for `LATER` when some devices wait: call it on a thread of its own."""
     if store.is_open(chat):
         return
+    since = time.time()
     settings = store.settings()
     names = settings["names"]
     if speaker:
         preview = f"{names.get(speaker, speaker)}: {preview}"
     title = title.format(name=names.get(chat, chat))
+    wanting = [
+        device_id
+        for device_id, device in settings["devices"].items()
+        if device.get(kind, True) and chat not in device.get("muted", [])
+    ]
+    first = store.first_to_hear(wanting)
+    _send(first, kind, title, preview, chat, interim)
+    rest = [device_id for device_id in wanting if device_id not in first]
+    if not rest:
+        return
+    time.sleep(LATER)
+    if not (store.is_open(chat) or store.read_since(chat, since)):
+        _send(rest, kind, title, preview, chat, interim)
+
+
+def _send(device_ids: list[str], kind: str, title: str, preview: str, chat: str, interim: bool) -> None:
+    # Read again: a device may have gone, or had clears owed, while the others waited.
+    devices = store.devices()
     pushes = []
     carried: dict[str, list[str]] = {}
-    for device_id, device in settings["devices"].items():
-        if not device.get(kind, True) or chat in device.get("muted", []):
+    for device_id in device_ids:
+        if (device := devices.get(device_id)) is None:
             continue
         body = _shorten(preview) if device.get("previews", True) else _HIDDEN[kind]
         payload = {"title": title, "body": body, "chat": chat, "kind": kind, "sound": device.get("sound", True)}

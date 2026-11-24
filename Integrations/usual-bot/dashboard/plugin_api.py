@@ -60,6 +60,9 @@ class Presence(BaseModel):
     device: str
     # The chat in front of you on that device, or none.
     chat: str | None = None
+    # You're using that device: it hears first, and the others a little later. An app from before
+    # this leaves it out.
+    active: bool | None = None
     names: dict[str, str] | None = None
 
 
@@ -101,7 +104,7 @@ def delete_device(device_id: str) -> dict:
 
 @router.put("/presence")
 def presence(new: Presence) -> dict:
-    store.set_open(new.device, new.chat)
+    store.set_open(new.device, new.chat, new.active)
     if new.chat:
         plugin.push.read_on(new.device, new.chat)
     if new.names is not None:

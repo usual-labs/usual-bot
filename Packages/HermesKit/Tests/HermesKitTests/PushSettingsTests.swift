@@ -79,7 +79,7 @@ struct PushSettingsTests {
         #expect(!push.needsUpdate)
         #expect(UsualPlugin.isOlder("0.5.1"))
         #expect(UsualPlugin.isOlder(nil))
-        #expect(!UsualPlugin.isOlder("0.12.0"))
+        #expect(!UsualPlugin.isOlder("0.13.0"))
         #expect(!UsualPlugin.isOlder(UsualPlugin.version))
     }
 
@@ -221,6 +221,35 @@ struct PushSettingsTests {
         let sent = presence(requests)
         #expect(sent.count == 2)
         #expect(sent.last?.contains(#""chat""#) == false)
+    }
+
+    @Test func usingTheAppRepeatsEvenWithNoChatOpenSoThisDeviceHearsFirst() async throws {
+        let (push, _, requests) = try await makeModel(
+            settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com"}]}"#)
+        await push.refresh()
+        push.isAway = { false }
+        push.isWindowFocused = true
+        await push.report(visible: nil, names: [:])
+        await push.report(visible: nil, names: [:])
+        let sent = presence(requests)
+        #expect(sent.count == 2)
+        #expect(sent.allSatisfy { $0.contains(#""active":true"#) && !$0.contains(#""chat""#) })
+    }
+
+    @Test func steppingAwayFromAFocusedWindowIsSaidOnce() async throws {
+        let (push, _, requests) = try await makeModel(
+            settings: #"{"devices":[{"id":"dev1","relay":"https://relay.example.com"}]}"#)
+        await push.refresh()
+        var away = false
+        push.isAway = { away }
+        push.isWindowFocused = true
+        await push.report(visible: nil, names: [:])
+        away = true
+        await push.report(visible: nil, names: [:])
+        await push.report(visible: nil, names: [:])
+        let sent = presence(requests)
+        #expect(sent.count == 2)
+        #expect(sent.last?.contains(#""active":false"#) == true)
     }
 
     @Test func theQuickPanelCountsAsFocus() async throws {
