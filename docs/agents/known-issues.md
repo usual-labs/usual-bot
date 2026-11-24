@@ -207,6 +207,11 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   closes an utterance, and the next results hold only the new one, so showing `bestTranscription`
   as is replaces what was said. `Utterances` keeps the closed ones. Seen on an iPhone with on-device
   recognition. The joining is tested with made-up results, not yet on a device.
+- **A stopped recognizer still sends its final words, then its end.** `task.finish()` processes
+  the audio already buffered, so the last result arrives after you tap Stop or Send. Written to the
+  box as is, it put a sent message back (seen on an iPhone). `Dictation` numbers its recordings and
+  lets only the latest write or end; after Stop the final words go only into a box still as
+  dictation left it, and after Send or ✕ not at all (`DictationRecordingTests`).
 
 ## Push notifications
 

@@ -418,18 +418,19 @@ Bot's name above the chat):
 ## Dictation and voice calls
 
 - **Dictation.** Tap the mic beside Send and speak; your words go after anything already in the
-  box. Words appear as you talk, recognised on the device when it can. Tap the mic again to stop,
-  then edit and send. On the Mac, ⌘D starts it too: press it again to stop, or hold ⌘D while you
-  talk and let go to stop.
+  box. They appear as you talk, recognised on the device when it can, above a row with a waveform
+  of your voice. Tap Stop to edit them, Send to send the box as it is, or ✕ to drop the recording
+  and take its words back out. On the Mac, ⌘D starts it too: press it again to stop, or hold ⌘D
+  while you talk and let go to stop.
 - **Dictation through your gateway.** In **Settings › Voice › Dictation**, choose **Gateway** to
   have the Bot's own speech-to-text on Hermes hear you instead. Your voice goes to your gateway,
   which may send it on to a paid service, depending on how its speech-to-text is set up. Words
   appear as you talk if the gateway streams them; otherwise they come all at once after you stop,
-  while **Transcribing…** shows where they'll go and a ring turns around the mic. Tap the mic again
-  then to cancel. Sending waits until the
-  words arrive. Dictation stops by itself after 10 minutes; its ring counts down the last 15
-  seconds. In a room, the gateway's own profile hears you. If the gateway can't transcribe, the box
-  says why; **Use On-device** turns the same recording into words on your device instead.
+  while **Transcribing…** shows where they'll go and a ring turns around Stop. Tap ✕ then to
+  cancel. Sending waits until the words arrive. Dictation stops by itself after 10 minutes; its
+  ring counts down the last 15 seconds. In a room, the gateway's own profile hears you. If the
+  gateway can't transcribe, the box says why; **Use On-device** turns the same recording into
+  words on your device instead.
 - **Voice calls.** Tap the waveform button to call the Bot. It hears you, answers aloud as it
   writes, and stops when you talk over it. The conversation is saved in the chat as usual. The call
   bar above the message box has the transcript, mute, end and settings, where you pick the voice,
