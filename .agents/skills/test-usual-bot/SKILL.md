@@ -20,6 +20,9 @@ USUALBOT_DEMO=1 build/DerivedData/Build/Products/Debug/UsualBot.app/Contents/Mac
   -selectedContact forge
 ```
 
+The demo exists only in Debug builds. A Release build ignores `USUALBOT_DEMO` and signs in to the
+real gateway with the saved sign-in, so measure performance on Debug, old build against new.
+
 Capture the PID you started, and stop only that one. Launch arguments set stored UI choices for one
 run: `-selectedContact forge -showsProfile YES -sidebarWidth 300`. Other switches are in
 `CONTRIBUTING.md` under Debug switches.
