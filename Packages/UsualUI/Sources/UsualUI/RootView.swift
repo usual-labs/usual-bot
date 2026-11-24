@@ -432,8 +432,10 @@ struct ContactsSplitView<Footer: View>: View {
                 sidebar(compact: false)
                     .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 380)
                     .searchable(text: $query)
+                    // Shown nowhere on the list, but kept as the back button's label and VoiceOver's name.
                     .navigationTitle("Chats")
-                    .navigationBarTitleDisplayMode(.large)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar(removing: .title)
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) { footer(false) }
                         ToolbarItem(placement: .topBarTrailing) { newButton }
