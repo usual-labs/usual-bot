@@ -167,5 +167,77 @@
             #expect(long.width <= 560)
             #expect(long.height > short.height * 5)
         }
+
+        @Test func aLinkInATableCellIsALinkInATextView() throws {
+            let markdown = """
+                | Name | Notes |
+                | --- | ---: |
+                | Docs | see [the limits](https://docs.example.com/limits) |
+                """
+            guard case .table(let table) = try #require(MarkdownBlock.parse(markdown).first) else {
+                Issue.record("Expected a table")
+                return
+            }
+            let cell = table.rows[0][1]
+            let view = SelectableTextView()
+            view.show(.cell(cell, size: 15, isHeader: false, alignment: .trailing))
+            // The text view's own links show the hand and open on a click, as in the rest of a reply.
+            #expect(view.string == "see the limits")
+            let at = (view.string as NSString).range(of: "limits").location
+            #expect(
+                (view.textStorage?.attribute(.link, at: at, effectiveRange: nil) as? URL)?.host == "docs.example.com")
+            #expect(view.linkTextAttributes?[.cursor] as? NSCursor == .pointingHand)
+            let style = view.textStorage?.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle
+            #expect(style?.alignment == .right)
+        }
+
+        /// The cell is measured in a container as wide as it can be. Right or centred, its words
+        /// sit far along that line, and the column mustn't take the line's width for theirs.
+        @Test func anAlignedCellIsAsWideAsItsWords() {
+            let words = AttributedString("see the limits")
+            let view = SelectableTextView()
+            view.show(.cell(words, size: 15, isHeader: false, alignment: .leading))
+            let leading = view.fittingSize(width: nil)
+            #expect(leading.width > 0 && leading.width < TableLayout.widest)
+            for alignment in [MarkdownTable.Alignment.center, .trailing] {
+                view.show(.cell(words, size: 15, isHeader: false, alignment: alignment))
+                #expect(abs(view.fittingSize(width: nil).width - leading.width) <= 1)
+                #expect(view.fittingSize(width: 60).width <= 60)
+            }
+        }
+
+        @Test func rightClickingALinkInACellOffersTheLinksMenu() throws {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 400, height: 200), styleMask: [.titled], backing: .buffered,
+                defer: false)
+            let view = SelectableTextView()
+            let words = try AttributedString(markdown: "see [the limits](https://docs.example.com/limits)")
+            view.show(.cell(words, size: 15, isHeader: false, alignment: .trailing))
+            view.frame = NSRect(origin: .zero, size: view.fittingSize(width: 400))
+            window.contentView?.addSubview(view)
+            func rightClick(on words: String) throws -> NSEvent {
+                let layout = try #require(view.layoutManager)
+                let container = try #require(view.textContainer)
+                let range = (view.string as NSString).range(of: words)
+                let glyphs = layout.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+                let rect = layout.boundingRect(forGlyphRange: glyphs, in: container)
+                let point = NSPoint(
+                    x: rect.midX + view.textContainerOrigin.x, y: rect.midY + view.textContainerOrigin.y)
+                return try #require(
+                    NSEvent.mouseEvent(
+                        with: .rightMouseDown, location: view.convert(point, to: nil), modifierFlags: [], timestamp: 0,
+                        windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1))
+            }
+            let menu = try #require(view.menu(for: try rightClick(on: "limits")))
+            #expect(menu.items.map(\.title) == ["Open Link", "Copy Link"])
+            // Off the link, the message's own menu shows.
+            #expect(view.menu(for: try rightClick(on: "see")) == nil)
+        }
+
+        @Test func aHeaderCellIsBold() throws {
+            let text = RichText.cell(AttributedString("Cost"), size: 15, isHeader: true, alignment: .leading)
+            let font = try #require(text.attribute(.font, at: 0, effectiveRange: nil) as? NSFont)
+            #expect(NSFontManager.shared.weight(of: font) > NSFontManager.shared.weight(of: .systemFont(ofSize: 15)))
+        }
     }
 #endif

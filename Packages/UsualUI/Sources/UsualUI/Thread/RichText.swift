@@ -8,6 +8,9 @@
         case reply([MarkdownBlock], size: CGFloat)
         /// Your words as you typed them, in your bubble.
         case mine(String, size: CGFloat)
+        /// A table cell with a link in it. Links in `Text` show the I-beam, so the cell is a text
+        /// view like the rest of the reply.
+        case cell(AttributedString, size: CGFloat, isHeader: Bool, alignment: MarkdownTable.Alignment)
     }
 
     /// A message's words as one attributed string, so a single text view shows them and a drag
@@ -22,6 +25,8 @@
             switch content {
             case .reply(let blocks, let size): reply(blocks, size: size)
             case .mine(let text, let size): mine(text, size: size)
+            case .cell(let text, let size, let isHeader, let alignment):
+                cell(text, size: size, isHeader: isHeader, alignment: alignment)
             }
         }
 
@@ -91,6 +96,24 @@
             let paragraph = NSMutableParagraphStyle()
             paragraph.lineSpacing = Theme.messageLineSpacing
             let result = runs(Links.detect(in: text), size: size, color: userInk)
+            result.addAttribute(.paragraphStyle, value: paragraph, range: NSRange(location: 0, length: result.length))
+            return result
+        }
+
+        /// A table cell, set as `MarkdownTableView` sets the others: a bold header, the cell's own
+        /// alignment.
+        static func cell(
+            _ text: AttributedString, size: CGFloat, isHeader: Bool, alignment: MarkdownTable.Alignment
+        ) -> NSAttributedString {
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.lineSpacing = Theme.messageLineSpacing
+            paragraph.alignment =
+                switch alignment {
+                case .leading: .left
+                case .center: .center
+                case .trailing: .right
+                }
+            let result = runs(text, size: size, weight: isHeader ? .semibold : .regular, color: ink)
             result.addAttribute(.paragraphStyle, value: paragraph, range: NSRange(location: 0, length: result.length))
             return result
         }
