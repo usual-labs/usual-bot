@@ -54,7 +54,7 @@ enum WidgetMessage: Equatable {
     @Environment(\.openURL) private var openURL
 
     /// The app's script world: the page's own scripts run in another.
-    private static let world = WKContentWorld.world(name: "UsualBotWidget")
+    fileprivate static let world = WKContentWorld.world(name: "UsualBotWidget")
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -198,6 +198,13 @@ enum WidgetMessage: Equatable {
             // The page stays; a link you tap opens in your browser, as a link in a message does.
             if action.navigationType == .linkActivated { openOutside(action.request.url) }
             decisionHandler(.cancel)
+        }
+
+        /// The theme in the page's document-start script is the one the frame was made with; a
+        /// change since, sent while the page was still loading, found no style to swap.
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            guard let theme else { return }
+            webView.evaluateJavaScript(WidgetPage.retheme(theme), in: nil, in: WidgetFrame.world) { _ in }
         }
 
         func webView(
