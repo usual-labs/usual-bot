@@ -29,8 +29,9 @@ Usual Bot connects to the Hermes gateway you already run and works with Hermes
 [Bot Mode](https://hermes-agent.nousresearch.com/docs/user-guide/bot-mode): each Bot is a contact
 with its one ongoing Bot Chat, group chats are rooms, and routines sit in each Bot's profile.
 These are the same conversations you see in the Hermes desktop app. The sidebar shows which
-Bots are working and which need you. It does one thing well: talking to your Bots. Settings,
-skill setup and everything else stay in the official Hermes app.
+Bots are working and which need you. It does one thing well: talking to your Bots. Agent configuration,
+skill setup and gateway administration stay in the official Hermes app; a Bot's routines and MCP
+servers, and making, renaming and deleting Bots, are here too.
 
 > [!NOTE]
 > Usual Bot is young. It's tested against Hermes's gateway Webapp and its older dashboard. See
@@ -90,8 +91,8 @@ To run it on your own iPhone, set your Apple team in `Config/Local.xcconfig` fir
     <td>A room: messages go to every Bot, <code>@name</code> talks to one.</td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/mac-profile.png" alt="A Bot's profile beside its chat, with routines and their switches"></td>
-    <td><img src="docs/screenshots/mac-quick-message.png" alt="The quick message panel with an approval waiting"></td>
+    <td><img src="docs/screenshots/mac-profile.png" alt="A Bot's profile beside its chat: this chat's model, thinking and context, and the Bot's routines, skills, apps, vault and machine"></td>
+    <td><img src="docs/screenshots/mac-quick-message.png" alt="The quick message panel with requests waiting on you"></td>
   </tr>
   <tr>
     <td>A Bot's routines beside its chat, and two background tasks running.</td>
@@ -142,9 +143,10 @@ The film and all screenshots come from the built-in demo, with made-up Bots.
   commands, such as `/reasoning` or `/status`.
 - **Side questions.** `/btw` asks about the conversation without interrupting the Bot.
 - **Background tasks.** `/bg` has the Bot do a task in the background while you keep chatting. You get a
-  notification when it's done, even if the app was closed.
+  notification when it's done while the app runs; otherwise the result is there when you next open it.
 - **Push.** With the `usual-bot` plugin on your gateway, your Mac and iPhone hear from your Bots
-  even when Usual Bot is closed, sealed so nothing in between can read it.
+  even when Usual Bot is closed, sealed so nothing in between can read it. Push needs the
+  TestFlight app; a copy you build yourself alerts only while it runs.
 - **Rooms.** Group chats with several Bots.
 - **Routines.** Each Bot's scheduled jobs, with a switch to pause and resume them.
 - **Quick message (Mac).** ⌥Space opens a small panel to message any Bot from anywhere.
@@ -161,7 +163,7 @@ The [user guide](docs/guides/user-guide.md) walks through each of these.
   9119) works too, but there routines and other Bots can't post into your chats.
 - **Sign-in on the gateway.** It needs a sign-in method (username and password, or OAuth); Usual
   Bot uses its browser sign-in for apps (`native_pkce` in `/api/status`).
-- **Tested with** Hermes Agent 0.22.7 (the Webapp), and 0.21.5 and 0.22.5 (the dashboard).
+- **Tested with** Hermes Agent 0.22.7 to 0.23.3 (the Webapp), and 0.21.5 and 0.22.5 (the dashboard).
 - **The app** runs on macOS 26 and iOS 26 or later. Building it needs Xcode 27 or newer.
 
 ## Documentation
@@ -182,9 +184,14 @@ The [user guide](docs/guides/user-guide.md) walks through each of these.
 | --- | --- |
 | `Packages/HermesKit` | Gateway sign-in, connection, protocol types and app state. No UI, no dependencies. |
 | `Packages/UsualUI` | The SwiftUI screens, shared by Mac and iPhone. |
+| `Packages/Tailnet` | Built-in Tailscale on iPhone, around Tailscale's TailscaleKit. |
 | `App/` | The thin app shell and platform pieces (sign-in, the ⌥Space panel, notifications). |
+| `NotificationService/`, `ShareExtension/` | The notification and share extensions. |
 | `Config/` | Build settings (`.xcconfig`), Info.plist and entitlements. |
-| `design/` | The avatar characters and the app icon's design notes. |
+| `Integrations/usual-bot` | The Hermes plugin for push, a Bot's browser and terminal. Runs on your gateway. |
+| `Services/` | The push relay and the TestFlight update check (Cloudflare Workers). |
+| `scripts/` | Checks, the TestFlight upload and release helpers. |
+| `design/` | The avatar characters, including the one the app icon is drawn from. |
 
 ## Contributing
 
@@ -197,6 +204,47 @@ Bug reports, fixes, accessibility work and protocol support are very welcome. St
 
 Usual Bot is licensed under the [Apache License 2.0](LICENSE). Hermes Agent is a separate project
 by Nous Research under its own license.
+
+The iPhone app includes TailscaleKit from
+[libtailscale](https://github.com/tailscale/libtailscale) for Built-in Tailscale, under this
+license:
+
+<details>
+<summary>libtailscale (BSD 3-Clause)</summary>
+
+```text
+BSD 3-Clause License
+
+Copyright (c) 2023 Tailscale & AUTHORS.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+</details>
 
 Hermes and Hermes Agent are names of Nous Research. Usual Bot's icon is a fan drawing of the
 Hermes Agent character. Usual Bot is an independent project: it isn't made by, affiliated with or

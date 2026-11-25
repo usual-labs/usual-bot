@@ -2,7 +2,8 @@
 
 One transparent assistant avatar matching the monochrome doodle family in `../2026-10-22/`.
 
-- Final asset: [hermes-doodle.png](png/hermes-doodle.png), 1254 × 1254 RGBA PNG.
+- Final asset: `png/hermes-doodle.png`, 1254 × 1254 RGBA PNG (not committed; the app's copies are
+  `Packages/UsualUI/Sources/UsualUI/Resources/hermes-mark.png` and `App/Assets.xcassets`).
 - Subject reference: the current [official Hermes Agent app icon](https://github.com/NousResearch/hermes-agent/blob/main/assets/icon-master.svg), retrieved 24 October 2026. GitHub blob SHA: `0f7f871e8cdf9a3d676f0971b95ac14a8298e053`.
 - Local subject reference: `references/official-icon.svg`, rendered to `references/official-icon.png` for visual inspection and generation input. Both are git-ignored and stay on the maintainer's Mac: the repository never holds a copy of Nous Research's icon.
 - Style references: the two user-provided character sheets in `../2026-10-22/references/`.

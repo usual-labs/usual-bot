@@ -71,8 +71,9 @@ killall Dock
 
 ### ⌥Space doesn't open the quick message panel
 
-Another app may already use ⌥Space (some launchers and input-source switchers do). Quit or rebind
-that app. Usual Bot has to be running; it stays in the menu bar after you close its window.
+If another app holds ⌥Space (some launchers and input-source switchers do), Usual Bot uses ⌃⌥Space;
+the menu bar shows which one it got. Pick your own combination in Settings › Quick Message, or open
+Quick Message from the menu bar. Usual Bot has to be running; it stays in the menu bar after you close its window.
 
 ## Chats
 

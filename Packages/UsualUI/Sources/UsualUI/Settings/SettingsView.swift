@@ -284,7 +284,7 @@ public struct SettingsView: View {
                     }
                     Toggle("Notifications", isOn: notifies(saved))
                     if model.pushPluginNeedsUpdate {
-                        Text("Update Usual Push on this gateway so its notifications open the right chat.")
+                        Text("Update the Usual Bot plugin on this gateway so its notifications open the right chat.")
                             .foregroundStyle(Theme.secondaryInk)
                     }
                 }

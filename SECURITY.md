@@ -39,7 +39,7 @@ sure which side a problem is on, report it here and we'll help route it.
 
 ## Supported versions
 
-Usual Bot is young and built from source. Fixes land on `main` and in the next release; older
+Usual Bot is young. Fixes land on `main` and in the next release; older
 releases don't get separate patches.
 
 ## How the app and its releases protect you
@@ -52,7 +52,8 @@ releases don't get separate patches.
   container. Drafts are left out of device backups, and signing out deletes both.
 - Push notifications are sealed on your gateway with a key only that device and the gateway hold;
   Usual's relay and Apple carry them without being able to read them. The relay stores only each
-  device's push token and hashes of its two secrets.
+  device's push token, whether it uses Apple's sandbox and wants background wakes, when it signed
+  up, and hashes of its two secrets.
 - TestFlight builds ask Usual's update check at `bot.usual.dev` which build is the latest. The
   request carries nothing about you, and the service stores nothing.
 - Debug-only switches (such as recording socket frames) are compiled out of Release builds.

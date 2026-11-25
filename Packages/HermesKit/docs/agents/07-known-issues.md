@@ -35,9 +35,10 @@ the background, so this is the common case there.
   failed attempt. Read from source, not run: for an unlock it goes to `backend.unlock(master)`, a failed
   attempt on the real password manager, and a code is typed into the page's code field.
   `vault.save_login` is harmless only by luck (no `password`, so `None`).
-- Fix: `AppModel.handle` never declines `secret`, `sudo` or the three vault methods. Without a chat,
-  or for a malformed request, it answers `{"value": ""}`, which is Hermes's skip; `attach` does the
-  same for an unreadable open request. That skip beats any other attached app, which only matters in
+- Fix: `AppModel.handle` never declines `secret`, `sudo` or the three vault methods. On the legacy
+  dialect, without a chat or for a malformed request, it answers `{"value": ""}`, which is Hermes's
+  skip, and `attach` does the same for an unreadable open request. On the canonical protocol it sends
+  nothing, since any answer there settles the request for every app. That skip beats any other attached app, which only matters in
   the moment before a chat attaches, since a session this app joined has a chat.
 - Prevention: `vaultRequestsWithNoCardAreSkippedAndNeverDeclined`,
   `aVaultRequestItCantReadIsSkippedInItsChat` and the secret prompt tests fail if a masked method
@@ -62,7 +63,7 @@ there through the legacy fallback, which hasn't been tried live.
 ## A test recording socket frames must not run in parallel (fixed 2026-10-31)
 
 `FrameRecorder.observer` is a global test seam, so parallel tests saw each other's frames and
-`secretsAreNeverRecorded` failed at random. Those tests live in the `.serialized`
+`secretsAndTheirRepliesAreNeverRecorded` failed at random. Those tests live in the `.serialized`
 `VaultRecordingTests` suite.
 
 ## Usage is filed under the day a session began (source finding, 2026-11-02)

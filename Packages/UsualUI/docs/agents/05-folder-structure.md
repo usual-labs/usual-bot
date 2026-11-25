@@ -9,8 +9,8 @@
 - `Sources/UsualUI/Thread/ApprovalCard.swift` — approval UI
 - `Sources/UsualUI/Thread/SecretCard.swift` — masked secret and sudo prompts
 - `Sources/UsualUI/Room/RoomPane.swift` — rooms
-- `Sources/UsualUI/Profile/VaultView.swift`, `VaultAddSheet.swift`, `VaultFields.swift` — the Vault tab
-- `Sources/UsualUI/Profile/AppsView.swift`, `AppDetailSheet.swift`, `AppAddSheet.swift` — the Apps tab (MCP servers)
+- `Sources/UsualUI/Profile/VaultView.swift`, `VaultAddSheet.swift`, `VaultFields.swift` — the Vault page
+- `Sources/UsualUI/Profile/AppsView.swift`, `AppDetailSheet.swift`, `AppAddSheet.swift` — the Apps page (MCP servers and connectors)
 - `Sources/UsualUI/Thread/VaultCard.swift` — in-chat vault cards
 
 No local database schema/migration files were found in this layer; that does not imply dependencies or remote systems lack persistence.

@@ -71,7 +71,8 @@ are retired: they couldn't carry push without hand-made Developer ID profiles.
    `node scripts/beta-review.mjs` does the same from a Mac, with the key in
    `APP_STORE_CONNECT_KEY_ID` and `APP_STORE_CONNECT_KEY_PATH`.
 
-Within an hour of a build being processed, the app offers it to testers (`Services/updates`); there
+Once a build has passed beta review for the external group, the app offers it at its next update
+check, at launch and then every 6 hours (`Services/updates` caches Apple's answer for an hour); there
 is nothing to publish. TestFlight builds expire after 90 days, so testers need a newer one before then. They use Apple's
 production push service; the app works that out from how it was signed (`PushRelay`).
 

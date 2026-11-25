@@ -4,16 +4,26 @@
 
 - `Packages/HermesKit/` — Gateway auth, transport and domain state
 - `Packages/UsualUI/` — Native screens and reusable UI
+- `Packages/Tailnet/` — the iPhone's built-in Tailscale device (TailscaleKit, downloaded by checksum)
+- `Packages/*/docs/agents/` — each package's KB
 
 - `App/UsualBotApp.swift` — application entry
 - `App/SignInPresenters.swift` — browser/web-auth presenters
+- `App/BuiltInTailscale.swift` — Built-in Tailscale on iPhone; `App/BackgroundCheckIn.swift` —
+  `BackgroundLink` and app-refresh check-ins; `App/AgentNotifications.swift` and
+  `App/PushRegistration.swift` — local alerts and push registration
+- `App/macOS/` — Mac-only shell: the ⌥Space hot key and Quick Message panel, desktop settings, and
+  the scroll and switch benchmarks
 - `App/Assets.xcassets` — the app icon (`AppIcon`; `AppIconDev`, its DEV-banded copy for Debug builds), the iPhone launch image (`LaunchMark`) and its
   background (`LaunchBackground`)
 - `.github/workflows/ci.yml` — `scripts/check.sh` in one macOS job on pushes and
   PRs (skipped for documentation-only changes), gated by the required `build` job
 - `scripts/check.sh` — the same checks locally (`--fast` skips the builds; `macos`/`ios` is one);
   `scripts/xcode.sh` — picks the Xcode in `.xcode-version` for it and `testflight.sh`;
-  `scripts/check-test-waits.sh` — rejects unexplained fixed sleeps in tests; `.githooks/pre-commit`
+  `scripts/check-test-waits.sh` — rejects unexplained fixed sleeps in tests;
+  `scripts/check-shortcuts.sh` (with `scripts/fixtures/HotKeyCheck.swift`) — checks the Mac hot
+  keys; `scripts/changelog.sh` — release changelog; `.xcode-version` and `.swift-format` — the
+  pinned Xcode and the lint rules; `.githooks/pre-commit`
   — optional lint of staged Swift files (`git config core.hooksPath .githooks`)
 - `.github/CODEOWNERS` — requests a maintainer's review on workflows, signing, scripts, sign-in and
   tokens; the `main` ruleset requires a pull request and `build`, not a review, so a maintainer can
@@ -24,10 +34,11 @@
   `.claude/skills`
 - `Integrations/usual-bot/` — the one Hermes plugin the app uses, in every profile: it seals
   notifications per device and sends them to the relay, streams a real-profile Bot's headless
-  browser and keeps that browser's Chrome flags in step, and tells Bots in the app's chats where
+  browser and keeps that browser's Chrome flags in step, serves the terminal drawer's shell and secret
+  prompts, and tells Bots in the app's chats where
   they are (Python, standard library plus Hermes and its `cryptography` and `aiohttp`; installed on
   the gateway, not built with the app). `Integrations/install-usual-bot.sh` installs it from a
-  clone; `hermes-push/` and `hermes-browser/` keep only an `install.sh` that runs it, for older
+  clone; `hermes-push/` and `hermes-browser/` keep only a README and an `install.sh` that runs it, for older
   apps' setup steps
 - `Services/push-relay/` — the push relay at `push.usual.dev`: a Cloudflare Worker (plain JS, no
   dependencies) and D1, deployed with Wrangler, not built with the app
@@ -51,6 +62,8 @@
 - `.github/workflows/testflight.yml` — runs `scripts/testflight.sh` by hand or nightly
   (`TESTFLIGHT_NIGHTLY`), signing with the `testflight` environment's certificates and profiles and
   uploading with an individual API key
+- `.github/workflows/beta-review.yml` and `scripts/beta-review.mjs` — add a TestFlight build to the
+  external group and submit it for beta review
 - `Config/Shared.xcconfig` — shared Xcode settings
 - `UsualBot.xcodeproj` — application project
 - `design/avatars` — avatar reference and artwork

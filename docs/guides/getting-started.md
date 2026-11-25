@@ -113,7 +113,7 @@ The Webapp listens on `127.0.0.1` only, which other devices can't reach. Pick on
   ```
 
   `tailscale serve status` shows the address. On iPhone, keep the Tailscale app's VPN on while you
-  use Usual Bot.
+  use Usual Bot, or turn on **Built-in Tailscale** on the connect screen.
 - **Your tailnet only, over plain `http`.** To reach the machine by its tailnet address without a
   certificate, have Tailscale forward a port instead. Tailscale already encrypts traffic between
   your devices.
@@ -136,7 +136,8 @@ The Webapp listens on `127.0.0.1` only, which other devices can't reach. Pick on
   so your sign-in never travels unencrypted.
 
 `webapp.host` takes only a loopback address, `0.0.0.0` or `::`, because Hermes's own apps on the
-machine reach the Webapp at `127.0.0.1`. A tailnet address there keeps the Webapp off.
+machine reach the Webapp at `127.0.0.1` (checked on Hermes 0.23.3). A tailnet address there keeps
+the Webapp off; to reach it by its tailnet address, use one of the Tailscale options above.
 
 ### It must have a sign-in
 

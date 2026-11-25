@@ -14,7 +14,7 @@ its `AGENTS.md` and `docs/agents/` notes; they're kept up to date with the code.
 │   │  reads @Observable state, calls methods                                               │
 │   ▼                                                                                       │
 │ HermesKit       AppModel ─ ChatThread / RoomThread / routines / skills                    │
-│                 AuthSession (PKCE, Keychain) · GatewayConnection · JSONRPCChannel         │
+│                 AuthSession (PKCE, Keychain) · GatewayConnector  · JSONRPCChannel         │
 └───────────────────────────────┬───────────────────────────────────────────────────────────┘
                                 │ HTTPS: sign-in, REST (routines, media, sessions)
                                 │ WebSocket /api/ws: JSON-RPC requests, events, server requests
@@ -23,7 +23,7 @@ its `AGENTS.md` and `docs/agents/` notes; they're kept up to date with the code.
 ```
 
 - **HermesKit** owns everything about the gateway and the app's state. It depends only on Apple
-  frameworks (Foundation, Observation, CryptoKit, Security), has no UI, and is tested with
+  frameworks (no UI frameworks), has no UI, and is tested with
   `swift test` on its own.
 - **UsualUI** owns the screens. It reads HermesKit's observable state and calls its methods; it
   never talks to the gateway directly.
@@ -44,9 +44,9 @@ one-shot listener on `127.0.0.1` (`LoopbackReceiver`). It exchanges the code for
 and a rotating refresh token, stored in the Keychain (`TokenStore`). `AuthSession` refreshes with
 one request in flight at a time and saves the new refresh token before using the new access token.
 
-**Connection** (`Transport/`). `GatewayConnection` mints a single-use WebSocket ticket, opens
-`/api/ws`, waits for `gateway.ready`, declares its capabilities and pings every 15 seconds.
-`JSONRPCChannel` matches requests to responses and splits the stream into events and
+**Connection** (`Transport/`). `GatewayConnector` mints a single-use WebSocket ticket, opens
+`/api/ws`, waits for `gateway.ready` and declares its capabilities. `JSONRPCChannel` pings
+(`gateway.ping`) every 15 seconds, matches requests to responses and splits the stream into events and
 server-to-client requests (approvals, questions, secret and sudo prompts). `AppModel` reconnects with backoff (300 ms doubling to
 15 s) and re-attaches open chats.
 
@@ -88,7 +88,7 @@ gateway's speech-to-text and speak the reply through its text-to-speech socket (
 - `Drafts` keeps what's typed and not sent, and the quotes being replied to, per chat and room and
   per gateway, in Application Support (Caches can be emptied by the system), with file protection
   and left out of backups. It never goes to the gateway, and sign-out deletes it.
-- The Keychain holds tokens; `UserDefaults` holds the gateway address and small UI choices.
+- The Keychain holds tokens; `UserDefaults` holds the saved gateways (up to two) and small UI choices.
 
 ## Demo mode
 
@@ -105,8 +105,9 @@ the demo so others can see it without a gateway.
   `Tests/HermesKitTests/Fixtures` are trimmed, anonymised gateway frames.
 - **UsualUI** tests cover view logic that can be tested without rendering: the slash menu,
   attachments, the contact list, dictation, spoken replies and the quick message panel.
-- **CI** (`.github/workflows/ci.yml`) lints, runs both test suites and builds the app for macOS and
-  the iOS Simulator.
+- **CI** (`.github/workflows/ci.yml`) lints, runs the repository checks, the HermesKit, UsualUI and
+  plugin tests, and builds the app for macOS and the iOS Simulator; it skips the macOS job when only
+  documentation changed.
 
 ## Where to make a change
 
