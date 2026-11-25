@@ -32,7 +32,8 @@ struct Composer: View {
                 PlanLimitNotice(warning: warning, text: warning.chatText(agentName: agentName)).padding(.bottom, 6)
             }
             if let goal = thread.goal, let phase = thread.goalPhase {
-                GoalBar(thread: thread, goal: goal, phase: phase, agentName: agentName).padding(.bottom, 6)
+                // Opened in one chat, it stays closed in the next.
+                GoalBar(thread: thread, goal: goal, phase: phase, agentName: agentName).id(chatID).padding(.bottom, 6)
             }
             if !thread.backgroundTasks.isEmpty {
                 BackgroundTasksBar(tasks: thread.backgroundTasks).padding(.bottom, 6)
@@ -46,10 +47,12 @@ struct Composer: View {
             }
             box
         }
-        .task(id: thread.isAttached) { await thread.loadModelsAndUsage() }
-        // A reply uses up some of the subscription: read its limits again once it ends.
-        .onChange(of: thread.state.isRunning) { _, running in
-            if !running { Task { await thread.refreshPlanLimits() } }
+        // The box stays as you switch chats, so each chat's models are asked for when it opens.
+        .task(id: "\(chatID) \(thread.isAttached)") { await thread.loadModelsAndUsage() }
+        // A reply uses up some of the subscription: read its limits again once it ends. Going to a
+        // chat that isn't replying isn't one ending.
+        .onChange(of: Running(chat: chatID, isRunning: thread.state.isRunning)) { old, new in
+            if old.chat == new.chat, !new.isRunning { Task { await thread.refreshPlanLimits() } }
         }
         .onChange(of: editing) { if editing == nil { edit = "" } }
         // A queued message you edit puts its files back beside its text.
@@ -61,6 +64,8 @@ struct Composer: View {
         // Item IDs start over with each copy of the chat, so an edit can't outlast one.
         .onChange(of: thread.transcriptLoad) { editing = nil }
         .onChange(of: edited == nil) { _, gone in if gone { editing = nil } }
+        // Another chat's queue and cards replace these at once rather than slide in.
+        .transaction(value: chatID) { $0.animation = nil }
         .animation(.smooth(duration: 0.2), value: thread.sideQuestions)
         .animation(.smooth(duration: 0.2), value: thread.backgroundTasks)
         .animation(.smooth(duration: 0.2), value: thread.queue)
@@ -95,6 +100,11 @@ struct Composer: View {
     }
 
     /// An edit replaces the message and what follows it; it isn't one to queue.
+    private struct Running: Equatable {
+        let chat: Contact.ID
+        let isRunning: Bool
+    }
+
     private var queue: ((String) -> Void)? {
         guard thread.canQueue, editing == nil else { return nil }
         return { thread.enqueue($0) }

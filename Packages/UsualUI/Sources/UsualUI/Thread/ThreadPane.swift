@@ -335,8 +335,12 @@ struct ThreadPane: View {
         case .ready:
             if let thread {
                 // Every chat numbers its items from 0, so without this a switch would animate one
-                // chat's messages into the next and carry over where you'd scrolled to.
-                TranscriptView(thread: thread, agentName: contact.name, jump: jump, jumped: jumped).id(contact.id)
+                // chat's messages into the next and carry over where you'd scrolled to. In a stack
+                // of its own: bare, the new identity reached the header and message box modified
+                // onto `content`, and every switch built them again too.
+                ZStack {
+                    TranscriptView(thread: thread, agentName: contact.name, jump: jump, jumped: jumped).id(contact.id)
+                }
             }
         }
     }
