@@ -246,6 +246,14 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 - **APNs from `wrangler dev` fails:** workerd has no HTTP/2 client. Deployed Workers reach APNs
   through Cloudflare's proxy.
 
+## Inline widgets
+
+- **A view's first `@Environment(\.self)` can hold the system's appearance while `colorScheme`
+  already holds the app's own** (Settings > Appearance set against the system). Resolving colours in
+  it gave a light widget dark mode's near-white text. `WidgetPage.Theme` resolves in an environment
+  with `colorScheme` set, and `WidgetFrame` swaps the theme in again once the page has loaded, as a
+  change made while it loads finds no style to swap.
+
 ## Inline widgets talking back
 
 - **A hidden prompt can still show once, as yours, after reattaching mid-turn.** The attach snapshot's

@@ -200,16 +200,7 @@ struct InlineWidget: View {
     }
 
     private var theme: WidgetPage.Theme {
-        func css(_ color: Color) -> String {
-            let resolved = color.resolve(in: environment)
-            return WidgetPage.css(
-                red: Double(resolved.red), green: Double(resolved.green), blue: Double(resolved.blue),
-                opacity: Double(resolved.opacity))
-        }
-        return WidgetPage.Theme(
-            dark: colorScheme == .dark, foreground: css(Theme.ink), mutedForeground: css(Theme.secondaryInk),
-            accent: css(Theme.link), border: css(Theme.border), card: css(Theme.codeFill),
-            fontSize: Double(textSize))
+        WidgetPage.Theme(colorScheme: colorScheme, in: environment, fontSize: Double(textSize))
     }
 
     private func load() async {
@@ -243,6 +234,25 @@ struct InlineWidget: View {
         let turn: Int?
         let isRunning: Bool
         let isReplaced: Bool
+    }
+}
+
+extension WidgetPage.Theme {
+    /// The app's colours in `colorScheme`, resolved in `environment`. On a view's first pass its
+    /// environment can still hold the system's appearance while `colorScheme` holds the app's own,
+    /// so the colours are resolved in `colorScheme`.
+    init(colorScheme: ColorScheme, in environment: EnvironmentValues, fontSize: Double) {
+        var environment = environment
+        environment.colorScheme = colorScheme
+        func css(_ color: Color) -> String {
+            let resolved = color.resolve(in: environment)
+            return WidgetPage.css(
+                red: Double(resolved.red), green: Double(resolved.green), blue: Double(resolved.blue),
+                opacity: Double(resolved.opacity))
+        }
+        self.init(
+            dark: colorScheme == .dark, foreground: css(Theme.ink), mutedForeground: css(Theme.secondaryInk),
+            accent: css(Theme.link), border: css(Theme.border), card: css(Theme.codeFill), fontSize: fontSize)
     }
 }
 

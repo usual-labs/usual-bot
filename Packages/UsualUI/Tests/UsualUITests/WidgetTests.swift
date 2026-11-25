@@ -1,5 +1,6 @@
 import Foundation
 import JavaScriptCore
+import SwiftUI
 import Testing
 
 @testable import HermesKit
@@ -62,6 +63,23 @@ struct WidgetTests {
         #expect(theme.css.contains("font:15.0px -apple-system"))
         // Inserted before the page's own markup, so the page's styles win.
         #expect(WidgetPage.themeScript(theme).contains("insertBefore(s,d.firstChild)"))
+    }
+
+    /// The first time a widget's view is drawn, its whole environment can still hold the system's
+    /// appearance while `colorScheme` already holds the app's own (Settings > Appearance). The
+    /// theme follows `colorScheme`, or a light chat gets dark mode's near-white text.
+    @Test func theThemesColoursFollowItsColorScheme() {
+        var environment = EnvironmentValues()
+        environment.colorScheme = .dark
+        let light = WidgetPage.Theme(colorScheme: .light, in: environment, fontSize: 15)
+        #expect(!light.dark)
+        #expect(light.foreground == "rgb(17 17 17)")
+        #expect(light.border == "rgb(230 230 230)")
+
+        environment.colorScheme = .light
+        let dark = WidgetPage.Theme(colorScheme: .dark, in: environment, fontSize: 15)
+        #expect(dark.dark)
+        #expect(dark.foreground == "rgb(240 240 240)")
     }
 
     // MARK: - Talking back
