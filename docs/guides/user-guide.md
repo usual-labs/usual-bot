@@ -11,8 +11,12 @@ iPhone unless a section says otherwise.
 - [Side questions and background tasks](#side-questions-and-background-tasks)
 - [Model, thinking and context](#model-thinking-and-context)
 - [Dictation and voice calls](#dictation-and-voice-calls)
+- [The Usual Bot plugin](#the-usual-bot-plugin)
+- [A Bot's computer](#a-bots-computer)
+- [A Bot's browser](#a-bots-browser)
+- [A Bot's terminal (Mac)](#a-bots-terminal-mac)
 - [Rooms](#rooms)
-- [A Bot's profile: routines, skills, apps and machine](#a-bots-profile-routines-skills-apps-and-machine)
+- [A Bot's profile: routines, skills, apps, vault and machine](#a-bots-profile-routines-skills-apps-vault-and-machine)
 - [Quick message (Mac)](#quick-message-mac)
 - [Sharing from other apps](#sharing-from-other-apps)
 - [Offline and reconnecting](#offline-and-reconnecting)
@@ -33,7 +37,8 @@ list. Pinned chats come first, in the order you put them, then the rest by their
 - A number counts the replies you haven't read. Reading a Bot's chat on one device clears its count
   and its notifications on your other devices once they're connected, with a recent Hermes on the
   gateway. Rooms count on each device.
-- On the Mac, ⌘K or the Search button (also in the narrow rail) finds a chat or room, and opens New
+- On the Mac, ⌘K or the Search button at the top of the sidebar (in the narrow rail, ⌘K or
+  **Go › Search…**) finds a chat or room, and opens New
   Bot, New Room, Settings or a theme. On iPhone, search filters the list.
 - Search also finds messages once you type two letters or more: under the chats, Messages lists
   the newest that hold every word you typed, from all your chats and rooms, ignoring case and
@@ -50,7 +55,7 @@ list. Pinned chats come first, in the order you put them, then the rest by their
   as a browser steps through pages, skipping any you've deleted or hidden since.
 - The dot at the bottom of the sidebar shows the connection. Click it to see the gateway, switch to
   your other gateway, add one, or sign out. On iPhone the dot sits on the settings gear at the top
-  left; tap it for your gateways, and tap the one in use for its details, Built-in Tailscale and
+  left; tap it to open Settings, where your gateways come first, and tap the one in use for its details, Built-in Tailscale and
   Sign Out.
 
 ### Two gateways
@@ -145,7 +150,7 @@ can just start typing: after you click a Bot in the sidebar or somewhere in the 
 into the message box. On Mac, Settings can change sending to ⌘Return, leaving Return for new lines. Replies stream in
 as the Bot writes them (turn off **Show replies as they're written** in Settings › General to see
 each message only once it's finished, with "Writing…" meanwhile), with Markdown, code blocks you can copy, and tables. While the Bot uses
-tools, one line such as "Forge edited 1 file and ran 1 command" sums them up; click it to see each
+tools, one line such as "Forge edited a file and ran a command" sums them up; click it to see each
 step. Turn off **Show what Bots do with tools** in Settings › General for a plainer chat: those
 lines, to-do lists, helpers and finished background commands go, and only messages, Bots talking
 to each other and routines' results stay. While a Bot works, the line under the last message says
@@ -476,7 +481,7 @@ computer right now.
 
 - **Watch.** The Mac opens the screen in a window of its own, so you can keep chatting; iPhone shows
   it full screen, and you pinch to zoom. The bar at the top says who's in control.
-- **Take over** gives you the mouse and keyboard; the Bot waits until you hand it back. On the
+- **Take Over** gives you the mouse and keyboard; the Bot waits until you hand it back. On the
   Mac, ⌘ works as Control on the Bot's computer (⌘C copies there), while ⌘Q and ⌘W stay with
   Usual Bot. On iPhone, tap to click, touch and hold to right-click, drag to drag, use two fingers
   to scroll, and the keyboard button to type.
@@ -580,12 +585,12 @@ like "Forge, Atlas & Scribe".
   Dismiss gives up on that reply, and also stops any other reply still running in the room.
 - Hermes stops Bots that keep replying to each other after a few rounds, so they don't go round in
   circles. The room then shows **The Bots paused** with **Continue**, which gives them as many
-  rounds again (up to five times for one message), and **Leave It**, which hides the card. Nothing
+  rounds again (as many times as Hermes allows for one message), and **Leave It**, which hides the card. Nothing
   went wrong and nothing waits on you; sending a new message moves on as well.
 
-Rooms are text only on the dashboard: attachments in rooms need the gateway's Webapp.
+Rooms are text only: you can't attach files or pictures in a room.
 
-## A Bot's profile: routines, skills, apps and machine
+## A Bot's profile: routines, skills, apps, vault and machine
 
 Click the Bot's name at the top of the chat (⌘I) to open its profile beside the chat. On iPhone,
 tap the name, **…** › **View Profile**, or flick the chat to the left. The profile shows this
@@ -621,6 +626,8 @@ button (or Esc, or ⌘[) returns to the profile.
 - **Skills** lists what the Bot can do, with switches to turn skills on and off.
 - **Apps** are the Bot's MCP servers, which give it tools from other services. See
   [Apps](#apps) below.
+- **Vault** lists what the Bot can sign in with; see
+  [Approvals and questions](#approvals-and-questions).
 - **Machine** shows the Bot's model and provider, and the gateway's address, Hermes version,
   connection status and who you're signed in as. On the Mac, when the official Hermes app is
   installed, a button opens it for advanced settings.
@@ -704,8 +711,8 @@ connection or Tailscale, then choose **Try Again** to reconnect without waiting 
 
 ## Settings
 
-Open **Settings…** from the Usual Bot menu (⌘, on Mac), the menu bar item, or the gear beside the
-connection indicator. On iPhone the gear sits at the top of the list, with a dot for the connection,
+Open **Settings…** from the Usual Bot menu (⌘, on Mac), the menu bar item, or the gear at the foot of the
+sidebar. On iPhone the gear sits at the top of the list, with a dot for the connection,
 and Settings opens with your gateway at the top. Preferences stay on this device.
 
 - **General:** follow the system appearance or choose light or dark. On iPhone, change chat text
@@ -730,7 +737,7 @@ and Settings opens with your gateway at the top. Preferences stay on this device
   the Dock and on the Home Screen, shows how many replies you haven't read, leaving out chats you
   muted. If you'd allowed notifications before this came in, turn on **Badges** for Usual Bot in
   the system's notification settings.
-- **Push:** with the [Usual Bot plugin](../../Integrations/usual-bot/README.md) on your gateway, every device you sign in on is reached, even with Usual Bot closed. The device you're
+- **Push** (in Notifications): with the [Usual Bot plugin](../../Integrations/usual-bot/README.md) on your gateway, every device you sign in on is reached, even with Usual Bot closed. The device you're
   using hears first, or the one you used last if you're using none; your other devices hear 15
   seconds later, unless you've read that chat by then (plugin 0.13.0 or later). A Mac you've left
   alone for a minute doesn't count as in use, even with Usual Bot in front. Your
@@ -743,8 +750,10 @@ and Settings opens with your gateway at the top. Preferences stay on this device
   Power Mode. Under **Bots on this
   device**, turn a Bot off to keep it quiet here only; **Send Test** checks the whole way. Signing
   out stops pushes to that device. Without the plugin, the Mac alerts while the app runs (the menu
-  bar is enough), and the iPhone only while connected or when iOS lets it check in.
-- **Voice:** choose the call engine and the language, voice and speed for on-device speech. These
+  bar is enough), and the iPhone only while connected or when iOS lets it check in. Push works in
+  the TestFlight app; a copy you build yourself alerts only the same way as without the plugin.
+- **Voice:** choose how dictation hears you (**On-device** or **Gateway**), the call engine, and
+  the language, voice and speed for on-device speech. These
   preferences are shared with the controls inside a call, and Read Aloud uses the language, voice
   and speed too; Gateway and GPT-Live voices stay on the gateway.
 - **Connection:** see the gateway address, status, version and identity when available, name it,
@@ -792,10 +801,12 @@ On the Mac these are also in the menu bar (File, View and Go), and **Help › Ke
 | ⌘J | Mac chat | Show or hide the terminal |
 | ⌘[ / ⌘] | Mac | Back / forward through the chats you opened |
 | ⌘+ / ⌘− / ⌘0 | Mac | Zoom the window in, out, or back to actual size |
+| ⌃⌘F | Mac | Full screen |
 | ⌘/ | Mac | Show the keyboard shortcuts |
 | ⌘D | Mac message box | Dictate: press to start and again to stop, or hold while you talk and let go |
 | Return | Message box | Send by default, or pick from the open `/` or `@` menu |
 | ⌘Return | Mac message box | Send when chosen in Settings |
+| ⌥Return | Mac message box, while a reply runs | Queue the message for when the reply ends |
 | Shift-Return | Message box | New line |
 | ⌘. | Chat or room, while a reply runs | Stop the reply |
 | ⌘L | Mac, words selected in a message | Reply to them |

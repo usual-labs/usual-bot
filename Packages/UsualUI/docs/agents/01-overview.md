@@ -4,7 +4,7 @@
 
 SwiftUI package providing Usual Bot connection, contact, chat, room, profile and approval interfaces over HermesKit state.
 
-Layer: SINGLE PROJECT. Types: frontend, library-CLI. This layer has its own source and build/package boundary.
+Layer: SINGLE PROJECT. Type: SwiftUI library. This layer has its own source and build/package boundary.
 
 ## Implemented today — boundaries and observed gaps
 

@@ -1,7 +1,7 @@
 # Gateway fixtures
 
 Socket traffic recorded from a real Hermes gateway, then anonymised: every name, title, preview,
-ID, path and model is replaced, and the `skin` payload is dropped. Keys, value types and which
+ID, path and model is replaced, and the `skin` payload is replaced with `{"name": "default"}`. Keys, value types and which
 fields are `null` are kept exactly as the gateway sent them.
 
 | File | Gateway | What it covers |

@@ -8,13 +8,14 @@ The Mac entitlements include `files.user-selected.read-write`, to read the files
 
 Config/Info.plist allows plain http (gateways on a tailnet or home network); GatewayAddress refuses http to public hosts. `NSLocalNetworkUsageDescription` (Shared.xcconfig) covers gateways on a home network; tailnet addresses need no prompt.
 
-Verified 2026-10-23 in the iPhone 17 Pro simulator against the user's gateway: sign-in, chat list, chats, rooms, profile sheet, keyboard, dark mode and reconnect after backgrounding. On a physical iPhone 15 Pro Max (iOS 27.0.1), verified 2026-10-23: browser sign-in completes, because the in-app `ASWebAuthenticationSession` reaches the app's 127.0.0.1 listener on the device. Afterwards the agents load. The app was signed with the team's wildcard development profile. The first attempt failed with "could not connect to the server" because the phone wasn't on the tailnet. A tailnet gateway is reachable only while Tailscale is on in that device, and an unreachable one now says so (`AppModel.describe(_:for:)`, `GatewayAddress.isTailnet`). Package builds are separate from signing/device acceptance; a device build needs a team, from `Config/Local.xcconfig` (see `Local.xcconfig.example`) or `DEVELOPMENT_TEAM=… -allowProvisioningUpdates` on the xcodebuild command line.
+Verified 2026-10-23 in the iPhone 17 Pro simulator against the user's gateway: sign-in, chat list, chats, rooms, profile sheet, keyboard, dark mode and reconnect after backgrounding. On a physical iPhone 15 Pro Max (iOS 27.0.1), verified 2026-10-23: browser sign-in completes, because the in-app `ASWebAuthenticationSession` reaches the app's 127.0.0.1 listener on the device. Afterwards the agents load. The app was signed with the team's wildcard development profile. The first attempt failed with "could not connect to the server" because the phone wasn't on the tailnet. A tailnet gateway is reachable only while Tailscale is on in that device (or, on iPhone, Built-in Tailscale), and an unreachable one now says so (`AppModel.describe(_:for:)`, `GatewayAddress.isTailnet`). Package builds are separate from signing/device acceptance; a device build needs a team, from `Config/Local.xcconfig` (see `Local.xcconfig.example`) or `DEVELOPMENT_TEAM=… -allowProvisioningUpdates` on the xcodebuild command line.
 
 Debug builds started with `USUALBOT_DEMO=1` use `AppModel.demo()` (two made-up gateways, Work and Home, with agents, a room, an approval and routines; never connects) instead of signing in; README screenshots come from it. Launch arguments such as `-selectedContact forge` pick the open chat without overwriting stored settings.
 
 Shipped builds (`scripts/testflight.sh`, Mac and iPhone) use bundle ID `labs.usual.UsualBot`
 (`BUNDLE_ID_PREFIX=labs.usual`), `MARKETING_VERSION` from `Config/Shared.xcconfig` and the upload
-time as `CURRENT_PROJECT_VERSION`, with push on, and Xcode signs them for the App Store. Debug/dev
+time as `CURRENT_PROJECT_VERSION`, with push on, signed with App Store profiles made beforehand (`SIGNING_PROFILES`, as CI does) or
+by Xcode's automatic signing locally. Debug/dev
 builds keep `dev.usualbot.local` (or the `Local.xcconfig` prefix), so they don't
 share settings or the Keychain item's trust with the released app.
 
@@ -31,8 +32,8 @@ bottom, 3% right of centre; 1024 px
 for iPhone and every Mac size; the system rounds it on macOS 26+ and iOS; `ASSETCATALOG_COMPILER_APPICON_NAME
 = AppIcon` in `Config/Shared.xcconfig`). Debug builds use `AppIconDev` instead (`Config/Debug.xcconfig`): the
 same PNGs with an orange DEV band, so a local build is easy to tell from the installed release;
-regenerate it with `swift scripts/make-dev-icon.swift` whenever `AppIcon` changes. Release, which CI
-archives, ships only `AppIcon`. The catalog also holds the iPhone launch screen's `LaunchMark` (120 pt) and
+the script that made the band was never committed, so redo it by hand when `AppIcon` changes.
+Release, which `scripts/testflight.sh` archives, ships only `AppIcon`. The catalog also holds the iPhone launch screen's `LaunchMark` (120 pt) and
 `LaunchBackground` (the window colour, light and dark), named by `UILaunchScreen` in `Config/Info.plist`
 (the generated launch screen setting is gone). While `AppModel.isRestoring` (a saved gateway at
 launch, until `restore()` finishes, including any Keychain prompt), `RootView` shows `SplashView`

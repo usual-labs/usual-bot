@@ -231,8 +231,8 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 - **macOS opens the extension from the copy of the bundle ID in `/Applications`.** An older copy
   there without the extension gives "Failed to find extension inside /Applications/UsualBot.app".
   Replace it with the build you're testing.
-- **After installing the plugin, restart the dashboard as well as the gateway.** Bot Chats' hooks also
-  run in the dashboard process, and `hermes gateway restart` leaves the old gateway running until its
+- **After installing the plugin, restart the gateway, and the dashboard too if you run one.** A
+  legacy dashboard's Bot Chats run the hooks in that process, and `hermes gateway restart` leaves the old gateway running until its
   turns end, still on the old code. The plugin's `presence.json` from 0.1 held one
   `{"focused", "at"}` entry, which 0.2's reader skips.
 - **Don't use the `async` forms of `UNUserNotificationCenterDelegate`.** Their thunk calls the
@@ -266,4 +266,12 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   sign-ins are as old as that copy. The plugin reads the tab layout from the copy instead.
 - **Plugin changes need both restarts.** The feed runs in the dashboard, and the flag hook in the
   Bot's agent. A cloned profile loads agent plugins only from its own `plugins/` folder, which is why
-  `install.sh` copies the plugin into each real-profile Bot.
+  `Integrations/install-usual-bot.sh` copies the plugin into every profile.
+
+## Built-in Tailscale (iPhone)
+
+- **The Google hand-off is untested** (no Google-backed gateway to try it on): a gateway sign-in
+  through Google leaves the in-app web view for the system sheet, which needs the Tailscale VPN.
+- **An MCP server's OAuth sign-in on a tailnet gateway needs the Tailscale VPN.** It opens the
+  provider in Safari, and the provider returns to the gateway's own callback, which Safari can reach
+  only through the VPN. Untested.

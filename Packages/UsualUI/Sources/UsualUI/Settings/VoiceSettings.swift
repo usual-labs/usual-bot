@@ -20,7 +20,7 @@ struct VoiceSettings: View {
             Text(
                 dictation == DictationSettings.gateway
                     ? "Your voice goes to the Bot’s gateway, which sends it to whatever speech-to-text it’s set up with. That may be a paid service. Words appear as you speak if the gateway can stream them, otherwise when you stop."
-                    : "Your voice stays on this device, and dictation works offline."
+                    : "Your words are recognized on this device when it has your language’s speech model, and dictation then works offline. Otherwise Apple’s speech service hears them."
             )
         }
         Section {

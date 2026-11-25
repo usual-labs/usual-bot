@@ -12,8 +12,9 @@
 - `Sources/HermesKit/Transport/FrameRecorder.swift` — Debug frame recording, with redaction
 - `Sources/HermesKit/Gateway/GatewayAddress.swift` — address validation
 - `Sources/HermesKit/Vault/` — vault list, items, drafts and error scrubbing
-- `Sources/HermesKit/Apps/` — an agent's MCP servers ("apps"): list, catalog, custom drafts, sign-in
+- `Sources/HermesKit/Apps/` — an agent's MCP servers ("apps"): list, catalog, custom drafts, sign-in; and Nous Portal connectors (`ConnectorList`)
 - `Sources/HermesKit/Chat/VaultPrompt.swift`, `Chat/ChatThread+Vault.swift` — in-chat vault prompts
+- Other domain folders, one feature each: `Domain/`, `Push/`, `Rooms/`, `Roster/`, `Routines/`, `Screen/` (a Bot's computer), `Search/`, `Share/`, `Skills/`, `Terminal/`, `Updates/` (TestFlight update check), `Usage/`, `Voice/`
 
 No local database schema/migration files were found in this layer; that does not imply dependencies or remote systems lack persistence.
 

@@ -36,7 +36,8 @@ app and older versions don't, and get plain alerts. Both calls answer `wake` as 
 the app this relay knows it; the app asks again until one does.
 
 `kind` is `message`, `needs_you` or `test`. `sealed` is base64 AES-GCM (nonce, ciphertext, tag) of
-JSON with `title`, `body`, `chat`, `kind` and `sound`. `thread` groups a chat's notifications
+JSON with `title`, `body`, `chat`, `kind` and `sound`, and optionally `gateway`, `interim` and
+`read` (chats to clear). `thread` groups a chat's notifications
 without naming it. A clear's `sealed` holds only `kind: "read"` and `chat`. It has a route of its
 own so that clears sent to an older relay fail there rather than show "New message".
 

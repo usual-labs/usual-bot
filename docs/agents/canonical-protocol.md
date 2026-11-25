@@ -33,7 +33,7 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   every attached app: there's no 4404 vote as on the dashboard. So no decline, and no skip without
   a card; the official app still gets to answer.
 - **A Bot Chat is made with `session.create` and its title,** which finds or creates under the
-  gateway's lock, with `source: "tui"` so the push plugin's reply hook counts it.
+  gateway's lock, with `source: "tui"` so the usual-bot plugin's reply hook counts it.
 - **A steer is sent again only on `delivered: false`.** A plain `rejected` can follow delivery
   (`CanonicalCorrectionAck` in Hermes's contract), so the app says it couldn't confirm instead.
   Stop is retried once on `stale_generation`: the gateway moves the generation when it takes a
@@ -98,7 +98,7 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
 
 ## Traps
 
-- **The push plugin's request hooks see `platform: "local"`** for every chat the gateway owns, a
+- **The usual-bot plugin's request hooks see `platform: "local"`** for every chat the gateway owns, a
   terminal's or an editor's included; `hermes_cli.plugin_session.session_surface()` says which app
   (`tui`, `desktop`, `cli`, `acp`). The session's stored `source` is `local` too. Reply hooks see the
   app. A thread a hook starts sees the gateway's main Hermes home, not the profile's, so resolve the
@@ -130,7 +130,7 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
 - **A Bot that chooses not to reply answers `[SILENT]` or `NO_REPLY`**, which Hermes asks for after
   a routine with nothing new, another Bot's note or a finished background process. Hermes drops it
   only from what it delivers live in a "Bot Chat" session (`tui_gateway/prompt_turn.py`): the
-  history keeps it as written, routines' sessions aren't Bot Chats, and the push plugin's reply hook
+  history keeps it as written, routines' sessions aren't Bot Chats, and the usual-bot plugin's reply hook
   sees the raw reply. The app (`Silence`) and the plugin's push (`turns.said`) drop it themselves;
   keep their marker lists in step with `gateway/response_filters.py`.
 

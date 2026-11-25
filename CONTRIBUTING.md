@@ -5,7 +5,8 @@ welcome, and so are good bug reports.
 
 Usual Bot aims to stay small: a messenger for your Hermes agents, not a second Hermes app.
 Agent configuration, skill setup and gateway administration belong in the official app, so changes that add
-them here are unlikely to be merged. If you're unsure whether an idea fits, open a feature request
+them here are unlikely to be merged. The exceptions are a Bot's routines and MCP servers, and
+making, renaming and deleting Bots. If you're unsure whether an idea fits, open a feature request
 first and we'll talk it through before you write code.
 
 Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
@@ -41,14 +42,15 @@ Before changing code, read the [architecture guide](docs/guides/architecture.md)
 
 | Package | What it owns |
 | --- | --- |
-| `Packages/HermesKit` | Sign-in, the WebSocket and JSON-RPC, and the app's state (`AppModel`, chats, rooms, routines). Foundation only, no UI. |
+| `Packages/HermesKit` | Sign-in, the WebSocket and JSON-RPC, and the app's state (`AppModel`, chats, rooms, routines). Apple frameworks only, no UI. |
 | `Packages/UsualUI` | The SwiftUI screens, shared by Mac and iPhone. |
+| `Packages/Tailnet` | Built-in Tailscale on iPhone (a wrapper around TailscaleKit). |
 | `App/` | The app target: sign-in presenters, the ⌥Space panel, the menu bar item, notifications. |
 
 Those notes describe how each part works, its conventions and its known issues. Platform quirks
 that have caught us before (the macOS 26 sidebar, the window toolbar, lazy scroll views, text
-selection) are in `Packages/UsualUI/docs/agents/07-known-issues.md`. When your change alters
-you hit something non-obvious, or a recorded decision changes, update the notes in the same pull
+selection) are in `Packages/UsualUI/docs/agents/07-known-issues.md`. When you hit something
+non-obvious, or a recorded decision changes, update the notes in the same pull
 request. Most changes don't need that: the notes hold what the code can't show.
 
 To lint Swift files before each commit, turn on the repository's hook once:

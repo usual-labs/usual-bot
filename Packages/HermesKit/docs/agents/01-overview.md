@@ -4,7 +4,7 @@
 
 Swift package implementing authenticated Hermes gateway sessions, roster, chat, rooms, routines, approval, clarification, secret and sudo requests and cached client state. AppModel restores saved credentials/cache, signs in and maintains gateway connectivity.
 
-Layer: SINGLE PROJECT. Types: library-CLI. This layer has its own source and build/package boundary.
+Layer: SINGLE PROJECT. Type: library. This layer has its own source and build/package boundary.
 
 ## Implemented today — boundaries and observed gaps
 

@@ -2,11 +2,11 @@
 
 ## Implemented today
 
-Swift tools 6.0; SwiftUI and local ../HermesKit package dependency. Resources are processed by the package target. @Bindable observes AppModel and @State owns selection/sheet/profile UI state.
+Swift tools 6.2, iOS 26/macOS 26 minimums; SwiftUI and local ../HermesKit package dependency. Resources are processed by the package target. @Bindable observes AppModel and @State owns selection/sheet/profile UI state.
 
 Manifests/lockfiles: `Package.swift`. Package manager: see build manifest / parent tooling.
 
-No environment-variable references were found by the direct source-reference scan; check external host configuration separately.
+Debug launch switch: `USUALBOT_OPEN_ROUTINE` (`RoutinesView`).
 
 Test source examples: `Tests/UsualUITests/ThreadViewTests.swift`, `Tests/UsualUITests/ThemeTests.swift`.
 

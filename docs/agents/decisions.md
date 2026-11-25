@@ -1,7 +1,7 @@
 # Usual Bot: product and gateway decisions
 
-Why the app works the way it does, where the code can't say so. Everything through M23 is built;
-`git log` and the changelog hold the history.
+Why the app works the way it does, where the code can't say so. `git log` and the changelog
+hold the history.
 
 Gateway facts come from a Hermes source checkout (`81a55437f3f`, 26 September 2026) and its contract
 (`apps/shared/src/gateway-contract.openrpc.json`). The app speaks the Webapp ([canonical](canonical-protocol.md))
@@ -104,7 +104,7 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   message box is the way in; criteria added with `/subgoal` show in the bar. A sheet for either
   wasn't small.
 - **A goal ending by itself notifies like a background task** (the same setting), only while the
-  app is connected: Hermes has no hook the push plugin could send it from.
+  app is connected: Hermes has no hook the usual-bot plugin could send it from.
 - **Rooms have no goals.** A goal belongs to one session and its queue; a room's turns are run by
   the room.
 - **Loops and heartbeats aren't shown.** They share the goal's calls and snapshot
@@ -154,7 +154,7 @@ read at Hermes `2bd378ed1b`.
   (its WebContent process goes with it) and a placeholder of the same size stands in. Scrolling back
   within 20 s keeps the page's state; after that it starts again. Not measured on a device.
 - **Where a widget doesn't run:** the ⌥Space panel shows a card naming the file and saying to open
-  the chat (it's small and closes as you leave it). Notifications (the app's and the push plugin's
+  the chat (it's small and closes as you leave it). Notifications (the app's and the usual-bot plugin's
   `plain.py`), sidebar previews, search, quotes, Read Aloud and Select Text leave the line out, and
   say "Sent a widget" when that's all a message was. The menu bar shows no messages.
 - **Light and dark** come from the app's `Theme` colours, resolved for the current appearance. A
@@ -164,9 +164,10 @@ read at Hermes `2bd378ed1b`.
 - **Scrolling (iPhone).** The page scrolls inside its frame only when it's taller than 1200 pt or
   wider than the message; otherwise a swipe on it scrolls the chat.
 - **Chats and rooms both run widgets.** Room members already run as Hermes's `gui` surface, so
-  they're told about widgets. Bot Chats are created with `source: "tui"` and aren't; switching to
-  `gui` would also hand agents the desktop app's own tools (`desktop_ui`, `catalog`), which the app
-  can't serve. Telling them through the push plugin is a separate change.
+  they're told about widgets. Bot Chats are created with `source: "tui"`, so Hermes doesn't tell them; the
+  usual-bot plugin's chat context does (`Integrations/usual-bot/context.py`). Switching to `gui`
+  would also hand agents the desktop app's own tools (`desktop_ui`, `catalog`), which the app can't
+  serve.
 - **Talking back.** `window.hermes.send(prompt)`, and `data-hermes-send="…"` on any clickable
   element, send the prompt as a turn with `display_kind: "hidden"`, as the desktop app does: the
   agent runs and the row is stored, but no chat shows it. The script and its channel are the only
@@ -215,8 +216,8 @@ read at Hermes `2bd378ed1b`.
   - **Its reply notifies like a typed one.** Replies often take 20 s, long enough to tap and
     leave, and an open chat already keeps every device quiet. The plugin tells a widget's prompt
     from Hermes's own hidden ones (a goal's next step, which stay quiet) by the app's `widget-`
-    `submission_id` in the newest user message's `display_metadata`. This replaces 0.5.1's rule
-    that no hidden prompt's reply notified.
+    `submission_id` in the newest user message's `display_metadata`. This replaces the push
+    plugin 0.5.1's rule that no hidden prompt's reply notified.
 - **Hidden rows never show as yours.** `GatewayTurn.content` returns nothing for `hidden`, which also
   covers Hermes's onboarding opening and the official app's goal controls, which used to show as
   your messages and be what Undo and Edit took back. Legacy `session.undo` already skips them in
@@ -303,8 +304,9 @@ read at Hermes `2bd378ed1b`.
 
 ## Voice
 
-- **Dictation uses `SFSpeechRecognizer`,** not `SpeechAnalyzer`, which would need a second code path
-  for macOS 15 / iOS 18 plus asset downloads.
+- **Dictation uses `SFSpeechRecognizer`,** not `SpeechAnalyzer`, which needs its language assets
+  downloaded first. The original reason, a second code path for macOS 15 / iOS 18, went with the
+  move to macOS 26 and iOS 26, so this is open to revisit.
 - **GPT-Live runs in WebKit** (a hidden web view, `live-call.html`), so the app keeps no third-party
   dependency. The app, not the page, exchanges the SDP offer, so neither the sign-in nor the OpenAI
   key reaches the page.
@@ -351,7 +353,7 @@ read at Hermes `2bd378ed1b`.
 - A room message is text to its members, so `/` offers members' skills and no commands: commands run
   on one agent's own chat.
 - Room members follow their agent's default model (`follow_profile_config`).
-- Legacy gateways have no room attachments and no per-member usage.
+- Rooms have no attachments on either dialect: `groups.send` takes text only here.
 - **No live activity in rooms.** Members run on hidden sessions, so no tool or helper events reach a
   client; rooms keep "X is replying…" from `driver_status.member_activity`.
 - **On the dashboard, Dismiss is `groups.stop`.** `groups.discard` isn't on its method table, and a
@@ -536,7 +538,7 @@ read at Hermes `2bd378ed1b`.
   and local builds never contact it. Build numbers are the upload time, so they compare as numbers.
   Deployed 2026-11-09 with an individual key; `GET /v1/latest` answered the processed 0.5.0 build
   for both platforms. A Debug build with `USUAL_UPDATES=YES` showed the banner from the live service
-  on the Mac and in the iPhone Simulator, Later hid it, and Settings › About kept the link. Unverified: that `filter[betaGroups]` narrows `/v1/builds` as expected, and
+  on the Mac and in the iPhone Simulator, Later hid it, and the About Usual Bot section in Settings kept the link. Unverified: that `filter[betaGroups]` narrows `/v1/builds` as expected, and
   that `itms-beta://` opens the app's page in TestFlight on the Mac.
 - **The relay's rate limits are a ceiling, not a guard.** Cloudflare's rate-limit binding counts per
   location and per instance, so bursts get through: on 2026-11-05, 40 sign-ups in a row from one
@@ -1005,7 +1007,7 @@ read at Hermes `2bd378ed1b`.
 - **`gatewayAddress` still names the gateway in use,** beside the new `gateways` list, so an install
   from before migrates without signing in again and an older build still finds its sign-in.
 - **Notifications say which gateway sent them by an ID the device made.** Each `SavedGateway` has a
-  random ID that the device gives the push plugin (0.5.0) with its registration; the plugin seals it
+  random ID that the device gives the usual-bot plugin (0.5.0) with its registration; the plugin seals it
   into each notification and clear, and mixes it into the thread HMAC. A gateway often doesn't know
   the address you reach it by, and the ID reveals nothing. The relay registration, its seal key
   included, stays one per device. The plugin reports its `version` in `GET /settings`; with two
@@ -1018,6 +1020,37 @@ read at Hermes `2bd378ed1b`.
   being read and never notify about it.
 - **A notification's switch is per gateway, on the device's own list:** off removes the device from
   that gateway's plugin and also silences the app's own alerts from it.
+
+## Built-in Tailscale (iPhone)
+
+- **iPhone only on purpose.** TailscaleKit (`swift/` in `tailscale/libtailscale`, BSD-3) runs a
+  userspace node inside the app behind a SOCKS5 loopback proxy (`Packages/Tailnet`,
+  `App/BuiltInTailscale.swift`). On iPhone that costs one platform condition and an `#if os(iOS)`;
+  a linked-but-off Mac build would need a universal macOS slice (Tailscale's `make macos` builds
+  Apple silicon only), ship about 20 MB unused and put the Go framework in the Mac app. It adds
+  about 21 MB to the iPhone app, and tsnet uploads node logs to Tailscale (logtail) like
+  Tailscale's own clients.
+- **Gateway sign-in goes through an in-app web view over the proxy** (`TailnetSignInPresenter`),
+  since `ASWebAuthenticationSession` loads pages outside the app. Google refuses web views inside
+  apps (`disallowed_useragent`), so a navigation to `accounts.google.com` ends that attempt with an
+  alert and later sign-ins use the system sheet, which needs the Tailscale VPN for that sign-in;
+  tokens then refresh through the built-in device. Posing as Safari would avoid it, and Google's
+  policy forbids it.
+- **The node stops once the app lets go of the gateway in the background** (after `BackgroundLink`'s
+  grace period and after a background check-in) and starts on the next gateway request: iOS cut a
+  suspended node's sockets, and its UDP receivers and link monitor never recovered (DERP-only,
+  errors in a loop).
+- **The framework is downloaded, not committed or built.** `Packages/Tailnet/Package.swift` fetches
+  `TailscaleKit.xcframework.zip` from a `usual-labs/tailscalekit-build` release by URL and
+  checksum. That repo's manually run workflow builds a libtailscale commit, zips it with
+  libtailscale's LICENSE, attests it and publishes an immutable release; to update Tailscale, run it
+  (trial first) and copy the new URL and checksum. Tailscale publishes no prebuilt TailscaleKit;
+  committing it (69 MB per version) or building it in every build (Go) were rejected.
+- **The credits are the README's License section,** which Settings › Licenses and Credits opens; it
+  carries libtailscale's BSD-3 notice, copied from the LICENSE in the framework's zip. A new
+  TailscaleKit release with a changed LICENSE needs it copied again.
+- **Signing out of Tailscale goes through LocalAPI on the loopback port,** because TailscaleKit's `logout()`
+  isn't public.
 
 ## Not verified
 
