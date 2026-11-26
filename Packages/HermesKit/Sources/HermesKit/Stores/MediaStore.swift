@@ -50,10 +50,18 @@ public final class MediaStore {
         if let task = loading[key] { return try await task.value }
         guard let auth = auth() else { throw GatewayError.disconnected }
         let query = query(path, profile: profile)
+        let traced = Trace.begin("media.fetch", "fresh=\(fresh)")
         let task = Task { try await Self.fetch(query, auth: auth) }
         loading[key] = task
         defer { loading[key] = nil }
-        let data = try await task.value
+        let data: Data
+        do {
+            data = try await task.value
+            traced.end("bytes=\(data.count)")
+        } catch {
+            traced.end("error=\(Trace.reason(error))")
+            throw error
+        }
         if !fresh { remember(data, for: key) }
         return data
     }
@@ -98,7 +106,15 @@ public final class MediaStore {
         }
         downloading[key] = task
         defer { downloading[key] = nil }
-        let url = try await task.value
+        let traced = Trace.begin("media.download")
+        let url: URL
+        do {
+            url = try await task.value
+            traced.end("bytes=\((try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)")
+        } catch {
+            traced.end("error=\(Trace.reason(error))")
+            throw error
+        }
         playable.append((key, url))
         while playable.count > Self.playableLimit {
             try? FileManager.default.removeItem(at: playable.removeFirst().url.deletingLastPathComponent())

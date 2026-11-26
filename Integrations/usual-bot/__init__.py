@@ -18,7 +18,7 @@ from . import context, flags, push, secret_prompt, store
 log = logging.getLogger(__name__)
 
 # As in plugin.yaml. The app reads it to offer an update.
-VERSION = "0.13.0"
+VERSION = "0.14.0"
 
 # Where a person talks to the agent. Leaves out helpers ("subagent"), routines ("cron") and rooms
 # ("bot_room"), whose sessions continue no chat of the app's. A gateway's own chats can say "local".

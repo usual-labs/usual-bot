@@ -23,6 +23,13 @@ struct UsualBotApp: App {
     #endif
 
     init() {
+        // Which nightly logged what follows: the system log outlives each update.
+        let info = Bundle.main.infoDictionary
+        Trace.first(
+            "launch.start",
+            "version=\(info?["CFBundleShortVersionString"] as? String ?? "?") build=\(info?["CFBundleVersion"] as? String ?? "?")"
+        )
+        Trace.watchNetwork()
         #if os(iOS)
             let tailscale = BuiltInTailscale()
             _tailscale = State(initialValue: tailscale)
@@ -67,6 +74,7 @@ struct UsualBotApp: App {
             ) { _ in
                 MainActor.assumeIsolated { model.drafts.save() }
             }
+            PowerTrace.start()
             // Back from another app, where you may have shared something to a Bot.
             NotificationCenter.default.addObserver(
                 forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main

@@ -13,17 +13,33 @@ struct GatewayConnector: Sendable {
         self.makeSocket = makeSocket
     }
 
-    func connect() async throws -> (JSONRPCChannel, GatewayReady) {
-        let ticket = try await auth.webSocketTicket()
-        let channel = JSONRPCChannel(socket: try await makeSocket(auth.gateway.webSocketURL(ticket: ticket)))
-        await channel.start()
+    func connect(attempt: Int = 0) async throws -> (JSONRPCChannel, GatewayReady) {
+        let total = Trace.begin("connect", "attempt=\(attempt)")
+        var step = Trace.begin("connect.ticket")
         do {
-            let ready = try await channel.waitUntilReady()
-            // Without this the gateway fails approval requests at once instead of asking the app.
-            _ = try await channel.call("client.capabilities", params: ["server_requests": true])
-            return (channel, ready)
+            let ticket = try await auth.webSocketTicket()
+            step.end()
+            step = Trace.begin("connect.socket")
+            let channel = JSONRPCChannel(socket: try await makeSocket(auth.gateway.webSocketURL(ticket: ticket)))
+            await channel.start()
+            step.end()
+            do {
+                step = Trace.begin("connect.ready")
+                let ready = try await channel.waitUntilReady()
+                step.end("dialect=\(ready.dialect.rawValue)")
+                step = Trace.begin("connect.capabilities")
+                // Without this the gateway fails approval requests at once instead of asking the app.
+                _ = try await channel.call("client.capabilities", params: ["server_requests": true])
+                step.end()
+                total.end("ok")
+                return (channel, ready)
+            } catch {
+                await channel.close()
+                throw error
+            }
         } catch {
-            await channel.close()
+            step.end("error=\(Trace.reason(error))")
+            total.end("error=\(Trace.reason(error))")
             throw error
         }
     }

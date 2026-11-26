@@ -38,11 +38,18 @@ public final class GatewayTranscriber {
             return String(localized: "Can you check whether last night’s backup finished?")
         }
         guard let auth = auth() else { throw GatewayError.disconnected }
-        let reply = try await auth.json(
-            Reply.self, path: "/api/audio/transcribe" + Self.query(profile), method: "POST",
-            body: Body(dataUrl: "data:\(mimeType);base64,\(audio.base64EncodedString())", mimeType: mimeType),
-            timeout: Self.uploadTimeout)
-        return reply.transcript?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let traced = Trace.begin("stt.upload", "bytes=\(audio.count)")
+        do {
+            let reply = try await auth.json(
+                Reply.self, path: "/api/audio/transcribe" + Self.query(profile), method: "POST",
+                body: Body(dataUrl: "data:\(mimeType);base64,\(audio.base64EncodedString())", mimeType: mimeType),
+                timeout: Self.uploadTimeout)
+            traced.end("ok")
+            return reply.transcript?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        } catch {
+            traced.end("error=\(Trace.reason(error))")
+            throw error
+        }
     }
 
     /// Live words while you speak. Push 16 kHz mono 16-bit PCM as it's recorded; `finish` gives the
@@ -149,7 +156,9 @@ public final class TranscriptionStream: Sendable {
     public func finish() async -> String? {
         input.finish()
         let task = task
-        return await withTaskGroup(of: String??.self) { group in
+        // From the end of speech to its words: what a call waits on before the Bot hears you.
+        let traced = Trace.begin("stt.finish")
+        let transcript = await withTaskGroup(of: String??.self) { group in
             group.addTask { .some(await task.value) }
             group.addTask {
                 try? await Task.sleep(for: Self.finishTimeout)
@@ -161,6 +170,8 @@ public final class TranscriptionStream: Sendable {
             task.cancel()
             return nil
         }
+        traced.end(transcript == nil ? "none" : "ok")
+        return transcript
     }
 
     /// Drops the recording and closes the socket.

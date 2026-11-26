@@ -79,6 +79,8 @@ public final class AppModel {
     var isCheckingIn = false
     /// Counts roster reads, so `checkIn()` knows when this link has read the gateway.
     @ObservationIgnored var rosterReads = 0
+    /// When the app came back, or a notification was tapped, until the chat on screen is ready: `Trace`'s `resume`.
+    @ObservationIgnored var resumedAt: ContinuousClock.Instant?
     /// The socket while the link is online.
     @ObservationIgnored var channel: JSONRPCChannel?
     /// The gateway process's event numbering, for replaying what a short drop missed.
@@ -217,9 +219,14 @@ public final class AppModel {
         // Off the main thread: macOS can hold a Keychain read behind an access prompt, and the
         // window must stay responsive while it waits.
         let store = tokenStore
+        let reading = Trace.begin("launch.keychain")
         let tokens = await Task.detached { try? store.load(for: gateway) }.value
+        reading.end(tokens == nil ? "none" : "ok")
         guard case .signedOut = session, returnGatewayID == nil, let tokens else { return }
+        let loading = Trace.begin("launch.cache")
         loadCache(for: gateway)
+        loading.end("chats=\(threads.count)")
+        Trace.first("launch.cached")
         begin(AuthSession(gateway: gateway, tokens: tokens, store: tokenStore, http: http))
     }
 
@@ -342,6 +349,8 @@ public final class AppModel {
     public func setForeground(_ foreground: Bool) {
         guard foreground != isForeground else { return }
         isForeground = foreground
+        Trace.event(foreground ? "app.foreground" : "app.background", Trace.fields("link=\(link.traceName)"))
+        resumedAt = foreground ? .now : nil
         showVisibleChat()
         guard let auth else { return }
         if !foreground { saveCache(for: auth.gateway) }
@@ -368,10 +377,20 @@ public final class AppModel {
     private func stayConnected(_ auth: AuthSession) async {
         let connector = GatewayConnector(auth: auth, makeSocket: makeSocket)
         var attempt = 0
+        let linkStarted = ContinuousClock.now
+        var droppedAt: ContinuousClock.Instant?
         while !Task.isCancelled {
             do {
-                let (channel, ready) = try await connector.connect()
+                let (channel, ready) = try await connector.connect(attempt: attempt)
+                Trace.event(
+                    "link.online",
+                    Trace.fields(
+                        "attempt=\(attempt)",
+                        droppedAt.map { Trace.since($0, "offline_ms") } ?? Trace.since(linkStarted, "since_start_ms"),
+                        Trace.since(resumedAt, "since_foreground_ms"), "dialect=\(ready.dialect.rawValue)"))
+                droppedAt = nil
                 attempt = 0
+                Trace.first("launch.online")
                 self.channel = channel
                 replayEpoch = ready.replayEpoch?.stringValue
                 for thread in threads.values { thread.replayEpoch = replayEpoch }
@@ -394,7 +413,9 @@ public final class AppModel {
                 }
                 var firstRead = true
                 while !Task.isCancelled {
+                    let roster = Trace.begin("roster", firstRead ? "first=true" : "")
                     try await refreshRosterKeepingLink(on: channel)
+                    roster.end(logging: firstRead || roster.elapsed >= 1000)
                     attachChats()
                     // Chats may have been read elsewhere while this link was down; after that, a
                     // chat that turns unread is looked at on the next read.
@@ -411,6 +432,11 @@ public final class AppModel {
                 guard !Task.isCancelled else { return }
                 link = .offline(Self.describe(error, for: auth.gateway))
                 Self.log.error("Gateway link dropped: \(Self.describe(error), privacy: .public)")
+                droppedAt = droppedAt ?? .now
+                Trace.event(
+                    "link.dropped",
+                    "attempt=\(attempt) reason=\(Trace.reason(error)) retry_ms=\(Trace.milliseconds(Backoff.delay(attempt: attempt)))"
+                )
                 try? await Task.sleep(for: Backoff.delay(attempt: attempt))
                 attempt += 1
                 link = .connecting
@@ -489,7 +515,10 @@ public final class AppModel {
         thread.gateway = { [weak self] in self?.auth?.gateway }
         thread.replayEpoch = replayEpoch
         thread.wasRead = { [weak self] in self?.readSync.markRead(id) }
-        thread.openEnded = { [weak self] in self?.attachChats() }
+        thread.openEnded = { [weak self] in
+            self?.traceOpened(id)
+            self?.attachChats()
+        }
         thread.gatewayIsUnencrypted = { [weak self] in self?.auth?.gateway.isUnencrypted ?? true }
         thread.chatOpened = { [weak self] sessionID in
             guard let self, !self.isDemo, let auth = self.auth else { return }
@@ -708,10 +737,13 @@ public final class AppModel {
 
     /// Writes the roster and recent messages for next launch, when they changed.
     func saveCache(for gateway: GatewayAddress) {
+        let built = Trace.begin("cache.save")
         let snapshot = OfflineCache.Snapshot(
             contacts: contacts, threads: threads.filter { $0.value.phase == .ready }.mapValues(\.cacheEntry),
             pictures: pictures.stored)
-        guard snapshot != lastSaved else { return }
+        guard snapshot != lastSaved else { return built.end(logging: false) }
+        // On the main actor, every few seconds while something changes: worth seeing when it's slow.
+        defer { built.end("chats=\(snapshot.threads.count)") }
         do {
             try cache.save(snapshot, for: gateway)
             lastSaved = snapshot

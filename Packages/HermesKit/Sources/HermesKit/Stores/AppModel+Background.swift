@@ -66,7 +66,11 @@ extension AppModel {
         await restore()
         guard let auth, !isForeground else { return }
         isCheckingIn = true
-        defer { isCheckingIn = false }
+        let traced = Trace.begin("push.checkin")
+        defer {
+            isCheckingIn = false
+            traced.end("online=\(link.isOnline) attached=\(allChatsAttached)")
+        }
         connect(auth)
         let start = rosterReads
         let deadline = ContinuousClock.now + limit
@@ -88,6 +92,8 @@ extension AppModel {
         await restore()
         guard let auth, !isForeground, gateway == nil || gateway == activeGateway?.id else { return }
         isCheckingIn = true
+        let traced = Trace.begin("push.warmup", "chat=\(Trace.tag(chat)) reused=\(linkTask != nil)")
+        defer { traced.end("loaded=\(hasLoaded(chat, since: 0)) foreground=\(isForeground)") }
         // Woken again while the last one is still up: that link carries this one too.
         if linkTask == nil { connect(auth) }
         let start = rosterReads

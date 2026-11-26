@@ -137,6 +137,19 @@ Debug builds read these environment variables:
 Launch arguments set the stored UI choices for one run, which helps for screenshots:
 `-selectedContact forge -showsProfile YES -sidebarWidth 300`.
 
+## Timings
+
+Every build logs how long its slow steps take under `subsystem:UsualBot category:perf`:
+connecting, each reconnect, gateway calls over half a second, uploads, opening a chat, a turn from
+send to first words to end, read state, media, voice, and a push from the gateway to the banner.
+Read them on the Mac with `/usr/bin/log stream --style compact --predicate 'subsystem == "UsualBot"
+AND category == "perf"'`, or in Console.app, for the Mac or a paired iPhone. Instruments' Logging
+template shows the same steps as intervals.
+
+The lines name no chat, file or person. A chat is a short tag that's the same on every device and in
+the gateway's log (the plugin's `push` lines), and a message sent here is its submission ID, which
+the other devices see too: search each device's lines for one to follow it across them.
+
 ## Keep private things out
 
 - **Recorded frames hold real conversations.** Never commit a recording. To turn one into a test

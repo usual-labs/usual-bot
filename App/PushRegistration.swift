@@ -38,7 +38,9 @@ final class PushRegistration: NSObject {
     /// device, so its notifications go, or a notification, whose chat loads. Answers whether it
     /// did anything.
     static func received(_ userInfo: [AnyHashable: Any]) async -> Bool {
-        if let read = PushRelay.chatReadElsewhere(in: userInfo) {
+        let read = PushRelay.chatReadElsewhere(in: userInfo)
+        Trace.event("push.received", read != nil ? "kind=read" : "kind=news")
+        if let read {
             await AgentNotifications.shared.clear(read.chat, on: read.gateway)
             return true
         }

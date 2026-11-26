@@ -2,18 +2,27 @@ import CryptoKit
 import Foundation
 import Security
 import UserNotifications
+import os
 
 /// Opens what the gateway sealed for this device, so the banner names the Bot and says what it
 /// said. Usual's relay and Apple carry only the sealed text and a generic title, which is what
 /// shows if this can't open it.
 final class NotificationService: UNNotificationServiceExtension {
+    /// The app's `Trace` lines (`subsystem:UsualBot category:perf`), which this extension can't link.
+    private static let log = Logger(subsystem: "UsualBot", category: "perf")
+
     override func didReceive(
         _ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void
     ) {
         guard let content = request.content.mutableCopy() as? UNMutableNotificationContent else {
             return contentHandler(request.content)
         }
-        if let sealed = content.userInfo["s"] as? String, let opened = Sealed.open(sealed) {
+        let sealed = content.userInfo["s"] as? String
+        let opened = sealed.flatMap(Sealed.open)
+        Self.trace(opened, sealed: sealed != nil)
+        if let opened {
+            // For the app's own lines when it shows or opens it.
+            if let sentAt = opened.sentAt { content.userInfo["sent_at"] = sentAt }
             content.title = opened.title
             content.subtitle = opened.subtitle ?? ""
             content.body = opened.body
@@ -43,6 +52,28 @@ final class NotificationService: UNNotificationServiceExtension {
             }
         }
         contentHandler(content)
+    }
+
+    /// `notification.received`, with how long since the gateway sent it (plugin 0.14.0 and later)
+    /// and the chat as the app's `Trace.tag` gives it.
+    private static func trace(_ opened: Sealed?, sealed: Bool) {
+        guard let opened else {
+            let line = sealed ? "notification.received opened=false" : "notification.received sealed=false"
+            log.notice("\(line, privacy: .public)")
+            return
+        }
+        var fields = ["notification.received", "kind=\(opened.kind ?? "message")"]
+        if let chat = opened.chat {
+            let tag = SHA256.hash(data: Data(chat.utf8)).prefix(4).map { String(format: "%02x", $0) }.joined()
+            fields.append("chat=\(tag)")
+        }
+        if let sentAt = opened.sentAt {
+            fields.append("since_sent_ms=\(Int((Date().timeIntervalSince1970 - sentAt) * 1000))")
+        }
+        if opened.interim == true { fields.append("interim=true") }
+        if let read = opened.read, !read.isEmpty { fields.append("clears=\(read.count)") }
+        let line = fields.joined(separator: " ")
+        log.notice("\(line, privacy: .public)")
     }
 }
 
@@ -82,13 +113,17 @@ private struct Sealed: Decodable {
     let read: [String]?
     /// What a Bot said on the way to its reply (plugin 0.12.0 and later).
     let interim: Bool?
+    /// When the gateway sent it, in seconds since 1970 (plugin 0.14.0 and later).
+    let sentAt: Double?
 
     static func open(_ text: String) -> Sealed? {
         guard let key = sealKey(), let data = Data(base64Encoded: text),
             let box = try? AES.GCM.SealedBox(combined: data),
             let plain = try? AES.GCM.open(box, using: SymmetricKey(data: key))
         else { return nil }
-        return try? JSONDecoder().decode(Sealed.self, from: plain)
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try? decoder.decode(Sealed.self, from: plain)
     }
 
     /// The key the app made when it signed up for push (`PushRelay`), in the keychain group both share.
