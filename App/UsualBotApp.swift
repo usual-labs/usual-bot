@@ -23,7 +23,12 @@ struct UsualBotApp: App {
     #endif
 
     init() {
-        Trace.first("launch.start")
+        // Which nightly logged what follows: the system log outlives each update.
+        let info = Bundle.main.infoDictionary
+        Trace.first(
+            "launch.start",
+            "version=\(info?["CFBundleShortVersionString"] as? String ?? "?") build=\(info?["CFBundleVersion"] as? String ?? "?")"
+        )
         Trace.watchNetwork()
         #if os(iOS)
             let tailscale = BuiltInTailscale()
