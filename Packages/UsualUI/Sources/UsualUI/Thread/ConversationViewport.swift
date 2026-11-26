@@ -85,6 +85,13 @@ struct ConversationScrollState {
         return (followsEnd ? viewport.end : viewport.offset) < viewport.height
     }
 
+    /// Earlier messages are wanted but nothing on screen is missing: following the end over a full
+    /// screen. Building them can wait, so opening a chat draws its newest page first.
+    var earlierCanWait: Bool {
+        guard let viewport else { return false }
+        return followsEnd && viewport.end > 0
+    }
+
     /// Earlier messages are being added above what's shown.
     mutating func addingAbove() {
         heightBeforeAbove = viewport?.contentHeight

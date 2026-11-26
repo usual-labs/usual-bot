@@ -83,7 +83,7 @@ struct ConversationScroll<Content: View>: View {
                     offset: geometry.contentOffset.y + geometry.contentInsets.top)
             } action: { _, viewport in
                 apply { $0.update(viewport) }
-                if scroll.nearsTop, earlier() { tracker.state.addingAbove() }
+                if scroll.nearsTop { addEarlier() }
                 if let pendingJump {
                     show(pendingJump, with: proxy)
                 } else if let shown = jumpShown {
@@ -101,6 +101,7 @@ struct ConversationScroll<Content: View>: View {
                 if let pendingJump { show(pendingJump, with: proxy) }
             }
             .onAppear { settledReload = reload }
+            .onDisappear { tracker.earlierSoon?.cancel() }
             .onChange(of: jump, initial: true) { _, jump in
                 guard let jump else { return }
                 jumped()
@@ -174,6 +175,25 @@ struct ConversationScroll<Content: View>: View {
         move(to: offset)
     }
 
+    /// Adds a page of earlier messages. One the screen doesn't need yet comes a moment after the chat
+    /// is drawn: building it first held every chat switch for as long again, and a chat left before
+    /// then never builds it.
+    private func addEarlier() {
+        guard scroll.earlierCanWait else {
+            tracker.earlierSoon?.cancel()
+            tracker.earlierSoon = nil
+            if earlier() { tracker.state.addingAbove() }
+            return
+        }
+        guard tracker.earlierSoon == nil else { return }
+        tracker.earlierSoon = Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            tracker.earlierSoon = nil
+            if scroll.nearsTop, earlier() { tracker.state.addingAbove() }
+        }
+    }
+
     private func show(_ itemID: Int, with proxy: ScrollViewProxy) {
         pendingJump = nil
         jumpShown = itemID
@@ -198,6 +218,8 @@ struct ConversationScroll<Content: View>: View {
 /// Holds a conversation's scroll state where SwiftUI doesn't watch it.
 @MainActor private final class ScrollTracker {
     var state = ConversationScrollState()
+    /// Earlier messages to add once the chat has been drawn (`addEarlier`).
+    var earlierSoon: Task<Void, Never>?
 }
 
 /// A conversation never gets shorter at its end: what leaves it, such as a card you answered,

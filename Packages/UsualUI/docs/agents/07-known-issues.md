@@ -40,7 +40,12 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   newest page and adds a page when the reader nears the top; `ConversationScrollState` then moves
   the offset by the growth, even mid-gesture, so the same message stays put. A search jump keeps
   its target in the window. The offscreen harness that measured this hosted `TranscriptView` in an
-  `NSHostingView` and timed `layoutSubtreeIfNeeded()`.
+  `NSHostingView` and timed `layoutSubtreeIfNeeded()`. Following the end, a chat under two screens
+  tall counts as near the top, so on a tall window nearly every chat added a page as it opened:
+  42 messages built before the first frame instead of 12, about 100 ms of a 233 ms switch on a real
+  gateway (2,500 pt window, November 2026). A page the screen doesn't need yet now comes 500 ms
+  after the chat is drawn (`earlierCanWait`), and not at all if you've moved on. A chat too short to
+  fill the screen still adds it at once, so those chats still open at the old speed.
 - **Geometry after a move can still carry the old offset.** `position.scrollTo` lands a layout
   later, so the next `onScrollGeometryChange` may report the new height with the offset from
   before the move. A page added on that stale offset still looked near the top, so the next page

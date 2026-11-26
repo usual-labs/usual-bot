@@ -51,6 +51,24 @@ struct ConversationScrollTests {
         #expect(state.nearsTop)
     }
 
+    @Test func earlierMessagesWaitOnlyWhileTheScreenIsFull() {
+        var state = ConversationScrollState()
+        // Following the end over a full screen: nothing above is missing yet.
+        _ = state.update(.init(contentHeight: 1_000, height: 700, offset: 300))
+        #expect(state.nearsTop)
+        #expect(state.earlierCanWait)
+        // Shorter than the screen: blank above, so they're needed now.
+        _ = state.update(.init(contentHeight: 500, height: 700, offset: 0))
+        #expect(state.nearsTop)
+        #expect(!state.earlierCanWait)
+        // Scrolled up by hand towards the top: the reader is about to reach them.
+        _ = state.update(.init(contentHeight: 1_000, height: 700, offset: 300))
+        _ = state.scrollingByHand(true)
+        _ = state.update(.init(contentHeight: 1_000, height: 700, offset: 200))
+        #expect(state.nearsTop)
+        #expect(!state.earlierCanWait)
+    }
+
     @Test func aShortConversationFollowingTheEndFillsUpWithEarlierMessages() {
         var state = ConversationScrollState()
         _ = state.update(.init(contentHeight: 1_000, height: 700, offset: 300))
