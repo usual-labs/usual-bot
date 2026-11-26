@@ -51,6 +51,9 @@ struct ReplyField: View {
         }
         .padding(12)
         .frame(width: width)
+        // Its full height whatever it's offered: a popover offers the height it opened at, and the
+        // field would scroll inside one line instead of growing.
+        .fixedSize(horizontal: false, vertical: true)
         .onAppear { focused = true }
     }
 
