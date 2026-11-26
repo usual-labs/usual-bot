@@ -79,7 +79,8 @@
 The `design/avatars/2026-10-24-hermes/` folder holds the Hermes doodle (a monochrome-doodle take
 on the official Hermes app icon's headphone character), its prompt, source attribution and alpha
 verification. It is the app's icon character: the app icon, the iPhone launch screen and the
-sign-in/splash mark are derived from it. The full-size PNG and local reference files follow the
+sign-in/splash mark are derived from it, and the main Bot (`default`) wears `hermes-mark` framed as
+the icon when it has no picture of its own. The full-size PNG and local reference files follow the
 design asset ignore rules; the generated, smaller copies in the app and UsualUI are tracked.
 A fresh clone builds with those tracked copies; no local artwork-generation script is required.
 The copies of Nous Research's official icon (`references/`) were never

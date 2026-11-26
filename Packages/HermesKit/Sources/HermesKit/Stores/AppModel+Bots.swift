@@ -139,7 +139,7 @@ extension AppModel {
 
     /// Whether `contact` can be deleted: the main profile, `default`, can't be.
     public func canDeleteBot(_ contact: Contact) -> Bool {
-        contact.kind == .agent && (contact.details?.profile ?? contact.id) != "default"
+        contact.kind == .agent && !contact.isMainBot
     }
 
     /// Deletes a Bot for good, with its chats, routines, skills, memory and keys, and forgets

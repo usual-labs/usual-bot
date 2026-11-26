@@ -448,6 +448,15 @@ struct BotStateTests {
         #expect(model.contacts.count == 1)
     }
 
+    /// Hermes wears the app icon; nothing else does, whatever its name.
+    @Test func onlyTheDefaultProfileIsTheMainBot() {
+        #expect(agent("default").isMainBot)
+        #expect(Contact(id: "default", name: "Hermes").isMainBot)
+        #expect(!agent("scout").isMainBot)
+        #expect(!Contact(id: "hermes", name: "Hermes", details: AgentDetails(profile: "hermes")).isMainBot)
+        #expect(!Contact(id: "default", name: "Room", kind: .room(memberIDs: ["default"])).isMainBot)
+    }
+
     @Test func offlineSaysWhyNothingCanChange() {
         let model = model()
         #expect(model.botEditingUnavailable != nil)
