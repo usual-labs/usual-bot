@@ -23,6 +23,8 @@ struct UsualBotApp: App {
     #endif
 
     init() {
+        Trace.first("launch.start")
+        Trace.watchNetwork()
         #if os(iOS)
             let tailscale = BuiltInTailscale()
             _tailscale = State(initialValue: tailscale)
@@ -67,6 +69,7 @@ struct UsualBotApp: App {
             ) { _ in
                 MainActor.assumeIsolated { model.drafts.save() }
             }
+            PowerTrace.start()
             // Back from another app, where you may have shared something to a Bot.
             NotificationCenter.default.addObserver(
                 forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main

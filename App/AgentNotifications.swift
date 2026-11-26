@@ -231,10 +231,15 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
             Task { @MainActor in await lookForNews() }
             return
         }
+        let kind = content.userInfo["kind"] as? String
+        let delay = Self.delay(content.userInfo)
         Task { @MainActor in
             let here = gateway == nil || gateway == model?.activeGateway?.id
             let reading = here && model?.isFocused == true && model?.visibleContactID == chat
             completionHandler(reading ? [] : [.banner, .list, .sound])
+            Trace.event(
+                "notification.presented",
+                Trace.fields("chat=\(Trace.tag(chat))", kind.map { "kind=\($0)" } ?? "", delay, "shown=\(!reading)"))
             // Delivered by now, or about to be: look again in a moment.
             try? await Task.sleep(for: .milliseconds(300))
             await lookForNews()
@@ -248,10 +253,23 @@ final class AgentNotifications: NSObject, UNUserNotificationCenterDelegate {
         let info = response.notification.request.content.userInfo
         let contact = info[Self.contactKey] as? String
         let gateway = info[Self.gatewayKey] as? String
+        let kind = info["kind"] as? String
+        let delay = Self.delay(info)
         Task { @MainActor in
-            if let contact { open(contact, on: gateway) }
+            if let contact {
+                model?.notificationOpened(contact, kind: kind)
+                if !delay.isEmpty { Trace.event("notification.tapped", delay) }
+                open(contact, on: gateway)
+            }
             completionHandler()
         }
+    }
+
+    /// How long since the gateway sent it, from the time the notification extension found in it
+    /// (plugin 0.14.0 and later). Both clocks are set from the network, so it's good to tens of ms.
+    nonisolated static func delay(_ info: [AnyHashable: Any]) -> String {
+        guard let sent = info["sent_at"] as? Double else { return "" }
+        return "since_sent_ms=\(Int((Date().timeIntervalSince1970 - sent) * 1000))"
     }
 
     /// Opens the chat, on its own gateway: switching to it if another is in use.

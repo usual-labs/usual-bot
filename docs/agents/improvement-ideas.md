@@ -2,6 +2,11 @@
 
 ## Planned/aspirational
 
+- **Reconnect when the route changes or the Mac wakes.** Nothing restarts the gateway link then, so
+  a socket that died with Wi-Fi or sleep is found only by the 45 s heartbeat. `Trace` logs
+  `network.path` and `mac.wake` beside `socket.closed`'s `quiet_ms`; measure how long that wait
+  really is before choosing between reconnecting at once and pinging first.
+
 - **Split `RootView.swift` (about 840 lines).** `ContactsSplitView` and its Mac layout, search jumps and
   sidebar footer share the file with `RootView`; moving `ContactsSplitView` to its own file is the
   obvious first cut.

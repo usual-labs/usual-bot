@@ -106,6 +106,7 @@ public final class ChatThread {
     var elsewhereTurnStart: Int?
     /// That turn's message, shown from the gateway's queue before its stored row could be read.
     var elsewherePrompt: (itemID: Int, text: String)?
+    var turnTiming = TurnTiming()
 
     /// The gateway is the one that keeps a queue of messages (the canonical protocol).
     var queuesOnGateway = false
@@ -217,6 +218,7 @@ public final class ChatThread {
         queuesOnGateway = dialect == .canonical
         if case .failed = phase { phase = .loading }
         Self.log.notice("Opening chat \(self.contactID, privacy: .private)")
+        let traced = Trace.begin("chat.open", "chat=\(Trace.tag(contactID)) known=\(knownID != nil)")
         openTask = Task {
             defer {
                 openTask = nil
@@ -227,9 +229,14 @@ public final class ChatThread {
             do {
                 let opened = try await BotChat.open(
                     profile: contactID, knownID: knownID, dialect: dialect, on: channel)
+                let rejoining = opened.sessionID == lastSessionID
                 attach(opened)
                 Self.log.notice("Chat ready: \(opened.history.count, privacy: .public) messages")
+                traced.end(
+                    "messages=\(opened.history.count) running=\(opened.running) rejoined=\(rejoining) omitted=\(opened.historyOmitted)"
+                )
             } catch {
+                traced.end("error=\(Trace.reason(error))")
                 phase = .failed(AppModel.describe(error))
                 Self.log.error("Chat open failed: \(AppModel.describe(error), privacy: .public)")
             }
@@ -309,6 +316,8 @@ public final class ChatThread {
         openTask = nil
         recovery?.cancel()
         sessionID = nil
+        // A reply that ends while the link is down isn't timed.
+        turnTiming = TurnTiming()
         vaultPrompts = []
         approvals = []
         questions = []
@@ -361,6 +370,7 @@ public final class ChatThread {
             receiveBackgroundResult(event.payload)
             return
         }
+        turnTiming.observe(event, chat: contactID, runningHere: state.isRunning)
         if event.type == "message.complete", let usage = ChatUsage(event.payload["usage"]) { self.usage = usage }
         // Sending from here marks the turn running before the gateway says it started. A turn
         // Hermes began itself brings its own line.
@@ -605,7 +615,28 @@ public final class ChatThread {
     {
         if attachment.isTooLarge { throw Attachment.TooLarge(limit: attachment.sizeLimit) }
         let timeout = Duration.seconds(30 + attachment.data.count / 100_000)
+        let encoding = Trace.begin("upload.encode", "bytes=\(attachment.data.count)")
         let base64 = attachment.data.base64EncodedString()
+        encoding.end(logging: encoding.elapsed >= 100)
+        let traced = Trace.begin(
+            "upload",
+            "kind=\(attachment.kind == .image ? "image" : "file") bytes=\(attachment.data.count) sent_bytes=\(base64.utf8.count)"
+        )
+        do {
+            let ref = try await send(
+                attachment, base64: base64, sessionID: sessionID, channel: channel, timeout: timeout)
+            let seconds = max(Double(traced.elapsed) / 1000, 0.001)
+            traced.end("ok kbps=\(Int(Double(attachment.data.count) / 1024 / seconds))")
+            return ref
+        } catch {
+            traced.end("error=\(Trace.reason(error))")
+            throw error
+        }
+    }
+
+    private static func send(
+        _ attachment: Attachment, base64: String, sessionID: String, channel: JSONRPCChannel, timeout: Duration
+    ) async throws -> AttachmentRef {
         switch attachment.kind {
         case .image:
             let result = try await channel.call(
@@ -643,7 +674,15 @@ public final class ChatThread {
                 // The dashboard has no such ID; the share extension doesn't send there.
                 params["submission_id"] = nil
             }
-            _ = try await channel.call("prompt.submit", params: .object(params))
+            let id = params["submission_id"]?.stringValue
+            turnTiming.submitted(id, chat: contactID, bytes: text.utf8.count)
+            do {
+                _ = try await channel.call("prompt.submit", params: .object(params))
+                turnTiming.accepted(id, chat: contactID, error: nil)
+            } catch {
+                turnTiming.accepted(id, chat: contactID, error: error)
+                throw error
+            }
         } catch {
             state.addNotice(AppModel.describe(error))
             state.endTurnLocally()

@@ -70,6 +70,9 @@ public actor JSONRPCChannel {
     /// Not closed yet, by either side or the heartbeat.
     public var isOpen: Bool { closedError == nil }
     private var tasks: [Task<Void, Never>] = []
+    /// Each call still waiting, timed for `Trace`.
+    private var timings: [Int: (method: String, span: Span)] = [:]
+    private let openedAt = ContinuousClock.now
 
     private static let log = Logger(subsystem: "UsualBot", category: "gateway")
 
@@ -132,7 +135,8 @@ public actor JSONRPCChannel {
         }
         return try await withCheckedThrowingContinuation { continuation in
             pending[id] = continuation
-            write(frame)
+            let bytes = write(frame)
+            timings[id] = (method, Trace.begin("rpc", "method=\(method) bytes=\(bytes) waiting=\(pending.count - 1)"))
         }
     }
 
@@ -164,8 +168,10 @@ public actor JSONRPCChannel {
         ])
     }
 
-    private func write(_ frame: JSONValue) {
-        guard closedError == nil, let data = try? JSONEncoder().encode(frame) else { return }
+    /// Returns the frame's size, 0 when it wasn't sent.
+    @discardableResult
+    private func write(_ frame: JSONValue) -> Int {
+        guard closedError == nil, let data = try? JSONEncoder().encode(frame) else { return 0 }
         let text = String(decoding: data, as: UTF8.self)
         #if DEBUG
             FrameRecorder.record("out", text)
@@ -176,7 +182,12 @@ public actor JSONRPCChannel {
                 for await text in outgoing {
                     guard let self else { return }
                     do {
+                        // Large frames are uploads: how long the socket takes, apart from the gateway.
+                        let large =
+                            text.utf8.count >= Self.largeFrame
+                            ? Trace.begin("socket.send", "bytes=\(text.utf8.count)") : nil
                         try await socket.send(text)
+                        large?.end()
                     } catch {
                         await shutDown(.disconnected)
                         return
@@ -184,7 +195,13 @@ public actor JSONRPCChannel {
                 }
             }
         }
+        return data.count
     }
+
+    /// Frames from this size up get a line of their own, in and out.
+    static let largeFrame = 256 * 1024
+    /// Calls that take this long or more get a line; quicker ones only an interval.
+    static let slowCall: Duration = .milliseconds(500)
 
     /// Closes the socket and fails everything still waiting.
     public func close() {
@@ -205,8 +222,13 @@ public actor JSONRPCChannel {
     }
 
     func handle(_ text: String) {
+        let quiet = ContinuousClock.now - lastInbound
         lastInbound = .now
+        let large = text.utf8.count >= Self.largeFrame ? Trace.begin("frame.decode", "bytes=\(text.utf8.count)") : nil
         let decoded = try? JSONDecoder().decode(JSONValue.self, from: Data(text.utf8))
+        large?.end()
+        // A long silence that ended: the link may have been stalled rather than idle.
+        if quiet >= .seconds(20) { Trace.event("socket.quiet", "ms=\(Trace.milliseconds(quiet))") }
         #if DEBUG
             if decoded?["id"]?.intValue.map(sensitiveCalls.contains) != true { FrameRecorder.record("in", text) }
         #endif
@@ -270,7 +292,18 @@ public actor JSONRPCChannel {
 
     private func resolve(id: Int, with result: Result<JSONValue, any Error>) {
         callContexts[id] = nil  // A call that timed out gets no reply to take it.
-        pending.removeValue(forKey: id)?.resume(with: result)
+        guard let continuation = pending.removeValue(forKey: id) else { return }
+        if let timing = timings.removeValue(forKey: id) {
+            let outcome: String
+            switch result {
+            case .success: outcome = "ok"
+            case .failure(let error): outcome = "error=\(Trace.reason(error))"
+            }
+            // Pings are the link's round trip, worth a line each.
+            let slow = timing.span.elapsed >= Trace.milliseconds(Self.slowCall)
+            timing.span.end(outcome, logging: slow || outcome != "ok" || timing.method == "gateway.ping")
+        }
+        continuation.resume(with: result)
     }
 
     private func resolveReady(_ result: Result<GatewayReady, any Error>) {
@@ -298,6 +331,12 @@ public actor JSONRPCChannel {
     private func shutDown(_ error: GatewayError) {
         guard closedError == nil else { return }
         closedError = error
+        Trace.event(
+            "socket.closed",
+            "reason=\(Trace.reason(error)) open_ms=\(Trace.milliseconds(since: openedAt)) quiet_ms=\(Trace.milliseconds(since: lastInbound)) failing=\(pending.count)"
+        )
+        for timing in timings.values { timing.span.end("error=\(Trace.reason(error))", logging: false) }
+        timings.removeAll()
         socket.close()
         for continuation in pending.values { continuation.resume(throwing: error) }
         pending.removeAll()

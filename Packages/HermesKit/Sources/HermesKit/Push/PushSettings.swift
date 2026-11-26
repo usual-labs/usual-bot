@@ -248,17 +248,28 @@ public final class PushSettings {
             let registration = relay()?.registration, let auth = auth()
         else { return }
         isReporting = true
+        // A change is what decides which device the gateway notifies first, or that none hears.
+        let traced =
+            reportedChat != .some(chat) || reportedActive != active
+            ? Trace.begin(
+                "presence.report",
+                Trace.fields(
+                    "device=\(Trace.tag(registration.id))", "chat=\(chat.map(Trace.tag) ?? "none")",
+                    "active=\(active)"))
+            : nil
+        defer { isReporting = false }
         do {
             _ = try await auth.json(
                 Done.self, path: "\(path)/presence", method: "PUT",
                 body: Presence(device: registration.id, chat: chat, active: active, names: changed ? names : nil))
+            traced?.end("ok")
             lastNames = names
             reportedChat = .some(chat)
             reportedActive = active
         } catch {
+            traced?.end("error=\(Trace.reason(error))")
             Self.log.error("Couldn't report the open chat: \(AppModel.describe(error), privacy: .public)")
         }
-        isReporting = false
     }
 
     /// You left this gateway for another, so you're reading none of its chats: said straight away,

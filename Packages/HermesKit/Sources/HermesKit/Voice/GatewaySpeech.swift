@@ -38,9 +38,17 @@ public final class GatewaySpeaker {
             }
         #endif
         guard let auth = auth() else { throw GatewayError.disconnected }
-        let reply = try await auth.json(
-            Reply.self, path: "/api/audio/speak" + Self.query(profile), method: "POST", body: Body(text: text),
-            timeout: Self.speakTimeout)
+        let traced = Trace.begin("tts.speak", "chars=\(text.count)")
+        let reply: Reply
+        do {
+            reply = try await auth.json(
+                Reply.self, path: "/api/audio/speak" + Self.query(profile), method: "POST", body: Body(text: text),
+                timeout: Self.speakTimeout)
+            traced.end("ok")
+        } catch {
+            traced.end("error=\(Trace.reason(error))")
+            throw error
+        }
         guard let clip = reply.dataUrl.flatMap({ SpokenClip(dataURL: $0, mimeType: reply.mimeType) }) else {
             throw GatewayError.invalidResponse
         }
@@ -213,10 +221,14 @@ public final class SpeechStream: Sendable {
         output: AsyncStream<SpeechEvent>.Continuation
     ) async {
         defer { output.finish() }
+        let opening = Trace.begin("tts.open")
         guard let socket = try? await open() else {
+            opening.end("error")
             output.yield(.fallback)
             return
         }
+        opening.end("ok")
+        let opened = ContinuousClock.now
         defer { socket.close() }
         await withTaskCancellationHandler {
             // `true` from the reader, which alone knows when the speech is over.
@@ -239,6 +251,7 @@ public final class SpeechStream: Sendable {
                     while let frame = try? await socket.receive() {
                         switch frame {
                         case .data(let piece):
+                            if !heardAudio { Trace.event("tts.first_audio", Trace.since(opened)) }
                             heardAudio = true
                             let pcm = joiner.add(piece)
                             if !pcm.isEmpty { output.yield(.pcm(pcm)) }

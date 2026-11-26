@@ -5,6 +5,7 @@ Hooks only watch: anything going wrong here is logged and never touches an agent
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import threading
@@ -40,6 +41,16 @@ _LOUD_TURNS_LOCK = threading.Lock()
 # read it there first, as Telegram does; short enough that a phone in your pocket still buzzes.
 LATER = 15
 TEST = {"title": "Usual Bot", "body": "Notifications from your gateway are working."}
+
+
+def tag(text: str) -> str:
+    """A short stand-in for a chat or device in the log, the same as the app's `Trace.tag`, so the
+    gateway's lines and each device's line up without naming anything."""
+    return hashlib.sha256(text.encode()).hexdigest()[:8]
+
+
+def _tags(device_ids: list[str]) -> str:
+    return ",".join(tag(device_id) for device_id in device_ids) or "none"
 
 
 def _home() -> Path:
@@ -86,6 +97,7 @@ def deliver(
 
     Blocks for `LATER` when some devices wait: call it on a thread of its own."""
     if store.is_open(chat):
+        logger.info("usual-bot: push held chat=%s kind=%s: open on a device", tag(chat), kind)
         return
     since = time.time()
     settings = store.settings()
@@ -99,13 +111,18 @@ def deliver(
         if device.get(kind, True) and chat not in device.get("muted", [])
     ]
     first = store.first_to_hear(wanting)
-    _send(first, kind, title, preview, chat, interim)
     rest = [device_id for device_id in wanting if device_id not in first]
+    logger.info(
+        "usual-bot: push chat=%s kind=%s now=%s later=%s", tag(chat), kind, _tags(first), _tags(rest)
+    )
+    _send(first, kind, title, preview, chat, interim)
     if not rest:
         return
     time.sleep(LATER)
     if not (store.is_open(chat) or store.read_since(chat, since)):
         _send(rest, kind, title, preview, chat, interim)
+    else:
+        logger.info("usual-bot: push skipped chat=%s later=%s: read meanwhile", tag(chat), _tags(rest))
 
 
 def _send(device_ids: list[str], kind: str, title: str, preview: str, chat: str, interim: bool) -> None:
@@ -118,6 +135,8 @@ def _send(device_ids: list[str], kind: str, title: str, preview: str, chat: str,
             continue
         body = _shorten(preview) if device.get("previews", True) else _HIDDEN[kind]
         payload = {"title": title, "body": body, "chat": chat, "kind": kind, "sound": device.get("sound", True)}
+        # When it left, so the device can log how long the relay and Apple took (`notification.received`).
+        payload["sent_at"] = round(time.time(), 3)
         if interim:
             payload["interim"] = True
         if read := _fitting(payload, chat, store.owed_clears(device_id)):
@@ -125,7 +144,14 @@ def _send(device_ids: list[str], kind: str, title: str, preview: str, chat: str,
         pushes.append((device["relay"], relay.push(device_id, device, kind, payload, chat)))
     if not pushes:
         return
+    started = time.monotonic()
     fates = relay.send(pushes)
+    logger.info(
+        "usual-bot: push sent chat=%s ms=%d %s",
+        tag(chat),
+        (time.monotonic() - started) * 1000,
+        " ".join(f"{tag(device_id)}={fate}" for device_id, fate in fates.items()),
+    )
     _forget_gone(fates)
     sent = [device_id for device_id, fate in fates.items() if fate == "sent"]
     for device_id in sent:

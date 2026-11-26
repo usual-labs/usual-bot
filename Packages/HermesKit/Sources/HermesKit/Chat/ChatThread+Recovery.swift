@@ -35,6 +35,7 @@ extension ChatThread {
             let item = state.insertPrompt(HistoryMessage(role: "user", text: text), at: start)
         else { return }
         elsewherePrompt = (item, text)
+        turnTiming.shownElsewhere(id, chat: contactID)
     }
 
     /// Looks up another device's message once its turn is stored, as Hermes's own app does. Only
@@ -48,8 +49,10 @@ extension ChatThread {
         let finished = payload["status"]?.stringValue ?? "complete" == "complete"
         guard finished || shown != nil, let sessionID, let channel = channel() else { return }
         let load = transcriptLoad
+        let traced = Trace.begin("turn.elsewhere_stored", "chat=\(Trace.tag(contactID)) shown=\(shown != nil)")
         Task { [weak self] in
             let result = try? await channel.call("session.history", params: ["session_id": .string(sessionID)])
+            traced.end(result == nil ? "error" : "ok")
             guard let self, transcriptLoad == load,
                 let history = try? result?["messages"]?.decode([HistoryMessage].self),
                 // Before the reply: you may already have sent the next message from here.

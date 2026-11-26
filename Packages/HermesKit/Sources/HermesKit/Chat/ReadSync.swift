@@ -41,6 +41,8 @@ final class ReadSync {
     private var looksAgain = false
     /// What's under way, for `settled()`.
     private var work: [Task<Void, Never>] = []
+    /// When this device last heard something may have changed, for `Trace`.
+    private var changedAt: ContinuousClock.Instant?
 
     private static let log = Logger(subsystem: "UsualBot", category: "read")
 
@@ -53,6 +55,8 @@ final class ReadSync {
 
     /// A new link, or `sessions.changed`: any chat may have been read elsewhere meanwhile.
     func somethingChanged() {
+        changedAt = .now
+        Trace.event("read.changed")
         stale.formUnion(chats().map(\.thread.contactID))
         look()
     }
@@ -86,9 +90,11 @@ final class ReadSync {
 
     private func lookUp(_ chat: Chat, auth: AuthSession) async {
         let known = revisions[chat.storedID]
+        let traced = Trace.begin("read.lookup", "chat=\(Trace.tag(chat.thread.contactID))")
         do {
             let revision = try await snapshot(of: chat, auth: auth)
-            guard revision != known else { return }
+            guard revision != known else { return traced.end("unchanged", logging: false) }
+            defer { traced.end("changed") }
             let record = try await auth.json(
                 Record.self, path: Self.path(chat) + "?profile=\(Self.escape(chat.profile))")
             guard record.hasReadTime else {
@@ -109,13 +115,19 @@ final class ReadSync {
             case let readAt?:
                 let wasUnread = thread.unreadCount > 0 || thread.isMarkedUnread
                 thread.adoptRead(at: Date(timeIntervalSince1970: readAt))
-                if wasUnread, thread.unreadCount == 0, !thread.isMarkedUnread { cleared?(thread.contactID) }
+                if wasUnread, thread.unreadCount == 0, !thread.isMarkedUnread {
+                    Trace.event(
+                        "read.elsewhere",
+                        Trace.fields("chat=\(Trace.tag(thread.contactID))", Trace.since(changedAt, "since_changed_ms")))
+                    cleared?(thread.contactID)
+                }
             case nil:
                 break  // never marked, which Hermes counts as read
             }
             // Marked here, but the write didn't get there.
             if thread.isMarkedUnread, !thread.unreadOnGateway { markUnread(thread.contactID) }
         } catch {
+            traced.end("error=\(Trace.reason(error))")
             note(error)
         }
     }
@@ -179,6 +191,9 @@ final class ReadSync {
     /// can move the revision in between; that one is tried once more.
     private func write(_ chat: Chat, unread: Bool, auth: AuthSession) async -> Bool {
         var known = revisions[chat.storedID]
+        let traced = Trace.begin("read.write", "chat=\(Trace.tag(chat.thread.contactID)) unread=\(unread)")
+        var outcome = "conflict"
+        defer { traced.end(outcome) }
         for _ in 0..<2 {
             do {
                 let revision: Int
@@ -192,10 +207,12 @@ final class ReadSync {
                     profile: chat.profile)
                 let receipt = try await auth.json(Receipt.self, path: Self.path(chat), method: "PATCH", body: mark)
                 revisions[chat.storedID] = receipt.revision
+                outcome = "ok"
                 return true
             } catch GatewayError.http(status: 409, "revision_conflict") {
                 known = nil
             } catch {
+                outcome = "error=\(Trace.reason(error))"
                 note(error)
                 return false
             }
