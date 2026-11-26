@@ -31,7 +31,7 @@ Chat" the Hermes desktop app keeps for it. Bot Mode's group chats are the rooms,
 list. Pinned chats come first, in the order you put them, then the rest by their newest message.
 
 - A Bot shows the picture you gave it, here or in the Hermes app. Without one, it gets one of Usual Bot's
-  characters.
+  characters, and your main Bot, Hermes, wears the app icon.
 - An avatar that gently moves means the Bot is working.
 - A dot on the avatar means it needs you: it's waiting for your approval or an answer.
 - A number counts the replies you haven't read. Reading a Bot's chat on one device clears its count

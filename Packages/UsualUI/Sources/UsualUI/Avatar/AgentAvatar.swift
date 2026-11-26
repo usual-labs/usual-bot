@@ -2,7 +2,8 @@ import HermesKit
 import SwiftUI
 
 /// An agent's avatar: the picture it was given in the official app, or else its character on a soft
-/// circle in the agent's colour. `size` is at actual size; the Mac's zoom grows it.
+/// circle in the agent's colour. The main Bot, Hermes, wears the app icon in place of a character.
+/// `size` is at actual size; the Mac's zoom grows it.
 struct AgentAvatar: View {
     let contact: Contact
     var size: CGFloat = 44
@@ -22,6 +23,15 @@ struct AgentAvatar: View {
                     .resizable()
                     .interpolation(.high)
                     .scaledToFill()
+            } else if contact.isMainBot {
+                // The icon's framing (`scripts/make-app-icon.swift`): the drawing 104% wide on
+                // white, 3% right of centre, its bust running 6% off the bottom. The rim, under the
+                // drawing, keeps the white disc round on a white list in light mode.
+                Circle().fill(.white)
+                Circle().strokeBorder(Theme.border)
+                HermesMark()
+                    .scaleEffect(1.04)
+                    .offset(x: 0.03 * size, y: 0.0626 * size)
             } else {
                 Circle().fill(tint.opacity(0.28))
                 if let art = AvatarArt.image(style.character) {

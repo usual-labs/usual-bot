@@ -50,6 +50,10 @@ public struct Contact: Identifiable, Hashable, Sendable, Codable {
     /// Something unread: replies, or a mark.
     public var hasUnread: Bool { unreadCount > 0 || isMarkedUnread }
 
+    /// The gateway's main profile, `default`, which shows as Hermes. It can't be deleted, and
+    /// without a picture of its own it wears the app icon.
+    public var isMainBot: Bool { kind == .agent && (details?.profile ?? id) == "default" }
+
     public init(
         id: String,
         name: String,
