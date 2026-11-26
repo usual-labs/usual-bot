@@ -56,8 +56,8 @@ struct AttachmentLoaderTests {
                 == CGSize(width: 32, height: 24))
     }
 
-    @Test func thumbnailsDecodeImagesAndIgnoreOtherData() throws {
-        #expect(MediaLoading.image(try image(.png), maxPixels: 400) != nil)
-        #expect(MediaLoading.image(Data("not an image".utf8), maxPixels: 400) == nil)
+    @Test func thumbnailsDecodeImagesAndIgnoreOtherData() async throws {
+        #expect(await MediaLoading.image(try image(.png), maxPixels: 400) != nil)
+        #expect(await MediaLoading.image(Data("not an image".utf8), maxPixels: 400) == nil)
     }
 }

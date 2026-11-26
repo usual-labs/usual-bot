@@ -72,9 +72,15 @@ enum MediaLoading {
         }
     }
 
-    /// A decoded copy no larger than `maxPixels` on its long side, the right way up.
-    static func image(_ data: Data, maxPixels: Int) -> Image? {
-        decoded(data, maxPixels: maxPixels)?.image
+    /// A decoded copy no larger than `maxPixels` on its long side, the right way up. Decoded away
+    /// from the main thread: a chat's photos took tens of milliseconds there each time it opened.
+    static func image(_ data: Data, maxPixels: Int) async -> Image? {
+        await decodedAway(data, maxPixels: maxPixels)?.image
+    }
+
+    /// `decoded`, away from the main thread.
+    static func decodedAway(_ data: Data, maxPixels: Int) async -> (image: Image, pixels: CGSize)? {
+        await Task.detached(priority: .userInitiated) { decoded(data, maxPixels: maxPixels) }.value
     }
 
     /// The decoded copy and its size in pixels.
@@ -190,7 +196,7 @@ struct ReplyImage: View {
     private func load() async {
         do {
             let data = try await MediaLoading.data(source, store: store, profile: profile)
-            guard let decoded = MediaLoading.decoded(data, maxPixels: 1400) else {
+            guard let decoded = await MediaLoading.decodedAway(data, maxPixels: 1400) else {
                 phase = .failed(String(localized: "This isn't an image Usual Bot can show."))
                 return
             }
@@ -296,7 +302,7 @@ struct MediaViewer: View {
             ) { _ in }
         #endif
         .task {
-            image = MediaLoading.image(data, maxPixels: 4096)
+            image = await MediaLoading.image(data, maxPixels: 4096)
             file = MediaLoading.temporaryFile(data, name: name)
         }
     }

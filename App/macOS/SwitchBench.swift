@@ -4,8 +4,10 @@
     import QuartzCore
 
     /// `USUALBOT_SWITCH_BENCH=<file>`: opens each chat and room in turn, four times round, and writes
-    /// how long each switch held the window: from choosing the chat to the next frame drawn. The
-    /// first round opens chats for the first time; compare the later ones. Then the app quits.
+    /// how long each switch held the window: from choosing the chat to the next frame drawn, then
+    /// how long the main thread overran its frames in the second after (work the switch left behind,
+    /// such as earlier pages added above what's on screen). The first round opens chats for the
+    /// first time; compare the later ones. Then the app quits.
     @MainActor final class SwitchBench: NSObject {
         private static var running: SwitchBench?
 
@@ -18,10 +20,16 @@
         }
 
         private static let rounds = 4
+        /// Longer than anything a switch puts off, such as earlier messages added after the chat is drawn.
+        private static let settle: CFTimeInterval = 1
         private let ids: [Contact.ID]
         private let path: String
         private var link: CADisplayLink?
         private var chosenAt: CFTimeInterval?
+        /// The last frame after the first, while the switch settles.
+        private var settlingSince: CFTimeInterval?
+        private var lastFrame: CFTimeInterval = 0
+        private var overrun: CFTimeInterval = 0
         private var lines: [String] = []
         private var step = 0
 
@@ -54,11 +62,22 @@
         }
 
         @objc private func frame(_ link: CADisplayLink) {
+            let now = CACurrentMediaTime()
+            defer { lastFrame = now }
+            if let since = settlingSince {
+                overrun += max(0, now - lastFrame - link.duration * 1.5)
+                guard now - since >= Self.settle else { return }
+                lines[lines.count - 1] += String(format: " then %.0f ms", overrun * 1000)
+                settlingSince = nil
+                next()
+                return
+            }
             guard let chosenAt else { return }
-            lines[lines.count - 1] += String(format: " %.0f ms", (CACurrentMediaTime() - chosenAt) * 1000)
+            lines[lines.count - 1] += String(format: " %.0f ms", (now - chosenAt) * 1000)
             self.chosenAt = nil
             // Long enough for anything the switch started to settle before the next one.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { self.next() }
+            settlingSince = now
+            overrun = 0
         }
     }
 #endif

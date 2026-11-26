@@ -295,7 +295,7 @@ struct AttachmentTile: View {
         if data == nil, let gatewayPath {
             loaded = try? await MediaLoading.data(.gateway(gatewayPath), store: store, profile: profile)
         }
-        thumbnail = data.flatMap { MediaLoading.image($0, maxPixels: 400) }
+        thumbnail = if let data { await MediaLoading.image(data, maxPixels: 400) } else { nil }
         failed = thumbnail == nil
     }
 }
