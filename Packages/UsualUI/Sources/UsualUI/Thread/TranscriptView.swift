@@ -496,7 +496,7 @@ struct UserBubbleContent: View {
                     .background(Theme.selection, in: RoundedRectangle(cornerRadius: 18))
             }
             if !tiles.isEmpty {
-                HStack(spacing: 6) {
+                AttachmentRows(spacing: 6) {
                     ForEach(tiles, id: \.path) { ref in
                         AttachmentTile(
                             kind: ref.kind, name: ref.name, imageData: sentImages[ref.path], gatewayPath: ref.path)

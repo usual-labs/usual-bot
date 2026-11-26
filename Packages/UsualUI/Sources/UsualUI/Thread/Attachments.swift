@@ -304,3 +304,54 @@ extension EnvironmentValues {
     /// Images this device sent, by their path on the gateway (`ChatThread.sentImages`).
     @Entry var sentImages: [String: Data] = [:]
 }
+
+/// A message's attachment tiles in rows, each row against the trailing edge, as your bubble is.
+/// One row that never wraps made photos that could only show by name widen the whole
+/// conversation past an iPhone's screen.
+struct AttachmentRows: Layout {
+    var spacing: CGFloat = 6
+
+    /// The tiles of each row, by index: as many as fit in `width`, in order; at least one a row.
+    static func rows(_ widths: [CGFloat], in width: CGFloat, spacing: CGFloat) -> [[Int]] {
+        var rows: [[Int]] = []
+        var used: CGFloat = 0
+        for (index, tile) in widths.enumerated() {
+            if let last = rows.indices.last, used + spacing + tile <= width {
+                rows[last].append(index)
+                used += spacing + tile
+            } else {
+                rows.append([index])
+                used = tile
+            }
+        }
+        return rows
+    }
+
+    private func sizes(_ subviews: Subviews, in width: CGFloat) -> [CGSize] {
+        subviews.map { $0.sizeThatFits(ProposedViewSize(width: width, height: nil)) }
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? .infinity
+        let sizes = sizes(subviews, in: width)
+        let rows = Self.rows(sizes.map(\.width), in: width, spacing: spacing)
+        let widths = rows.map { row in row.map { sizes[$0].width }.reduce(0, +) + CGFloat(row.count - 1) * spacing }
+        let heights = rows.map { row in row.map { sizes[$0].height }.max() ?? 0 }
+        return CGSize(
+            width: widths.max() ?? 0, height: heights.reduce(0, +) + CGFloat(max(rows.count - 1, 0)) * spacing)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let sizes = sizes(subviews, in: bounds.width)
+        var y = bounds.minY
+        for row in Self.rows(sizes.map(\.width), in: bounds.width, spacing: spacing) {
+            var x = bounds.maxX
+            for index in row.reversed() {
+                x -= sizes[index].width
+                subviews[index].place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(sizes[index]))
+                x -= spacing
+            }
+            y += (row.map { sizes[$0].height }.max() ?? 0) + spacing
+        }
+    }
+}
