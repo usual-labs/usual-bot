@@ -93,7 +93,17 @@ struct ConversationScroll<Content: View>: View {
             }
             .onScrollPhaseChange { _, phase in
                 let byHand = phase == .tracking || phase == .interacting || phase == .decelerating
-                apply { $0.scrollingByHand(byHand) }
+                #if os(iOS)
+                    // A trackpad on the Mac reports `interacting` too, and a move mid-gesture holds there.
+                    let touching = phase == .tracking || phase == .interacting
+                #else
+                    let touching = false
+                #endif
+                let lifted = scroll.isTouching && !touching
+                apply { $0.scrollingByHand(byHand, touching: touching) }
+                // Held at the top until the finger lifted, maybe with nothing scrolling to ask again.
+                // Only then: when coasting stops, the last geometry can be from before a move.
+                if lifted, scroll.nearsTop { addEarlier() }
             }
             .onChange(of: reload) {
                 settledReload = reload
