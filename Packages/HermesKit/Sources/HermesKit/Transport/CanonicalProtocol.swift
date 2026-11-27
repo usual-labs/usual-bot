@@ -145,8 +145,9 @@ struct CanonicalProtocol {
     }
 
     /// The text a turn has streamed so far, from the session's replay frames.
-    static func replyText(in frames: JSONValue?, admission: String) -> String {
+    static func replyText(in frames: JSONValue?, admission: String, upTo last: Int? = nil) -> String {
         rows(frames).filter { $0["type"] == "message.delta" && $0["admission_id"]?.stringValue == admission }
+            .filter { frame in last.map { (frame["seq"]?.intValue ?? 0) <= $0 } ?? true }
             .compactMap { $0["payload"]?["text"]?.stringValue }.joined()
     }
 

@@ -85,6 +85,8 @@ public final class AppModel {
     @ObservationIgnored var channel: JSONRPCChannel?
     /// The gateway process's event numbering, for replaying what a short drop missed.
     @ObservationIgnored private var replayEpoch: String?
+    /// Events for a session no chat holds yet, by session: what arrived while a chat attached.
+    @ObservationIgnored private var earlyEvents: [String: [GatewayEvent]] = [:]
     @ObservationIgnored var threads: [Contact.ID: ChatThread] = [:]
     @ObservationIgnored var routineLists: [Contact.ID: RoutineList] = [:]
     @ObservationIgnored var skillLists: [Contact.ID: SkillList] = [:]
@@ -408,6 +410,7 @@ public final class AppModel {
                     events.cancel()
                     requests.cancel()
                     self.channel = nil
+                    earlyEvents = [:]
                     for thread in threads.values { thread.detach() }
                     Task { await channel.close() }
                 }
@@ -515,6 +518,7 @@ public final class AppModel {
         thread.gateway = { [weak self] in self?.auth?.gateway }
         thread.replayEpoch = replayEpoch
         thread.wasRead = { [weak self] in self?.readSync.markRead(id) }
+        thread.earlyEvents = { [weak self] session in self?.earlyEvents.removeValue(forKey: session) ?? [] }
         thread.openEnded = { [weak self] in
             self?.traceOpened(id)
             self?.attachChats()
@@ -673,7 +677,7 @@ public final class AppModel {
     }
 
     /// Hands an event to the chat whose live session it belongs to.
-    private func route(_ event: GatewayEvent) {
+    func route(_ event: GatewayEvent) {
         if event.type == "cron.changed" {
             // Jobs changed somewhere on the gateway: reload the lists that are loaded.
             for list in routineLists.values where list.phase == .ready { Task { await list.refresh() } }
@@ -688,9 +692,16 @@ public final class AppModel {
             for screen in screens.values { screen.apply(event) }
             return
         }
-        guard let sessionID = event.sessionID,
-            let thread = threads.values.first(where: { $0.sessionID == sessionID })
-        else { return }
+        guard let sessionID = event.sessionID else { return }
+        guard let thread = threads.values.first(where: { $0.sessionID == sessionID }) else {
+            // A chat attaching knows its session only once the reply so far is read; a turn can end
+            // meanwhile. Numbered events only, so the chat can tell which its snapshot already has.
+            if event.seq != nil, threads.values.contains(where: \.isOpening) {
+                earlyEvents[sessionID, default: []].append(event)
+                if earlyEvents[sessionID]!.count > 256 { earlyEvents[sessionID]!.removeFirst() }
+            }
+            return
+        }
         thread.apply(event)
     }
 

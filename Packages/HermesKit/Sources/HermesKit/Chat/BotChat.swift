@@ -32,6 +32,8 @@ enum BotChat {
         /// The session's own event numbering, on the canonical protocol. The legacy one numbers
         /// the gateway's events as a whole (`gateway.ready`).
         var replayEpoch: String? = nil
+        /// The newest event the snapshot holds, in the session's numbering (canonical only).
+        var lastSequence: Int? = nil
         /// The canonical snapshot's `pending` and `running`: what's queued behind the running turn.
         var queue: JSONValue? = nil
     }
@@ -92,7 +94,7 @@ enum BotChat {
             historyOmitted: omitted || result["messages_omitted"]?.boolValue == true, inflight: inflight,
             openRequests: requests, info: result["info"],
             todoState: result["todo_state"], pendingConnection: result["pending_connection"],
-            replayEpoch: result["replay_epoch"]?.stringValue,
+            replayEpoch: result["replay_epoch"]?.stringValue, lastSequence: result["last_sequence"]?.intValue,
             queue: result["pending"].map { ["pending": $0, "running": result["running"] ?? false] })
     }
 
