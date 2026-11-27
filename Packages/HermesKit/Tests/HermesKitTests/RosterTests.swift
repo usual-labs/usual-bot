@@ -68,6 +68,16 @@ struct RosterTests {
         #expect(Contact.plainPreview("2 * 3 = 6") == "2 * 3 = 6")
     }
 
+    @Test func aLinkCutShortReadsAsItsWords() {
+        // The gateway's cut can land in a link's address, so it never closes.
+        #expect(
+            Contact.plainPreview("Merged [#76](https://github.com/example/wallof...") == "Merged #76...")
+        #expect(
+            Contact.plainPreview("Opened [#76](https://x.example) and [#77](https://x.ex...") == "Opened #76 and #77..."
+        )
+        #expect(Contact.plainPreview("[1] is the first note") == "[1] is the first note")
+    }
+
     @Test func aVoiceFileThePreviewNamesReadsAsAVoiceMemo() {
         // Cut at 80 characters by the gateway, partway through the file's name.
         #expect(
