@@ -38,9 +38,11 @@ builds only.
    its role allows, so give it the least you can: a team key with the **Developer** role, or an
    individual key from a user limited to Usual Bot, as in
    [Releasing](../../docs/guides/releasing.md#the-upload-key).
-2. **Secrets and deploy**, from this folder, with Wrangler signed in to the account in
-   `wrangler.toml`. A team key also needs `ASC_ISSUER_ID`, the issuer ID at the top of App Store
-   Connect's Team Keys page; an individual key leaves it unset.
+2. **Secrets and deploy**, from this folder, with Wrangler signed in to the account that holds the
+   Worker. `wrangler.toml` names no account, so if your login sees several, set
+   `CLOUDFLARE_ACCOUNT_ID` to that account's ID in your shell first. A team key also needs
+   `ASC_ISSUER_ID`, the issuer ID at the top of App Store Connect's Team Keys page; an individual
+   key leaves it unset.
 
    ```sh
    npx wrangler@4 secret put ASC_KEY < ApiKey_XXXXXXXXXX.p8
@@ -52,5 +54,5 @@ builds only.
 3. **Check it:** `curl -s https://bot.usual.dev/v1/latest` shows the latest build numbers, which
    should match TestFlight.
 
-A fork with its own bundle ID sets `BUNDLE_ID`, `account_id` and the route, and its own address in
+A fork with its own bundle ID sets `BUNDLE_ID` and the route, and its own address in
 `USUAL_UPDATES_URL_YES` (`Config/Shared.xcconfig`).

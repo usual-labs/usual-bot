@@ -4,8 +4,8 @@ compatibility_date = "2026-11-01"
 # The address built into the app, and its only one.
 routes = [{ pattern = "push.usual.dev", custom_domain = true }]
 workers_dev = false
-# The account that holds usual.dev. Pinned so nothing lands in another account.
-account_id = "6f696dd344b04615f91326fc0563f9fe"
+# When your Wrangler login sees several accounts, set CLOUDFLARE_ACCOUNT_ID to the one that holds
+# this service.
 
 # Not secrets: Apple's key ID and team ID name the key; the key itself is the APNS_KEY secret.
 [vars]
