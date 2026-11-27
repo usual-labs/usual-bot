@@ -158,6 +158,13 @@ final class Dictation {
         if let box, written != prefix, box.current() == written { box.update(prefix) }
     }
 
+    /// The box changed while dictation listened, and not by its words: you typed, or a message came
+    /// back into it. Dictation stops rather than write over that, and the mic then adds after it.
+    func boxChanged(to text: String) {
+        guard isListening, text != written else { return }
+        stop()
+    }
+
     /// The box moves to another conversation or goes. Words still to come from the gateway land
     /// in the draft they were for (`update` writes to it); a problem with them is then lost.
     func leave() {

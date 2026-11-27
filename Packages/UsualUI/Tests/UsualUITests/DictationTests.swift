@@ -42,19 +42,48 @@ struct DictationTests {
     @Test func gatewayWordsReplaceTheLiveOnes() {
         // The box shows "Note: check the" from the stream; the final words take their place.
         #expect(
-            GatewayJob.placing("check the backups", prefix: "Note:", now: "Note: check the", sawPartial: true)
+            GatewayJob.placing(
+                "check the backups", prefix: "Note:", now: "Note: check the", shown: "Note: check the")
                 == "Note: check the backups")
+    }
+
+    @Test func typingAfterTheLiveWordsStaysAfterThem() {
+        #expect(
+            GatewayJob.placing(
+                "check the backups", prefix: "Note:", now: "Note: check the, thanks", shown: "Note: check the")
+                == "Note: check the backups, thanks")
+    }
+
+    @Test func anEditAmongTheLiveWordsKeepsTheBox() {
+        // Changed within them, or a word made longer: there's no telling where the final words go.
+        #expect(
+            GatewayJob.placing("check the backups", prefix: "Note:", now: "Note: chuck the", shown: "Note: check the")
+                == nil)
+        #expect(
+            GatewayJob.placing("check the backups", prefix: "Note:", now: "Note: check them", shown: "Note: check the")
+                == nil)
+    }
+
+    @Test func liveWordsStopWritingOnceYouType() {
+        #expect(GatewayJob.showing("check", prefix: "Note:", now: "Note:", shown: nil) == "Note: check")
+        #expect(
+            GatewayJob.showing("check the", prefix: "Note:", now: "Note: check", shown: "Note: check")
+                == "Note: check the")
+        // Typed after the live words, or before any came: they'd write over it.
+        #expect(
+            GatewayJob.showing("check the", prefix: "Note:", now: "Note: check, thanks", shown: "Note: check") == nil)
+        #expect(GatewayJob.showing("check", prefix: "Note:", now: "Note: urgent", shown: nil) == nil)
     }
 
     @Test func gatewayWordsWithoutLiveOnesFollowWhatsInTheBoxNow() {
         // Typed while the recording was being transcribed: kept, and the words go after it.
         #expect(
-            GatewayJob.placing("check the backups", prefix: "Note:", now: "Note: urgent", sawPartial: false)
+            GatewayJob.placing("check the backups", prefix: "Note:", now: "Note: urgent", shown: nil)
                 == "Note: urgent check the backups")
     }
 
     @Test func hearingNothingLeavesTheBoxAlone() {
-        #expect(GatewayJob.placing("", prefix: "Note:", now: "Note: urgent", sawPartial: false) == nil)
+        #expect(GatewayJob.placing("", prefix: "Note:", now: "Note: urgent", shown: nil) == nil)
     }
 
     @Test func theStreamGetsSixteenBitLittleEndianSamples() throws {
