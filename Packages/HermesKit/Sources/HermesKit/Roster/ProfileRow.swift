@@ -155,12 +155,24 @@ extension Contact {
             if label.isEmpty || label.hasSuffix(":") { return String(localized: "Voice memo") }
         }
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        var plain = (try? AttributedString(markdown: text, options: options)).map { String($0.characters) } ?? text
+        let closed = Self.closingCutLink(text)
+        var plain = (try? AttributedString(markdown: closed, options: options)).map { String($0.characters) } ?? closed
         for marker in ["**", "__", "~~", "`"] {
             plain = plain.replacingOccurrences(of: marker, with: "")
         }
         let trimmed = plain.trimmingCharacters(in: .whitespaces).drop { "#>".contains($0) }
         return trimmed.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    /// A link the gateway's cut left open in its address, as just its words: Markdown can't read it,
+    /// so the row would show the brackets and the address. A cut in its words is left alone: a lone
+    /// `[` may be the message's own.
+    private static func closingCutLink(_ text: String) -> String {
+        let cut = text.hasSuffix("...") ? "..." : ""
+        if let match = text.firstMatch(of: /\[([^\[\]\n]*)\]\([^()\s]*$/) {
+            return text[..<match.range.lowerBound] + match.1 + cut
+        }
+        return text
     }
 
     /// The name an untitled profile shows, matching the official app: the primary profile, literally
