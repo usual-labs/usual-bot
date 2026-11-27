@@ -8,6 +8,335 @@ Changes that aren't in a release yet are in the
 [merged pull requests](https://github.com/usual-labs/usual-bot/pulls?q=is%3Apr+is%3Amerged+sort%3Aupdated-desc),
 each under its **Changelog** heading.
 
+## 0.6.0 - 2026-11-27
+
+### Added
+
+- **Reply to part of a message, point by point.** Select some words and choose **Reply** (the button
+  over the selection or ⌘L on the Mac, Select Text on iPhone) to answer just those words. Add as
+  many as you like, from any messages: they go as one message, each quote with your answer under it.
+  Click or tap a waiting quote to change your answer, or press Return without typing to send the
+  quotes as they are. An answer can run to several lines, and one you've started stays in the chat's
+  draft when you switch chats or quit.
+- **Queue a message for when the reply ends.** While a Bot is replying, choose **Queue** beside Send
+  (⌥Return on the Mac) and your message, files included, is sent by itself once the reply ends.
+  Queued messages wait above the message box, where you can edit, send now or remove each one. Stop
+  holds them until you choose **Resume**. Needs the gateway's Webapp; on the older dashboard a
+  message steers, as before.
+- **Edit any message of yours, and Try Again.** Edit used to work on your last message only. Now
+  sending an edit to an earlier one replaces it and everything after it with a fresh answer; the app
+  shows what will go and asks first when that's more than the last exchange or the Bot acted in it.
+  Files the Bot changed and commands it ran stay as they are. **Try Again** on the Bot's last reply
+  asks your message again for a different answer. While a reply runs, or offline, Edit and Undo stay
+  in the menu, greyed out with the reason.
+- **A file viewer.** Images, PDFs and Markdown files in a chat or room open beside the conversation:
+  on the Mac's right, where the profile opens, and as their own page on iPhone, with Share (and Save
+  on the Mac). That covers files a Bot sends, files you attach, and files a Bot names by their full
+  path in its reply, which now show as a file to open. In the ⌥Space panel, a file opens beside its
+  chat in the main window.
+- **Widgets in messages.** When a Bot writes a small web page, such as a chart or a calculator, and
+  shows it with `::preview`, it runs right in its message, as in Hermes's desktop app. It takes the
+  chat's colours in light and dark, and its links open in your browser. In the ⌥Space panel it shows
+  as a card, and notifications say "Sent a widget".
+- **Widgets that answer back.** A button in a widget can ask the Bot to do something, such as clear
+  old logs. It goes to the Bot without showing as your message, the widget changes once the Bot has
+  done it, and the reply notifies you if you've left the chat. If the Bot is still replying, it
+  waits in the queue as "From a widget", where you can remove it. Widgets in rooms can't send.
+- **Give a Bot a goal and watch it work.** Send `/goal` and what you want, even while the Bot is
+  replying, and it keeps working on it reply after reply. The goal shows above the message box with
+  how many turns it has used, what Hermes made of the last reply, and why it stopped if it did.
+  **Stop Goal** stops it, **Continue** carries on with a full set of turns, and **Clear** removes
+  it. You're notified when a goal ends without you, while the app is connected.
+- **Share to a Bot from other apps.** Choose Usual Bot in the share sheet on iPhone or the Share
+  menu on the Mac, and the app opens on **Send to**. Pick a Bot or room, and what you shared (a
+  link, text, photos or files) goes into its message box for you to add to and send. Rooms take text
+  and links.
+- **Two gateways.** Sign in to a second Hermes gateway and switch between them from the gateway menu
+  at the bottom of the Mac sidebar, or from Settings. The gateway you leave keeps its sign-in and
+  chats, and still sends you notifications; tapping one switches to it. Give each gateway a name of
+  your own or turn its notifications off. Telling their notifications apart needs the Usual Bot
+  plugin on both gateways.
+- **Pin a chat.** Choose **Pin** from a chat's menu in the sidebar (right-click on the Mac, touch
+  and hold on iPhone) and it stays at the top as a large avatar, with its unread count or needs-you
+  dot. A new pin goes after the others, and pins stay where you put them: on the Mac, drag one onto
+  another to swap places, drop a chat on a pin to pin it there, or drag a pin to a section to unpin
+  it; on either device, choose **Move Left** or **Move Right**. A Bot's pin shows on your other
+  devices and in the Hermes app; a room's pin and the order stay on the device.
+- **Mark as Unread.** Mark a Bot Chat unread from one of its messages or from the chat list, to come
+  back to it later. It's unread on your other devices and in the Hermes desktop app too, and opening
+  it on the device where you marked it goes back to that message. **Mark as Read** in the chat list
+  clears it.
+- **A NEW line shows where unread replies start.** Open a chat or room with replies you haven't read
+  and a blue NEW line sits above the first of them, or above the message you marked unread from. It
+  stays put while you read and is gone the next time you open the chat with nothing new.
+- **See when a Bot is working, even after it replies.** A green dot on its avatar shows while it
+  works. That includes work that goes on after the reply: a command it left running (such as
+  watching a pull request), a background task, or one of its routines running.
+- **Gateway calls.** Choose **Gateway** as the call engine to talk with a Bot through the
+  speech-to-text and text-to-speech set up on its Hermes profile, in the voice configured there. The
+  reply is spoken sentence by sentence as it's written, and you can talk over it. Your voice goes to
+  your gateway, which may send it on to paid services. If the gateway can't hear or speak, the call
+  says why and offers **Use On-device**.
+- **Dictate through your gateway.** Choose Gateway in Settings › Voice › Dictation to have your
+  Bot's own speech-to-text on Hermes hear you. Words appear as you talk if the gateway streams them;
+  otherwise "Transcribing…" shimmers where they'll go until you stop. If the gateway can't
+  transcribe, **Use On-device** turns the same recording into words on your device.
+- **Read a reply aloud.** A Bot's message has **Read Aloud** in its menu on the Mac and iPhone, in
+  chats and rooms. It reads the words, not the Markdown marks, code or file paths, in this device's
+  voice with the language, voice and speed from Settings › Voice, so it's free and works offline.
+  **Stop Reading** shows under the message while it plays. Playing a voice memo or video, leaving
+  the chat or starting a call stops it.
+- **Choose who answers in a room.** A message without an `@name` can go to everyone, to a lead Bot
+  that picks who answers, or to whoever Hermes picks. Set it in New Room or under Room Settings… in
+  the room's panel, which also keeps one line on what the room is for and notes every Bot should
+  keep in mind. A small line says who was picked. Needs Hermes 0.23 or later on the gateway.
+- **Continue a paused discussion.** When Hermes stops Bots that keep replying to each other, the
+  room offers Continue.
+- **A terminal for each Bot (Mac).** Press ⌘J in a Bot's chat to open a shell on your gateway's
+  computer, in the folder the Bot works in. The drawer also lists the commands the Bot ran in the
+  chat, with their output. The shell needs the Usual Bot plugin.
+- **Zoom the Mac window.** View › Zoom In (⌘+), Zoom Out (⌘−) and Actual Size (⌘0) make everything
+  in the window bigger or smaller, from 80% to 150%, as a browser zooms a page. It's also in
+  Settings › General, in place of Chat text size on the Mac, which only grew message text. A text
+  size you'd chosen before carries over.
+- **More of the Mac from the keyboard.** ⌘1 to ⌘9 open your first nine chats, counting down the
+  sidebar from the pinned ones; hold ⌘ for a moment to see each chat's number. Go › Back (⌘[) and
+  Forward (⌘]) step through the chats and rooms you opened. ⌘D starts and stops dictation, or hold
+  it while you talk. Help › Keyboard Shortcuts (⌘/) lists every shortcut.
+- **The app's icon shows how many replies you haven't read.** The number on the Dock and Home Screen
+  icon counts unread replies in chats and rooms, leaving out chats you muted, and it keeps counting
+  pushed messages while the app is closed. If you'd allowed notifications before, turn on Badges for
+  Usual Bot in the system's notification settings.
+- **Warnings before your subscription runs out.** When a Bot runs on a Claude (or other)
+  subscription that's at 90% of its 5-hour or weekly limit, the chat says how much is used and when
+  it resets. Rooms name the Bots it affects. Settings › Usage shows each limit.
+- **Swipe to reply, and see message times, on iPhone.** Swipe a message to the right to reply to it.
+  Drag a chat or room to the left to see when each message was sent, or flick it left to open the
+  Bot's page or the room's details.
+- **Bots can ask for secrets through a masked prompt.** With the Usual Bot plugin installed, a Bot
+  can request a key or token without asking you to paste it into chat. Hermes saves the value in the
+  profile’s `.env`.
+- **Usual Bot says when a newer build is in TestFlight.** Below the chat list, a line says when a
+  newer version is out and offers **Update in TestFlight**, which opens TestFlight to install it, or
+  **Later**, which hides that build until the next one. It names only builds Apple has approved for
+  testers, so you can always install it. Settings › About keeps the update link. TestFlight builds
+  check bot.usual.dev every few hours. The check sends nothing about you; other builds never check.
+- **A plainer chat.** Turn off **Show what Bots do with tools** in Settings › General to hide the
+  lines for commands, edits, tools, to-do lists and helpers. Messages, Bots talking to each other
+  and routine results stay.
+- **Right-click a link to open it or copy its address.** On the Mac, a link in a message has its own
+  menu, so you can copy the link without copying the whole message.
+- **Suggestions as you type on the Mac.** The message box shows macOS inline predictive text. Press
+  Tab to take a suggestion.
+- **The Mac's message box shows a scroll bar when your message is longer than it.** Past eight
+  lines, a thin bar at the box's edge shows where you are in your text. Drag it to move through it.
+
+### Changed
+
+- **One Usual Bot plugin, installed from the app.** The push and browser plugins are now one,
+  `usual-bot` (0.14.0). On the Mac, Plugins installs or updates it in every Bot through Hermes after
+  you confirm what Hermes's check found, and the puzzle piece shows a yellow dot when an update is
+  out. Bots you make in Usual Bot get it too. Updating replaces both old plugins and keeps your
+  devices and settings; until you update, the old ones keep working.
+- **Bots know they're in Usual Bot.** With the plugin updated, Bots in the chats you open in Usual
+  Bot are told that files and widgets show here, so they send files you can open instead of only
+  naming their paths. They reply like a chat: a few short sentences with the answer first, a short
+  line like "Checking the two threads and this week's traffic." before longer work, and no
+  report-style headings. A Bot whose own instructions set a different voice keeps it. A Bot
+  answering another Bot's message is told its reply goes back to that Bot. The plugin says nothing
+  about you or your device, and does nothing for your other apps' chats.
+- **Bots talking to each other stay out of your way.** When a Bot asks another Bot for something,
+  its chat shows who it asked and what came back ("Asked Forge", "Forge answered"). The other Bot's
+  work folds into one line, "Talked with Atlas", which you can open, and its reply to that Bot
+  doesn't notify you or count as unread. If the answer gets lost on the way, the chat says so and
+  opens the other Bot's chat for you.
+- **Your messages are easier to read.** In a chat, your messages showed in the Bot's colour, which
+  turned a long message into a bright block. They're now in a calm grey bubble, as in rooms. The
+  Bot's colour stays on Send and its picture.
+- **Quieter text in dark mode.** Text is off-white instead of pure white and the grey of previews,
+  dates and labels is a step darker, so regular text no longer looks bold on the dark background. On
+  the Mac the sidebar's names, its section titles and the name above a chat are a little smaller and
+  lighter. Inline code in a reply is smaller and grey on a faint background.
+- **Long replies are easier to read on the Mac.** Lines and paragraphs have a little more room, list
+  items sit closer together than paragraphs, and letters are spaced slightly wider.
+- **You can see what a Bot is doing while it works.** Instead of always saying "Thinking…", the line
+  under your message says what kind of tool the Bot is using ("Reading…", "Running a command…").
+  Between steps it shows the face and word Hermes picked, such as "(¬‿¬) pondering…".
+- **A clearer "needs you" dot.** The amber dot sits in the same place as the green working one, and
+  rooms now show both.
+- **A routine's results show in full in its Bot's chat.** A routine set to post in the chat used to
+  leave a folded line you had to open. Its result now shows as a message under "From the routine"
+  and the routine's name, with Show All for a long one. If the Bot chooses not to reply, the result
+  itself counts as unread. Turn off **Show routine results in full** in Settings › General to fold
+  each into one line again.
+- **Tool steps, helpers and results fold the same way.** Each is one line with an icon and a plain
+  summary; opened, its steps or report hang beneath it. Each helper gets its own row with how long
+  it took, and its report shows as formatted text. Background commands say whether they finished or
+  failed, with the exit code, and show the command and its output separately. Long reports show
+  their first lines with Show All instead of scrolling inside the chat.
+- **Notifications go to the device you're using first.** A message reaches the device you're using,
+  or the one you used last, straight away. Your other devices get it 15 seconds later, unless you've
+  read that chat by then. A Mac you've left alone for a minute doesn't count as in use. Needs the
+  Usual Bot plugin 0.13.0 or later.
+- **Reading a chat clears its notifications on your other devices.** Notifications about a chat
+  you've read on your Mac leave your iPhone's lock screen, and the other way round, rooms included.
+  If iOS missed the update, for example because you'd swiped Usual Bot away, they clear when that
+  device's next notification arrives.
+- **You're notified when a Bot says what it's doing.** A Bot's message before its reply, like "On
+  it, looking now", now notifies like the reply itself. Update the Usual Bot plugin to get it.
+- **Tapping a notification opens the chat sooner on iPhone.** When iOS allows it, a notification
+  lets Usual Bot load that chat in the background, so tapping it soon after opens the chat already
+  connected, with the message there. iOS doesn't do this for an app swiped away in the app switcher,
+  and not always in Low Power Mode.
+- **Switching chats is faster.** A chat now opens with its newest messages, and the earlier ones
+  come a moment later; on a real gateway switching took about a third less time. On the Mac the last
+  three chats you opened stay ready, each where you'd scrolled to, and the message box and the
+  chat's name are no longer built again on every switch.
+- **Coming back to the app is quicker on iPhone.** After a short visit to another app, the chat is
+  ready to type in straight away. After a longer one, the chat on screen reconnects first, before
+  the rest of the app catches up.
+- **Touching and holding a message on iPhone opens a sheet.** Reactions, Reply, Mark as Unread,
+  Copy, Select Text, Read Aloud and the rest now open in a sheet from the bottom, instead of a menu
+  that lifted the whole message, so a long reply no longer pushes the menu off the screen. It opens
+  while you're still holding.
+- **Reactions sit at the top of a message's right-click menu on the Mac.** The quick reactions show
+  in a row instead of under a React submenu.
+- **A message's actions show when you point near it.** Pointing beside a message, or where its
+  buttons appear, now shows them, not only pointing at the message itself.
+- **On iPhone, a chat's model, thinking and context are in the Bot's profile.** Tap the Bot's name
+  above the chat, then use **This Chat**. The message box no longer shows them while you type.
+- **A Bot's profile is easier to scan.** Thinking is a slider, the context shows as a bar with
+  Compress beside it, and the Mac's tabs are rows that open each page, with a back button. Next Up
+  shows the Bot's two soonest routines with their switches. On the Mac, the model is a button that
+  opens a list of every model, with search.
+- **Dictation shows your voice.** While you dictate, your words appear above a row with a waveform
+  of your voice, ✕ to cancel and take the words back out, Stop, and Send. The mic stays beside Send
+  while you type, so you can dictate more into a message you've started.
+- **Sending puts the iPhone keyboard away,** so your message and the reply have the screen. Tap
+  anywhere in the message box to write again, not just the line of text. With a hardware keyboard
+  the cursor stays in the box.
+- **Clearer message box buttons on iPhone.** Attach, mic and the other secondary buttons sit on a
+  grey circle, Stop is in the Bot's colour while a reply runs, and transcribing shows the same
+  spinner as uploading files.
+- **Chats fade out at the top and bottom on iPhone.** Messages fade into the background under the
+  clock and the name, and below the message box, so the bars read more cleanly.
+- **The iPhone chat list has no "Chats" title.** The list starts higher up the screen. The back
+  button in a chat still says "Chats".
+- **Hermes wears the app icon.** Your main Bot shows the Usual Bot icon instead of a drawn
+  character, until you give it a picture of its own.
+- On the Mac, a drag selects across a reply's paragraphs, headings, list items and quotes, not just
+  within one of them.
+- Web and email addresses written out in messages are links now, yours included, and links are
+  underlined (and blue in replies) so they stand out from the words around them.
+- **Voice calls read tables and file paths more naturally.** A table is read as its cells and a file
+  path as the file's name.
+- **Dragging in the Mac sidebar drops at once.** A dragged chat's picture no longer hangs where you
+  dropped it.
+
+### Fixed
+
+- **Chats load reliably with many Bots.** With many Bots, chats could fail with "The gateway took
+  too long to answer." and the connection kept dropping and reconnecting. The chat you're looking at
+  now loads first, the others follow a few at a time, and a slow gateway no longer drops the
+  connection.
+- **Scrolling up through a chat works everywhere.** In a chat whose newest messages were short,
+  scrolling to the top stopped at the newest few. As earlier messages loaded, the message you were
+  reading could leap far up or down, and on iPhone the chat could freeze for seconds. Earlier
+  messages now load a page at a time as you scroll (on iPhone, as you lift your finger), and the
+  chat stays on the message you were reading.
+- **Sending always shows your message.** A message sent while the chat was still scrolling, such as
+  with fingers resting on the trackpad or just after a flick, left you further up and no longer
+  following the reply. The round arrow button now works mid-scroll too.
+- **Chats open at their last message.** Opening a chat could leave a blank under its last message.
+  The newest message now sits just above the message box.
+- **A finished reply no longer shows as "Writing…".** Opening a chat, often by tapping a
+  notification, just as a reply ended could leave it showing "Writing…" until you opened the chat
+  again. The reply now shows as soon as the chat connects.
+- **Messages from your other devices show right away.** A message sent from your iPhone showed on
+  your Mac only once the reply to it finished, which can take minutes. Its words now show as the
+  reply starts, and its images join them when the reply ends.
+- **Messages with an image show the image.** Some messages showed a file path, "[Image attached at:
+  …]", "[screenshot]" or the Bot's instructions instead of the picture. They now show the picture
+  and your words, and an image sent without words no longer shows "What do you see in this image?".
+- **Files you send open again.** A video or file you sent in a chat showed "File not found (HTTP
+  404)". It now plays or opens from the chat's workspace.
+- **Messages with several photos stay on the screen.** On iPhone, a message with a few photos that
+  couldn't load pushed the whole chat past the edge of the screen and cut off every message. The
+  photos now wrap onto more rows.
+- **No more "[SILENT]" messages.** When a Bot had nothing to add, for example a routine with nothing
+  new or a note from another Bot, the chat showed "[SILENT]" and sent a notification for it. Now
+  nothing shows and nothing notifies. Update the Usual Bot plugin from the app to stop the
+  notifications.
+- **Messages Hermes sends on its own no longer show as yours.** The first-run opening and goal
+  controls from Hermes's own app showed up as your messages, and Undo or Edit could take them back.
+  They're hidden now, as in Hermes.
+- **The sidebar shows what you sent while a Bot worked.** A message sent during a reply showed in
+  the sidebar as "[OUT-OF-BAND USER MESSAGE…". It now shows your words, or "You added a message
+  while it worked" before the chat has loaded.
+- **Chat previews show links as words.** A last message that started with a link could show in the
+  chat list as raw Markdown, brackets and address included. It now shows the link's words.
+- **Notifications show a reply's words, not its Markdown.** Headings, bullets, bold, code marks,
+  tables and link addresses no longer appear in a notification. For pushed notifications, update the
+  Usual Bot plugin.
+- **A chat you left open no longer counts as read while the app is away.** A reply that came in
+  while the iPhone checked in from the background was marked read on all your devices because that
+  chat had been on screen when you left.
+- **Typing /new no longer leaves an unanswerable confirmation.** `/new` and other commands Usual Bot
+  doesn't offer were sent to the gateway, which asked to confirm and then said "No pending command
+  to approve." The app now says the command doesn't work here and sends nothing.
+- **A command that fails shows as failed.** A command that exited with an error used to show as
+  done.
+- **Pasting images and files on the Mac.** ⌘V in a chat attaches a copied image (a screenshot, Copy
+  Image) or files copied in Finder; it used to do nothing. Text pastes as before.
+- **No crash on a new line after pasted text.** Starting a new line in the message box right after
+  text pasted from Windows or some web pages could close the app. It now adds the line.
+- **Closing a window no longer quits the app on the Mac.** It could crash when you closed a window
+  that had shown Jump to Latest.
+- **Usual Bot no longer quits in the background on iPhone.** Leaving the app while it was renewing
+  your sign-in could make iOS end it.
+- **Dictation keeps what you said.** Pausing while dictating replaced the earlier words with the new
+  ones; now the new words are added after them. Speech recognition's last words could arrive after
+  Send and put the whole message back, or overwrite what you typed just after you stopped. On iPhone
+  the cursor now ends after the dictated words instead of staying on the first character or jumping
+  into the middle.
+- **Dictation settings say where your voice goes.** The footer said dictation always stays on the
+  device and works offline. It now says words are recognised on the device when it has your
+  language's speech model, and otherwise by Apple's speech service.
+- **Voice calls say when they can't hear you.** A call whose speech recognition couldn't start sat
+  silent with no error. It now tries Apple's speech servers, as dictation does, and if that fails it
+  tells you what to turn on.
+- **Calls on iPhone keep hearing you.** A few seconds into a call, the microphone could switch off
+  while the call still showed Listening. The call now starts the microphone again. If it can't, the
+  call ends and says what to do.
+- **Talking over a call's reply starts a new turn.** Words said right after cutting the Bot off
+  could join the reply being stopped instead of starting a new turn.
+- **The Mac call bar's buttons are visible again.** Settings, Transcript and Mute showed as pale
+  circles with nearly invisible icons in dark mode. They now match the chat bar's round buttons.
+- **Selected text is blue again.** Selecting text in the message box and other text fields showed a
+  grey highlight in dark mode. It now uses your Mac's accent colour, and blue on iPhone.
+- **Inactive windows no longer show a grey band at the top.** The sidebar and chat headers fade into
+  their background colour instead.
+- **No grey band behind the Mac message box while a reply runs.** The box now looks the same whether
+  or not the Bot is working. ⌘. still stops a reply, and it's now also in View ▸ Stop Reply.
+- **Resizing the Mac window is smooth again.** The window lagged behind the pointer while you
+  dragged its edge. It now keeps up.
+- **Scrolling a chat does less work.** On the Mac, the chat no longer redraws its jump button and
+  toolbar on every frame of a scroll.
+- **Paragraphs no longer run together on iPhone.** Paragraphs in a row in a reply were closer
+  together than a list's items. They're now spaced like the rest of the reply.
+- **The pointing hand shows where it should on the Mac.** Jump to Latest over message text, and
+  links inside tables, showed a text cursor.
+- **Working avatars stay in place as chats open.**
+- **Every Bot sits inside the Plugins sheet's Bot's Browser list.** The last Bot could show outside
+  the list's card on the Mac.
+- **One subscription shows once in Settings › Usage.** Bots that share a Claude login could appear
+  under two identical "Anthropic subscription" sections. They now share one.
+- **Usage lines up in Settings on iPhone.** The Usage row's symbol and title sat to the left of the
+  gateway's above them. They now line up.
+- **The period picker in Usage stays still.** Choosing 7, 30 or 90 Days made the picker shrink and
+  grow as a spinner appeared beside it. The spinner now sits in the corner of the totals, and a
+  period you loaded in the last minute shows at once without loading again.
+
 ## 0.5.0 - 2026-11-09
 
 ### Added
