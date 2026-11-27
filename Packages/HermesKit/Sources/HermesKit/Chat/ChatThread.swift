@@ -69,6 +69,10 @@ public final class ChatThread {
     public internal(set) var isChangingGoal = false
     /// `compress()` is running.
     public internal(set) var isCompressing = false
+    /// IDs of background processes the agent started from this chat that are still running, as
+    /// `process.list` last said (`ChatThread+Processes.swift`).
+    public internal(set) var runningProcesses: [String] = []
+    @ObservationIgnored var processCheck: Task<Void, Never>?
     /// Set by the app: whether vault secrets would cross the network unencrypted. Assumes so until told.
     var gatewayIsUnencrypted: @MainActor () -> Bool = { true }
     /// The chat is open, under this stored session ID: the app tells the plugin it's one of its
@@ -210,8 +214,16 @@ public final class ChatThread {
         if !approvals.isEmpty || !questions.isEmpty || !secrets.isEmpty || !vaultPrompts.isEmpty || connection != nil {
             return .needsYou
         }
+        return isBusy ? .working : .idle
+    }
+
+    /// Anything the Bot is doing in this chat, in the foreground or not.
+    var isBusy: Bool {
         // Between a goal's replies the Bot is still at work on it.
-        return state.isRunning || goalPhase == .working ? .working : .idle
+        state.isRunning || goalPhase == .working || isCompressing || !backgroundTasks.isEmpty
+            || !runningProcesses.isEmpty || sideQuestions.contains { $0.answer == .waiting }
+            // A helper can outlive its turn (`delegate_task` in the background).
+            || state.live.helpers.contains { $0.status == .running }
     }
 
     // MARK: - Attaching
@@ -304,6 +316,7 @@ public final class ChatThread {
             for event in early where (event.seq ?? 0) > since { apply(event) }
         }
         recoverMissed(rejoined: rejoined)
+        checkProcesses()
     }
 
     /// Shows the gateway's copy of the transcript in place of the one on screen.
@@ -327,6 +340,8 @@ public final class ChatThread {
         openTask?.cancel()
         openTask = nil
         recovery?.cancel()
+        processCheck?.cancel()
+        processCheck = nil
         sessionID = nil
         // A reply that ends while the link is down isn't timed.
         turnTiming = TurnTiming()
@@ -410,6 +425,8 @@ public final class ChatThread {
         if event.type == "message.complete" {
             finishTurnElsewhere(event.payload)
             goalReplyEnded(event.payload)
+            // The turn may have left a process running, or one it watched may have ended.
+            checkProcesses()
         }
         #if DEBUG
             if event.type == "message.complete" {

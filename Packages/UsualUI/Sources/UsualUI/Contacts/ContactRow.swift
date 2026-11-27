@@ -1,9 +1,9 @@
 import HermesKit
 import SwiftUI
 
-/// One sidebar row: avatar, name, preview and an unread count, with a dot on the avatar when the
-/// agent needs you. As in Grok, the phone's list says when each chat was last active and the Mac's
-/// sidebar doesn't. Compact, in the narrow window's rail, it's the avatar alone with the count as a
+/// One sidebar row: avatar, name, preview and an unread count, with a dot on the avatar while the
+/// agent works or needs you. As in Grok, the phone's list says when each chat was last active and
+/// the Mac's sidebar doesn't. Compact, in the narrow window's rail, it's the avatar alone with the count as a
 /// badge too. A pinned chat is a row only in a search and the rail (`PinnedTiles` otherwise), and
 /// a search marks it with a pin.
 struct ContactRow: View {
@@ -39,9 +39,6 @@ struct ContactRow: View {
     private var row: some View {
         HStack(alignment: dynamicTypeSize.isAccessibilitySize ? .top : .center, spacing: Self.gap) {
             avatar
-                .overlay(alignment: .topTrailing) {
-                    if contact.activity == .needsYou { NeedsYouDot().offset(x: 3, y: -2) }
-                }
             VStack(alignment: .leading, spacing: Self.lineGap) {
                 // At accessibility text sizes the time moves under the name, so neither is cut short.
                 let nameLine =
@@ -122,8 +119,9 @@ struct ContactRow: View {
 
     @ViewBuilder private var avatar: some View {
         switch contact.kind {
-        case .agent: AgentAvatar(contact: contact, size: avatarSize)
-        case .room: RoomAvatar(members: members, size: avatarSize)
+        // The rail's badge has the corner, and shows the dot itself.
+        case .agent: AgentAvatar(contact: contact, size: avatarSize, showsStatus: !compact)
+        case .room: RoomAvatar(members: members, size: avatarSize, activity: compact ? .idle : contact.activity)
         }
     }
 
@@ -143,8 +141,9 @@ struct ContactRow: View {
     }
 }
 
-/// The badge on an avatar that stands alone, in the rail and on a pinned chat: the unread count, a
-/// dot when the agent needs you, or a smaller one when the chat was marked unread.
+/// The badge on an avatar that stands alone, in the rail and on a pinned chat: an amber dot when the
+/// agent needs you, the unread count, a green dot while it works, or a plain dot when the chat was
+/// marked unread. The count wins over working: the avatar's breathing still says that.
 struct AvatarBadge: View {
     let contact: Contact
 
@@ -159,6 +158,8 @@ struct AvatarBadge: View {
                 .zoomedFrame(minWidth: 18, minHeight: 18)
                 .background(Capsule().fill(Theme.primary))
                 .overlay(Capsule().strokeBorder(Theme.window, lineWidth: 2))
+        } else if contact.activity == .working {
+            WorkingDot()
         } else if contact.isMarkedUnread {
             UnreadDot().overlay(Circle().strokeBorder(Theme.window, lineWidth: 2))
         }
@@ -185,6 +186,18 @@ struct NeedsYouDot: View {
             .overlay(Circle().strokeBorder(Theme.window, lineWidth: 2))
             .accessibilityElement()
             .accessibilityLabel(Text("Needs you"))
+    }
+}
+
+/// An agent is at work, the badge's form of `StatusDot`.
+struct WorkingDot: View {
+    var body: some View {
+        Circle()
+            .fill(Theme.online)
+            .zoomedFrame(width: 12, height: 12)
+            .overlay(Circle().strokeBorder(Theme.window, lineWidth: 2))
+            .accessibilityElement()
+            .accessibilityLabel(Text("Working"))
     }
 }
 

@@ -79,7 +79,7 @@ struct PinnedTiles<Actions: View>: View {
     }
 }
 
-/// A Bot's or a room's picture.
+/// A Bot's or a room's picture. Its dot is in the tile's badge.
 private struct AgentOrRoomAvatar: View {
     let contact: Contact
     let members: [Contact]
@@ -87,7 +87,7 @@ private struct AgentOrRoomAvatar: View {
 
     var body: some View {
         switch contact.kind {
-        case .agent: AgentAvatar(contact: contact, size: size)
+        case .agent: AgentAvatar(contact: contact, size: size, showsStatus: false)
         case .room: RoomAvatar(members: members, size: size)
         }
     }

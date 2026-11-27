@@ -206,7 +206,7 @@ public struct QuickMessageView: View {
         HStack(spacing: 12) {
             switch contact.kind {
             case .agent: AgentAvatar(contact: contact, size: 32)
-            case .room: RoomAvatar(members: members(of: contact), size: 32)
+            case .room: RoomAvatar(members: members(of: contact), size: 32, activity: contact.activity)
             }
             VStack(alignment: .leading, spacing: 0) {
                 Text(contact.name)
@@ -322,7 +322,9 @@ public struct QuickMessageView: View {
     private func isAnswering(_ sent: Sent) -> Bool {
         guard let contact = contacts.first(where: { $0.id == sent.contactID }) else { return false }
         if let room = model.room(for: contact) { return room.activity != .idle }
-        return model.thread(for: contact).activity != .idle
+        // Its reply, not the Bot's background work, which can go on long after.
+        let thread = model.thread(for: contact)
+        return thread.activity == .needsYou || thread.state.isRunning || thread.goalPhase == .working
     }
 
     /// The next recipient for ⇥ (or the previous for ⇧⇥), wrapping around.
@@ -459,7 +461,7 @@ private struct RecipientButton: View {
                 Group {
                     switch contact.kind {
                     case .agent: AgentAvatar(contact: contact, size: 40)
-                    case .room: RoomAvatar(members: members, size: 40)
+                    case .room: RoomAvatar(members: members, size: 40, activity: contact.activity)
                     }
                 }
                 .padding(2)

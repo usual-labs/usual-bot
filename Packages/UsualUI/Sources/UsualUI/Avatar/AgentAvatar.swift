@@ -3,10 +3,13 @@ import SwiftUI
 
 /// An agent's avatar: the picture it was given in the official app, or else its character on a soft
 /// circle in the agent's colour. The main Bot, Hermes, wears the app icon in place of a character.
-/// `size` is at actual size; the Mac's zoom grows it.
+/// `size` is at actual size; the Mac's zoom grows it. A working Bot breathes and wears a green
+/// dot, one that needs you an amber dot.
 struct AgentAvatar: View {
     let contact: Contact
     var size: CGFloat = 44
+    /// Off where a badge has the corner, or the row around it already says the Bot is at work.
+    var showsStatus = true
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.botPictures) private var pictures
@@ -47,7 +50,39 @@ struct AgentAvatar: View {
         .clipShape(Circle())
         .frame(width: size, height: size)
         .modifier(Breathing(isActive: contact.activity == .working && !reduceMotion))
+        .overlay(alignment: .topTrailing) {
+            if showsStatus { StatusDot(activity: contact.activity, avatar: size) }
+        }
         .accessibilityHidden(true)
+    }
+}
+
+/// Green while a Bot works, amber while it needs you, on its avatar's rim at the top right. The
+/// breathing alone was hard to see on small avatars. One dot, as a Bot is only ever one of these.
+struct StatusDot: View {
+    let activity: Contact.Activity
+    /// The avatar's size as drawn.
+    let avatar: CGFloat
+
+    var body: some View {
+        if let fill {
+            let diameter = max(8, (avatar * 0.27).rounded())
+            // On the circle's edge, which is this far in from the avatar's corner.
+            let inward = avatar * 0.146 - diameter / 2
+            Circle()
+                .fill(fill)
+                .overlay(Circle().strokeBorder(Theme.window, lineWidth: avatar < 30 ? 1.5 : 2))
+                .frame(width: diameter, height: diameter)
+                .offset(x: -inward, y: inward)
+        }
+    }
+
+    private var fill: Color? {
+        switch activity {
+        case .idle: nil
+        case .working: Theme.online
+        case .needsYou: Theme.needsYouInk
+        }
     }
 }
 
@@ -72,10 +107,12 @@ private struct Breathing: ViewModifier {
     }
 }
 
-/// A room's avatar: two member avatars overlapping on a diagonal.
+/// A room's avatar: two member avatars overlapping on a diagonal, with the room's dot on the
+/// front one. The members never breathe: none of them is the one at work.
 struct RoomAvatar: View {
     let members: [Contact]
     var size: CGFloat = 44
+    var activity: Contact.Activity = .idle
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
@@ -86,10 +123,14 @@ struct RoomAvatar: View {
         ZStack(alignment: .topLeading) {
             if let first = members.first {
                 AgentAvatar(contact: first.settled, size: memberSize)
+                    .overlay(alignment: .topTrailing) {
+                        if members.count < 2 { StatusDot(activity: activity, avatar: shown - offset) }
+                    }
             }
             if members.count > 1 {
                 AgentAvatar(contact: members[1].settled, size: memberSize)
                     .background(Circle().fill(Theme.window).padding(-2))
+                    .overlay(alignment: .topTrailing) { StatusDot(activity: activity, avatar: shown - offset) }
                     .offset(x: offset, y: offset)
             }
         }

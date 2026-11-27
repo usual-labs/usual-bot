@@ -70,6 +70,7 @@
                     }),
                 apps: Dictionary(
                     uniqueKeysWithValues: demo.agents.map { ($0.id, MCPServerList.demo(gateway: Demo.gateway)) }))
+            runningRoutines.showDemo([])
             // One Bot hidden, so Settings › General has one to show again.
             hiddenBots = [demo.courier]
             addDemoBot(demo.courier)

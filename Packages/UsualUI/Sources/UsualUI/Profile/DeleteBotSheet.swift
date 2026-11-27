@@ -70,7 +70,7 @@ struct DeleteBotSheet: View {
     static func activityNote(for contact: Contact) -> String? {
         switch contact.activity {
         case .idle: nil
-        case .working: String(localized: "\(contact.name) is in the middle of a reply. Deleting it stops that.")
+        case .working: String(localized: "\(contact.name) is working on something. Deleting it stops that.")
         case .needsYou: String(localized: "\(contact.name) is waiting on you. Deleting it drops that request.")
         }
     }

@@ -168,6 +168,7 @@ extension AppModel {
         hiddenBots = []
         threads = [:]
         routineLists = [:]
+        runningRoutines.clear()
         skillLists = [:]
         vaultLists = [:]
         appLists = [:]

@@ -18,7 +18,7 @@ struct DeleteBotSheetTests {
     @Test func saysAReplyStopsWhileItWorks() {
         #expect(
             DeleteBotSheet.activityNote(for: forge(.working))
-                == "Forge is in the middle of a reply. Deleting it stops that.")
+                == "Forge is working on something. Deleting it stops that.")
     }
 
     /// Waiting for your OK isn't a reply under way.
