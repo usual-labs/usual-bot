@@ -133,7 +133,9 @@ extension JSONRPCChannel {
             let epoch = result["replay_epoch"]?.stringValue,
             let frames = await replay(session, epoch: epoch, latest: result["last_sequence"]?.intValue ?? 0, timeout)
         {
-            reply = CanonicalProtocol.replyText(in: frames["events"], admission: admission)
+            // Only up to the snapshot: what came after arrives as live events, the turn's end too.
+            reply = CanonicalProtocol.replyText(
+                in: frames["events"], admission: admission, upTo: result["last_sequence"]?.intValue)
             // Asked while this was read, after the snapshot: until the chat attaches, nothing shows them.
             let asked = CanonicalProtocol.waitingPrompts(in: frames["events"])
             let known = Set(CanonicalProtocol.rows(result["prompts"]).compactMap { $0["prompt_id"]?.stringValue })

@@ -108,6 +108,14 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
 
 ## Gateway
 
+- **A chat attaching mid-reply learns its session ID only after a second call.** On the canonical
+  protocol, the snapshot (`session.resume`) is followed by `session.events.since` for the reply so
+  far, and `AppModel.route` used to drop the live events that came in between. A turn that ended
+  then left the chat on "Writing…" until it was opened again. It happened most after tapping a
+  notification, as the plugin pushes at `post_llm_call`, just before the turn ends. `route` now
+  keeps those events (`earlyEvents`), and `attach` applies the ones numbered after the snapshot's
+  `last_sequence`; the reply so far is read only up to it, so nothing shows twice. The legacy
+  dialect has no snapshot number and still drops them.
 - **The gateway answers one socket's requests one at a time.** Each chat open (`session.resume`)
   builds an agent: about 1 s on an idle host, several on a busy one. Opening all 11 of the
   developer's chats at once on connect left the last ones, and the roster read behind them, past

@@ -175,6 +175,8 @@ public final class ChatThread {
     var needsOpening: Bool { sessionID == nil && openTask == nil }
     /// Set by the app: an open finished, either way, so another chat can start opening.
     var openEnded: (() -> Void)?
+    /// Set by the app: takes the events for a session that came before this chat attached to it.
+    var earlyEvents: ((String) -> [GatewayEvent])?
     /// The session of a chat moved here from another ID letting go of it, which opening waits for.
     var released: Task<Void, Never>?
     let channel: @MainActor () -> JSONRPCChannel?
@@ -295,6 +297,12 @@ public final class ChatThread {
             markViewed()
         }
         phase = .ready
+        // What came while the chat attached, after its snapshot: a reply can end then. Without the
+        // snapshot's number (the legacy dialect) there's no telling which it already has.
+        let early = earlyEvents?(opened.sessionID) ?? []
+        if let since = opened.lastSequence {
+            for event in early where (event.seq ?? 0) > since { apply(event) }
+        }
         recoverMissed(rejoined: rejoined)
     }
 
