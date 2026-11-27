@@ -37,6 +37,8 @@ public final class AppModel {
     }
     /// A chat to open, say because you tapped its notification. The window clears it.
     public var requestedContactID: Contact.ID?
+    /// A file to show beside its chat, asked for from the ⌥Space panel. The window clears it.
+    public var requestedFile: FileRequest?
     /// Version, health and account, once the Machine tab asked for them.
     public internal(set) var gatewayDetails: GatewayDetails?
     /// The last sign-in or connection problem, for the connect screen.

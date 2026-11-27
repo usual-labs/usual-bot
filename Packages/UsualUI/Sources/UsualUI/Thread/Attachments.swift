@@ -224,17 +224,20 @@ struct AttachmentChips: View {
     #endif
 }
 
-/// One attachment: an image as a thumbnail that opens full size, anything else as a named file.
+/// One attachment: an image as a thumbnail, anything else as a named file. An image, PDF or
+/// Markdown file on the gateway opens in the file viewer; with no viewer, an image opens full size.
 struct AttachmentTile: View {
     let kind: Attachment.Kind
     let name: String
     /// The image's bytes when this device has them.
     var imageData: Data?
-    /// Where the image is on the gateway, to load it when this device doesn't have it.
+    /// Where the file is on the gateway: to load an image this device doesn't have, and to open
+    /// the file in the viewer.
     var gatewayPath: String?
 
     @Environment(\.media) private var store
     @Environment(\.mediaProfile) private var profile
+    @Environment(\.openFile) private var openFile
     @State private var loaded: Data?
     @State private var thumbnail: Image?
     @State private var failed = false
@@ -247,7 +250,7 @@ struct AttachmentTile: View {
         Group {
             if kind == .image, !failed, data != nil || gatewayPath != nil {
                 Button {
-                    viewing = data != nil
+                    openImage()
                 } label: {
                     ZStack {
                         RoundedRectangle(cornerRadius: 12).fill(Theme.selection)
@@ -259,32 +262,65 @@ struct AttachmentTile: View {
                 .buttonStyle(.clickable)
                 // On the button, not around it, so VoiceOver can still open it.
                 .accessibilityLabel(Text("Image \(name)"))
-                .accessibilityHint(data == nil ? Text("") : Text("Opens it full size"))
+                .accessibilityHint(canOpenImage ? Text("Opens it full size") : Text(""))
                 .task(id: imageData) { await show() }
                 .sheet(isPresented: $viewing) {
                     if let data { MediaViewer(data: data, name: name) }
                 }
-            } else {
-                HStack(spacing: 8) {
-                    Image(systemName: kind == .image ? "photo" : "doc")
-                        .scaledFont(size: 15)
-                        .foregroundStyle(Theme.secondaryInk)
-                    Text(name)
-                        .scaledFont(size: 13)
-                        .foregroundStyle(Theme.ink)
-                        .lineLimit(1, accessibility: 3)
-                        .truncationMode(.middle)
-                        // As wide as the name, up to a limit that grows with the text; longer names
-                        // shorten in the middle.
-                        .frame(maxWidth: min(nameWidth, 300), alignment: .leading)
-                        .fixedSize(horizontal: true, vertical: false)
+            } else if kind == .file, let document {
+                Button {
+                    openFile?(document)
+                } label: {
+                    named
                 }
-                .padding(.horizontal, 12)
-                .zoomedFrame(minHeight: 40)
-                .background(Theme.selection, in: RoundedRectangle(cornerRadius: 12))
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(kind == .image ? "Image \(name)" : "File \(name)"))
+                .buttonStyle(.clickable)
+                .help("Open \(name)")
+                .accessibilityHint(Text("Opens it in the viewer"))
+            } else {
+                named
             }
+        }
+    }
+
+    private var named: some View {
+        HStack(spacing: 8) {
+            Image(systemName: kind == .image ? "photo" : FileKind(path: name)?.symbol ?? "doc")
+                .scaledFont(size: 15)
+                .foregroundStyle(Theme.secondaryInk)
+            Text(name)
+                .scaledFont(size: 13)
+                .foregroundStyle(Theme.ink)
+                .lineLimit(1, accessibility: 3)
+                .truncationMode(.middle)
+                // As wide as the name, up to a limit that grows with the text; longer names
+                // shorten in the middle.
+                .frame(maxWidth: min(nameWidth, 300), alignment: .leading)
+                .fixedSize(horizontal: true, vertical: false)
+        }
+        .padding(.horizontal, 12)
+        .zoomedFrame(minHeight: 40)
+        .background(Theme.selection, in: RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(kind == .image ? "Image \(name)" : "File \(name)"))
+    }
+
+    /// A PDF or Markdown file on the gateway, where there's a viewer to open it in.
+    private var document: ViewedFile? {
+        guard openFile != nil, let gatewayPath, let kind = FileKind(path: gatewayPath), kind != .image else {
+            return nil
+        }
+        return ViewedFile(source: .gateway(gatewayPath), name: name, profile: profile, kind: kind)
+    }
+
+    private var canOpenImage: Bool { data != nil || (openFile != nil && gatewayPath != nil) }
+
+    /// In the viewer when the image is on the gateway; otherwise (waiting in the message box, or
+    /// no viewer here) full size in a sheet.
+    private func openImage() {
+        if let openFile, let gatewayPath {
+            openFile(ViewedFile(source: .gateway(gatewayPath), name: name, profile: profile, kind: .image, data: data))
+        } else {
+            viewing = data != nil
         }
     }
 

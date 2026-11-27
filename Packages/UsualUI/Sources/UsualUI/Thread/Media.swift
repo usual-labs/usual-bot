@@ -21,13 +21,6 @@ extension EnvironmentValues {
     @Entry var playbackScope = "window"
 }
 
-/// Where an image in a chat comes from.
-enum MediaSource: Equatable, Hashable {
-    /// A path on the gateway, read as the message's profile.
-    case gateway(String)
-    case web(URL)
-}
-
 enum MediaLoading {
     enum Kind {
         case image, audio, video, file
@@ -141,13 +134,15 @@ struct MediaView: View {
     }
 }
 
-/// An image in a reply: loads, shows inline, and opens full size on tap.
+/// An image in a reply: loads, shows inline, and opens in the file viewer on tap (full size in a
+/// sheet where there's no viewer).
 struct ReplyImage: View {
     let source: MediaSource
     let name: String
 
     @Environment(\.media) private var store
     @Environment(\.mediaProfile) private var profile
+    @Environment(\.openFile) private var openFile
     @State private var phase = Phase.loading
     @State private var viewing = false
 
@@ -170,7 +165,7 @@ struct ReplyImage: View {
                 // screen too narrow for that size.
                 let size = MediaLoading.displaySize(pixels: pixels, limit: CGSize(width: 420, height: 360))
                 Button {
-                    viewing = true
+                    open()
                 } label: {
                     image.resizable()
                         .aspectRatio(size, contentMode: .fit)
@@ -193,6 +188,15 @@ struct ReplyImage: View {
         }
     }
 
+    private func open() {
+        guard let openFile else {
+            viewing = true
+            return
+        }
+        guard case .loaded(let data, _, _) = phase else { return }
+        openFile(ViewedFile(source: source, name: name, profile: profile, kind: .image, data: data))
+    }
+
     private func load() async {
         do {
             let data = try await MediaLoading.data(source, store: store, profile: profile)
@@ -207,7 +211,8 @@ struct ReplyImage: View {
     }
 }
 
-/// A non-image file in a reply: its name, and a way to save it.
+/// A non-image file in a reply: its name, which opens a PDF or Markdown file in the viewer, and a
+/// way to save it.
 struct MediaFile: View {
     let path: String
 
@@ -220,7 +225,7 @@ struct MediaFile: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            AttachmentTile(kind: .file, name: name)
+            AttachmentTile(kind: .file, name: name, gatewayPath: path)
             if let file {
                 ShareLink(item: file) { Image(systemName: "square.and.arrow.up") }
                     .buttonStyle(.clickable(.borderless))

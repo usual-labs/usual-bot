@@ -17,6 +17,9 @@ struct RoomPane: View {
     /// A message search chose in this room, to scroll to.
     var jump: MessageJump? = nil
     var jumped: () -> Void = {}
+    /// A file to show beside the room, from the ⌥Space panel.
+    var requestedFile: FileRequest? = nil
+    var openedRequestedFile: () -> Void = {}
 
     @State private var showsInfo = false
     /// As in a chat: the newest messages, and earlier ones as you scroll up.
@@ -67,6 +70,10 @@ struct RoomPane: View {
             .onChange(of: room.roomID) { showsInfo = false }
             // Inside the side panel's row: outside, the name drops below the window buttons' line.
             .paneChrome()
+            .fileViewer(
+                in: contact.id, otherPanel: $showsInfo, requested: requestedFile,
+                openedRequested: openedRequestedFile
+            )
             #if os(macOS)
                 .focusedSceneValue(
                     \.chatPanel,

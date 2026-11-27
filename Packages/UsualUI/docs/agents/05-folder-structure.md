@@ -9,6 +9,7 @@
 - `Sources/UsualUI/Thread/ApprovalCard.swift` — approval UI
 - `Sources/UsualUI/Thread/SecretCard.swift` — masked secret and sudo prompts
 - `Sources/UsualUI/Room/RoomPane.swift` — rooms
+- `Sources/UsualUI/Files/` — the file viewer chats and rooms open images, PDFs and Markdown in
 - `Sources/UsualUI/Profile/VaultView.swift`, `VaultAddSheet.swift`, `VaultFields.swift` — the Vault page
 - `Sources/UsualUI/Profile/AppsView.swift`, `AppDetailSheet.swift`, `AppAddSheet.swift` — the Apps page (MCP servers and connectors)
 - `Sources/UsualUI/Thread/VaultCard.swift` — in-chat vault cards

@@ -40,9 +40,17 @@ and the dashboard socket (legacy). Confirm a call against a real gateway before 
   a reply's audio in order and only when the counts match. Rooms carry no tool calls, so their
   voice replies have no transcript. Voice style also comes from `[[audio_as_voice]]` (hidden, as
   the gateway hides it) or the tool's default `tts_<date>_<time>` name.
-- **Agents often name images in plain text.** `MEDIA:` lines appear only when Hermes tells an agent
+- **Agents often name files in plain text.** `MEDIA:` lines appear only when Hermes tells an agent
   the surface renders them, and sessions the desktop app didn't create may get terminal
-  instructions. So an absolute path ending in an image type also becomes an image.
+  instructions. So an absolute path ending in an image type also becomes an image, and one ending
+  in `.pdf`, `.md` or `.markdown` a file under its paragraph.
+- **Images, PDFs and Markdown files open in a viewer beside the chat or room:** a side panel on the
+  Mac's right, in the profile's place (one panel at a time), and a pushed page on iPhone. The right,
+  not the left: the left is the chat list, and a third column there would squeeze the chat. PDFs use
+  PDFKit and Markdown the reply renderer, so nothing is added. It shows only files a conversation
+  names; browsing a Bot's workspace would be a second Hermes app. PDFs download whole like audio
+  and video (below), because the data URL route stops at 16 MB. The ⌥Space panel is too small for
+  it: a file there opens beside its chat in the main window (`AppModel.requestedFile`).
 - **Undo is `session.undo`, then `session.history`.** Editing your last message, and Try Again on
   the Bot's last reply, are undo plus an ordinary send, as the Ink TUI's `/retry` does. An edit
   keeps text and `@file:` references; images must be sent again, so Try Again is refused for a

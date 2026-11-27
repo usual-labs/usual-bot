@@ -86,7 +86,7 @@ struct MediaStoreTests {
         }
         let media = store(http, temporaryDirectory: folder, chats: ["ops": "20261108_171927_45a785"])
 
-        _ = try await media.playableFile(at: "attachments/Screen Recording.MP4", profile: "ops")
+        _ = try await media.localFile(at: "attachments/Screen Recording.MP4", profile: "ops")
         _ = try await media.file(at: "attachments/chart.png", profile: "ops")
         _ = try await media.file(at: "/abs/chart.png", profile: "ops")
         _ = try await media.file(at: "attachments/chart.png", profile: "other")
@@ -107,8 +107,8 @@ struct MediaStoreTests {
         let http = ScriptedHTTP { _ in (200, "ID3 audio bytes") }
         let media = store(http, temporaryDirectory: folder)
 
-        let url = try await media.playableFile(at: "/home/h/.hermes/cache/audio/tts_1.mp3", profile: "ops")
-        #expect(try await media.playableFile(at: "/home/h/.hermes/cache/audio/tts_1.mp3", profile: "ops") == url)
+        let url = try await media.localFile(at: "/home/h/.hermes/cache/audio/tts_1.mp3", profile: "ops")
+        #expect(try await media.localFile(at: "/home/h/.hermes/cache/audio/tts_1.mp3", profile: "ops") == url)
 
         #expect(url.lastPathComponent == "tts_1.mp3")
         #expect(try Data(contentsOf: url) == Data("ID3 audio bytes".utf8))
@@ -128,10 +128,10 @@ struct MediaStoreTests {
         defer { try? FileManager.default.removeItem(at: folder) }
         let http = ScriptedHTTP { _ in (200, "clip") }
         let media = store(http, temporaryDirectory: folder)
-        let url = try await media.playableFile(at: "/clip.mp4", profile: "ops")
+        let url = try await media.localFile(at: "/clip.mp4", profile: "ops")
         try FileManager.default.removeItem(at: url)
 
-        let again = try await media.playableFile(at: "/clip.mp4", profile: "ops")
+        let again = try await media.localFile(at: "/clip.mp4", profile: "ops")
         #expect(FileManager.default.fileExists(atPath: again.path))
         #expect(http.requests.count == 2)
     }
@@ -157,7 +157,7 @@ struct MediaStoreTests {
         defer { try? FileManager.default.removeItem(at: folder) }
         let media = MediaStore(auth: { nil }, temporaryDirectory: folder)
         await #expect(throws: GatewayError.disconnected) {
-            try await media.playableFile(at: "/clip.mp4", profile: "ops")
+            try await media.localFile(at: "/clip.mp4", profile: "ops")
         }
     }
 

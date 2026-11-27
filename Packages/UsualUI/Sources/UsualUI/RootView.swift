@@ -79,6 +79,8 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
                 settings: showSettings,
                 requested: model.requestedContactID,
                 openedRequested: { model.requestedContactID = nil },
+                requestedFile: model.requestedFile,
+                openedRequestedFile: { model.requestedFile = nil },
                 createRoom: { try await model.createRoom(named: $0, agents: $1, routing: $2, lead: $3) },
                 newRoomRouting: { await model.newRoomRouting() },
                 roomsUnavailable: model.roomEditingUnavailable,
@@ -250,6 +252,9 @@ struct ContactsSplitView<Footer: View>: View {
     /// A chat to open from outside the list, such as a tapped notification.
     var requested: Contact.ID?
     var openedRequested: () -> Void = {}
+    /// A file to show beside its chat, from the ⌥Space panel.
+    var requestedFile: FileRequest?
+    var openedRequestedFile: () -> Void = {}
     /// Creates a room from a name and its agents and returns the room's ID; `nil` hides New Room.
     var createRoom: ((String, [Contact], RoomRouting, Contact?) async throws -> Contact.ID)?
     /// The ways of choosing who answers that a new room can start with.
@@ -673,7 +678,8 @@ struct ContactsSplitView<Footer: View>: View {
                 agents: Dictionary(
                     (contacts + hiddenBots).filter { $0.kind == .agent }.map { ($0.id, $0) },
                     uniquingKeysWith: { first, _ in first }),
-                skills: skills, planLimits: planLimits, jump: jump(in: contact), jumped: { jump = nil })
+                skills: skills, planLimits: planLimits, jump: jump(in: contact), jumped: { jump = nil },
+                requestedFile: requestedFile, openedRequestedFile: openedRequestedFile)
         } else if let contact = contacts.first(where: { $0.id == selection }) {
             let panel = profile(contact) { showsProfile = false }
             ThreadPane(
@@ -685,6 +691,10 @@ struct ContactsSplitView<Footer: View>: View {
                         thread(kept).map { KeptChat(contact: kept, thread: $0) }
                     }
                 }
+            )
+            .fileViewer(
+                in: contact.id, otherPanel: $showsProfile, requested: requestedFile,
+                openedRequested: openedRequestedFile
             )
             #if os(macOS)
                 .sidePanel(
