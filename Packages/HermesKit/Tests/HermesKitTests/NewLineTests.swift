@@ -1,4 +1,6 @@
 import Foundation
+import Observation
+import Synchronization
 import Testing
 
 @testable import HermesKit
@@ -68,6 +70,25 @@ struct NewLineTests {
         thread.isVisible = true
         _ = thread.opened()
         #expect(thread.newLine == nil)
+    }
+
+    @Test func openingAChatWithNoLineDoesNotRedrawIt() {
+        let thread = ChatThread.sample("atlas", state: history)
+        thread.isVisible = true
+        _ = thread.opened()
+        // A chat kept built out of sight is opened each time it's shown again; with no line to
+        // move, nothing that draws it may change.
+        let redrawn = Mutex(false)
+        withObservationTracking {
+            _ = thread.newLine
+        } onChange: {
+            redrawn.withLock { $0 = true }
+        }
+        thread.isVisible = false
+        thread.isVisible = true
+        _ = thread.opened()
+        #expect(thread.newLine == nil)
+        #expect(!redrawn.withLock { $0 })
     }
 
     @Test func aLineMovedByNewRepliesStillGoesOnTheNextOpening() {

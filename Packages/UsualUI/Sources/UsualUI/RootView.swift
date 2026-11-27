@@ -679,7 +679,12 @@ struct ContactsSplitView<Footer: View>: View {
             ThreadPane(
                 contact: contact, members: members(of: contact), thread: thread(contact),
                 open: { open(contact) }, toggleProfile: panel.map { _ in { showsProfile.toggle() } },
-                jump: jump(in: contact), jumped: { jump = nil }
+                jump: jump(in: contact), jumped: { jump = nil },
+                kept: { id in
+                    contacts.first { $0.id == id && $0.kind == .agent }.flatMap { kept in
+                        thread(kept).map { KeptChat(contact: kept, thread: $0) }
+                    }
+                }
             )
             #if os(macOS)
                 .sidePanel(

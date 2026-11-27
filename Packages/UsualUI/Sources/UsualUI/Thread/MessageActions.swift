@@ -9,7 +9,10 @@ import SwiftUI
 
 /// What you can do to a message. Set by the chat or room; reactions exist only in chats with one
 /// agent (rooms have no reaction call).
-struct MessageActions {
+struct MessageActions: Equatable {
+    /// The chat these act on. Two with the same one do the same, so a chat's messages aren't
+    /// drawn again each time the pane hands down a new copy; without one, every copy is new.
+    var owner: Owner?
     var canReact: (TranscriptItem) -> Bool = { _ in false }
     var react: (String?, TranscriptItem) -> Void = { _, _ in }
     var reply: (TranscriptItem) -> Void = { _ in }
@@ -29,13 +32,39 @@ struct MessageActions {
     /// Chats only: Mark as Unread from this message, which opening the chat again goes back to.
     /// `nil` hides it.
     var markUnread: ((TranscriptItem) -> Void)?
+
+    struct Owner: Hashable {
+        let chatID: String
+        /// Quotes carry the name.
+        let name: String
+        let thread: ObjectIdentifier
+    }
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.owner != nil && lhs.owner == rhs.owner && (lhs.markUnread == nil) == (rhs.markUnread == nil)
+    }
 }
 
 extension EnvironmentValues {
     @Entry var messageActions: MessageActions?
     /// Quotes words selected in the message around it in the next message, with your reply to
     /// them; `nil` where a message can't be replied to.
-    @Entry var quoteSelection: ((_ words: String, _ reply: String) -> Void)?
+    @Entry var quoteSelection: QuoteSelection?
+}
+
+/// Quotes words selected in `item`. A value, not a closure: SwiftUI can't tell one closure from
+/// the next, so any change above a message ran every paragraph's text again, in every kept chat.
+struct QuoteSelection: Equatable {
+    let actions: MessageActions
+    let item: TranscriptItem
+
+    func callAsFunction(_ words: String, _ reply: String) {
+        actions.quote(item, words, reply)
+    }
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.actions == rhs.actions && lhs.item.id == rhs.item.id
+    }
 }
 
 /// The quick reactions, as in Messages and Grok Bot, and the rest behind + (or More Reactions).
@@ -147,7 +176,7 @@ struct MessageRow<Content: View>: View {
     private var message: some View {
         VStack(alignment: isMine ? .trailing : .leading, spacing: 4) {
             content
-                .environment(\.quoteSelection, actions.map { actions in { actions.quote(item, $0, $1) } })
+                .environment(\.quoteSelection, actions.map { QuoteSelection(actions: $0, item: item) })
             if isReading { stopReadingPill.padding(.leading, bubbleInset) }
             if !item.reactions.isEmpty { reactionPills }
         }

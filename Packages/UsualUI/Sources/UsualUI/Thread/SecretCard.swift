@@ -4,6 +4,7 @@ import SwiftUI
 /// The gateway asking for a secret or a sudo password, typed into a masked field in the chat.
 /// Everything it sends shows as plain text, and what you type stays only until you answer.
 struct SecretCard: View {
+    @Environment(\.conversationShown) private var shown
     let prompt: SecretPrompt
     let agentName: String
     /// The gateway is on plain http off this device, so the answer can be read on the network.
@@ -65,6 +66,8 @@ struct SecretCard: View {
         }
         .cardSurface()
         .onDisappear { value = "" }
+        // A chat kept out of sight stays built; what you typed goes as if you'd left it.
+        .onChange(of: shown) { if !shown { value = "" } }
     }
 
     /// The gateway's own words, never read as Markdown or links.

@@ -5,6 +5,7 @@ import SwiftUI
 /// page, and Hermes moves the row when the vendor says you're done. The agent's reply waits until
 /// every app is connected or skipped, or five minutes pass.
 struct ConnectCard: View {
+    @Environment(\.conversationShown) private var shown
     let thread: ChatThread
     let card: ConnectionCard
     let agentName: String
@@ -79,6 +80,7 @@ struct ConnectCard: View {
         .cardSurface()
         .onChange(of: request.targets.filter { $0.state == .connected }.count) { page.close() }
         .onDisappear { page.close() }
+        .onChange(of: shown) { if !shown { page.close() } }
     }
 
     private func connect(_ target: ConnectionRequest.Target) {

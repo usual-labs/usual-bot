@@ -24,6 +24,7 @@ struct InlineWidget: View {
     @Environment(\.widgetChat) private var chat
     @Environment(\.widgetSuccession) private var succession
     @Environment(\.widgetPlace) private var place
+    @Environment(\.conversationShown) private var shown
     @Environment(\.messageTextSize) private var textSize
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.self) private var environment
@@ -155,8 +156,9 @@ struct InlineWidget: View {
         .onGeometryChange(for: CGFloat.self, of: \.size.width) { frameWidth = $0 }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onScrollVisibilityChange(threshold: 0.01) { isVisible = $0 }
-        .task(id: isVisible) {
-            if isVisible {
+        // A chat kept out of sight still lays its widgets out where they'd be seen.
+        .task(id: isVisible && shown) {
+            if isVisible && shown {
                 isRunning = true
             } else if isRunning {
                 // sleep-ok: a page scrolled away keeps running a little, in case you come back.

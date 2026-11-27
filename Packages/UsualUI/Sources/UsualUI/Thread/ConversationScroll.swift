@@ -284,6 +284,19 @@ struct TakesOfferedSize: Layout {
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
     }
+
+    /// None. Left to the default, a stack around it (the kept chats' `ZStack`) asking for its
+    /// alignment placed the scroll view, which measured every message in it: each chat kept out of
+    /// sight made opening another one slower.
+    func explicitAlignment(
+        of guide: HorizontalAlignment, in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews,
+        cache: inout ()
+    ) -> CGFloat? { nil }
+
+    func explicitAlignment(
+        of guide: VerticalAlignment, in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews,
+        cache: inout ()
+    ) -> CGFloat? { nil }
 }
 
 /// Back to the newest message, shown while you're reading further up. A dot says more came in.

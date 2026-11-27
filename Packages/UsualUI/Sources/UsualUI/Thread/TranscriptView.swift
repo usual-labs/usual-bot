@@ -3,7 +3,7 @@ import SwiftUI
 
 /// The scrolling conversation: bubbles for you and the agent, tool calls folded into one line each,
 /// and system notices centred.
-struct TranscriptView: View {
+struct TranscriptView: View, @MainActor Equatable {
     let thread: ChatThread
     let agentName: String
     var jump: MessageJump? = nil
@@ -56,27 +56,29 @@ struct TranscriptView: View {
             }
         }
         .environment(\.waitingAsks, BotAsk.waiting(in: items))
-        .onAppear {
-            window.hold(items)
-            // Opening the chat reads it, unless a search is taking you somewhere already.
-            if let itemID = thread.opened(), jump == nil {
-                returnJump = MessageJump(contactID: thread.contactID, itemID: itemID)
-            }
-        }
+        .onAppear { window.hold(items) }
+        .modifier(WhenShown(waiting: waiting, agentName: agentName, opened: opened))
         .onChange(of: thread.transcriptLoad) { window.reset(items) }
         .onChange(of: items.isEmpty) { window.reset(items) }
         .onChange(of: jump ?? returnJump, initial: true) { _, jump in if let jump { target = jump.itemID } }
         .onChange(of: hasCards, initial: true) { cardsAfter = hasCards ? items.last?.id ?? -1 : nil }
         .onChange(of: thread.transcriptLoad) { if hasCards { cardsAfter = items.last?.id ?? -1 } }
-        // A card may be out of sight, or VoiceOver elsewhere in the chat.
-        .onChange(of: waiting) { old, new in
-            if let text = TranscriptAnnouncement.appeared(from: old, to: new, agent: agentName) {
-                TranscriptAnnouncement.post(text)
-            }
-        }
         // The chat's widgets talk back to it.
         .environment(\.widgetChat, thread)
         .environment(\.widgetSuccession, WidgetSuccession(items))
+    }
+
+    /// The same chat and jump: `jumped` is a new closure on each update, and comparing it ran the
+    /// body again, and laid every message out again, each time the chat was shown or hidden.
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.thread === rhs.thread && lhs.agentName == rhs.agentName && lhs.jump == rhs.jump
+    }
+
+    /// Opening the chat reads it, unless a search is taking you somewhere already.
+    private func opened() {
+        if let itemID = thread.opened(), jump == nil {
+            returnJump = MessageJump(contactID: thread.contactID, itemID: itemID)
+        }
     }
 
     private var items: [TranscriptItem] { thread.state.items }
@@ -634,5 +636,27 @@ struct CommandOutput: View {
         .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.selection.opacity(0.6), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+/// What a transcript does as it's shown: opening the chat reads it, and a card that comes asking
+/// is announced. A kept chat (`RecentChats`) is shown again without being built again. Apart from
+/// `TranscriptView`, so showing or hiding one doesn't run its body.
+private struct WhenShown: ViewModifier {
+    let waiting: WaitingCards
+    let agentName: String
+    let opened: () -> Void
+    @Environment(\.conversationShown) private var shown
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { if shown { opened() } }
+            .onChange(of: shown) { if shown { opened() } }
+            // A card may be out of sight, or VoiceOver elsewhere in the chat.
+            .onChange(of: waiting) { old, new in
+                if shown, let text = TranscriptAnnouncement.appeared(from: old, to: new, agent: agentName) {
+                    TranscriptAnnouncement.post(text)
+                }
+            }
     }
 }

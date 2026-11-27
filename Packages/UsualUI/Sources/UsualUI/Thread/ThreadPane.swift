@@ -14,6 +14,8 @@ struct ThreadPane: View {
     /// A message search chose in this chat, to scroll to.
     var jump: MessageJump? = nil
     var jumped: () -> Void = {}
+    /// Another chat you were in, to keep built out of sight; `nil` once it's gone.
+    var kept: (Contact.ID) -> KeptChat? = { _ in nil }
 
     /// The message box's and the conversation's distances from the window's sides, in chats and
     /// rooms. On iPhone the box reaches a little wider than the messages, so the text has room.
@@ -42,6 +44,7 @@ struct ThreadPane: View {
     @State private var isDropTarget = false
     @State private var showsComputer = false
     @State private var showsBrowser = false
+    @State private var recent = RecentChats()
     #if os(macOS)
         /// The terminal drawer (⌘J): open for every Bot's chat until you hide it.
         @AppStorage("showsTerminal") private var showsTerminal = false
@@ -58,7 +61,7 @@ struct ThreadPane: View {
         content
             .environment(\.sentImages, thread?.sentImages ?? [:])
             .environment(\.mediaProfile, contact.details?.profile ?? contact.id)
-            .environment(\.messageActions, actions)
+            .environment(\.messageActions, thread.map { actions(contact: contact, thread: $0) })
             .environment(\.editingFrom, editing)
             .environment(\.showConversationDetails, toggleProfile)
             .rewindConfirmation($rewindRequest, agentName: contact.name) { request in
@@ -135,6 +138,7 @@ struct ThreadPane: View {
             #endif
             .environment(\.chatContact, contact)
             .task(id: contact.id) { open() }
+            .onChange(of: contact.id, initial: true) { recent.use(contact.id) }
             // Whether the agent has a computer or browser to show, asked again once the gateway is back.
             .task(id: "\(contact.id) \(isOnline)") {
                 await screen?.refresh()
@@ -175,18 +179,28 @@ struct ThreadPane: View {
         Binding(get: { quotes }, set: { quotes = $0 })
     }
 
-    /// React, reply, edit, try again and undo, for the transcript's messages.
-    private var actions: MessageActions? {
-        guard let thread else { return nil }
-        return MessageActions(
+    /// Adds to what the next message in `chatID` quotes.
+    private func addQuote(_ quote: QuotedMessage, to chatID: Contact.ID) {
+        var quotes = drafts?[quotes: chatID].map(QuotedMessage.init) ?? []
+        quotes.add(quote)
+        drafts?[quotes: chatID] = quotes.map(\.saved)
+    }
+
+    /// React, reply, edit, try again and undo, for a chat's messages. Kept chats get their own,
+    /// which they can't use while out of sight.
+    private func actions(contact: Contact, thread: ChatThread) -> MessageActions {
+        MessageActions(
+            owner: .init(chatID: contact.id, name: contact.name, thread: ObjectIdentifier(thread)),
             canReact: thread.canReact(to:), react: { thread.react($0, to: $1) },
             reply: { item in
                 editing = nil
                 switch item.content {
-                case .user(let text): quotes.add(QuotedMessage(author: String(localized: "You"), text: text))
-                case .assistant(let text): quotes.add(QuotedMessage(author: contact.name, text: text))
+                case .user(let text):
+                    addQuote(QuotedMessage(author: String(localized: "You"), text: text), to: contact.id)
+                case .assistant(let text): addQuote(QuotedMessage(author: contact.name, text: text), to: contact.id)
                 case .routine(let name, let output):
-                    quotes.add(QuotedMessage(author: TranscriptItem.Content.routineLabel(name), text: output))
+                    addQuote(
+                        QuotedMessage(author: TranscriptItem.Content.routineLabel(name), text: output), to: contact.id)
                 default: break
                 }
             },
@@ -198,7 +212,7 @@ struct ThreadPane: View {
                     case .routine(let name, _): TranscriptItem.Content.routineLabel(name)
                     default: contact.name
                     }
-                quotes.add(QuotedMessage(author: author, selection: selection, note: reply))
+                addQuote(QuotedMessage(author: author, selection: selection, note: reply), to: contact.id)
             },
             canEdit: \.isYours,
             canRetry: { item in item.id == thread.retryReply?.id },
@@ -207,7 +221,7 @@ struct ThreadPane: View {
                 item.id == thread.retryReply?.id ? thread.tryAgainUnavailable : thread.rewindUnavailable
             },
             edit: { item in
-                quotes = []
+                drafts?[quotes: contact.id] = []
                 editing = item.id
                 thread.prefill = ChatThread.editableText(of: item)
             },
@@ -318,30 +332,56 @@ struct ThreadPane: View {
     }
 
     @ViewBuilder private var content: some View {
-        switch thread?.phase {
-        case nil:
-            centred { Text("No messages yet") }
-        case .loading:
-            centred { ProgressView().controlSize(.small) }
-        case .failed(let message):
-            centred {
-                VStack(spacing: 10) {
-                    Text(message).multilineTextAlignment(.center)
-                    Button("Try Again", action: open)
-                        .buttonStyle(.clickable(.bordered))
+        // The chats kept out of sight stay under whatever this one shows, so a chat loading or
+        // failing doesn't let go of them.
+        ZStack {
+            keptTranscripts
+            switch thread?.phase {
+            case nil:
+                centred { Text("No messages yet") }
+            case .loading:
+                centred { ProgressView().controlSize(.small) }
+            case .failed(let message):
+                centred {
+                    VStack(spacing: 10) {
+                        Text(message).multilineTextAlignment(.center)
+                        Button("Try Again", action: open)
+                            .buttonStyle(.clickable(.bordered))
+                    }
+                    .padding(.horizontal, 32)
                 }
-                .padding(.horizontal, 32)
+            case .ready:
+                EmptyView()
             }
-        case .ready:
-            if let thread {
-                // Every chat numbers its items from 0, so without this a switch would animate one
-                // chat's messages into the next and carry over where you'd scrolled to. In a stack
-                // of its own: bare, the new identity reached the header and message box modified
-                // onto `content`, and every switch built them again too.
-                ZStack {
-                    TranscriptView(thread: thread, agentName: contact.name, jump: jump, jumped: jumped).id(contact.id)
-                }
-            }
+        }
+        // Showing a kept chat is a switch, not a change to animate.
+        .transaction(value: contact.id) { $0.animation = nil }
+    }
+
+    /// This chat's transcript and the ones you were in before it (`RecentChats`). Each has its own
+    /// identity: every chat numbers its items from 0, so one view would animate one chat's
+    /// messages into the next and carry over where you'd scrolled to. They sit in a stack of their
+    /// own: bare, a new identity reached the header and message box modified onto `content`, and
+    /// every switch built them again too.
+    private var keptTranscripts: some View {
+        ForEach(keptChats, id: \.contact.id) { chat in
+            let shown = chat.contact.id == contact.id
+            KeptTranscript(
+                chat: chat, shown: shown, jump: shown ? jump : nil,
+                actions: actions(contact: chat.contact, thread: chat.thread),
+                editing: shown ? editing : nil, jumped: jumped
+            )
+            // Only what it shows: the pane hands down new closures on every update, and each
+            // would have built every kept chat's transcript again.
+            .equatable()
+        }
+    }
+
+    /// The chats to keep built, this one among them once it's ready.
+    private var keptChats: [KeptChat] {
+        recent.showing(contact.id).compactMap { id in
+            let chat = id == contact.id ? thread.map { KeptChat(contact: contact, thread: $0) } : kept(id)
+            return chat?.thread.phase == .ready ? chat : nil
         }
     }
 
