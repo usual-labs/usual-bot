@@ -54,6 +54,13 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   400 ms stall. The next page now waits until the move is reported (`movingAbove`).
   `USUALBOT_SCROLL_BENCH` follows a piece of text on screen and reports jumps, so check a change
   to the paging there; it can't see a jump on iPhone, which shares the policy.
+- **On iPhone a move made under a finger doesn't hold.** The drag puts its own offset back on the
+  next frame, so the move for a page added mid-drag landed and was undone: the reader jumped a page
+  up, looked near the top again, and the next page came at once. On the developer's iPhone each
+  page froze the chat for a second or more (November 2026). Earlier messages now wait while a
+  finger is down (`isTouching`) and come as it lifts; a move while coasting holds. The Mac's
+  trackpad reports `interacting` too, but a move mid-gesture holds there, so it isn't held back.
+  Seen in the Simulator with a scroll log; not yet on a device.
 - **Nothing that changes every frame of a scroll may reach a view's body.** `ConversationScroll`
   kept its whole `ConversationScrollState`, offset included, in `@State`, so its body ran once a
   frame (1,884 times in a 30 s trace) and redid the jump button, toolbar preferences and command

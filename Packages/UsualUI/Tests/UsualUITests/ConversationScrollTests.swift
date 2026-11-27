@@ -51,6 +51,19 @@ struct ConversationScrollTests {
         #expect(state.nearsTop)
     }
 
+    @Test func earlierMessagesWaitForAFingerToLift() {
+        var state = ConversationScrollState()
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 4_300))
+        _ = state.scrollingByHand(true, touching: true)
+        _ = state.update(.init(contentHeight: 5_000, height: 700, offset: 500))
+        // On iPhone a move under a finger is undone by the drag: the reader saw a page further up,
+        // which looked near the top again, and page after page came.
+        #expect(!state.nearsTop)
+        // Lifted and coasting: the move holds.
+        _ = state.scrollingByHand(true)
+        #expect(state.nearsTop)
+    }
+
     @Test func earlierMessagesWaitOnlyWhileTheScreenIsFull() {
         var state = ConversationScrollState()
         // Following the end over a full screen: nothing above is missing yet.

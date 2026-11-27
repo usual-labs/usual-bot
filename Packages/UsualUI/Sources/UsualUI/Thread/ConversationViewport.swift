@@ -28,6 +28,9 @@ struct ConversationScrollState {
         didSet { if followsEnd { hasNewBelow = false } }
     }
     private(set) var isScrollingByHand = false
+    /// A finger is on the screen. iPhone's drag puts back a move made under it, so earlier messages,
+    /// which need one, wait for it to lift.
+    private(set) var isTouching = false
     private(set) var viewport: ConversationViewport?
     /// Something arrived at the end while the reader was away from it.
     private(set) var hasNewBelow = false
@@ -81,7 +84,7 @@ struct ConversationScrollState {
     /// Within a screen of the top, where earlier messages should be ready. Following the end,
     /// that's a conversation too short to fill two screens.
     var nearsTop: Bool {
-        guard let viewport, heightBeforeAbove == nil, movingAbove == nil else { return false }
+        guard let viewport, heightBeforeAbove == nil, movingAbove == nil, !isTouching else { return false }
         return (followsEnd ? viewport.end : viewport.offset) < viewport.height
     }
 
@@ -97,9 +100,10 @@ struct ConversationScrollState {
         heightBeforeAbove = viewport?.contentHeight
     }
 
-    mutating func scrollingByHand(_ scrolling: Bool) -> CGFloat? {
+    mutating func scrollingByHand(_ scrolling: Bool, touching: Bool = false) -> CGFloat? {
         let wasScrolling = isScrollingByHand
         isScrollingByHand = scrolling
+        isTouching = scrolling && touching
         // A move that hasn't landed by a gesture's end isn't coming.
         if !scrolling { movingAbove = nil }
         if scrolling {
@@ -157,6 +161,7 @@ struct ConversationScrollState {
     /// chat would stay where it was and stop following.
     private mutating func showEnd() -> CGFloat? {
         isScrollingByHand = false
+        isTouching = false
         followsEnd = true
         return correction
     }
