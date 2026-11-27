@@ -147,6 +147,8 @@ public final class AppModel {
         agents: { [weak self] in self?.contacts.filter { $0.kind == .agent } ?? [] })
     /// Agents' own pictures from the official app; agents without one keep the app's characters.
     @ObservationIgnored public let pictures = BotPictures()
+    /// Which Bots have a routine running right now.
+    @ObservationIgnored public private(set) lazy var runningRoutines = RunningRoutines { [weak self] in self?.auth }
     /// How the sidebar is grouped.
     @ObservationIgnored public let sections: SidebarSections
     /// What's typed and not sent in each chat and room, on this device only.
@@ -420,6 +422,7 @@ public final class AppModel {
                     try await refreshRosterKeepingLink(on: channel)
                     roster.end(logging: firstRead || roster.elapsed >= 1000)
                     attachChats()
+                    runningRoutines.readIfDue()
                     // Chats may have been read elsewhere while this link was down; after that, a
                     // chat that turns unread is looked at on the next read.
                     if firstRead { readSync.somethingChanged() } else { readSync.look() }
@@ -453,7 +456,8 @@ public final class AppModel {
     /// A chat's newest message stands in for the roster's preview and time when it's newer, so the
     /// row moves as soon as you send and when the reply comes, not at the next roster refresh.
     public var sidebarContacts: [Contact] {
-        contacts.map { contact in
+        let routinesRunning = runningRoutines.profiles
+        return contacts.map { contact in
             var contact = sections.placed(contact)
             if let thread = threads[contact.id] {
                 contact.activity = thread.activity
@@ -480,6 +484,12 @@ public final class AppModel {
                 contact.activity = room.activity
                 contact.unreadCount = room.unreadCount
                 contact.preview = room.preview ?? contact.preview
+            }
+            // A routine runs in a session of its own, which no chat here follows.
+            if contact.kind == .agent, contact.activity == .idle,
+                routinesRunning.contains(contact.details?.profile ?? contact.id)
+            {
+                contact.activity = .working
             }
             return contact
         }
@@ -681,6 +691,7 @@ public final class AppModel {
         if event.type == "cron.changed" {
             // Jobs changed somewhere on the gateway: reload the lists that are loaded.
             for list in routineLists.values where list.phase == .ready { Task { await list.refresh() } }
+            runningRoutines.read()
             return
         }
         if event.type == "sessions.changed" {

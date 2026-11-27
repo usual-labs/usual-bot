@@ -425,6 +425,24 @@ read at Hermes `2bd378ed1b`.
   shown. Rooms keep "X is replying…": their events don't carry a member's mood.
   `tool.generating` and `tool.output_risk` are ignored.
 
+## Working
+
+- **A Bot works for as long as anything of its runs, not only a reply.** Its chat counts a goal
+  between replies, `/bg` tasks, waiting `/btw` questions, a compress, helpers that outlive their
+  turn, and background processes the agent started (a command watching a pull request). A routine
+  counts too, for the Bot it belongs to. The ⌥Space panel still waits only on the reply.
+- **Processes come from `process.list`,** which Hermes answers for a live session's own. Nothing
+  announces a process starting or ending, so the chat reads the list when it attaches, after each
+  reply, and every 20 s while one runs. A process ending makes Hermes start a turn, which reads it
+  again.
+- **Routines come from `live_execution` in `/api/cron/jobs?profile=all`,** one call for every Bot,
+  filled while a run holds its claim (Hermes 0.23.0 on). A run's session has no live owner, so no
+  event reaches the app. `cron.changed` only follows the launch profile's `jobs.json`
+  (`tui_gateway/change_watcher.py`), so the list is also read with the roster: every 60 s, and every
+  15 s while a run is live, to see it end.
+- **One dot, top right:** green working, amber needing you. A Bot is only ever one of the two, so
+  the needs-you dot's place took both. The breathing alone was hard to see on small avatars.
+
 ## Notifications
 
 - **Push goes through Usual's own relay, sealed for each device.** ntfy and Pushover arrived late or
@@ -1053,6 +1071,12 @@ read at Hermes `2bd378ed1b`.
   isn't public.
 
 ## Not verified
+
+- Working after a reply (background processes and running routines) ran against fakes and in the
+  demo (Mac, iPhone Simulator). The fields and calls were read from Hermes v0.23.0–0.23.4 source.
+  Not run against a real gateway: when in a run `live_execution` appears, `process.list` on the
+  Webapp for a process started in a turn this app didn't send, and `cron.changed` for a
+  non-launch profile.
 
 - Bot-to-Bot folding ran against Hermes 0.23.0's stored rows and runner output, copied into tests,
   and in the demo. Not run: a live `message_agent` on a real gateway with the app watching both

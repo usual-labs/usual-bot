@@ -32,8 +32,10 @@ list. Pinned chats come first, in the order you put them, then the rest by their
 
 - A Bot shows the picture you gave it, here or in the Hermes app. Without one, it gets one of Usual Bot's
   characters, and your main Bot, Hermes, wears the app icon.
-- An avatar that gently moves means the Bot is working.
-- A dot on the avatar means it needs you: it's waiting for your approval or an answer.
+- A green dot on the avatar, which also gently moves, means the Bot is working: on a reply, or on
+  something that goes on after it, such as a command it left running, a background task or a
+  routine.
+- An amber dot means it needs you: it's waiting for your approval or an answer.
 - A number counts the replies you haven't read. Reading a Bot's chat on one device clears its count
   and its notifications on your other devices once they're connected, with a recent Hermes on the
   gateway. Rooms count on each device.
@@ -89,8 +91,9 @@ section.
 - **Reorder them:** a new pin goes after the others, and pinned chats stay where you put them
   however recent their messages. On the Mac, drag an avatar onto another to take its place. On
   either, choose **Move Left** or **Move Right** from its menu.
-- A pinned chat shows its name without a preview. A number on its avatar counts unread replies, a
-  dot means it needs you, and a smaller dot that it's marked unread.
+- A pinned chat shows its name without a preview. A number on its avatar counts unread replies, an
+  amber dot means it needs you, a green dot that it's working, and a plain dot that it's marked
+  unread.
 - A search lists pinned chats first, marked with a pin. Quick Message lists them first too.
 
 A Bot's pin is saved on the Bot, so it's pinned on your other devices and in the Hermes desktop

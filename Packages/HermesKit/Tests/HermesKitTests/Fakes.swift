@@ -70,16 +70,27 @@ final class FakeSocket: WebSocketConnection {
     /// about anything else don't have to: `nil` is a gateway without goals, which refuses the
     /// call. The read stays out of `sent`.
     let goalControl = Mutex<JSONValue?>(nil)
+    /// The background processes a chat reads when it attaches and after each reply
+    /// (`process.list`), answered the same way: `nil` refuses the call. `processReads` counts them.
+    let processes = Mutex<JSONValue?>(nil)
+    let processReads = Mutex(0)
 
     func send(_ text: String) async throws {
         if let frame = try? JSONDecoder().decode(JSONValue.self, from: Data(text.utf8)),
-            frame["method"] == "session.control.read"
+            let method = frame["method"]?.stringValue, ["session.control.read", "process.list"].contains(method)
         {
             var reply: [String: JSONValue] = ["jsonrpc": "2.0", "id": frame["id"] ?? .null]
-            if let control = goalControl.withLock({ $0 }) {
-                reply["result"] = ["control": control]
+            let answer: JSONValue?
+            if method == "process.list" {
+                processReads.withLock { $0 += 1 }
+                answer = processes.withLock { $0 }.map { ["processes": $0] }
             } else {
-                reply["error"] = ["code": -32601, "message": "unknown method: session.control.read"]
+                answer = goalControl.withLock { $0 }.map { ["control": $0] }
+            }
+            if let answer {
+                reply["result"] = answer
+            } else {
+                reply["error"] = ["code": -32601, "message": .string("unknown method: \(method)")]
             }
             deliver(String(decoding: try JSONEncoder().encode(JSONValue.object(reply)), as: UTF8.self))
             return

@@ -127,7 +127,7 @@ struct WorkingRow: View {
     var body: some View {
         HStack(spacing: 8) {
             if let contact {
-                AgentAvatar(contact: contact.with(activity: .working), size: 24)
+                AgentAvatar(contact: contact.with(activity: .working), size: 24, showsStatus: false)
             }
             ShimmerText(text: words.text)
                 .accessibilityLabel(words.spoken ?? words.text)

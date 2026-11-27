@@ -137,4 +137,14 @@ struct DemoTests {
         #expect(vault.items.allSatisfy { ($0.origin ?? "example.com").contains("example.com") })
         #expect(vault.managers.count == 2)
     }
+
+    @Test func theHomeDemoShowsWorkThatGoesOnAfterAReply() {
+        let model = AppModel.demo()
+        model.showHomeDemo(now: .now)
+        let activity = Dictionary(uniqueKeysWithValues: model.sidebarContacts.map { ($0.id, $0.activity) })
+        // Garden's routine is running; Hermes left a command running in the background.
+        #expect(activity == ["default": .working, "pantry": .idle, "garden": .working])
+        model.showWorkDemo(now: .now, longConversations: false)
+        #expect(model.runningRoutines.profiles.isEmpty)
+    }
 }

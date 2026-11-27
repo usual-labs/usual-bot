@@ -491,7 +491,7 @@ struct NamePill: View {
         HStack(spacing: 8) {
             switch contact.kind {
             case .agent: AgentAvatar(contact: contact, size: Self.avatar)
-            case .room: RoomAvatar(members: members, size: Self.avatar)
+            case .room: RoomAvatar(members: members, size: Self.avatar, activity: contact.activity)
             }
             Text(contact.name)
                 .scaledFont(size: Self.nameSize, weight: Self.nameWeight)

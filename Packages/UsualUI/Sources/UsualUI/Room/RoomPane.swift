@@ -168,7 +168,7 @@ struct RoomPane: View {
                             ? String(localized: "\(author.name) is picking who answers…")
                             : String(localized: "\(author.name) is replying…")
                     ) {
-                        AgentAvatar(contact: author.contact.with(activity: .working), size: 24)
+                        AgentAvatar(contact: author.contact.with(activity: .working), size: 24, showsStatus: false)
                     }
                 }
             }

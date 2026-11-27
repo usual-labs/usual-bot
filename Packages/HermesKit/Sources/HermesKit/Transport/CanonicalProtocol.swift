@@ -45,7 +45,7 @@ struct CanonicalProtocol {
         "prompt.background",
         "approval.respond", "clarify.respond", "message.react", "file.attach", "image.attach_bytes",
         "commands.catalog", "command.dispatch", "slash.exec", "model.options", "config.set", "reload.mcp",
-        "connection.respond", "session.control", "session.control.read",
+        "connection.respond", "session.control", "session.control.read", "process.list",
     ]
 
     private(set) var sessions: [String: Session] = [:]

@@ -11,6 +11,9 @@
                 routines: Dictionary(uniqueKeysWithValues: home.agents.map { ($0.id, RoutineList.sample([])) }),
                 skills: Dictionary(uniqueKeysWithValues: home.agents.map { ($0.id, SkillList.sample([])) }),
                 vaults: [:], apps: [:])
+            // Work going on after a reply: Garden's routine runs in a session of its own, and Hermes
+            // left a command running in the background.
+            runningRoutines.showDemo(["garden"])
         }
     }
 
@@ -62,6 +65,7 @@
                     ], running: false))
             hermes.unreadCount = 1
             hermes.playsDemoReplies = true
+            hermes.runningProcesses = ["demo-boiler-watch"]
             let pantry = ChatThread.sample(
                 "pantry",
                 state: ThreadState(
