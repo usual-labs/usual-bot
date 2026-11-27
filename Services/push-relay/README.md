@@ -47,9 +47,11 @@ A fork with its own bundle ID needs its own relay, as an APNs key reaches only i
 
 1. At developer.apple.com, turn on Push Notifications for your App ID, then make a key under
    **Keys** with **Apple Push Notifications service (APNs)**, for Sandbox & Production.
-2. In `wrangler.toml`, set `account_id`, the route, `APNS_KEY_ID`, `APNS_TEAM_ID` and `APNS_TOPIC`
-   (your bundle ID).
-3. Create the database and deploy:
+2. In `wrangler.toml`, set the route, `APNS_KEY_ID`, `APNS_TEAM_ID` and `APNS_TOPIC` (your bundle
+   ID).
+3. Create the database and deploy, with Wrangler signed in to your account. `wrangler.toml` names
+   no account, so if your login sees several, set `CLOUDFLARE_ACCOUNT_ID` to that account's ID in your
+   shell first:
 
    ```sh
    npx wrangler d1 create usual-push        # put its database_id in wrangler.toml

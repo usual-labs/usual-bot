@@ -4,8 +4,8 @@ compatibility_date = "2026-11-01"
 # The address built into TestFlight builds (USUAL_UPDATES_URL_YES in Config/Shared.xcconfig).
 routes = [{ pattern = "bot.usual.dev", custom_domain = true }]
 workers_dev = false
-# The account that holds usual.dev. Pinned so nothing lands in another account.
-account_id = "6f696dd344b04615f91326fc0563f9fe"
+# When your Wrangler login sees several accounts, set CLOUDFLARE_ACCOUNT_ID to the one that holds
+# this service.
 
 # Secrets, set with `wrangler secret put`: ASC_KEY, an App Store Connect API key (the .p8 file's
 # contents), ASC_KEY_ID, its ID, and for a team key ASC_ISSUER_ID, the team's issuer ID.
