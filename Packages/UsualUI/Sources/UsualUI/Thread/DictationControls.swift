@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The mic in the message box: tap to dictate, tap again to stop. While the gateway transcribes,
-/// a ring turns around it; in gateway dictation's last 15 seconds a second ring runs down.
+/// a spinner takes its place, the same one files show going up; in gateway dictation's last 15
+/// seconds a ring runs down around it.
 struct MicButton: View {
     let dictation: Dictation
     /// Gateway dictation is chosen: said in the label, not drawn.
@@ -10,6 +11,19 @@ struct MicButton: View {
     @Environment(\.composerButtonSize) private var size
 
     var body: some View {
+        // The ✕ beside the waveform cancels, so there's no Stop to tap twice and throw the
+        // recording away.
+        if dictation.state == .transcribing {
+            ProgressView()
+                .controlSize(.small)
+                .frame(width: size, height: size)
+                .accessibilityLabel(Text("Transcribing"))
+        } else {
+            button
+        }
+    }
+
+    private var button: some View {
         Button {
             if dictation.isListening { dictation.stop() } else { start() }
         } label: {
@@ -17,10 +31,7 @@ struct MicButton: View {
                 systemImage: dictation.isActive ? "stop.fill" : "mic.fill", scale: dictation.isActive ? 11 : 13)
         }
         .composerGlass()
-        // The ✕ beside the waveform cancels, so tapping Stop twice can't throw the recording away.
-        .disabled(dictation.state == .transcribing)
         .overlay {
-            if dictation.state == .transcribing { TranscribingRing(size: size) }
             if let secondsLeft = dictation.secondsLeft {
                 Circle()
                     .trim(from: 0, to: secondsLeft / Dictation.countdown)
@@ -36,32 +47,8 @@ struct MicButton: View {
     }
 
     private var label: String {
-        if dictation.state == .transcribing { return String(localized: "Transcribing") }
         if dictation.isListening { return String(localized: "Stop dictation") }
         return throughGateway ? String(localized: "Dictate through your gateway") : String(localized: "Dictate")
-    }
-}
-
-/// Around the mic while the recording turns into words.
-private struct TranscribingRing: View {
-    let size: CGFloat
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var turned = false
-
-    var body: some View {
-        ZStack {
-            Circle().stroke(Theme.ink.opacity(0.12), lineWidth: 2)
-            Circle()
-                .trim(from: 0, to: 0.25)
-                .stroke(Theme.ink.opacity(0.6), style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                .rotationEffect(.degrees(turned ? 270 : -90))
-        }
-        .frame(width: size + 6, height: size + 6)
-        .allowsHitTesting(false)
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) { turned = true }
-        }
     }
 }
 

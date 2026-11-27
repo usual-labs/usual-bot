@@ -288,6 +288,13 @@ struct MessageBox: View {
                 }
             }
             .padding(inset)
+            #if os(iOS)
+                // Anywhere in the box that isn't a button opens the keyboard, not just the line of
+                // text: the field's padding and the box's edge took no taps. Buttons and chips
+                // take their own taps first.
+                .contentShape(RoundedRectangle(cornerRadius: cornerRadius))
+                .onTapGesture { focused = true }
+            #endif
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius))
         }
     }
@@ -451,7 +458,12 @@ struct MessageBox: View {
                 .frame(width: buttonSize, height: buttonSize)
                 .accessibilityLabel(Text("Uploading"))
         } else if isRunning, hasNothingToSay, !hasAttachments, !dictation.isActive {
-            RoundButton(systemImage: "stop.fill", label: stopLabel, prominent: false, action: stop)
+            // iPhone: the one thing to press while a reply runs, so in the Bot's colour.
+            #if os(iOS)
+                RoundButton(systemImage: "stop.fill", label: stopLabel, action: stop)
+            #else
+                RoundButton(systemImage: "stop.fill", label: stopLabel, prominent: false, action: stop)
+            #endif
         } else if !inCall, hasNothingToSay, !hasAttachments, !dictation.isActive {
             // In a chat, the call button holds the spot Send takes over once there's something to send.
             if let startCall, !isRunning {

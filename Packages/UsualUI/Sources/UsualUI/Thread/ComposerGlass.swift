@@ -22,7 +22,8 @@ struct ComposerGlyph: View {
 
 /// The message box's round buttons. The prominent one, Send or a call, is a Liquid Glass circle
 /// tinted with the Bot's colour, or ink in a room; like any tinted glass, macOS draws it grey while
-/// its window isn't the one you're at. The rest are bare icons in the same spot, as in Grok's app.
+/// its window isn't the one you're at. The rest are bare icons in the same spot, as in Grok's app;
+/// on iPhone they sit on a grey circle, so each reads as a button beside the box's tap area.
 struct ComposerGlass: ViewModifier {
     /// What the glass style draws around a label, so a button comes out `composerButtonSize` across.
     #if os(iOS)
@@ -38,14 +39,18 @@ struct ComposerGlass: ViewModifier {
             content.buttonStyle(.clickable(.glassProminent)).tint(contact?.accent ?? Theme.primary).buttonBorderShape(
                 .circle)
         } else {
-            content.buttonStyle(.bare(inset: Self.inset))
+            #if os(iOS)
+                content.buttonStyle(.bare(inset: Self.inset, filled: true))
+            #else
+                content.buttonStyle(.bare(inset: Self.inset))
+            #endif
         }
     }
 }
 
 extension View {
-    /// A round button in the message box: glass in the Bot's colour if `prominent` (Send and a
-    /// call), a bare icon otherwise.
+    /// A round button in the message box: glass in the Bot's colour if `prominent` (Send, a call,
+    /// and Stop on iPhone), a bare icon otherwise.
     func composerGlass(prominent: Bool = false) -> some View {
         modifier(ComposerGlass(prominent: prominent))
     }
