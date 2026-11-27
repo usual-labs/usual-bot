@@ -47,6 +47,12 @@ public struct QuickMessageView: View {
                     QuickAnswer(model: model, contact: contact, start: sent.start, agents: agentsByProfile)
                         .environment(\.chatContact, contact.kind == .agent ? contact : nil)
                         .environment(\.mediaProfile, contact.details?.profile ?? contact.id)
+                        // Too small for a file: it opens beside the chat in the main window.
+                        .environment(\.openFile) { file in
+                            model.requestedFile = FileRequest(
+                                contactID: contact.id, source: file.source, name: file.name, profile: file.profile)
+                            openChat(contact.id)
+                        }
                     messageField(placeholder: String(localized: "Reply to \(contact.name)"))
                 } else {
                     recipientRow

@@ -26,7 +26,7 @@
                     HistoryMessage(role: message.role, text: message.text, timestamp: start + Double(index) * 90)
                 } + [
                     HistoryMessage(
-                        role: "assistant", text: "October invoices are drafted for review",
+                        role: "assistant", text: DemoDocuments.ledgerReply,
                         timestamp: now.addingTimeInterval(-26 * 3600).timeIntervalSince1970)
                 ]
         }

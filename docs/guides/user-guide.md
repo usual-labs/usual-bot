@@ -180,7 +180,7 @@ sending also puts the keyboard away; tap the message box to write again.
   On iPhone, pick from Photos, the camera or Files. Images up to 25 MB and other files up to
   50 MB.
 - **Images from the Bot.** When a reply names an image (a screenshot, a chart, a generated
-  picture), it shows inline. Click it for full size, to share or to save.
+  picture), it shows inline.
 - **Widgets.** A Bot can write a small web page, such as a chart or a calculator, that runs inside
   its message, as in Hermes's desktop app. Use it right there; it takes the chat's colours, light or
   dark. Links in it open in your browser. Bots in rooms know how to make them; Bot Chats show them
@@ -192,6 +192,12 @@ sending also puts the keyboard away; tap the message box to write again.
   can remove it. Offline, or on the dashboard while the Bot is replying, the widget is told it
   wasn't sent. Widgets in rooms can't send. A widget sends only when you tap it or press a key in
   it, so a page can't ask the Bot for things on its own.
+- **Viewing files.** Click an image, a PDF or a Markdown file (`.md`) in a chat or room, whether a
+  Bot sent it, named it in its reply or you attached it, to read it beside the conversation. On
+  the Mac it opens on the right, where the profile opens, and you can drag its edge to make it
+  wider; on iPhone it opens as its own page. Share it, or on the Mac save it, from the buttons at the
+  top. Opening the profile closes the file, and opening a file closes the profile. Other kinds of
+  file can be shared but not viewed.
 - **Audio and video.** Voice replies (Hermes's text to speech), audio files and videos play in the
   chat or room, one at a time; leaving the chat stops them. A voice memo has its waveform, a speed
   button and, when Hermes sent the words it spoke, **Show transcript**. A video plays in place;
@@ -670,7 +676,8 @@ you’re doing.
   shows in the panel. If that chat is still opening, the message waits and sends once it's open;
   **Cancel** puts it back in the box. If it can't send, for example while you're offline, it stays
   in the box and the panel says why.
-- ⌘Return opens the full chat; Esc closes the panel.
+- ⌘Return opens the full chat; Esc closes the panel. Clicking an image or a document in the
+  answer opens it beside its chat in the main window.
 - **Waiting on you** lists what every Bot and room is waiting for: approvals, with Allow and
   Deny; room replies that stopped partway, with Try Again; and questions, passwords, sign-ins and
   apps to connect, with Open.

@@ -125,7 +125,7 @@ struct VideoMessage: View {
         if phase.url == nil { phase = .loading }
         do {
             guard let store, let profile else { throw GatewayError.disconnected }
-            let url = try await store.playableFile(at: path, profile: profile)
+            let url = try await store.localFile(at: path, profile: profile)
             if let video = await VideoSummary.make(url) {
                 phase = .ready(url, video)
             } else {
@@ -143,7 +143,7 @@ struct VideoMessage: View {
 
     private func play(_ url: URL) async {
         // The copy may have made way for newer ones since it loaded.
-        let fresh = try? await store?.playableFile(at: path, profile: profile ?? "")
+        let fresh = try? await store?.localFile(at: path, profile: profile ?? "")
         playback.play(fresh ?? url, key: key)
     }
 }

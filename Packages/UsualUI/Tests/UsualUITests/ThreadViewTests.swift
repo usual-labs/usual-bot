@@ -61,9 +61,26 @@ struct MarkdownBlockTests {
         #expect(
             kinds("Saved it as `/tmp/out/chart.PNG`, and the notes in /tmp/out/notes.md.") == [
                 "p:Saved it as /tmp/out/chart.PNG, and the notes in /tmp/out/notes.md.", "media:/tmp/out/chart.PNG",
+                "media:/tmp/out/notes.md",
             ])
         #expect(
             kinds("See https://example.com/a/b.png and ~/x.png") == ["p:See https://example.com/a/b.png and ~/x.png"])
+    }
+
+    @Test func plainDocumentPathsShowAsFiles() {
+        #expect(
+            kinds("The plan is in `/home/h/docs/plan.md`.") == [
+                "p:The plan is in /home/h/docs/plan.md.", "media:/home/h/docs/plan.md",
+            ])
+        #expect(kinds("Done:\n\n/home/h/out/Report.PDF") == ["p:Done:", "media:/home/h/out/Report.PDF"])
+        #expect(
+            kinds("- Draft: /home/h/drafts/post.markdown") == [
+                "li0•Draft: /home/h/drafts/post.markdown", "media:/home/h/drafts/post.markdown",
+            ])
+        #expect(
+            kinds("See docs/plan.md, https://example.com/a.pdf and /tmp/notes.mdx") == [
+                "p:See docs/plan.md, https://example.com/a.pdf and /tmp/notes.mdx"
+            ])
     }
 
     @Test func mediaInsideCodeStaysCode() {

@@ -74,7 +74,9 @@
             // One Bot hidden, so Settings › General has one to show again.
             hiddenBots = [demo.courier]
             addDemoBot(demo.courier)
-            media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }.merging(DemoWidget.files) { $1 }
+            media.demoFiles = [Demo.chartPath: Demo.chart()].compactMapValues { $0 }
+                .merging(DemoWidget.files) { $1 }
+                .merging(DemoDocuments.files) { $1 }
             threads["ops"]?.demoWidgetAnswered = { [weak media] prompt in
                 guard prompt.hasPrefix("Clear") else { return }
                 media?.demoFiles[DemoWidget.diskPath] = DemoWidget.diskAfterCleanup
@@ -302,7 +304,7 @@
             }
             for (id, text, minutesAgo) in [
                 ("scribe", "Two headline options for the launch post", 95.0),
-                ("ledger", "October invoices are drafted for review", 26.0 * 60),
+                ("ledger", DemoDocuments.ledgerReply, 26.0 * 60),
             ] {
                 let message = HistoryMessage(role: "assistant", text: text)
                 threads[id] = ChatThread.sample(
@@ -637,7 +639,7 @@
                 HistoryMessage(
                     role: "assistant",
                     text: """
-                        Done. The plan is in `docs/search/turbopuffer-trial.md` and I've asked Forge to start on it.
+                        Done. The plan is in `\(DemoDocuments.trialPlanPath)` and I've asked Forge to start on it.
 
                         ## Trial plan
                         - Index the docs nightly into Turbopuffer.
@@ -725,7 +727,7 @@
                         """),
                 HistoryMessage(
                     role: "user",
-                    text: "Add the search index migration and run it on staging.\n\n@file:attachments/search-spec.md"),
+                    text: "Add the search index migration and run it on staging.\n\n@file:\(DemoDocuments.specPath)"),
                 HistoryMessage(role: "tool", name: "write_file", context: "migrations/0042_search_index.sql"),
                 HistoryMessage(role: "tool", name: "terminal", context: "npm test -- search"),
                 HistoryMessage(
@@ -785,7 +787,10 @@
                 event("message.user", from: you, "@scribe how's the post?", minutesAgo: 33),
                 event(
                     "message.member", from: member("scribe"),
-                    "The post is ready for a final read. I kept it under 600 words and led with the search demo.",
+                    """
+                    The post is ready for a final read. I kept it under 600 words and led with the search demo.
+                    MEDIA:\(DemoDocuments.launchPostPath)
+                    """,
                     minutesAgo: 31),
                 event("message.member", from: member("scribe"), DemoMedia.clipReply, minutesAgo: 30),
             ]

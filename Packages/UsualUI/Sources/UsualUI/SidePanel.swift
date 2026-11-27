@@ -52,7 +52,9 @@
                 }
             }
             .animation(Self.motion, value: isPresented)
-            .preference(key: OpenPanelWidth.self, value: isPresented ? shownWidth : 0)
+            // Combined, not set: a chat has its file panel inside its profile panel, and the
+            // closed one's 0 would hide the open one's width.
+            .transformPreference(OpenPanelWidth.self) { $0 = max($0, isPresented ? shownWidth : 0) }
         }
 
         /// The kept width is at actual size; the window's zoom grows it.

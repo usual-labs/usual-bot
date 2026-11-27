@@ -62,9 +62,9 @@ enum MarkdownBlock: Equatable {
             {
                 flush()
                 blocks.append(.media(path: path, voice: voice))
-            } else if !inFence, let path = mediaPath(Substring(trimmed)), imagePaths(in: path) == [path] {
-                // A line that's only the path to an image: agents outside the desktop app name
-                // the files they make that way.
+            } else if !inFence, let path = mediaPath(Substring(trimmed)), filePaths(in: path) == [path] {
+                // A line that's only the path to an image or a document: agents outside the
+                // desktop app name the files they make that way.
                 flush()
                 blocks.append(.media(path: path))
             } else {
@@ -142,23 +142,24 @@ enum MarkdownBlock: Equatable {
                 blocks.append(.heading(level: level, text))
             } else if let item = listItem(in: intent) {
                 blocks.append(.listItem(marker: item.marker, depth: item.depth, text))
-                blocks += imagePaths(in: String(text.characters)).map { .media(path: $0) }
+                blocks += filePaths(in: String(text.characters)).map { .media(path: $0) }
             } else if kinds.contains(.blockQuote) {
                 blocks.append(.quote(text))
             } else {
                 let (rest, images) = splitImages(text)
                 if !rest.characters.allSatisfy(\.isWhitespace) { blocks.append(.paragraph(rest)) }
                 blocks += images
-                // Image paths named in the text show under it.
-                blocks += imagePaths(in: String(rest.characters)).map { .media(path: $0) }
+                // Images and documents named in the text show under it.
+                blocks += filePaths(in: String(rest.characters)).map { .media(path: $0) }
             }
         }
         return blocks
     }
 
-    /// Absolute paths to image files in `text`, in order, each once: `/home/…/chart.png`.
-    static func imagePaths(in text: String) -> [String] {
-        guard let regex = imagePathPattern else { return [] }
+    /// Absolute paths to images, PDFs and Markdown files in `text`, in order, each once:
+    /// `/home/…/chart.png`, `/home/…/plan.md`. Those are what the file viewer opens.
+    static func filePaths(in text: String) -> [String] {
+        guard let regex = filePathPattern else { return [] }
         var seen: Set<String> = []
         return regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { match in
             guard let range = Range(match.range, in: text) else { return nil }
@@ -167,8 +168,8 @@ enum MarkdownBlock: Equatable {
         }
     }
 
-    private static let imagePathPattern = try? NSRegularExpression(
-        pattern: #"(?<![\w.~/:])/(?!/)[^\s`'"<>()\[\]]+\.(?:png|jpe?g|gif|webp|bmp|heic)\b"#,
+    private static let filePathPattern = try? NSRegularExpression(
+        pattern: #"(?<![\w.~/:])/(?!/)[^\s`'"<>()\[\]]+\.(?:png|jpe?g|gif|webp|bmp|heic|pdf|md|markdown)\b"#,
         options: .caseInsensitive)
 
     /// Takes the images out of a paragraph: web images load directly, local paths from the gateway.

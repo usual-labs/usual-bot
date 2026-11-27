@@ -22,7 +22,7 @@ public final class MediaStore {
     /// This run's own folder for them. Files from runs that have ended are deleted at launch.
     private let playbackFolder: URL
 
-    /// A few voice memos and clips; each is a whole file on disk.
+    /// A few voice memos, clips and PDFs; each is a whole file on disk.
     private static let playableLimit = 8
 
     init(
@@ -66,12 +66,13 @@ public final class MediaStore {
         return data
     }
 
-    /// A local copy of the audio or video file at `path`, to play. `AVPlayer` can't send the
-    /// sign-in with its requests, so the whole file is downloaded first, through
-    /// `GET /api/fs/download` (as `profile` sees it, with no size cap, unlike `file(at:profile:)`).
-    /// The copy keeps the file's name, so players and Share see its type. Copies last until
-    /// sign-out or the app quits; the next launch deletes them.
-    public func playableFile(at path: String, profile: String) async throws -> URL {
+    /// A local copy of the file at `path`: audio or video to play, or a PDF to read. `AVPlayer`
+    /// can't send the sign-in with its requests, and a PDF can be past the 16 MB
+    /// `file(at:profile:)` reads, so the whole file is downloaded first, through
+    /// `GET /api/fs/download` (as `profile` sees it, with no size cap). The copy keeps the file's
+    /// name, so players and Share see its type. Copies last until sign-out or the app quits; the
+    /// next launch deletes them.
+    public func localFile(at path: String, profile: String) async throws -> URL {
         let key = profile + "\u{0}" + path
         if let index = playable.firstIndex(where: { $0.key == key }) {
             let url = playable[index].url
