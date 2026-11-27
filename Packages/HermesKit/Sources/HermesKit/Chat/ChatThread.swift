@@ -160,9 +160,13 @@ public final class ChatThread {
             markViewed()
         }
     }
-    var newLines = NewLineKeeper()
+    /// Opening a chat sets it each time; only a move of the line itself redraws the chat, which
+    /// may be kept built out of sight and shown again.
+    @ObservationIgnored var newLines = NewLineKeeper() {
+        didSet { if newLines.line != newLine { newLine = newLines.line } }
+    }
     /// Where the NEW line goes (`NewLineKeeper`).
-    public var newLine: NewLine? { newLines.line }
+    public private(set) var newLine: NewLine?
 
     private var openTask: Task<Void, Never>?
     /// Opening is under way.

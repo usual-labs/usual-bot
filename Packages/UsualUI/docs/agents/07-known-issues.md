@@ -118,7 +118,30 @@ Record a new issue as symptom → root cause → verified fix or workaround → 
   per-chat loads go in `.task(id:)` with the chat in the key, per-chat state is reset or keyed,
   and `.transaction(value:)` stops the next chat's text and cards animating in.
   `USUALBOT_SWITCH_BENCH` measures switching. Most of what's left is laying out the new chat's
-  messages, whose stack isn't lazy (above).
+  messages, whose stack isn't lazy (above). `ThreadPane` now gives each transcript its identity
+  through the `ForEach` of kept chats (below); `RoomPane` still uses the `.id`.
+- **Kept chats must compare equal when nothing they show changed.** The Mac keeps the last three
+  chats' transcripts built in a `ZStack`, the hidden ones at opacity 0 (`RecentChats`), so going
+  back to one shows it instead of building and laying out its messages again. The first try
+  saved only 17 ms of a 250 ms switch: anything handed down as a closure compares unequal on
+  every update, so SwiftUI ran the body again. `jumped` re-ran every kept `TranscriptView` and laid
+  its messages out again; `quoteSelection`, a closure in the environment, re-ran every paragraph's
+  `MessageText` (about 240 a switch) whenever anything above it changed; `ChatThread.newLines`,
+  set on every open, redrew the chat when the line hadn't moved. `KeptTranscript` and
+  `TranscriptView` are `Equatable` and leave `jumped` out, `MessageActions` compares by its
+  `owner`, `QuoteSelection` is a value, and `newLine` changes only when the line moves. Before
+  handing a kept chat something new, check a switch with `Self._printChanges()` and the bench's
+  `recent` lines. On the developer's gateway (November 2026, 1,520 × 900 pt window), going back to
+  one of three chats took 117–133 ms instead of 233; opening one that wasn't kept took about as
+  long as before. Each chat kept makes that slower: adding or removing one places every child of
+  the stack again, and with four kept it was 20–35 ms slower than before. A layout around a scroll
+  view needs its own `explicitAlignment` answers (`TakesOfferedSize`): the default placed the
+  scroll view to find them, which measured every message of every kept chat. The hidden chats
+  still lay out and update: their widgets stop (`conversationShown`), a secret typed into a card
+  goes, and VoiceOver neither reads them nor hears their cards. A chat you go back to stays where
+  you'd scrolled to. Rooms aren't kept: their transcript is built from `RoomPane`'s state for one
+  room. Not measured: memory, resizing the window with chats kept, and a reply running in a
+  hidden chat.
 - **`onHover` on a message hit-tests the text inside it on every pointer move.** Crossing a long
   chat kept the app busy for up to half a second at a time. `MessageRow` follows the pointer with
   an AppKit tracking area (`PointerTracking`) instead.
