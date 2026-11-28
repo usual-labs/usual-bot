@@ -71,6 +71,8 @@ struct ProfilePanel: View {
             // top, then Settings rows. Its name moves into the bar once the top scrolls away.
             List { overview }
                 .listStyle(.insetGrouped)
+                // Next Up's switches: the app's ink tint draws them white in dark mode.
+                .toggleStyle(.systemSwitch)
                 .navigationTitle(contact.name)
                 .navigationBarTitleDisplayMode(.inline)
                 .onScrollGeometryChange(for: Bool.self) { geometry in
