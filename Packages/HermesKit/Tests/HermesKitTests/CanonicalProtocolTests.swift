@@ -237,6 +237,41 @@ struct CanonicalProtocolTests {
         #expect(CanonicalProtocol.replyText(in: frames, admission: "a1") == "Monday")
     }
 
+    /// Hermes stores what a Bot says before its tools run, so a snapshot taken then holds "On it"
+    /// as a row; the replay frames hold it too, and showing both left it twice until the reply ended.
+    @Test func theReplySoFarLeavesOutWhatTheSnapshotHolds() {
+        let snapshot: JSONValue = [
+            "pending": [["admission_id": "a1", "status": "started", "input_id": "in-2", "text": "Check it"]],
+            "display_messages": [
+                ["role": "user", "text": "Earlier", "row_id": 1, "display_metadata": ["submission_id": "in-1"]],
+                ["role": "assistant", "text": "On it.", "row_id": 2],
+                ["role": "user", "text": "Check it", "row_id": 3, "display_metadata": ["submission_id": "in-2"]],
+                ["role": "assistant", "text": "On it.", "row_id": 4],
+            ],
+        ]
+        let frames: JSONValue = [
+            ["type": "message.delta", "admission_id": "a1", "payload": ["text": "On "]],
+            ["type": "message.delta", "admission_id": "a1", "payload": ["text": "it."]],
+            ["type": "message.delta", "admission_id": "a1", "payload": ["text": .null]],
+            ["type": "tool.start", "admission_id": "a1", "payload": ["name": "search"]],
+            ["type": "message.delta", "admission_id": "a1", "payload": ["text": "Found it"]],
+        ]
+        #expect(CanonicalProtocol.replyText(in: frames, admission: "a1", storedIn: snapshot) == "Found it")
+        // Said again in the same turn, but stored once: the second is still new.
+        let again: JSONValue = [
+            ["type": "message.delta", "admission_id": "a1", "payload": ["text": "On it."]],
+            ["type": "message.delta", "admission_id": "a1", "payload": ["text": .null]],
+            ["type": "message.delta", "admission_id": "a1", "payload": ["text": "On it."]],
+        ]
+        #expect(CanonicalProtocol.replyText(in: again, admission: "a1", storedIn: snapshot) == "On it.")
+        // Before the prompt is stored, an earlier turn's same words aren't this one's.
+        let unstored: JSONValue = [
+            "pending": [["admission_id": "a1", "status": "started", "input_id": "in-3", "text": "And this"]],
+            "display_messages": snapshot["display_messages"] ?? [],
+        ]
+        #expect(CanonicalProtocol.replyText(in: frames, admission: "a1", storedIn: unstored) == "On it.Found it")
+    }
+
     /// Asked after the attach's snapshot was taken, so only the replay frames have them.
     @Test func promptsStillWaitingAreReadFromReplayFrames() {
         let frames: JSONValue = [

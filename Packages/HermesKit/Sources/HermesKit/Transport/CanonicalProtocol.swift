@@ -121,18 +121,10 @@ struct CanonicalProtocol {
         }
         object["open_requests"] = .array(open)
         if result["running"]?.boolValue == true {
-            let started = Self.startedAdmission(in: result)
-            // The running prompt is usually stored already; then only the reply so far is new. Yours
-            // carries its submission id. One Hermes started (a routine's result, another Bot's
-            // message) carries none, but is stored as the newest user row, with a display kind.
-            let input = started?["input_id"]?.stringValue
-            let rows = Self.rows(result["display_messages"])
-            let newest = rows.last { $0["role"]?.stringValue == "user" }
-            let stored =
-                rows.contains { input != nil && $0["display_metadata"]?["submission_id"]?.stringValue == input }
-                || (newest?["display_kind"]?.stringValue != nil && newest?["text"] == started?["text"])
+            // The running prompt is usually stored already; then only the reply so far is new.
+            let stored = Self.promptRow(in: result) != nil
             object["inflight"] = [
-                "user": .string(stored ? "" : started?["text"]?.stringValue ?? ""),
+                "user": .string(stored ? "" : Self.startedAdmission(in: result)?["text"]?.stringValue ?? ""),
                 "assistant": .string(replySoFar ?? ""),
             ]
         }
@@ -144,11 +136,58 @@ struct CanonicalProtocol {
         rows(snapshot["pending"]).first { $0["status"]?.stringValue == "started" }
     }
 
-    /// The text a turn has streamed so far, from the session's replay frames.
-    static func replyText(in frames: JSONValue?, admission: String, upTo last: Int? = nil) -> String {
-        rows(frames).filter { $0["type"] == "message.delta" && $0["admission_id"]?.stringValue == admission }
-            .filter { frame in last.map { (frame["seq"]?.intValue ?? 0) <= $0 } ?? true }
-            .compactMap { $0["payload"]?["text"]?.stringValue }.joined()
+    /// The text a turn has streamed so far, from the session's replay frames, less what `snapshot`
+    /// already shows: Hermes stores a stretch that ends in tool calls ("On it…") before the tools
+    /// run, so the snapshot's rows hold it as well.
+    static func replyText(
+        in frames: JSONValue?, admission: String, upTo last: Int? = nil, storedIn snapshot: JSONValue = .null
+    ) -> String {
+        var stretches = [""]
+        for frame in rows(frames)
+        where frame["type"] == "message.delta" && frame["admission_id"]?.stringValue == admission
+            && last.map({ (frame["seq"]?.intValue ?? 0) <= $0 }) ?? true
+        {
+            // A delta without text ends one stretch.
+            if let text = frame["payload"]?["text"]?.stringValue {
+                stretches[stretches.count - 1] += text
+            } else {
+                stretches.append("")
+            }
+        }
+        var stored = storedReplies(in: snapshot)
+        return stretches.filter { stretch in
+            let text = stretch.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let index = stored.firstIndex(of: text) else { return true }
+            stored.remove(at: index)
+            return false
+        }.joined()
+    }
+
+    /// The running turn's replies the snapshot holds: assistant rows after its prompt's row.
+    private static func storedReplies(in snapshot: JSONValue) -> [String] {
+        guard let prompt = promptRow(in: snapshot) else { return [] }
+        return rows(snapshot["display_messages"]).dropFirst(prompt + 1).filter {
+            $0["role"]?.stringValue == "assistant"
+        }
+        .compactMap { $0["text"]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines).nonBlank }
+    }
+
+    /// Where the snapshot stores the running turn's prompt, if it does yet. Yours carries its
+    /// submission id. One Hermes started (a routine's result, another Bot's message) carries none,
+    /// but is stored as the newest user row, with a display kind.
+    private static func promptRow(in snapshot: JSONValue) -> Int? {
+        let started = startedAdmission(in: snapshot)
+        let input = started?["input_id"]?.stringValue
+        let rows = rows(snapshot["display_messages"])
+        if let input,
+            let index = rows.lastIndex(where: { $0["display_metadata"]?["submission_id"]?.stringValue == input })
+        {
+            return index
+        }
+        guard let newest = rows.lastIndex(where: { $0["role"]?.stringValue == "user" }),
+            rows[newest]["display_kind"]?.stringValue != nil, rows[newest]["text"] == started?["text"]
+        else { return nil }
+        return newest
     }
 
     /// The approvals and questions asked in replay `frames` and not settled since.
