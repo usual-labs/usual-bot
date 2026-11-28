@@ -116,6 +116,12 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   keeps those events (`earlyEvents`), and `attach` applies the ones numbered after the snapshot's
   `last_sequence`; the reply so far is read only up to it, so nothing shows twice. The legacy
   dialect has no snapshot number and still drops them.
+- **The reply so far overlaps the snapshot's rows.** Hermes stores a stretch of text that ends in
+  tool calls ("On it…") before the tools run (`agent/turn_tool_round.py`), so a mid-reply snapshot
+  holds it as an assistant row while the replay frames hold its deltas too. `replyText` splits the
+  deltas at each text-less one and drops the stretches the running turn's rows already show,
+  matched by trimmed text; otherwise the line showed twice until the reply ended and history was
+  read again.
 - **The gateway answers one socket's requests one at a time.** Each chat open (`session.resume`)
   builds an agent: about 1 s on an idle host, several on a busy one. Opening all 11 of the
   developer's chats at once on connect left the last ones, and the roster read behind them, past
