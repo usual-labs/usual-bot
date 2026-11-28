@@ -128,7 +128,8 @@ listed in it until you unpin it.
   skills and tools, and the gateway's sign-ins; change those in the Hermes app. Its chat opens once
   it's made. If Hermes has no model it can use, the app says so before opening it.
 - **Rename, change or remove its picture, hide or delete it:** right-click the Bot in the sidebar (touch
-  and hold on iPhone), or use **…** in its profile. On the Mac you can also drop a picture on the
+  and hold on iPhone), or use **…** in its profile. On iPhone, **Hide Bot** and **Delete Bot…**
+  are at the bottom of the profile instead. On the Mac you can also drop a picture on the
   profile's avatar. On iPhone a picture comes from Photos or Files. Pictures are cropped to the
   middle square.
 - **Renaming** changes only the name you see, here and in the Hermes app. The Bot's chats, routines
@@ -423,11 +424,13 @@ Bot's name above the chat):
   models ask first. If the Bot is mid-reply, the switch takes effect from your next message.
   **Make Default for <Bot>** at the bottom saves it as the Bot's default everywhere, including in
   the official Hermes app.
-- **Thinking** is a slider from Off to Ultra that sets how hard the model reasons (for models that
-  can). The pin beside the level makes it the Bot's default.
+- **Thinking** sets how hard the model reasons, from Off to Ultra (for models that can). On the
+  Mac it's a slider, and the pin beside the level makes it the Bot's default. On iPhone it's a
+  menu, with **Make Default for <Bot>** under the levels.
 - **Context** shows how full the conversation's context window is, with the chat's totals.
   **Compress** summarises older messages to free space; it stands out once the context is 70%
-  full, and waits while the Bot is replying. A note in the chat says what it did.
+  full, and waits while the Bot is replying. A note in the chat says what it did. On iPhone, tap
+  **Context** to see the numbers and **Compress Chat**.
 
 ## Dictation and voice calls
 

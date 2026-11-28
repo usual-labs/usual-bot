@@ -2,7 +2,7 @@ import HermesKit
 import SwiftUI
 
 extension Contact.Activity {
-    /// The Machine row's value: what the Bot is doing, or that it's waiting on you.
+    /// What the Bot is doing, or that it's waiting on you, under its name.
     var label: String {
         switch self {
         case .idle: String(localized: "Idle")
@@ -72,9 +72,26 @@ struct ProfileRows<Destination: View>: View {
         LabeledContent {
             if let value = value(tab) { Text(value).foregroundStyle(Theme.secondaryInk) }
         } label: {
-            Label(tab.title, systemImage: icon(tab))
+            #if os(iOS)
+                ProfileRowLabel(title: tab.title, systemName: phoneIcon(tab).symbol, color: phoneIcon(tab).color)
+            #else
+                Label(tab.title, systemImage: icon(tab))
+            #endif
         }
     }
+
+    #if os(iOS)
+        /// Filled symbols on coloured squares, as in Settings.
+        private func phoneIcon(_ tab: ProfilePanel.Tab) -> (symbol: String, color: Color) {
+            switch tab {
+            case .routines: ("clock.fill", .orange)
+            case .skills: ("book.closed.fill", .blue)
+            case .apps: ("square.grid.2x2.fill", .green)
+            case .vault: ("key.fill", .gray)
+            case .machine: ("desktopcomputer", .teal)
+            }
+        }
+    #endif
 
     private func icon(_ tab: ProfilePanel.Tab) -> String {
         switch tab {
@@ -102,7 +119,8 @@ struct ProfileRows<Destination: View>: View {
             guard vault.phase == .ready else { return nil }
             return vault.items.count.formatted()
         case .machine:
-            return contact.activity.label
+            // What it's doing is already under its name.
+            return nil
         }
     }
 
@@ -139,7 +157,7 @@ struct NextRoutines: View {
                     HStack(spacing: 12) {
                         link(routine)
                         Toggle(isOn: Binding(get: { routine.isOn }, set: { routines.setOn($0, for: routine) })) {
-                            Text(routine.name)
+                            Text(routine.title(in: routines.profile))
                         }
                         .labelsHidden()
                     }
@@ -152,7 +170,7 @@ struct NextRoutines: View {
 
     @ViewBuilder private func link(_ routine: Routine) -> some View {
         let label = VStack(alignment: .leading, spacing: 2) {
-            Text(routine.name).foregroundStyle(Theme.ink).lineLimit(2)
+            Text(routine.title(in: routines.profile)).foregroundStyle(Theme.ink).lineLimit(2)
             if let next = routine.nextRun {
                 Text(next.formatted(.relative(presentation: .named, unitsStyle: .wide)).capitalizedFirst)
                     .zoomedFont(.subheadline)
@@ -170,6 +188,17 @@ struct NextRoutines: View {
                 .buttonStyle(.clickable)
                 .accessibilityHint(Text("Opens Routines"))
         #endif
+    }
+}
+
+extension Routine {
+    /// The name without a leading `[bot:<profile>]` tag naming this Bot, which repeats what its own
+    /// page already says. A tag naming another Bot, or one that would leave nothing, stays.
+    func title(in profile: String) -> String {
+        let tag = "[bot:\(profile)]"
+        guard let range = name.range(of: tag, options: [.anchored, .caseInsensitive]) else { return name }
+        let rest = name[range.upperBound...].trimmingCharacters(in: .whitespaces)
+        return rest.isEmpty ? name : rest
     }
 }
 

@@ -44,6 +44,7 @@ struct ProfilePanel: View {
     @State private var botEdit: BotEdit?
     @State private var isDropTarget = false
     @State private var showsWholeDescription = false
+    @State private var showsBarTitle = false
     @Environment(\.botEditing) private var botEditing
 
     /// The Mac panel's width until you drag it, and the narrowest it goes.
@@ -66,15 +67,32 @@ struct ProfilePanel: View {
             .botEditor($botEdit)
             .task(id: contact.id) { await loadCounts() }
         #else
-            // Pushed from the chat: who it is, then a row for each page, as in Settings.
+            // Pushed from the chat and laid out like a contact's info page: the Bot centred at the
+            // top, then Settings rows. Its name moves into the bar once the top scrolls away.
             List { overview }
                 .listStyle(.insetGrouped)
+                // Next Up's switches: the app's ink tint draws them white in dark mode.
+                .toggleStyle(.systemSwitch)
+                .navigationTitle(contact.name)
                 .navigationBarTitleDisplayMode(.inline)
+                .onScrollGeometryChange(for: Bool.self) { geometry in
+                    geometry.contentOffset.y + geometry.contentInsets.top > Self.nameScrollsAway
+                } action: { _, isAway in
+                    withAnimation(.easeOut(duration: 0.2)) { showsBarTitle = isAway }
+                }
                 .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        Text(contact.name)
+                            .font(.headline)
+                            .lineLimit(1)
+                            .opacity(showsBarTitle ? 1 : 0)
+                            .accessibilityHidden(!showsBarTitle)
+                    }
                     if let botEditing {
                         ToolbarItem(placement: .topBarTrailing) {
                             Menu {
-                                BotMenuItems(contact: contact, editing: botEditing, edit: $botEdit)
+                                BotMenuItems(
+                                    contact: contact, editing: botEditing, edit: $botEdit, includesRemoval: false)
                             } label: {
                                 Label("Edit Bot", systemImage: "ellipsis")
                             }
@@ -86,6 +104,30 @@ struct ProfilePanel: View {
         #endif
     }
 
+    #if os(iOS)
+        /// About where the centred name passes under the bar.
+        private static let nameScrollsAway: CGFloat = 150
+
+        /// Hide and Delete at the end, as a contact's page puts its destructive actions.
+        @ViewBuilder private var removal: some View {
+            if let botEditing {
+                Section {
+                    Button("Hide Bot") { botEdit = .hide(contact) }
+                    if botEditing.canDelete(contact) {
+                        Button("Delete Bot…", role: .destructive) { botEdit = .delete(contact) }
+                    }
+                } footer: {
+                    if let reason = botEditing.unavailable {
+                        Text(reason)
+                    } else {
+                        Text("A hidden Bot keeps working and comes back from Settings › General.")
+                    }
+                }
+                .disabled(botEditing.unavailable != nil)
+            }
+        }
+    #endif
+
     /// The Bot, this chat's settings, the rows for its pages and its next routines.
     @ViewBuilder private var overview: some View {
         Section {
@@ -95,12 +137,23 @@ struct ProfilePanel: View {
                 #if os(macOS)
                     // As the pages' titles, under the panel's round buttons.
                     .padding(.top, 8)
+                    .padding(.bottom, 14)
+                #else
+                    .padding(.bottom, -8)
                 #endif
-                .padding(.bottom, 14)
         }
-        if let thread {
-            ChatModelSection(thread: thread, agentName: contact.name, agentDefault: contact.details)
-        }
+        #if os(iOS)
+            if let description = contact.details?.description {
+                Section { ProfileAbout(description: description) }
+            }
+            if let thread {
+                PhoneChatSection(thread: thread, agentName: contact.name, agentDefault: contact.details)
+            }
+        #else
+            if let thread {
+                ChatModelSection(thread: thread, agentName: contact.name, agentDefault: contact.details)
+            }
+        #endif
         ProfileRows(
             contact: contact, routines: routines, skills: skills, apps: apps, vault: vault,
             open: { page = $0 }
@@ -112,6 +165,9 @@ struct ProfilePanel: View {
                 #endif
         }
         NextRoutines(routines: routines) { page = .routines }
+        #if os(iOS)
+            removal
+        #endif
     }
 
     /// The rows' counts; each page reloads its own when opened.
@@ -211,34 +267,63 @@ struct ProfilePanel: View {
         }
     #endif
 
+    /// The Bot's picture, its name and what it's doing: centred on iPhone, with the description in
+    /// its own card below; beside each other in the Mac panel, with the description under them.
+    @ViewBuilder private var header: some View {
+        #if os(iOS)
+            VStack(spacing: 4) {
+                avatar(size: 96)
+                    .padding(.bottom, 8)
+                Text(contact.name)
+                    .scaledFont(size: 26, weight: .bold)
+                    .foregroundStyle(Theme.ink)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .accessibilityAddTraits(.isHeader)
+                statusLine
+            }
+            .frame(maxWidth: .infinity)
+        #else
+            macHeader
+        #endif
+    }
+
+    private func avatar(size: CGFloat) -> some View {
+        AgentAvatar(contact: contactWithoutActivity, size: size)
+            .overlay {
+                if isDropTarget {
+                    Circle().strokeBorder(
+                        Theme.ink.opacity(0.4), style: StrokeStyle(lineWidth: 2, dash: [5, 4]))
+                }
+            }
+            .botPictureDrop(isTargeted: $isDropTarget, enabled: botEditing?.unavailable == nil) { data in
+                botEdit = .usePicture(contact, data)
+            }
+    }
+
+    private var statusLine: some View {
+        HStack(spacing: 5) {
+            Circle().fill(isOnline ? Theme.online : Theme.secondaryInk).frame(width: 7, height: 7)
+            Text(status)
+        }
+        .zoomedFont(.subheadline)
+        .foregroundStyle(Theme.secondaryInk)
+        .accessibilityElement(children: .combine)
+    }
+
     /// The Bot's picture beside its name and what it's doing, then its description, cut to three
     /// lines until More.
-    private var header: some View {
+    private var macHeader: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
-                AgentAvatar(contact: contactWithoutActivity, size: 56)
-                    .overlay {
-                        if isDropTarget {
-                            Circle().strokeBorder(
-                                Theme.ink.opacity(0.4), style: StrokeStyle(lineWidth: 2, dash: [5, 4]))
-                        }
-                    }
-                    .botPictureDrop(isTargeted: $isDropTarget, enabled: botEditing?.unavailable == nil) { data in
-                        botEdit = .usePicture(contact, data)
-                    }
+                avatar(size: 56)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(contact.name)
                         .scaledFont(size: 20, weight: .semibold)
                         .foregroundStyle(Theme.ink)
                         .lineLimit(2)
                         .accessibilityAddTraits(.isHeader)
-                    HStack(spacing: 5) {
-                        Circle().fill(isOnline ? Theme.online : Theme.secondaryInk).frame(width: 7, height: 7)
-                        Text(status)
-                    }
-                    .zoomedFont(.subheadline)
-                    .foregroundStyle(Theme.secondaryInk)
-                    .accessibilityElement(children: .combine)
+                    statusLine
                 }
                 Spacer(minLength: 0)
             }
@@ -357,74 +442,4 @@ struct ProfileFailure: View {
             Button("Try Again") { Task { await retry() } }.buttonStyle(.clickable(.bordered))
         }
     }
-}
-
-// MARK: - Machine
-
-private struct MachineView: View {
-    let details: AgentDetails?
-    let gateway: GatewayAddress
-    let link: AppModel.Link
-    let gatewayDetails: GatewayDetails?
-    let load: () async -> Void
-    var top: AnyView?
-
-    var body: some View {
-        ProfileForm(top: top) {
-            Section {
-                row("Profile", details?.profile)
-                row("Model", details?.model)
-                row("Provider", details?.provider)
-                row("Skills", details?.skillCount.map { String($0) })
-            } header: {
-                ProfileSectionHeader("Bot")
-            }
-            Section {
-                row("Address", gateway.displayName)
-                row("Version", gatewayDetails?.version)
-                row("Status", statusText)
-                row("Signed in as", gatewayDetails?.account)
-            } header: {
-                ProfileSectionHeader("Gateway")
-            }
-            #if os(macOS)
-                if let settings = Self.hermesSettings {
-                    Section {
-                        Button("Open Hermes for advanced settings") { NSWorkspace.shared.open(settings) }
-                            .buttonStyle(.clickable(.bordered))
-                    }
-                }
-            #endif
-        }
-        .task { await load() }
-    }
-
-    private var statusText: String {
-        switch link {
-        case .connecting: return String(localized: "Connecting…")
-        case .offline: return String(localized: "Offline")
-        case .online:
-            return gatewayDetails?.isHealthy == false
-                ? String(localized: "Connected, some parts need attention")
-                : String(localized: "Connected")
-        }
-    }
-
-    @ViewBuilder private func row(_ label: LocalizedStringKey, _ value: String?) -> some View {
-        if let value, !value.isEmpty {
-            LabeledContent(label) {
-                Text(value).textSelection(.enabled)
-            }
-        }
-    }
-
-    #if os(macOS)
-        /// The official Hermes app's settings, when it's installed on this Mac.
-        private static var hermesSettings: URL? {
-            guard let url = URL(string: "hermes://open/settings"),
-                NSWorkspace.shared.urlForApplication(toOpen: url) != nil
-            else { return nil }
-            return url
-        }
-    #endif
 }
