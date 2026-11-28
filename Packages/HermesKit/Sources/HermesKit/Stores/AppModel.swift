@@ -21,7 +21,26 @@ public final class AppModel {
     }
 
     public internal(set) var session: Session = .signedOut
-    public internal(set) var link: Link = .connecting
+    public internal(set) var link: Link = .connecting {
+        didSet {
+            if link.isOnline {
+                offlineSince = nil
+            } else if offlineSince == nil {
+                offlineSince = .now
+            }
+        }
+    }
+    /// When the link last stopped being online; `nil` while it is.
+    public internal(set) var offlineSince: Date?
+    /// The device has a route to the network (`watchNetwork()`).
+    public internal(set) var hasNetwork = true
+    /// The demo shows its link state (`showDemoLinkDown`).
+    @ObservationIgnored var showsDemoLink = false
+    @ObservationIgnored var networkRoute: String?
+    @ObservationIgnored var networkWatcher: NetworkWatcher?
+    /// The wait for the next roster read, which `readRosterSoon()` cuts short.
+    @ObservationIgnored var rosterWait: Task<Void, Never>?
+    @ObservationIgnored var lastRosterRead: ContinuousClock.Instant?
     /// The agents and rooms the gateway reports, in its own terms. Show `sidebarContacts` instead.
     public internal(set) var contacts: [Contact] = []
     /// Bots hidden from the sidebar, here or in the official app. They still work, and still reply
@@ -32,6 +51,8 @@ public final class AppModel {
         didSet {
             showVisibleChat()
             if let visibleContactID { alertsCleared?(visibleContactID) }
+            // A room reads its messages with the roster, which comes often while one is on screen.
+            if let visibleContactID, visibleContactID != oldValue, rooms[visibleContactID] != nil { readRosterSoon() }
             if visibleContactID != oldValue { reportFocus() }
         }
     }
@@ -164,7 +185,13 @@ public final class AppModel {
         return sync
     }()
 
-    private static let rosterInterval: Duration = .seconds(5)
+    /// How often the roster is read with nothing to watch. Each read is a large reply on a socket
+    /// whose calls the gateway takes in turn, so on a slow network it holds up the chat behind it.
+    /// A change to a chat elsewhere (`sessions.changed`) brings the next read forward.
+    static let rosterInterval: Duration = .seconds(30)
+    /// How often it's read while rooms need it (`rosterWatchesRooms`), as rooms learn of new
+    /// messages only from the roster, and while a notification's check-in waits on it.
+    static let busyRosterInterval: Duration = .seconds(5)
     /// Chats opening alongside the one on screen; see `attachChats`.
     static let backgroundOpens = 2
     private static let log = Logger(subsystem: "UsualBot", category: "app")
@@ -431,7 +458,7 @@ public final class AppModel {
                     firstRead = false
                     saveCache(for: auth.gateway)
                     reportFocus()
-                    try await Task.sleep(for: Self.rosterInterval)
+                    try await waitForRosterRead()
                 }
             } catch GatewayError.signInRequired {
                 signInEnded(on: auth.gateway)
@@ -441,11 +468,11 @@ public final class AppModel {
                 link = .offline(Self.describe(error, for: auth.gateway))
                 Self.log.error("Gateway link dropped: \(Self.describe(error), privacy: .public)")
                 droppedAt = droppedAt ?? .now
+                let delay = Backoff.delay(attempt: attempt)
                 Trace.event(
                     "link.dropped",
-                    "attempt=\(attempt) reason=\(Trace.reason(error)) retry_ms=\(Trace.milliseconds(Backoff.delay(attempt: attempt)))"
-                )
-                try? await Task.sleep(for: Backoff.delay(attempt: attempt))
+                    "attempt=\(attempt) reason=\(Trace.reason(error)) retry_ms=\(Trace.milliseconds(delay))")
+                try? await Task.sleep(for: delay)
                 attempt += 1
                 link = .connecting
             }
@@ -699,6 +726,7 @@ public final class AppModel {
         if event.type == "sessions.changed" {
             // Says only that some conversation changed, perhaps a read elsewhere.
             readSync.somethingChanged()
+            readRosterSoon()
             return
         }
         if event.type.hasPrefix("display.") {
@@ -800,5 +828,6 @@ public final class AppModel {
         contacts = agents + (await refreshRooms(on: channel) ?? contacts.filter { $0.kind != .agent })
         sections.reconcile(contacts)
         rosterReads += 1
+        lastRosterRead = .now
     }
 }

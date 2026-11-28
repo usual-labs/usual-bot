@@ -54,6 +54,12 @@ struct UsualBotApp: App {
                     share: ProcessInfo.processInfo.environment["USUALBOT_DEMO_SHARE"] == "1"
                         || ProcessInfo.processInfo.arguments.contains("--demo-share") ? .appGroup() : nil)
                 : live()
+            // --demo-link-down and --demo-no-network show the demo as a bad network would.
+            if demo, ProcessInfo.processInfo.arguments.contains("--demo-link-down") {
+                model.showDemoLinkDown(hasNetwork: true)
+            } else if demo, ProcessInfo.processInfo.arguments.contains("--demo-no-network") {
+                model.showDemoLinkDown(hasNetwork: false)
+            }
         #else
             let model = live()
         #endif
@@ -98,6 +104,8 @@ struct UsualBotApp: App {
                 .task { await model.restore() }
                 .task { PushRegistration.start(model.relay) }
                 .task { await model.update.watch() }
+                // A network back, or a move to another one, tries the gateway at once.
+                .task { model.watchNetwork() }
                 .onOpenURL { model.open($0) }
                 // Asked once you're in, not from the background, where iOS can't show the question.
                 .onChange(of: model.session, initial: true) { _, session in

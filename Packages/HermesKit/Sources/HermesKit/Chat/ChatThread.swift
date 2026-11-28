@@ -173,6 +173,21 @@ public final class ChatThread {
     public private(set) var newLine: NewLine?
 
     private var openTask: Task<Void, Never>?
+    /// The next try after an open timed out (`openFailed`).
+    @ObservationIgnored private var openRetry: Task<Void, Never>?
+    @ObservationIgnored private var openFailures = 0
+    /// Catching up left the chat wrong once: the next open loads it in full.
+    @ObservationIgnored private var forcesFullOpen = false
+    /// When this chat started loading with nothing to show, while it still is: the page says why
+    /// it's slow once it has taken a while.
+    public private(set) var loadingSince: Date?
+    /// When this chat last let go of its live session: what it shows is the chat as of then.
+    public private(set) var detachedAt: Date?
+    /// Not attached, though nothing went wrong: opening, or waiting for the link.
+    public var isCatchingUp: Bool {
+        if case .failed = phase { return false }
+        return sessionID == nil
+    }
     /// Opening is under way.
     var isOpening: Bool { openTask != nil }
     /// `open` would start opening: not attached and not already opening.
@@ -229,14 +244,20 @@ public final class ChatThread {
     // MARK: - Attaching
 
     /// Finds or creates the agent's Bot Chat, loads its history and attaches to its events.
-    /// Safe to call repeatedly; does nothing while attached or already opening.
+    /// Safe to call repeatedly; does nothing while attached or already opening. A chat back from a
+    /// short drop takes in only what it missed (`BotChat.catchUp`). One that times out or loses
+    /// the link while opening keeps what it shows and tries again (`openFailed`).
     func open(knownID: String?, dialect: GatewayReady.Dialect) {
         guard sessionID == nil, openTask == nil else { return }
         guard let channel = channel() else { return }
         queuesOnGateway = dialect == .canonical
         if case .failed = phase { phase = .loading }
+        if phase == .loading, loadingSince == nil { loadingSince = .now }
+        openRetry?.cancel()
         Self.log.notice("Opening chat \(self.contactID, privacy: .private)")
-        let traced = Trace.begin("chat.open", "chat=\(Trace.tag(contactID)) known=\(knownID != nil)")
+        let point = dialect == .canonical && phase == .ready ? rejoinPoint : nil
+        let traced = Trace.begin(
+            "chat.open", "chat=\(Trace.tag(contactID)) known=\(knownID != nil) catch_up=\(point != nil)")
         openTask = Task {
             defer {
                 openTask = nil
@@ -245,6 +266,15 @@ public final class ChatThread {
             await released?.value
             released = nil
             do {
+                // Anything wrong catching up, the full load below is what the chat did before.
+                if let point,
+                    let (opened, missed) = try? await BotChat.catchUp(
+                        profile: contactID, from: point, on: channel)
+                {
+                    rejoin(opened, missed: missed)
+                    traced.end("missed=\(missed.count) running=\(opened.running) caught_up=true")
+                    return
+                }
                 let opened = try await BotChat.open(
                     profile: contactID, knownID: knownID, dialect: dialect, on: channel)
                 let rejoining = opened.sessionID == lastSessionID
@@ -255,10 +285,82 @@ public final class ChatThread {
                 )
             } catch {
                 traced.end("error=\(Trace.reason(error))")
-                phase = .failed(AppModel.describe(error))
-                Self.log.error("Chat open failed: \(AppModel.describe(error), privacy: .public)")
+                openFailed(error)
             }
         }
+    }
+
+    /// Where this chat left off on its last session, when it can catch up from there: the
+    /// transcript on screen came from that session, and the newest event it took in is known.
+    private var rejoinPoint: BotChat.RejoinPoint? {
+        guard let lastSessionID, let seqEpoch, lastSeq > 0, !forcesFullOpen else { return nil }
+        return BotChat.RejoinPoint(sessionID: lastSessionID, epoch: seqEpoch, sequence: lastSeq)
+    }
+
+    /// A slow gateway or a lost link isn't a reason to take the chat away: the one on screen
+    /// stays, and one still loading keeps loading. Both try again, sooner the first times. Other
+    /// errors, such as a Bot deleted or a sign-in gone, show with Try Again.
+    private func openFailed(_ error: any Error) {
+        Self.log.error("Chat open failed: \(AppModel.describe(error), privacy: .public)")
+        guard let gatewayError = error as? GatewayError, [.timedOut, .disconnected].contains(gatewayError) else {
+            phase = .failed(AppModel.describe(error))
+            loadingSince = nil
+            return
+        }
+        // A lost link reopens every chat once it's back.
+        guard gatewayError == .timedOut else { return }
+        let delay = Backoff.delay(attempt: openFailures + 3)
+        openFailures += 1
+        openRetry = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled else { return }
+            self?.openEnded?()
+        }
+    }
+
+    /// Takes the session back after a short drop, keeping the transcript on screen: the snapshot's
+    /// waiting questions, queue and goal, then the events missed while away and those that came
+    /// while this attached. Hermes kept every one of them, so the chat ends as if it never left.
+    private func rejoin(_ opened: BotChat.Opened, missed: [GatewayEvent]) {
+        sessionID = opened.sessionID
+        if let stored = opened.storedID { chatOpened?(stored) }
+        model = ChatModel(info: opened.info) ?? model
+        adoptOpenState(opened)
+        phase = .ready
+        loadingSince = nil
+        openFailures = 0
+        for event in missed + (earlyEvents?(opened.sessionID) ?? []) where (event.seq ?? 0) > lastSeq {
+            apply(event)
+        }
+        if isVisible { markViewed() }
+        // The replay should have ended a reply that ended while away. If the chat still thinks it
+        // runs, its copy is wrong somewhere, or the end is among the frames still on their way
+        // through `route`: either way, loading it in full is right.
+        if state.isRunning, !opened.running, sessionID == opened.sessionID {
+            Self.log.error("A chat caught up still running; loading it in full")
+            forcesFullOpen = true
+            detach()
+            return
+        }
+        forcesFullOpen = false
+        recoverMissed(rejoined: true, replayed: true)
+        checkProcesses()
+    }
+
+    /// What every attach takes from the gateway's snapshot besides the transcript.
+    private func adoptOpenState(_ opened: BotChat.Opened) {
+        // The gateway re-sends any question still waiting, so the list starts from its answer.
+        adoptVaultPrompts(from: opened.openRequests)
+        approvals = opened.openRequests.compactMap(ApprovalPrompt.init)
+        questions = opened.openRequests.compactMap(ClarifyPrompt.init)
+        secrets = opened.openRequests.compactMap(SecretPrompt.init)
+        adoptConnection(opened.pendingConnection)
+        goalContinuations = []
+        isCheckingGoal = false
+        adoptGoalTurns(from: opened.queue)
+        adoptQueue(from: opened.queue, attaching: true)
+        Task { await loadGoal() }
+        announceRequests()
     }
 
     private func attach(_ opened: BotChat.Opened) {
@@ -280,18 +382,10 @@ public final class ChatThread {
         banner = opened.historyOmitted ? String(localized: "Earlier messages are too long to load here.") : nil
         historyOmitted = opened.historyOmitted
         hasFullHistory = !opened.historyOmitted
-        // The gateway re-sends any question still waiting, so the list starts from its answer.
-        adoptVaultPrompts(from: opened.openRequests)
-        approvals = opened.openRequests.compactMap(ApprovalPrompt.init)
-        questions = opened.openRequests.compactMap(ClarifyPrompt.init)
-        secrets = opened.openRequests.compactMap(SecretPrompt.init)
-        adoptConnection(opened.pendingConnection)
-        goalContinuations = []
-        isCheckingGoal = false
-        adoptGoalTurns(from: opened.queue)
-        adoptQueue(from: opened.queue, attaching: true)
-        Task { await loadGoal() }
-        announceRequests()
+        forcesFullOpen = false
+        loadingSince = nil
+        openFailures = 0
+        adoptOpenState(opened)
         if isVisible {
             markViewed()
         } else if let lastViewed {
@@ -337,8 +431,10 @@ public final class ChatThread {
     /// Forgets the live session after the socket drops; the transcript stays on screen.
     /// The next `open` attaches again and reloads it, so nothing missed while offline is lost.
     func detach() {
+        if sessionID != nil { detachedAt = .now }
         openTask?.cancel()
         openTask = nil
+        openRetry?.cancel()
         recovery?.cancel()
         processCheck?.cancel()
         processCheck = nil

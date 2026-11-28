@@ -95,7 +95,7 @@ extension AppModel {
         let traced = Trace.begin("push.warmup", "chat=\(Trace.tag(chat)) reused=\(linkTask != nil)")
         defer { traced.end("loaded=\(hasLoaded(chat, since: 0)) foreground=\(isForeground)") }
         // Woken again while the last one is still up: that link carries this one too.
-        if linkTask == nil { connect(auth) }
+        if linkTask == nil { connect(auth) } else { readRosterSoon() }
         let start = rosterReads
         let deadline = ContinuousClock.now + limit
         while !hasLoaded(chat, since: start), ContinuousClock.now < deadline, !isForeground, !Task.isCancelled {

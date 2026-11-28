@@ -136,6 +136,8 @@ public struct RootView<ConnectOptions: View, GatewayMenu: View>: View {
             .environment(\.screens, model)
             .environment(\.drafts, model.drafts)
             .environment(\.gatewayOnline, model.isOnline)
+            .environment(\.linkStatus, model.linkStatus)
+            .environment(\.linkRetry, LinkRetry { model.reconnect() })
             .sheet(
                 item: Binding(
                     get: { model.sharedItem },
@@ -286,6 +288,12 @@ struct ContactsSplitView<Footer: View>: View {
     @State private var showsNewBot = false
     /// Filters the list by name or last message.
     @State private var query = ""
+    #if os(iOS)
+        /// The list's link pill, once the link has been down a moment. Waited for here: a bar item
+        /// with nothing showing is never placed, so it couldn't wait for itself.
+        @State private var listLinkNote: LinkNote?
+        @Environment(\.linkStatus) private var linkStatus
+    #endif
     #if os(macOS)
         /// The list's width as you left it: from the rail's 78 pt up to 380 pt.
         @AppStorage("sidebarWidth") private var listWidth = Double(Self.fullWidth)
@@ -446,11 +454,22 @@ struct ContactsSplitView<Footer: View>: View {
                     // Shown nowhere on the list, but kept as the back button's label and VoiceOver's name.
                     .navigationTitle("Chats")
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbar(removing: .title)
                     .toolbar {
                         ToolbarItem(placement: .topBarLeading) { footer(false) }
+                        // Always there, so the title never shows; `.toolbar(removing: .title)` would
+                        // take this item away too. Brings its own glass, as the chat's name does.
+                        ToolbarItem(placement: .principal) {
+                            if let listLinkNote {
+                                LinkPill(note: listLinkNote, action: settings)
+                            } else {
+                                Color.clear.frame(width: 1, height: 1).accessibilityHidden(true)
+                            }
+                        }
+                        .sharedBackgroundVisibility(.hidden)
                         ToolbarItem(placement: .topBarTrailing) { newButton }
                     }
+                    .delayedLinkNote(linkStatus.note(), into: $listLinkNote)
+                    .animation(.smooth(duration: 0.2), value: listLinkNote)
             } detail: {
                 // A stack of its own, so a chat can push its agent's profile.
                 NavigationStack { detailPane }

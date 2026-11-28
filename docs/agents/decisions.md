@@ -623,8 +623,8 @@ read at Hermes `2bd378ed1b`.
 
 - `has_avatar` is true for nearly every Bot, because the desktop stores a 160 × 160 PNG of its drawn
   face. That size counts as a picture only when `imageKind` is `photo`. Uploads are 256 px.
-- The roster refreshes every 5 s, so a picture is read again only when its revision changes, and
-  once per connection. `profiles.set_asset` alone doesn't bump the revision, so a picture change
+- The roster is read often (`AppModel.rosterInterval`), so a picture is read again only when its
+  revision changes, and once per connection. `profiles.set_asset` alone doesn't bump the revision, so a picture change
   also writes `imageKind` (`photo`, or `shape` when removed) through `profiles.configure`, as the
   desktop's `saveBotMeta` does. That write is what makes other clients read the new picture.
 
@@ -652,7 +652,7 @@ read at Hermes `2bd378ed1b`.
   delete` does. The default profile can't be deleted. Rooms keep a deleted member: Hermes freezes a
   room's roster, so the sheet says the Bot stays listed but can't answer, and leaves the room alone.
 - **Roster holds.** A Bot just made, renamed, re-pictured or deleted is held over the next three
-  5 s roster reads (`RosterHolds`), or a read from before the change would undo it on screen. A Bot
+  roster reads (`RosterHolds`), or a read from before the change would undo it on screen. A Bot
   that leaves the roster without a hold is forgotten locally: chat, cache entry, picture and
   section.
 
@@ -665,7 +665,7 @@ read at Hermes `2bd378ed1b`.
 - **A write replaces all of `hermes-bots`,** so `BotMetaWrite` reads it raw, changes the two fields
   and sends it back with its revision. `ProfileRow.BotMeta` drops fields it doesn't know, so it
   can't be the source of a write.
-- **The gateway's word settles everything.** A move holds over the 5 s roster read until the roster
+- **The gateway's word settles everything.** A move holds over the roster reads until the roster
   shows it, or for two reads after the write. A write that fails drops the move, and the next read
   puts the Bot, and if need be its section, back where the gateway says.
 - **A rename of a section with Bots in it is several writes.** While the Bots disagree, the local
@@ -1020,6 +1020,33 @@ read at Hermes `2bd378ed1b`.
 - **The extension copies files, never reads them into memory,** and the app converts photos to
   JPEG when it puts them in the message box.
 
+## A bad network
+
+- **What's on screen stays.** A dropped link leaves every chat as it was, a strip above the message
+  box says it's the copy from before once the link has been down 10 s, and the name's second line
+  and the iPhone list's pill say "Connecting…" or "No network" after 1.5 s, so a quick reconnect
+  shows nothing. A chat whose own open times out keeps its saved copy and tries again with backoff,
+  rather than showing the error page.
+- **A chat comes back with only what it missed** (`BotChat.catchUp`): `session.events.since` from
+  the last numbered frame, then `session.resume` with `omit_messages`, so a reconnect costs a few
+  frames, not the transcript. The gateway keeps 512 frames per session and answers
+  `snapshot_required` past them, after a restart (`replay_epoch` differs) or when the session was
+  reaped; then the chat loads in full. The missed frames are translated before the resume, or its
+  snapshot's `last_sequence` would mark them seen. If the snapshot says no turn runs while the chat
+  thinks one does, it reloads in full, as before.
+- **A silent socket is found in seconds, not 45.** A canonical call that hears nothing for 4 s sends
+  `gateway.ping`; if that hears nothing too, the socket closes and the link reconnects. Hermes
+  answers the ping in its read loop, so a busy agent doesn't trip it. The legacy dialect has no
+  such ping and keeps the 15 s heartbeat.
+- **The device's network starts things.** `NWPathMonitor`: a network back or a move to another one
+  reconnects at once; a move while online probes the socket, which may have died with the old
+  route. Backoff is jittered (0.5–1×), so many devices don't retry in step.
+- **The roster is read every 30 s,** and every 5 s while a room is on screen or at work, or during a
+  notification's check-in: rooms learn of new messages only from it. `sessions.changed` and coming
+  back to the app bring the next read forward, never closer than 5 s to the last.
+- **Compression is the gateway's.** Hermes turns on permessage-deflate for non-loopback
+  connections, and `URLSessionWebSocketTask` takes it, so nothing is needed here.
+
 ## Gateways
 
 - **Two at most, one in use.** The developer wanted their own gateways side by side, but chose
@@ -1079,6 +1106,12 @@ read at Hermes `2bd378ed1b`.
   isn't public.
 
 ## Not verified
+
+- A bad network ran against fakes (a scripted gateway on the recorded chat turn) and in the demo
+  (`--demo-link-down`, `--demo-no-network`). `session.events.since`, `omit_messages` and the ping
+  in the read loop are from Hermes v0.23.0 source. Not run: a real gateway over a bad or changing
+  network, an iPhone device moving between Wi-Fi and cellular, and how often a real catch-up gets
+  `snapshot_required`.
 
 - Working after a reply (background processes and running routines) ran against fakes and in the
   demo (Mac, iPhone Simulator). The fields and calls were read from Hermes v0.23.0–0.23.4 source.

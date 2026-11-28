@@ -70,6 +70,42 @@ enum BotChat {
         return try opened(from: result, omitted: omitted)
     }
 
+    /// Where a chat left off when the link dropped: its live session and the newest event it saw.
+    struct RejoinPoint: Equatable, Sendable {
+        let sessionID: String
+        let epoch: String
+        let sequence: Int
+    }
+
+    /// Attaches again to the session the chat was attached to before the link dropped, without
+    /// sending the transcript the chat already holds: only the events it missed. Hermes's own
+    /// reconnect (`session.events.since`, then `session.resume` with `omit_messages`): the replay
+    /// marks the connection's place, and the resume sends what came after it ahead of its reply.
+    /// `nil` when the gateway no longer has everything since `point`, after a restart, or a chat
+    /// left far behind, and the chat has to load in full.
+    static func catchUp(profile: String, from point: RejoinPoint, on channel: JSONRPCChannel) async throws
+        -> (opened: Opened, missed: [GatewayEvent])?
+    {
+        let replay = try await channel.call(
+            "session.events.since",
+            params: [
+                "profile": .string(profile), "session_id": .string(point.sessionID),
+                "replay_epoch": .string(point.epoch), "last_sequence": .number(Double(point.sequence)),
+            ])
+        guard replay["snapshot_required"]?.boolValue != true, replay["truncated"]?.boolValue != true,
+            (replay["replay_epoch"] ?? replay["epoch"])?.stringValue == point.epoch
+        else { return nil }
+        // Taken in before the resume, whose frames come after these and would make them look seen.
+        let missed = await channel.replayed(replay["events"])
+        let result = try await channel.call(
+            "session.resume",
+            params: ["profile": .string(profile), "session_id": .string(point.sessionID), "omit_messages": true])
+        let opened = try opened(from: result, omitted: true)
+        // Resumed into another session, as after a compression: the transcript on screen isn't its.
+        guard opened.sessionID == point.sessionID, opened.replayEpoch == point.epoch else { return nil }
+        return (opened, missed)
+    }
+
     /// An attach's snapshot, in the legacy shape (`JSONRPCChannel` translates the canonical one).
     private static func opened(from result: JSONValue, omitted: Bool = false) throws -> Opened {
         guard let live = result["session_id"]?.stringValue else { throw GatewayError.invalidResponse }

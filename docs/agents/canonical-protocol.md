@@ -43,6 +43,12 @@ run from it with a stand-in model; the queue's from v0.23.1, the same way.
   the same window the dashboard has. Hermes keeps a session's last 512 frames (fewer when they're
   large), and asking from further back returns none, only `truncated`: so the read starts 511 frames
   back, then 127. A turn longer than that shows its reply so far from partway.
+- **Coming back after a drop reads only what was missed,** then attaches without the transcript
+  (`omit_messages`). The order matters: `session.events.since` sets the socket's replay cursor, and
+  the resume writes the frames after it ahead of its answer. The frames from `since` are translated
+  before the resume returns, or its `last_sequence` would mark them seen. Anything other than the
+  same epoch, the same session and no `snapshot_required` loads in full (decisions.md › A bad
+  network). Verified from v0.23.0 source only.
 - **Images ride with the message.** `image.attach_bytes` only stages a file; the paths go as
   `prompt.submit`'s `attachments`. Taking one back is local. A queued message names its own
   `attachments` (empty for none), uploaded while the reply ran, so it never takes images staged for

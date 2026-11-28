@@ -710,8 +710,14 @@ General › Login Items & Extensions › Sharing.
 
 The app caches your recent chats, so they open instantly and stay readable without a connection.
 When the connection drops, it reconnects by itself and catches up on what it missed: replies that
-arrived meanwhile, background results and side answers. On iPhone, the connection closes when the
-app goes to the background and reopens when you come back.
+arrived meanwhile, background results and side answers. It fetches only what's new, so coming back
+on a slow network is quick. On iPhone, the connection stays up for a few seconds after you leave
+the app, so a quick look elsewhere doesn't drop it.
+
+While the connection is down, the chat stays as it was. Under the chat's name it says
+**Connecting…** or **No network**, and after a few seconds a note above the message box says
+you're seeing the chat as it last loaded, with **Retry** to try again now. On iPhone, the chat list
+shows the same between its two buttons; tap it to see the connection in Settings.
 
 If an answer couldn't be recovered (for example, the gateway restarted meanwhile), the chat says
 so instead of leaving you waiting.

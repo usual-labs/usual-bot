@@ -8,14 +8,15 @@ extension ChatThread {
     /// session's last 512 events), else tells side questions their answer is gone (Hermes doesn't
     /// keep them), then looks up background tasks still waiting in their stored sessions until
     /// they're answered (their answer may have gone to a session that's gone).
-    func recoverMissed(rejoined: Bool) {
+    /// `replayed`: the chat caught up from the replay already (`BotChat.catchUp`), so nothing was lost.
+    func recoverMissed(rejoined: Bool, replayed: Bool = false) {
         recovery?.cancel()
         // Only what's waiting now can be lost: the chat already takes new questions and tasks.
         let unanswered = Set(
             sideQuestions.filter { $0.answer == .waiting }.map(\.id) + backgroundTasks.map(\.id))
         recovery = Task { [weak self] in
             guard let self else { return }
-            if !(rejoined ? await replay() : false) { loseUnansweredWork(unanswered) }
+            if !replayed, !(rejoined ? await replay() : false) { loseUnansweredWork(unanswered) }
             await checkBackgroundTasks()
         }
     }

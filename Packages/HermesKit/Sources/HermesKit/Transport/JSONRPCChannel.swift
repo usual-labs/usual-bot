@@ -35,7 +35,9 @@ public struct GatewayReady: Sendable, Equatable {
 
 /// JSON-RPC 2.0 over one WebSocket: numbered requests with replies, a stream of events, the
 /// gateway's own requests to the app, and a heartbeat (`gateway.ping` every 15 s; the socket is
-/// dead after 45 s of silence).
+/// dead after 45 s of silence). On the canonical protocol a call that hears nothing back for
+/// `probeAfter` sends a ping of its own, and the socket is dead if that goes unanswered too: a
+/// link lost on a bad network shows in seconds, not 45.
 ///
 /// The app speaks the legacy protocol throughout. On a canonical gateway the channel translates
 /// each call, event and answer (`JSONRPCChannel+Canonical.swift`).
@@ -53,6 +55,9 @@ public actor JSONRPCChannel {
     private var writer: Task<Void, Never>?
     private let heartbeatInterval: Duration
     private let silenceLimit: Duration
+    private let probeAfter: Duration
+    /// A probe is waiting to see whether the socket still answers (`probe(since:wait:)`).
+    private var isProbing = false
     private var nextID = 1
     /// Which protocol the gateway speaks, from `gateway.ready`.
     public private(set) var dialect: GatewayReady.Dialect = .legacy
@@ -78,11 +83,12 @@ public actor JSONRPCChannel {
 
     public init(
         socket: any WebSocketConnection, heartbeatInterval: Duration = .seconds(15),
-        silenceLimit: Duration = .seconds(45)
+        silenceLimit: Duration = .seconds(45), probeAfter: Duration = .seconds(4)
     ) {
         self.socket = socket
         self.heartbeatInterval = heartbeatInterval
         self.silenceLimit = silenceLimit
+        self.probeAfter = probeAfter
         (events, eventSink) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
         (requests, requestSink) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
         (outgoing, outbox) = AsyncStream.makeStream(bufferingPolicy: .unbounded)
@@ -133,11 +139,40 @@ public actor JSONRPCChannel {
             try? await Task.sleep(for: timeout)
             await self?.resolve(id: id, with: .failure(GatewayError.timedOut))
         }
+        if dialect == .canonical, method != "gateway.ping" { watch(since: .now, wait: probeAfter) }
         return try await withCheckedThrowingContinuation { continuation in
             pending[id] = continuation
             let bytes = write(frame)
             timings[id] = (method, Trace.begin("rpc", "method=\(method) bytes=\(bytes) waiting=\(pending.count - 1)"))
         }
+    }
+
+    /// Checks at once that the socket still answers, as after the phone changed network: closes
+    /// it when a ping gets nothing back within `probeAfter`. Only the canonical protocol: its
+    /// listener answers pings as they arrive, even while another call is busy (`tui_gateway/ws.py`),
+    /// so a slow answer can't pass for a dead link. The legacy one has the heartbeat alone.
+    public func probe() {
+        guard dialect == .canonical else { return }
+        watch(since: .now, wait: .zero)
+    }
+
+    /// Unless a probe is already waiting: after `wait`, a socket that has sent nothing since
+    /// `sent` is pinged, and closed if the ping hears nothing either.
+    private func watch(since sent: ContinuousClock.Instant, wait: Duration) {
+        guard !isProbing, closedError == nil else { return }
+        isProbing = true
+        Task { [weak self] in await self?.probe(since: sent, wait: wait) }
+    }
+
+    private func probe(since sent: ContinuousClock.Instant, wait: Duration) async {
+        defer { isProbing = false }
+        if wait > .zero { try? await Task.sleep(for: wait) }
+        guard closedError == nil, lastInbound < sent else { return }
+        Trace.event("socket.probe", "quiet_ms=\(Trace.milliseconds(since: sent))")
+        _ = try? await send("gateway.ping", timeout: probeAfter)
+        guard closedError == nil, lastInbound < sent else { return }
+        Self.log.error("The gateway didn't answer a ping, closing")
+        shutDown(.timedOut)
     }
 
     /// Answers the server request with ID `requestID`.

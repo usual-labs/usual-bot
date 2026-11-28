@@ -28,6 +28,7 @@ struct Composer: View {
     var body: some View {
         // Background tasks and side answers float above the box.
         VStack(alignment: .trailing, spacing: 0) {
+            ConnectionNotice(subject: String(localized: "\(agentName)'s chat"), asOf: thread.detachedAt)
             if let warning = thread.planLimitWarning {
                 PlanLimitNotice(warning: warning, text: warning.chatText(agentName: agentName)).padding(.bottom, 6)
             }
