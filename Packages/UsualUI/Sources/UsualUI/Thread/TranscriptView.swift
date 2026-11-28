@@ -58,6 +58,7 @@ struct TranscriptView: View, @MainActor Equatable {
         .environment(\.waitingAsks, BotAsk.waiting(in: items))
         .onAppear { window.hold(items) }
         .modifier(WhenShown(waiting: waiting, agentName: agentName, opened: opened))
+        .modifier(ReplyHaptic(replies: items.count(where: \.isBotReply), load: thread.transcriptLoad))
         .onChange(of: thread.transcriptLoad) { window.reset(items) }
         .onChange(of: items.isEmpty) { window.reset(items) }
         .onChange(of: jump ?? returnJump, initial: true) { _, jump in if let jump { target = jump.itemID } }

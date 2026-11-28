@@ -205,6 +205,7 @@ struct RoomPane: View {
             }
         }
         .environment(\.widgetSuccession, WidgetSuccession(room.state.items))
+        .modifier(ReplyHaptic(replies: room.state.items.count(where: \.isBotReply)))
         // Each room's transcript is its own view, so this runs as each one opens.
         .onAppear {
             window.hold(room.state.items)

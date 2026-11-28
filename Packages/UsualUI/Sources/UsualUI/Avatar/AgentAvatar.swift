@@ -50,14 +50,14 @@ struct AgentAvatar: View {
         .clipShape(Circle())
         .frame(width: size, height: size)
         .modifier(Breathing(isActive: contact.activity == .working && !reduceMotion))
-        .overlay(alignment: .topTrailing) {
+        .overlay(alignment: .bottomTrailing) {
             if showsStatus { StatusDot(activity: contact.activity, avatar: size) }
         }
         .accessibilityHidden(true)
     }
 }
 
-/// Green while a Bot works, amber while it needs you, on its avatar's rim at the top right. The
+/// Green while a Bot works, amber while it needs you, on its avatar's rim at the bottom right. The
 /// breathing alone was hard to see on small avatars. One dot, as a Bot is only ever one of these.
 struct StatusDot: View {
     let activity: Contact.Activity
@@ -73,7 +73,7 @@ struct StatusDot: View {
                 .fill(fill)
                 .overlay(Circle().strokeBorder(Theme.window, lineWidth: avatar < 30 ? 1.5 : 2))
                 .frame(width: diameter, height: diameter)
-                .offset(x: -inward, y: inward)
+                .offset(x: -inward, y: -inward)
         }
     }
 
@@ -123,14 +123,14 @@ struct RoomAvatar: View {
         ZStack(alignment: .topLeading) {
             if let first = members.first {
                 AgentAvatar(contact: first.settled, size: memberSize)
-                    .overlay(alignment: .topTrailing) {
+                    .overlay(alignment: .bottomTrailing) {
                         if members.count < 2 { StatusDot(activity: activity, avatar: shown - offset) }
                     }
             }
             if members.count > 1 {
                 AgentAvatar(contact: members[1].settled, size: memberSize)
                     .background(Circle().fill(Theme.window).padding(-2))
-                    .overlay(alignment: .topTrailing) { StatusDot(activity: activity, avatar: shown - offset) }
+                    .overlay(alignment: .bottomTrailing) { StatusDot(activity: activity, avatar: shown - offset) }
                     .offset(x: offset, y: offset)
             }
         }
