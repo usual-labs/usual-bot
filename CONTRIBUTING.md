@@ -125,6 +125,7 @@ Debug builds read these environment variables:
 | --- | --- |
 | `USUALBOT_DEMO=1` or the `--demo` launch argument | Shows made-up agents instead of signing in. Never connects; a message gets a scripted reply. |
 | `USUALBOT_DEMO_SHARE=1` or `--demo-share`, with the demo | Lets what you share from other apps go into the demo's chats. Without it the demo leaves the shared folder to your real sign-in. Needs a build with the App Group: the Simulator, or one signed for a team. |
+| `--demo-link-down` or `--demo-no-network`, with the demo | Shows the demo as a bad network would: the link down for a minute, with or without a network. The chat's name says so, the strip above the message box shows, and the iPhone chat list has its pill. Nothing else changes, as nothing connects. |
 | `--demo-long-chat` | Runs the demo with long, uneven chats (tool lines, lists, tables and code included) and a room to check scrolling, app switching and reflow. Never connects. |
 | `USUALBOT_DEMO_PLUGIN_UPDATE=1`, with the demo | The gateway has an older Usual Bot plugin: the Mac sidebar's Plugins button shows its yellow dot and the Plugins sheet offers Update. |
 | `USUALBOT_SHOW_QUICK_PANEL=1` | Opens the ⌥Space panel shortly after launch (Mac). |

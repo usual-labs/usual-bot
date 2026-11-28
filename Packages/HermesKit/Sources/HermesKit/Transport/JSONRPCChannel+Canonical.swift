@@ -70,7 +70,10 @@ extension JSONRPCChannel {
         case ("session.resume", _):
             var fields = Self.fields(params)
             fields["display_projection"] = true
-            return try await snapshot(send(method, params: .object(fields), timeout: timeout), timeout: timeout)
+            let result = try await send(method, params: .object(fields), timeout: timeout)
+            // Catching up (`BotChat.catchUp`): the chat has its reply so far, and the replay the rest.
+            if fields["omit_messages"] == true { return canonical.legacySnapshot(result, replySoFar: nil) }
+            return try await snapshot(result, timeout: timeout)
         case ("session.create", _):
             return try await create(params, timeout: timeout)
         case ("session.close", let session?):
@@ -122,6 +125,17 @@ extension JSONRPCChannel {
     }
 
     // MARK: - Attaching
+
+    /// A replay's frames (`session.events.since`) as the events the app sees, marked seen like
+    /// live ones. Approvals and questions are left out: the attach's snapshot lists those waiting.
+    func replayed(_ frames: JSONValue?) -> [GatewayEvent] {
+        CanonicalProtocol.rows(frames).flatMap { frame in
+            canonical.inbound(frame).compactMap { inbound -> GatewayEvent? in
+                if case .event(let event) = inbound { return event }
+                return nil
+            }
+        }
+    }
 
     /// The legacy shape of an attach's snapshot. A turn running then has its reply so far only in
     /// the session's replay frames, so they're read for it.

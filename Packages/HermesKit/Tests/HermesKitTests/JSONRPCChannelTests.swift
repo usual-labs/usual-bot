@@ -102,12 +102,61 @@ struct JSONRPCChannelTests {
         await #expect(throws: GatewayError.timedOut) { try await channel.call("profiles.list") }
     }
 
+    /// A canonical channel that probes after `probeAfter` of silence, and never heartbeats in a test.
+    private func canonicalChannel(probeAfter: Duration) async throws -> (JSONRPCChannel, FakeSocket) {
+        let socket = FakeSocket()
+        let channel = JSONRPCChannel(socket: socket, silenceLimit: .seconds(3600), probeAfter: probeAfter)
+        await channel.start()
+        socket.deliver(
+            #"{"jsonrpc":"2.0","method":"event","params":{"type":"gateway.ready","payload":{"session_authority":true}}}"#
+        )
+        _ = try await channel.waitUntilReady()
+        return (channel, socket)
+    }
+
+    @Test func aCallThatHearsNothingClosesASocketThatDoesntAnswerAPing() async throws {
+        let (channel, socket) = try await canonicalChannel(probeAfter: .milliseconds(50))
+        async let reply = channel.call("profiles.list")
+        try await waitUntil { socket.sent.contains { $0["method"] == "gateway.ping" } }
+        try await waitUntil { socket.isClosed }
+        do {
+            _ = try await reply
+            Issue.record("Expected an error")
+        } catch {
+            #expect(error as? GatewayError == .timedOut)
+        }
+    }
+
+    @Test func aSlowCallOnASocketThatAnswersAPingStaysOpen() async throws {
+        let (channel, socket) = try await canonicalChannel(probeAfter: .milliseconds(50))
+        async let reply = channel.call("profiles.list")
+        try await waitUntil { socket.sent.contains { $0["method"] == "gateway.ping" } }
+        let ping = try #require(socket.sent.first { $0["method"] == "gateway.ping" })
+        try socket.deliver(["jsonrpc": "2.0", "id": ping["id"] ?? .null, "result": ["ok": true]])
+        // sleep-ok: long enough for a probe that wrongly closed it
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(await channel.isOpen)
+        let call = try #require(socket.sent.first { $0["method"] == "profiles.list" })
+        try socket.deliver(["jsonrpc": "2.0", "id": call["id"] ?? .null, "result": ["profiles": []]])
+        let profiles = try await reply
+        #expect(profiles["profiles"] == [])
+    }
+
+    @Test func aProbeAfterTheNetworkMovedClosesADeadSocket() async throws {
+        let (channel, socket) = try await canonicalChannel(probeAfter: .milliseconds(50))
+        await channel.probe()
+        try await waitUntil { socket.isClosed }
+        #expect(socket.sent.map(\.["method"]) == ["gateway.ping"])
+    }
+
     @Test func backoffDoublesToACap() {
-        #expect(Backoff.delay(attempt: 0) == .milliseconds(300))
-        #expect(Backoff.delay(attempt: 1) == .milliseconds(600))
-        #expect(Backoff.delay(attempt: 5) == .milliseconds(9_600))
-        #expect(Backoff.delay(attempt: 6) == .milliseconds(15_000))
-        #expect(Backoff.delay(attempt: 99) == .milliseconds(15_000))
+        #expect(Backoff.delay(attempt: 0, jitter: 1) == .milliseconds(300))
+        #expect(Backoff.delay(attempt: 1, jitter: 1) == .milliseconds(600))
+        #expect(Backoff.delay(attempt: 5, jitter: 1) == .milliseconds(9_600))
+        #expect(Backoff.delay(attempt: 6, jitter: 1) == .milliseconds(15_000))
+        #expect(Backoff.delay(attempt: 99, jitter: 1) == .milliseconds(15_000))
+        // Cut to a random share, so lost phones don't all come back at once.
+        #expect(Backoff.delay(attempt: 6, jitter: 0.5) == .milliseconds(7_500))
     }
 }
 

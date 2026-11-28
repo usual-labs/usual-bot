@@ -53,6 +53,7 @@ struct ThreadPane: View {
     @Environment(\.drafts) private var drafts
     @Environment(\.readMarking) private var readMarking
     @Environment(\.gatewayOnline) private var isOnline
+    @Environment(\.linkStatus) private var linkStatus
     #if os(macOS)
         @Environment(\.openWindow) private var openWindow
     #endif
@@ -243,11 +244,12 @@ struct ThreadPane: View {
 
     /// The name opens the profile, as a contact's name does in Messages.
     @ViewBuilder private var namePill: some View {
+        let note = linkStatus.note(catchingUp: thread?.isCatchingUp ?? false)
         if let toggleProfile {
-            NamePill(contact: contact, members: members, action: toggleProfile)
+            NamePill(contact: contact, members: members, note: note, action: toggleProfile)
                 .accessibilityHint(Text("Shows routines and details"))
         } else {
-            NamePill(contact: contact, members: members)
+            NamePill(contact: contact, members: members, note: note)
         }
     }
 
@@ -340,7 +342,13 @@ struct ThreadPane: View {
             case nil:
                 centred { Text("No messages yet") }
             case .loading:
-                centred { ProgressView().controlSize(.small) }
+                centred {
+                    VStack(spacing: 0) {
+                        ProgressView().controlSize(.small)
+                        SlowLoadingNote(name: contact.name, since: thread?.loadingSince)
+                    }
+                    .padding(.horizontal, 32)
+                }
             case .failed(let message):
                 centred {
                     VStack(spacing: 10) {
@@ -431,7 +439,10 @@ extension View {
 struct NamePill: View {
     let contact: Contact
     let members: [Contact]
+    /// The link's state, under the name once it has held a moment (`delayedLinkNote`).
+    var note: LinkNote? = nil
     var action: (() -> Void)?
+    @State private var shownNote: LinkNote?
 
     // On iPhone as tall as the bar's glass buttons beside it; on the Mac as tall as the sidebar's
     // Search and New Room, on the same line as them.
@@ -439,6 +450,7 @@ struct NamePill: View {
         private static let height: CGFloat = 44
         private static let avatar: CGFloat = 32
         private static let nameSize: CGFloat = 17
+        private static let noteSize: CGFloat = 12
         private static let nameWeight: Font.Weight = .semibold
         private static let leading: CGFloat = 6
         private static let trailing: CGFloat = 18
@@ -446,6 +458,7 @@ struct NamePill: View {
         private static let height = ThreadPane.barItemHeight
         private static let avatar: CGFloat = 26
         private static let nameSize: CGFloat = 14
+        private static let noteSize: CGFloat = 11
         private static let nameWeight: Font.Weight = .medium
         private static let leading: CGFloat = 5
         private static let trailing: CGFloat = 16
@@ -473,6 +486,8 @@ struct NamePill: View {
         #endif
         .accessibilityAddTraits(.isHeader)
         .accessibilityShowsLargeContentViewer()
+        .delayedLinkNote(note, into: $shownNote)
+        .animation(.smooth(duration: 0.2), value: shownNote)
     }
 
     /// On the Mac a click opens or closes the side panel a moment after the button lets go. In the
@@ -493,10 +508,16 @@ struct NamePill: View {
             case .agent: AgentAvatar(contact: contact, size: Self.avatar)
             case .room: RoomAvatar(members: members, size: Self.avatar, activity: contact.activity)
             }
-            Text(contact.name)
-                .scaledFont(size: Self.nameSize, weight: Self.nameWeight)
-                .foregroundStyle(Theme.ink)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(contact.name)
+                    .scaledFont(size: Self.nameSize, weight: Self.nameWeight)
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                if let shownNote {
+                    LinkNoteLine(note: shownNote, size: Self.noteSize)
+                        .transition(.opacity)
+                }
+            }
         }
         .padding(.leading, Self.leading)
         .padding(.trailing, Self.trailing)

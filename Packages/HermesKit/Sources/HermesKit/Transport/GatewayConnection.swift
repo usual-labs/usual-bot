@@ -45,10 +45,12 @@ struct GatewayConnector: Sendable {
     }
 }
 
-/// Delay before reconnect attempt `attempt` (0-based): 300 ms doubling to a 15 s cap.
+/// Delay before reconnect attempt `attempt` (0-based): 300 ms doubling to a 15 s cap, then cut to
+/// a random share of that (`jitter`, half to all of it), so phones that lost the same network
+/// don't all come back at once, and one retry that keeps landing in a bad moment moves.
 enum Backoff {
-    static func delay(attempt: Int) -> Duration {
+    static func delay(attempt: Int, jitter: Double = .random(in: 0.5...1)) -> Duration {
         let milliseconds = 300.0 * pow(2, Double(min(attempt, 10)))
-        return .milliseconds(Int(min(milliseconds, 15_000)))
+        return .milliseconds(Int(min(milliseconds, 15_000) * jitter))
     }
 }

@@ -129,8 +129,7 @@ recommendation → prevention and status. Once fixed, keep only the trap and how
   again, every 40 s (iPhone, 16 November 2026). So `attachChats` opens the chat on screen at once
   and the rest `backgroundOpens` at a time, and a roster read that times out on a link still open
   is skipped, not a reason to reconnect; the channel's heartbeat closes a silent one. Don't add
-  calls that fan out over every Bot on connect. Still open: a chat whose own open times out shows
-  the error instead of its saved copy.
+  calls that fan out over every Bot on connect.
 
 - **Bot-to-Bot messages are recognised by Hermes's wording.** The incoming message is an
   `internal_notification` starting `Message from 🤖 <name> (@<handle>): `, a note's body starts

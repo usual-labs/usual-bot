@@ -28,6 +28,7 @@ struct RoomPane: View {
     @State private var jumpedTo: MessageJump?
     @Environment(\.drafts) private var drafts
     @Environment(\.roomEditing) private var roomEditing
+    @Environment(\.linkStatus) private var linkStatus
     @AppStorage(AppPreferences.showToolActivityKey) private var showsTools = true
 
     var body: some View {
@@ -35,25 +36,29 @@ struct RoomPane: View {
             .environment(\.messageActions, actions)
             .environment(\.showConversationDetails) { showsInfo = true }
             .chatBars {
-                NamePill(contact: contact, members: members) { showsInfo.toggle() }
+                NamePill(contact: contact, members: members, note: linkStatus.note()) { showsInfo.toggle() }
                     .accessibilityHint(Text("Shows the room's members"))
             } bottom: {
                 if room.phase == .ready {
-                    VStack(spacing: 6) {
-                        if let limit = planLimits?.warning(for: members) {
-                            PlanLimitNotice(
-                                warning: limit.warning,
-                                text: limit.warning.roomText(members: limit.members.map(\.name)))
+                    VStack(spacing: 0) {
+                        // Brings its own space below, and takes none while hidden.
+                        ConnectionNotice(subject: contact.name, asOf: nil)
+                        VStack(spacing: 6) {
+                            if let limit = planLimits?.warning(for: members) {
+                                PlanLimitNotice(
+                                    warning: limit.warning,
+                                    text: limit.warning.roomText(members: limit.members.map(\.name)))
+                            }
+                            MessageBox(
+                                conversation: contact.id,
+                                text: Binding(get: { drafts?[contact.id] ?? "" }, set: { drafts?[contact.id] = $0 }),
+                                placeholder: placeholder, isRunning: !room.working.isEmpty, canSend: room.canSend,
+                                stopLabel: String(localized: "Stop everyone in \(contact.name)"), mentions: mentions,
+                                quotes: Binding(get: { quotes }, set: { quotes = $0 }), commands: roomSkills,
+                                unsent: Binding(get: { room.unsent }, set: { room.unsent = $0 }), send: room.send,
+                                stop: room.stop
+                            )
                         }
-                        MessageBox(
-                            conversation: contact.id,
-                            text: Binding(get: { drafts?[contact.id] ?? "" }, set: { drafts?[contact.id] = $0 }),
-                            placeholder: placeholder, isRunning: !room.working.isEmpty, canSend: room.canSend,
-                            stopLabel: String(localized: "Stop everyone in \(contact.name)"), mentions: mentions,
-                            quotes: Binding(get: { quotes }, set: { quotes = $0 }), commands: roomSkills,
-                            unsent: Binding(get: { room.unsent }, set: { room.unsent = $0 }), send: room.send,
-                            stop: room.stop
-                        )
                     }
                     // The box stays as you go from room to room; the next room's notice isn't news.
                     .transaction(value: contact.id) { $0.animation = nil }
