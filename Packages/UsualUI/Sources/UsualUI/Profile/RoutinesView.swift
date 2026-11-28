@@ -110,7 +110,7 @@ private struct RoutineRow: View {
             // bordered button in it.
             Button(action: open) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(routine.name)
+                    Text(routine.title(in: list.profile))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(2)
                     RoutineStatus.text(for: routine, isRunning: list.running.contains(routine.id))
@@ -124,7 +124,7 @@ private struct RoutineRow: View {
             .accessibilityElement(children: .combine)
             .accessibilityHint(Text("Shows the routine, its past runs and what you can change"))
             Toggle(isOn: Binding(get: { routine.isOn }, set: { list.setOn($0, for: routine) })) {
-                Text(routine.name)
+                Text(routine.title(in: list.profile))
             }
             .labelsHidden()
             .disabled(routine.isFinished)

@@ -11,9 +11,48 @@ struct ModelButton: View {
     let agentName: String
     let agentDefault: AgentDetails?
     let picking: ModelPicking
+    /// iPhone's profile: a whole Settings row, its name and icon with the model as its value.
+    var asRow = false
     @State private var isOpen = false
 
     var body: some View {
+        button
+            .help("Model for this chat")
+            .accessibilityLabel(Text("Model: \(ModelControls.short(model.name))"))
+            .accessibilityHint(Text("Shows the models you can switch this chat to"))
+            .popover(isPresented: $isOpen, arrowEdge: .bottom) {
+                ModelList(
+                    thread: thread, agentName: agentName, agentDefault: agentDefault, picking: picking
+                ) { isOpen = false }
+                #if os(iOS)
+                    .presentationDetents([.medium, .large])
+                #endif
+            }
+    }
+
+    @ViewBuilder private var button: some View {
+        #if os(iOS)
+            if asRow {
+                Button {
+                    isOpen = true
+                } label: {
+                    LabeledContent {
+                        MenuValue(text: ModelControls.short(model.name))
+                    } label: {
+                        ProfileRowLabel(title: "Model", systemName: "cpu", color: .indigo)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .foregroundStyle(Theme.ink)
+            } else {
+                glassButton
+            }
+        #else
+            glassButton
+        #endif
+    }
+
+    private var glassButton: some View {
         Button {
             isOpen = true
         } label: {
@@ -25,17 +64,6 @@ struct ModelButton: View {
         .buttonStyle(.clickable(.glass))
         .controlSize(.small)
         .fixedSize()
-        .help("Model for this chat")
-        .accessibilityLabel(Text("Model: \(ModelControls.short(model.name))"))
-        .accessibilityHint(Text("Shows the models you can switch this chat to"))
-        .popover(isPresented: $isOpen, arrowEdge: .bottom) {
-            ModelList(
-                thread: thread, agentName: agentName, agentDefault: agentDefault, picking: picking
-            ) { isOpen = false }
-            #if os(iOS)
-                .presentationDetents([.medium, .large])
-            #endif
-        }
     }
 }
 

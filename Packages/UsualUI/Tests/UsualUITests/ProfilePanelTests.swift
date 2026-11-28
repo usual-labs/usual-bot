@@ -47,6 +47,17 @@ struct ProfilePanelTests {
         #expect(NextRoutines.soonest(routines).map(\.id) == ["soon", "later"])
     }
 
+    @Test func aRoutineDropsTheTagNamingItsOwnBot() {
+        func title(_ name: String) -> String {
+            Routine(id: name, name: name, schedule: "", isOn: true).title(in: "dr-eggbot")
+        }
+        #expect(title("[bot:dr-eggbot] cf-home-ip") == "cf-home-ip")
+        #expect(title("[BOT:Dr-Eggbot]transcript-healthcheck") == "transcript-healthcheck")
+        #expect(title("[bot:other] cf-home-ip") == "[bot:other] cf-home-ip")
+        #expect(title("[bot:dr-eggbot]") == "[bot:dr-eggbot]")
+        #expect(title("Morning brief [bot:dr-eggbot]") == "Morning brief [bot:dr-eggbot]")
+    }
+
     @Test func compressTurnsProminentAtSeventyPercent() {
         func context(_ percent: Int) -> ChatUsage.Context {
             .init(used: percent * 2_000, max: 200_000, percent: percent, estimated: false)

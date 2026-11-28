@@ -79,6 +79,8 @@ struct BotMenuItems: View {
     let contact: Contact
     let editing: BotEditing
     @Binding var edit: BotEdit?
+    /// Off where Hide and Delete have rows of their own, as at the end of the iPhone profile.
+    var includesRemoval = true
 
     var body: some View {
         Group {
@@ -87,10 +89,12 @@ struct BotMenuItems: View {
             if contact.picture != nil {
                 Button("Remove Picture", systemImage: "person.crop.circle") { edit = .removePicture(contact) }
             }
-            Button("Hide Bot", systemImage: "eye.slash") { edit = .hide(contact) }
+            if includesRemoval {
+                Button("Hide Bot", systemImage: "eye.slash") { edit = .hide(contact) }
+            }
         }
         .disabled(editing.unavailable != nil)
-        if editing.canDelete(contact) {
+        if includesRemoval, editing.canDelete(contact) {
             Divider()
             Button("Delete Bot…", systemImage: "trash", role: .destructive) { edit = .delete(contact) }
                 .disabled(editing.unavailable != nil)
